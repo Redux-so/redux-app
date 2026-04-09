@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import UploadButton from "@/components/library/UploadButton";
+import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import SearchBar from "@/components/library/SearchBar";
 import type { ImageRecord } from "@/types/image";
 
@@ -23,16 +23,9 @@ export default function Header({
   onSearchClear,
 }: HeaderProps) {
   return (
-    <header className="h-[52px] bg-[#0a0a0a] border-b border-[#2a2a2a] flex items-center px-3 gap-3 shrink-0">
-      <div className="flex items-center shrink-0">
-        <Image
-          src="/logo.png"
-          alt="Redux"
-          width={52}
-          height={52}
-          className="h-[52px] w-auto object-contain"
-          priority
-        />
+    <header className="h-[52px] bg-[#0a0a0a] border-b border-[#2a2a2a] flex items-center gap-3 shrink-0 pl-3 pr-3">
+      <div className="flex h-[52px] shrink-0 items-center">
+        <AppChromeLogo />
       </div>
 
       <div className="w-px h-[18px] bg-[#2a2a2a] shrink-0" />
