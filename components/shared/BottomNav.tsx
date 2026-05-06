@@ -1,10 +1,19 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
-import { LayoutGrid, SlidersHorizontal, Settings2 } from "lucide-react";
+import { useUser, useClerk } from "@clerk/nextjs";
+import {
+  LayoutGrid,
+  SlidersHorizontal,
+  Settings2,
+  Settings,
+  CreditCard,
+  LogOut,
+} from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import CreditShopModal from "@/components/shared/CreditShopModal";
 
 const TABS = [
   { label: "Library", icon: LayoutGrid, href: "/library" },
@@ -16,7 +25,11 @@ export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
+  const { signOut } = useClerk();
   const [credits, setCredits] = useState<number | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [creditShopOpen, setCreditShopOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/credits")
@@ -29,54 +42,130 @@ export default function BottomNav() {
       .catch(() => {});
   }, []);
 
-  return (
-    <nav className="relative h-[52px] bg-[#0a0a0a] border-t border-[#2a2a2a] flex items-center px-3 shrink-0">
-      {/* User info */}
-      <div className="flex items-center gap-2 w-[140px]">
-        {user?.imageUrl ? (
-          <Image
-            src={user.imageUrl}
-            alt="avatar"
-            width={26}
-            height={26}
-            className="rounded-sm object-cover"
-          />
-        ) : (
-          <div className="w-[26px] h-[26px] rounded-sm bg-[#1f1f1f] border border-[#2a2a2a] shrink-0" />
-        )}
-        <div className="flex flex-col min-w-0">
-          <span className="text-white text-[12px] leading-[1.3] font-medium truncate">
-            {user?.fullName ?? user?.firstName ?? ""}
-          </span>
-          <span className="text-[#888888] text-[10px] leading-[1.3]">
-            @ {credits !== null ? credits.toLocaleString() : "—"} Tokens
-          </span>
-        </div>
-      </div>
+  // Close popover on outside click
+  useEffect(() => {
+    if (!popoverOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setPopoverOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [popoverOpen]);
 
-      {/* Tabs — absolutely centered in the nav */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[3px]">
-        {TABS.map(({ label, icon: Icon, href }) => {
-          const isActive = pathname === href || pathname.startsWith(href + "/");
-          return (
-            <button
-              key={label}
-              onClick={() => router.push(href)}
-              className={[
-                "flex flex-col items-center justify-center gap-[3px] px-5 py-[6px] rounded-sm transition-colors cursor-pointer",
-                isActive
-                  ? "bg-[#1f1f1f] border border-[#333333] text-white"
-                  : "border border-transparent text-[#888888] hover:text-[#cccccc]",
-              ].join(" ")}
-            >
-              <Icon size={13} strokeWidth={1.5} />
-              <span className="text-[11px] leading-none tracking-tight">
-                {label}
+  function openCreditShop() {
+    setPopoverOpen(false);
+    setCreditShopOpen(true);
+  }
+
+  async function handleSignOut() {
+    setPopoverOpen(false);
+    await signOut();
+    router.push("/sign-in");
+  }
+
+  return (
+    <>
+      <nav className="relative h-[52px] bg-[#0a0a0a] border-t border-[#2a2a2a] flex items-center px-3 shrink-0">
+        {/* User info — clickable profile area */}
+        <div ref={popoverRef} className="relative flex items-center w-[140px]">
+          {/* Popover */}
+          <AnimatePresence>
+            {popoverOpen && (
+              <motion.div
+                key="popover"
+                initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute bottom-full mb-2 left-0 z-50 w-[180px] bg-[#111111] border border-[#2a2a2a] rounded-sm shadow-xl origin-bottom-left"
+              >
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setPopoverOpen(false);
+                      router.push("/settings");
+                    }}
+                    className="w-full flex items-center gap-[10px] px-3 py-[8px] text-[12px] text-[#cccccc] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Settings size={13} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
+                    Settings
+                  </button>
+
+                  <button
+                    onClick={openCreditShop}
+                    className="w-full flex items-center gap-[10px] px-3 py-[8px] text-[12px] text-[#cccccc] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
+                  >
+                    <CreditCard size={13} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
+                    Purchase Credits
+                  </button>
+
+                  <div className="my-1 border-t border-[#2a2a2a]" />
+
+                  <button
+                    onClick={() => void handleSignOut()}
+                    className="w-full flex items-center gap-[10px] px-3 py-[8px] text-[12px] text-[#ef4444] hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                  >
+                    <LogOut size={13} strokeWidth={1.5} className="shrink-0" />
+                    Log Out
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Profile trigger */}
+          <button
+            onClick={() => setPopoverOpen((prev) => !prev)}
+            className="flex items-center gap-2 w-full rounded-sm px-1 py-1 -mx-1 hover:bg-[#161616] transition-colors cursor-pointer"
+          >
+            {user?.imageUrl ? (
+              <Image
+                src={user.imageUrl}
+                alt="avatar"
+                width={26}
+                height={26}
+                className="rounded-sm object-cover shrink-0"
+              />
+            ) : (
+              <div className="w-[26px] h-[26px] rounded-sm bg-[#1f1f1f] border border-[#2a2a2a] shrink-0" />
+            )}
+            <div className="flex flex-col min-w-0 text-left">
+              <span className="text-white text-[12px] leading-[1.3] font-medium truncate">
+                {user?.fullName ?? user?.firstName ?? ""}
               </span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+              <span className="text-[#888888] text-[10px] leading-[1.3]">
+                {credits !== null ? credits.toLocaleString() : "—"} Credits
+              </span>
+            </div>
+          </button>
+        </div>
+
+        {/* Tabs — absolutely centered */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[3px]">
+          {TABS.map(({ label, icon: Icon, href }) => {
+            const isActive = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <button
+                key={label}
+                onClick={() => router.push(href)}
+                className={[
+                  "flex flex-col items-center justify-center gap-[3px] px-5 py-[6px] rounded-sm transition-colors cursor-pointer",
+                  isActive
+                    ? "bg-[#1f1f1f] border border-[#333333] text-white"
+                    : "border border-transparent text-[#888888] hover:text-[#cccccc]",
+                ].join(" ")}
+              >
+                <Icon size={13} strokeWidth={1.5} />
+                <span className="text-[11px] leading-none tracking-tight">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />
+    </>
   );
 }
