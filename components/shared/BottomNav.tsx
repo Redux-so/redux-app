@@ -13,7 +13,6 @@ import {
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import toast from "react-hot-toast";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 
 const TABS = [
@@ -29,7 +28,9 @@ export default function BottomNav() {
   const [credits, setCredits] = useState<number | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [creditShopOpen, setCreditShopOpen] = useState(false);
+  const [editorHintVisible, setEditorHintVisible] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const editorHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("/api/credits")
@@ -40,6 +41,12 @@ export default function BottomNav() {
         }
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (editorHintTimer.current) clearTimeout(editorHintTimer.current);
+    };
   }, []);
 
   // Close popover on outside click
@@ -54,6 +61,12 @@ export default function BottomNav() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [popoverOpen]);
 
+  function showEditorHint() {
+    if (editorHintTimer.current) clearTimeout(editorHintTimer.current);
+    setEditorHintVisible(true);
+    editorHintTimer.current = setTimeout(() => setEditorHintVisible(false), 4000);
+  }
+
   function openCreditShop() {
     setPopoverOpen(false);
     setCreditShopOpen(true);
@@ -67,6 +80,25 @@ export default function BottomNav() {
 
   return (
     <>
+      {/* Editor hint notification — rendered directly in BottomNav, no external toast library */}
+      <AnimatePresence>
+        {editorHintVisible && (
+          <motion.div
+            key="editor-hint"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed top-[72px] left-5 z-50 flex items-center gap-2.5 rounded-sm border border-[#22c55e] bg-[#111111] px-[14px] py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)] pointer-events-none"
+          >
+            <ImageIcon size={14} strokeWidth={1.5} className="text-[#22c55e] shrink-0" />
+            <span className="text-white text-[13px]" style={{ fontFamily: "-apple-system, system-ui, sans-serif" }}>
+              Select a photo from your library to start editing
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <nav className="grid h-[52px] grid-cols-[140px_1fr_140px] items-center bg-[#0a0a0a] px-3 border-t border-[#2a2a2a] shrink-0">
         {/* User info — clickable profile area */}
         <div ref={popoverRef} className="relative flex items-center justify-self-start w-[140px]">
@@ -153,28 +185,12 @@ export default function BottomNav() {
                 <button
                   key={label}
                   onClick={() => {
-                    if (label === "Editor") {
-                      if (pathname.startsWith("/editor")) return;
-                      // Use a unique id each click so react-hot-toast never deduplicates
-                      toast.custom(
-                        () => (
-                          <div className="flex items-center gap-2.5 rounded-sm border border-[#22c55e] bg-[#111111] px-[14px] py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-                            <ImageIcon size={16} color="#22c55e" strokeWidth={1.5} style={{ flexShrink: 0 }} />
-                            <span style={{ color: "#ffffff", fontSize: "13px", fontFamily: "-apple-system, system-ui, sans-serif" }}>
-                              Select a photo from your library to start editing
-                            </span>
-                          </div>
-                        ),
-                        {
-                          id: `editor-guard-${Date.now()}`,
-                          duration: 4000,
-                          position: "top-left",
-                          style: { marginLeft: 20, marginTop: 72 },
-                        },
-                      );
-                    } else {
+                    if (label !== "Editor") {
                       router.push(href);
+                      return;
                     }
+                    if (pathname.startsWith("/editor")) return;
+                    showEditorHint();
                   }}
                   className={[
                     "flex flex-col items-center justify-center gap-[3px] px-5 py-[6px] rounded-sm transition-colors cursor-pointer min-w-[72px]",
