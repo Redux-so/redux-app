@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, Zap } from "lucide-react";
+import { X, Loader2, Coins } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -123,7 +123,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-[30px] h-[30px] rounded-sm bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
-                            <Zap size={13} strokeWidth={1.5} className="text-white" />
+                            <Coins size={14} strokeWidth={1.5} className="text-white" />
                           </div>
                           <div>
                             <p className="text-white text-[12px] font-medium">{bundle.name}</p>
