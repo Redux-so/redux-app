@@ -62,7 +62,7 @@ export default function LibraryPage() {
     toast.custom(
       () => (
         <div
-          className="flex items-center gap-2.5 rounded-full border border-[#22c55e] bg-[#111111] px-[14px] py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
+          className="flex items-center gap-2.5 rounded-sm border border-[#22c55e] bg-[#111111] px-[14px] py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
         >
           <ImageIcon size={16} color="#22c55e" strokeWidth={1.5} style={{ flexShrink: 0 }} />
           <span style={{ color: "#ffffff", fontSize: "13px", fontFamily: "-apple-system, system-ui, sans-serif" }}>
@@ -70,7 +70,7 @@ export default function LibraryPage() {
           </span>
         </div>
       ),
-      { duration: 4000, position: "top-center" },
+      { duration: 4000, position: "top-left", style: { marginLeft: 20, marginTop: 72 } },
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
