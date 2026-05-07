@@ -5,7 +5,6 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import {
   LayoutGrid,
   SlidersHorizontal,
-  Settings2,
   Settings,
   CreditCard,
   LogOut,
@@ -18,7 +17,6 @@ import CreditShopModal from "@/components/shared/CreditShopModal";
 const TABS = [
   { label: "Library", icon: LayoutGrid, href: "/library" },
   { label: "Editor", icon: SlidersHorizontal, href: "/editor" },
-  { label: "Settings", icon: Settings2, href: "/settings" },
 ] as const;
 
 export default function BottomNav() {
@@ -67,9 +65,9 @@ export default function BottomNav() {
 
   return (
     <>
-      <nav className="relative h-[52px] bg-[#0a0a0a] border-t border-[#2a2a2a] flex items-center px-3 shrink-0">
+      <nav className="grid h-[52px] grid-cols-[140px_1fr_140px] items-center bg-[#0a0a0a] px-3 border-t border-[#2a2a2a] shrink-0">
         {/* User info — clickable profile area */}
-        <div ref={popoverRef} className="relative flex items-center w-[140px]">
+        <div ref={popoverRef} className="relative flex items-center justify-self-start w-[140px]">
           {/* Popover */}
           <AnimatePresence>
             {popoverOpen && (
@@ -142,27 +140,35 @@ export default function BottomNav() {
           </button>
         </div>
 
-        {/* Tabs — absolutely centered */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-[3px]">
-          {TABS.map(({ label, icon: Icon, href }) => {
-            const isActive = pathname === href || pathname.startsWith(href + "/");
-            return (
-              <button
-                key={label}
-                onClick={() => router.push(href)}
-                className={[
-                  "flex flex-col items-center justify-center gap-[3px] px-5 py-[6px] rounded-sm transition-colors cursor-pointer",
-                  isActive
-                    ? "bg-[#1f1f1f] border border-[#333333] text-white"
-                    : "border border-transparent text-[#888888] hover:text-[#cccccc]",
-                ].join(" ")}
-              >
-                <Icon size={13} strokeWidth={1.5} />
-                <span className="text-[11px] leading-none tracking-tight">{label}</span>
-              </button>
-            );
-          })}
+        {/* Tabs — centered in the bar (symmetric left/right columns) */}
+        <div className="flex justify-center items-center">
+          <div className="flex items-center justify-center gap-[3px]">
+            {TABS.map(({ label, icon: Icon, href }) => {
+              const isActive =
+                pathname === href || pathname.startsWith(href + "/");
+              return (
+                <button
+                  key={label}
+                  onClick={() => router.push(href)}
+                  className={[
+                    "flex flex-col items-center justify-center gap-[3px] px-5 py-[6px] rounded-sm transition-colors cursor-pointer min-w-[72px]",
+                    isActive
+                      ? "bg-[#1f1f1f] border border-[#333333] text-white"
+                      : "border border-transparent text-[#888888] hover:text-[#cccccc]",
+                  ].join(" ")}
+                >
+                  <Icon size={13} strokeWidth={1.5} />
+                  <span className="text-[11px] leading-none tracking-tight">
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {/* Mirrors profile column width so tabs stay visually centered in the nav */}
+        <div className="w-[140px] justify-self-end shrink-0" aria-hidden />
       </nav>
 
       <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />
