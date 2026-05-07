@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import {
-  Zap,
+  Coins,
   ImageIcon,
   Database,
   Trash2,
@@ -349,7 +349,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between bg-[#161616] border border-[#2a2a2a] rounded-sm px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="w-[32px] h-[32px] rounded-sm bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
-                      <Zap size={14} strokeWidth={1.5} className="text-white" />
+                      <Coins size={14} strokeWidth={1.5} className="text-white" />
                     </div>
                     <div>
                       <p className="text-[#888888] text-[11px]">Credit Balance</p>
