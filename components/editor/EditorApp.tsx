@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Toaster } from "react-hot-toast";
-
 import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
 import type { ImageRecord } from "@/types/image";
@@ -80,12 +78,6 @@ export default function EditorApp() {
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
-      {/* Toast notifications — dark theme matching the editor */}
-      <Toaster
-        position="bottom-center"
-        toastOptions={{ duration: 3000 }}
-      />
-
       <Toolbar
         filename={image?.filename}
         zoom={zoom}

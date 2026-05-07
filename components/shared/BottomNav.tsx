@@ -8,10 +8,12 @@ import {
   Settings,
   CreditCard,
   LogOut,
+  ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import toast from "react-hot-toast";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 
 const TABS = [
@@ -146,10 +148,34 @@ export default function BottomNav() {
             {TABS.map(({ label, icon: Icon, href }) => {
               const isActive =
                 pathname === href || pathname.startsWith(href + "/");
+
               return (
                 <button
                   key={label}
-                  onClick={() => router.push(href)}
+                  onClick={() => {
+                    if (label === "Editor") {
+                      if (pathname.startsWith("/editor")) return;
+                      // Use a unique id each click so react-hot-toast never deduplicates
+                      toast.custom(
+                        () => (
+                          <div className="flex items-center gap-2.5 rounded-sm border border-[#22c55e] bg-[#111111] px-[14px] py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+                            <ImageIcon size={16} color="#22c55e" strokeWidth={1.5} style={{ flexShrink: 0 }} />
+                            <span style={{ color: "#ffffff", fontSize: "13px", fontFamily: "-apple-system, system-ui, sans-serif" }}>
+                              Select a photo from your library to start editing
+                            </span>
+                          </div>
+                        ),
+                        {
+                          id: `editor-guard-${Date.now()}`,
+                          duration: 4000,
+                          position: "top-left",
+                          style: { marginLeft: 20, marginTop: 72 },
+                        },
+                      );
+                    } else {
+                      router.push(href);
+                    }
+                  }}
                   className={[
                     "flex flex-col items-center justify-center gap-[3px] px-5 py-[6px] rounded-sm transition-colors cursor-pointer min-w-[72px]",
                     isActive

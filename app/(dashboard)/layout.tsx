@@ -11,6 +11,7 @@ export default function DashboardLayout({
       <Toaster
         position="top-center"
         toastOptions={{
+          duration: 3000,
           style: {
             background: "#111111",
             color: "#fff",

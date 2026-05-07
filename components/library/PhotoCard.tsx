@@ -33,14 +33,18 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
     }
   }
 
+  function navigateToEditor() {
+    router.push(`/editor?imageId=${image.id}`);
+  }
+
   function handleEdit(e: React.MouseEvent) {
     e.stopPropagation();
-    router.push(`/editor?imageId=${image.id}`);
+    navigateToEditor();
   }
 
   return (
     <div
-      onClick={() => router.push(`/editor?imageId=${image.id}`)}
+      onClick={navigateToEditor}
       className="group relative w-full aspect-square bg-[#161616] rounded-sm overflow-hidden cursor-pointer"
     >
       <Image
