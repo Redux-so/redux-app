@@ -62,16 +62,7 @@ export default function LibraryPage() {
     toast.custom(
       () => (
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            background: "#111111",
-            border: "1px solid #22c55e",
-            borderRadius: "2px",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
-            padding: "10px 14px",
-          }}
+          className="flex items-center gap-2.5 rounded-full border border-[#22c55e] bg-[#111111] px-[14px] py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)]"
         >
           <ImageIcon size={16} color="#22c55e" strokeWidth={1.5} style={{ flexShrink: 0 }} />
           <span style={{ color: "#ffffff", fontSize: "13px", fontFamily: "-apple-system, system-ui, sans-serif" }}>
