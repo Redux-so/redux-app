@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { ImageIcon } from "lucide-react";
@@ -46,6 +46,7 @@ type LibrarySearchOverlay =
 export default function LibraryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const toastFiredRef = useRef(false);
   const [images, setImages] = useState<ImageRecord[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [searchOverlay, setSearchOverlay] = useState<LibrarySearchOverlay>({
@@ -55,6 +56,8 @@ export default function LibraryPage() {
   // Show toast when redirected from the editor without an image selected
   useEffect(() => {
     if (searchParams.get("redirected") !== "true") return;
+    if (toastFiredRef.current) return;
+    toastFiredRef.current = true;
     router.replace("/library");
     toast.custom(
       () => (
