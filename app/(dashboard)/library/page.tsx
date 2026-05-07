@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
+import { ImageIcon } from "lucide-react";
 import Header from "@/components/shared/Header";
 import BottomNav from "@/components/shared/BottomNav";
 import PhotoGrid from "@/components/library/PhotoGrid";
@@ -41,11 +44,42 @@ type LibrarySearchOverlay =
   | { kind: "results"; images: ImageRecord[] };
 
 export default function LibraryPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [images, setImages] = useState<ImageRecord[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [searchOverlay, setSearchOverlay] = useState<LibrarySearchOverlay>({
     kind: "none",
   });
+
+  // Show toast when redirected from the editor without an image selected
+  useEffect(() => {
+    if (searchParams.get("redirected") !== "true") return;
+    router.replace("/library");
+    toast.custom(
+      () => (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: "#111111",
+            border: "1px solid #22c55e",
+            borderRadius: "2px",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
+            padding: "10px 14px",
+          }}
+        >
+          <ImageIcon size={16} color="#22c55e" strokeWidth={1.5} style={{ flexShrink: 0 }} />
+          <span style={{ color: "#ffffff", fontSize: "13px", fontFamily: "-apple-system, system-ui, sans-serif" }}>
+            Select a photo from your library to start editing
+          </span>
+        </div>
+      ),
+      { duration: 4000, position: "top-center" },
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchImages = useCallback(async () => {
     setLibraryLoading(true);

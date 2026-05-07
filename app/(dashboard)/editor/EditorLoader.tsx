@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 const EditorApp = dynamic(() => import("@/components/editor/EditorApp"), {
   ssr: false,
@@ -12,5 +14,17 @@ const EditorApp = dynamic(() => import("@/components/editor/EditorApp"), {
 });
 
 export default function EditorLoader() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const imageId = searchParams.get("imageId");
+
+  useEffect(() => {
+    if (!imageId) {
+      router.replace("/library?redirected=true");
+    }
+  }, [imageId, router]);
+
+  if (!imageId) return null;
+
   return <EditorApp />;
 }
