@@ -2,51 +2,106 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(request: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+function logCheckoutError(label: string, err: unknown) {
+  console.error(`[credits/checkout] ${label}:`, err);
+  if (err instanceof Error) {
+    console.error(`[credits/checkout] ${label} message:`, err.message);
+    console.error(`[credits/checkout] ${label} stack:`, err.stack);
   }
+  if (typeof err === "object" && err !== null) {
+    const e = err as Record<string, unknown>;
+    if ("type" in e) console.error(`[credits/checkout] ${label} type:`, e.type);
+    if ("code" in e) console.error(`[credits/checkout] ${label} code:`, e.code);
+    if ("param" in e) console.error(`[credits/checkout] ${label} param:`, e.param);
+    if ("raw" in e) console.error(`[credits/checkout] ${label} raw:`, e.raw);
+  }
+}
 
-  if (!process.env.STRIPE_SECRET_KEY) {
+export async function POST(request: Request) {
+  try {
+    const { userId: clerkId } = await auth();
+    if (!clerkId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      console.error(
+        "[credits/checkout] STRIPE_SECRET_KEY is missing — set it in the environment to enable checkout.",
+      );
+      return NextResponse.json(
+        { error: "Stripe is not configured on this server." },
+        { status: 503 },
+      );
+    }
+
+    let bundleId: string | undefined;
+    try {
+      const body = (await request.json()) as { bundleId?: string };
+      bundleId = body.bundleId;
+    } catch (parseErr) {
+      logCheckoutError("Invalid JSON body", parseErr);
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    if (!bundleId) {
+      return NextResponse.json({ error: "bundleId is required" }, { status: 400 });
+    }
+
+    const bundle = await prisma.creditBundle.findFirst({
+      where: { id: bundleId, isActive: true },
+    });
+    if (!bundle) {
+      return NextResponse.json({ error: "Bundle not found" }, { status: 404 });
+    }
+
+    if (!bundle.stripePriceId) {
+      console.error(
+        "[credits/checkout] Bundle has no stripePriceId:",
+        bundle.id,
+      );
+      return NextResponse.json(
+        { error: "Bundle is missing Stripe price configuration." },
+        { status: 500 },
+      );
+    }
+
+    const user = await prisma.user.findUnique({ where: { clerkId } });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+    if (!appUrl) {
+      console.error(
+        "[credits/checkout] NEXT_PUBLIC_APP_URL is missing — cannot build checkout redirect URLs.",
+      );
+      return NextResponse.json(
+        { error: "App URL is not configured on this server." },
+        { status: 503 },
+      );
+    }
+
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: "2026-02-25.clover",
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [{ price: bundle.stripePriceId, quantity: 1 }],
+      success_url: `${appUrl}/library`,
+      cancel_url: `${appUrl}/settings`,
+      metadata: { userId: user.id, bundleId: bundle.id },
+    });
+
+    return NextResponse.json({ url: session.url });
+  } catch (err) {
+    logCheckoutError("Checkout session creation failed", err);
     return NextResponse.json(
-      { error: "Stripe is not configured on this server." },
-      { status: 503 },
+      { error: "Checkout failed. Check server logs for details." },
+      { status: 500 },
     );
   }
-
-  const { bundleId } = (await request.json()) as { bundleId?: string };
-  if (!bundleId) {
-    return NextResponse.json({ error: "bundleId is required" }, { status: 400 });
-  }
-
-  const bundle = await prisma.creditBundle.findFirst({
-    where: { id: bundleId, isActive: true },
-  });
-  if (!bundle) {
-    return NextResponse.json({ error: "Bundle not found" }, { status: 404 });
-  }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
-  const Stripe = (await import("stripe")).default;
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2024-12-18.acacia",
-  });
-
-  const origin = request.headers.get("origin") ?? "http://localhost:3000";
-
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    payment_method_types: ["card"],
-    line_items: [{ price: bundle.stripePriceId, quantity: 1 }],
-    success_url: `${origin}/library?purchase=success`,
-    cancel_url: `${origin}/library?purchase=cancelled`,
-    metadata: { userId: user.id, bundleId: bundle.id },
-  });
-
-  return NextResponse.json({ url: session.url });
 }
