@@ -244,9 +244,6 @@ export default function SettingsPage() {
     }
   }
 
-  const uploadsRemaining = Math.max(0, 5 - (stats?.uploadsToday ?? 0));
-  const uploadPct = Math.min(100, ((stats?.uploadsToday ?? 0) / 5) * 100);
-
   return (
     <>
       <Toaster
@@ -470,26 +467,6 @@ export default function SettingsPage() {
                     {(stats?.imageCount ?? 0).toLocaleString()} photo{stats?.imageCount !== 1 ? "s" : ""}
                   </span>
                 )}
-              </div>
-
-              {/* Free-tier daily upload limit */}
-              <div className="py-3 border-b border-[#2a2a2a]">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[12px] text-[#888888]">Daily uploads</span>
-                  {loadingStats ? (
-                    <Skeleton className="w-[60px] h-[11px]" />
-                  ) : (
-                    <span className="text-[11px] text-[#888888]">
-                      {uploadsRemaining} of 5 remaining
-                    </span>
-                  )}
-                </div>
-                <div className="h-[3px] w-full bg-[#1a1a1a] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#3b82f6] rounded-full transition-all"
-                    style={{ width: `${uploadPct}%` }}
-                  />
-                </div>
               </div>
 
               <div className={SETTING_ROW}>
