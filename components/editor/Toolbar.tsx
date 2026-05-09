@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import {
   Minus,
@@ -89,7 +91,12 @@ export default function Toolbar({
     <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-[#2a2a2a] bg-[#0a0a0a] pl-3 pr-3">
       {/* Left — logo aligned with library Header (same pl-3 + AppChromeLogo) */}
       <div className="flex h-[52px] w-[160px] shrink-0 items-center">
-        <AppChromeLogo />
+        <Link
+          href="/library"
+          className="inline-flex items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
+        >
+          <AppChromeLogo />
+        </Link>
       </div>
 
       {/* Center — canvas controls */}
