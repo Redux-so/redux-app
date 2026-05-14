@@ -300,6 +300,9 @@ export default function ChatPanel({
     }
   }
 
+  const canSendChat =
+    input.trim().length > 0 && !sending && !chatBlocked;
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col w-[320px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
@@ -422,7 +425,7 @@ export default function ChatPanel({
 
       {/* Input area */}
       <div className="px-4 pb-4 pt-2 shrink-0">
-        <div className="flex items-end gap-[8px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-[8px]">
+        <div className="flex items-end gap-[8px] rounded-lg border border-white/[0.06] bg-[#111111] px-3 py-[8px]">
           {/* Paperclip */}
           <button
             type="button"
@@ -461,9 +464,14 @@ export default function ChatPanel({
           {/* Send */}
           <button
             onClick={() => { void handleSend(); }}
-            disabled={!input.trim() || sending || chatBlocked}
+            disabled={!canSendChat}
             title="Send"
-            className="shrink-0 flex items-center justify-center w-[24px] h-[24px] rounded-full bg-white text-black hover:bg-[#e5e5e5] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer self-end"
+            className={[
+              "shrink-0 flex items-center justify-center w-[24px] h-[24px] rounded-full self-end cursor-pointer transition-shadow",
+              canSendChat
+                ? "bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white shadow-glow-sm hover:shadow-glow"
+                : "bg-white/[0.08] text-white/25 cursor-not-allowed shadow-none",
+            ].join(" ")}
           >
             <ArrowUp size={13} strokeWidth={2.5} />
           </button>
