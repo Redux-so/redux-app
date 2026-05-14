@@ -11,7 +11,6 @@ import {
   Redo2,
   History,
   Share2,
-  RotateCcw,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -88,9 +87,9 @@ export default function Toolbar({
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
   return (
-    <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl pl-3 pr-3">
+    <div className="grid h-[52px] shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl pl-3 pr-3">
       {/* Left — logo aligned with library Header (same pl-3 + AppChromeLogo) */}
-      <div className="flex h-[52px] w-[160px] shrink-0 items-center">
+      <div className="flex h-[52px] min-w-0 items-center justify-self-start">
         <Link
           href="/library"
           className="inline-flex items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
@@ -99,8 +98,8 @@ export default function Toolbar({
         </Link>
       </div>
 
-      {/* Center — canvas controls */}
-      <div className="flex shrink-0 items-center gap-[2px]">
+      {/* Center — canvas controls (true viewport center via symmetric 1fr columns) */}
+      <div className="flex shrink-0 items-center justify-center gap-[2px]">
         {/* Zoom */}
         <ToolbarBtn onClick={zoomOut} title="Zoom out">
           <Minus size={13} strokeWidth={2} />
@@ -140,8 +139,8 @@ export default function Toolbar({
         </ToolbarBtn>
       </div>
 
-      {/* Right — file info + actions (flex-1 so filename can use remaining width) */}
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-3 pl-3">
+      {/* Right — file info + actions */}
+      <div className="flex min-w-0 w-full max-w-full items-center justify-end gap-3 pl-3">
         {filename && (
           <span
             title={filename}
