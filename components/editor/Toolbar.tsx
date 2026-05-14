@@ -52,7 +52,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={title}
       className={[
-        "flex items-center justify-center w-[28px] h-[28px] rounded-lg transition-colors cursor-pointer",
+        "flex shrink-0 items-center justify-center w-[28px] h-[28px] rounded-lg transition-colors cursor-pointer",
         "disabled:opacity-30 disabled:cursor-not-allowed",
         active
           ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
@@ -100,7 +100,7 @@ export default function Toolbar({
       </div>
 
       {/* Center — canvas controls */}
-      <div className="flex items-center gap-[2px]">
+      <div className="flex shrink-0 items-center gap-[2px]">
         {/* Zoom */}
         <ToolbarBtn onClick={zoomOut} title="Zoom out">
           <Minus size={13} strokeWidth={2} />
@@ -109,7 +109,7 @@ export default function Toolbar({
         <button
           onClick={resetZoom}
           title="Reset zoom"
-          className="flex items-center justify-center h-[28px] px-[10px] rounded-lg text-[12px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
+          className="flex shrink-0 items-center justify-center h-[28px] px-[10px] rounded-lg text-[12px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
         >
           {zoomPercent}
         </button>
@@ -140,15 +140,18 @@ export default function Toolbar({
         </ToolbarBtn>
       </div>
 
-      {/* Right — file info + actions */}
-      <div className="flex items-center gap-3 w-[220px] justify-end">
+      {/* Right — file info + actions (flex-1 so filename can use remaining width) */}
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-3 pl-3">
         {filename && (
-          <span className="text-[12px] text-[#888888] truncate max-w-[90px]">
+          <span
+            title={filename}
+            className="min-w-0 max-w-[22ch] shrink truncate text-left text-[12px] text-[#888888]"
+          >
             {filename}
           </span>
         )}
 
-        <div className="flex items-center gap-[5px]">
+        <div className="flex shrink-0 items-center gap-[5px]">
           <span
             className={[
               "w-[6px] h-[6px] rounded-full shrink-0 transition-colors",
@@ -168,7 +171,7 @@ export default function Toolbar({
         <button
           onClick={onExport}
           title="Export / share"
-          className="flex items-center gap-1.5 h-[28px] px-3 rounded-full text-[12px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
+          className="flex shrink-0 items-center gap-1.5 h-[28px] px-3 rounded-full text-[12px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
         >
           <Share2 size={12} strokeWidth={2} />
           Export
