@@ -50,9 +50,9 @@ export default function AdjustmentSlider({
         className="relative flex w-full touch-none select-none items-center"
       >
         <SliderPrimitive.Track className="relative h-[2px] w-full grow rounded-full bg-white/[0.08]">
-          <SliderPrimitive.Range className="absolute h-full rounded-full bg-[#682FBF]" />
+          <SliderPrimitive.Range className="absolute h-full rounded-full bg-neutral-400" />
         </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb className="block h-[12px] w-[12px] rounded-full bg-[#8B44E8] shadow-glow-sm outline-none cursor-pointer transition-transform hover:scale-110" />
+        <SliderPrimitive.Thumb className="block h-[12px] w-[12px] rounded-full bg-[#e5e5e5] shadow-[0_0_0_1px_rgba(255,255,255,0.15)] outline-none cursor-pointer transition-transform hover:scale-110" />
       </SliderPrimitive.Root>
     </div>
   );
