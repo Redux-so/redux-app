@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --accent: #682FBF;
+  --accent-end: #8B44E8;
+  --accent-glow: rgba(104, 47, 191, 0.4);
+  --accent-glow-sm: rgba(104, 47, 191, 0.25);
 }
 
 @theme inline {
@@ -10,13 +14,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --shadow-glow: 0 0 16px rgba(104, 47, 191, 0.5), 0 0 40px rgba(104, 47, 191, 0.2);
+  --shadow-glow-sm: 0 0 8px rgba(104, 47, 191, 0.4);
+  --shadow-glow-hover: 0 0 24px rgba(104, 47, 191, 0.65), 0 0 50px rgba(104, 47, 191, 0.25);
 }
 
 body {

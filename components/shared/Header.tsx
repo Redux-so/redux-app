@@ -25,7 +25,7 @@ export default function Header({
   onSearchClear,
 }: HeaderProps) {
   return (
-    <header className="h-[52px] bg-[#0a0a0a] border-b border-[#2a2a2a] flex items-center gap-3 shrink-0 pl-3 pr-3">
+    <header className="h-[52px] bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] flex items-center gap-3 shrink-0 pl-3 pr-3">
       <div className="flex h-[52px] shrink-0 items-center">
         <Link
           href="/library"
@@ -35,7 +35,7 @@ export default function Header({
         </Link>
       </div>
 
-      <div className="w-px h-[18px] bg-[#2a2a2a] shrink-0" />
+      <div className="w-px h-[18px] bg-white/[0.08] shrink-0" />
 
       <SearchBar
         isSearching={isSearching}

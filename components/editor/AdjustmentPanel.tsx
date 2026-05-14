@@ -80,9 +80,9 @@ function SectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="flex items-center justify-between w-full px-4 py-[9px] hover:bg-[#181818] transition-colors"
+      className="flex items-center justify-between w-full px-4 py-[9px] hover:bg-white/[0.04] transition-colors"
     >
-      <span className="text-[11px] font-medium uppercase tracking-widest text-[#555555] select-none">
+      <span className="text-[11px] font-medium uppercase tracking-widest text-[#666666] select-none">
         {label}
       </span>
       <ChevronDown
@@ -110,12 +110,12 @@ function AIButton({
     <button
       onClick={onClick}
       disabled={loading || disabled}
-      className="flex items-center justify-center gap-[7px] w-full h-[34px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-sm text-[13px] text-white hover:bg-[#222222] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+      className="flex items-center justify-center gap-[7px] w-full h-[34px] bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-lg text-[13px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 hover:shadow-glow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
     >
       {loading ? (
         <Loader2 size={13} strokeWidth={2} className="animate-spin shrink-0" />
       ) : (
-        <Star size={13} strokeWidth={1.5} />
+        <Star size={13} strokeWidth={1.5} className="text-[#9B6EE8]" />
       )}
       {loading ? "Working…" : label}
     </button>
@@ -142,10 +142,10 @@ function ToolBtn({
       className={[
         "flex items-center justify-center h-[34px] border rounded-sm text-[13px] capitalize transition-colors",
         disabled
-          ? "opacity-40 cursor-not-allowed bg-[#1a1a1a] text-[#888888] border-[#2a2a2a]"
+          ? "opacity-40 cursor-not-allowed bg-white/[0.03] text-white/20 border-white/[0.05] rounded-lg"
           : active
-            ? "bg-white text-black border-white cursor-pointer"
-            : "bg-[#1a1a1a] text-white border-[#2a2a2a] hover:bg-[#222222] cursor-pointer",
+            ? "bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white border-transparent shadow-glow-sm rounded-lg cursor-pointer"
+            : "bg-white/[0.05] text-white/80 border-white/[0.08] hover:bg-white/[0.09] hover:border-white/[0.15] rounded-lg transition-all cursor-pointer",
       ].join(" ")}
     >
       {label}
@@ -277,7 +277,7 @@ export default function AdjustmentPanel({
   // ── Shared AI error handler ───────────────────────────────────────────────
   /** Returns true if the error was handled (caller should return early). */
   function handleAiError(status: number): boolean {
-    const darkStyle = { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" };
+    const darkStyle = { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" };
     if (status === 402) {
       toast("Insufficient credits — purchase more to continue.", { icon: "💳", style: darkStyle });
       return true;
@@ -308,12 +308,12 @@ export default function AdjustmentPanel({
         );
       }
       toast.success("Auto Enhance applied", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } catch (err) {
       console.error("[AdjustmentPanel] auto_enhance failed:", err);
       toast.error("Auto Enhance failed", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } finally {
       setLoadingEnhance(false);
@@ -339,12 +339,12 @@ export default function AdjustmentPanel({
         );
       }
       toast.success("Auto Tone Balance applied", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } catch (err) {
       console.error("[AdjustmentPanel] auto_tone_balance failed:", err);
       toast.error("Auto Tone Balance failed", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } finally {
       setLoadingToneBalance(false);
@@ -370,12 +370,12 @@ export default function AdjustmentPanel({
         );
       }
       toast.success("Smart Color Balance applied", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } catch (err) {
       console.error("[AdjustmentPanel] smart_color_balance failed:", err);
       toast.error("Smart Color Balance failed", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } finally {
       setLoadingSmartColor(false);
@@ -389,9 +389,9 @@ export default function AdjustmentPanel({
     if (!file || !imageUrl) return;
 
     const darkStyle = {
-      background: "#1a1a1a",
+      background: "rgba(15, 10, 25, 0.9)",
       color: "#e5e5e5",
-      border: "1px solid #2a2a2a",
+      border: "1px solid rgba(255,255,255,0.1)",
     };
 
     try {
@@ -430,13 +430,13 @@ export default function AdjustmentPanel({
         );
       }
       toast.success("Style Match applied", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
       setStyleMatchPreview(null);
     } catch (err) {
       console.error("[AdjustmentPanel] style_match failed:", err);
       toast.error("Style Match failed", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
       setStyleMatchPreview(null);
     } finally {
@@ -461,12 +461,12 @@ export default function AdjustmentPanel({
         onReloadCanvas?.(data.resultUrl);
       }
       toast.success("Background removed successfully", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } catch (err) {
       console.error("[AdjustmentPanel] remove_background failed:", err);
       toast.error("Background removal failed", {
-        style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
       });
     } finally {
       setLoadingRemoveBg(false);
@@ -477,9 +477,9 @@ export default function AdjustmentPanel({
   async function confirmHeal() {
     if (!canvasImageUrl || !imageId || !exportHealMask) return;
     const darkStyle = {
-      background: "#1a1a1a",
+      background: "rgba(15, 10, 25, 0.9)",
       color: "#e5e5e5",
-      border: "1px solid #2a2a2a",
+      border: "1px solid rgba(255,255,255,0.1)",
     };
     setLoadingHeal(true);
     try {
@@ -532,9 +532,9 @@ export default function AdjustmentPanel({
   }
 
   const darkToastStyle = {
-    background: "#1a1a1a",
+    background: "rgba(15, 10, 25, 0.9)",
     color: "#e5e5e5",
-    border: "1px solid #2a2a2a",
+    border: "1px solid rgba(255,255,255,0.1)",
   };
 
   useEffect(() => {
@@ -640,9 +640,9 @@ export default function AdjustmentPanel({
   }
 
   return (
-    <div className="flex flex-col w-[320px] shrink-0 h-full bg-[#111111] border-r border-[#2a2a2a]">
+    <div className="flex flex-col w-[320px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-r border-white/[0.07]">
       {/* Panel header */}
-      <div className="flex items-center justify-between px-4 h-[44px] shrink-0 border-b border-[#2a2a2a]">
+      <div className="flex items-center justify-between px-4 h-[44px] shrink-0 border-b border-white/[0.07]">
         <span className="text-[12px] font-medium uppercase tracking-widest text-[#888888] select-none">
           Adjustments
         </span>
@@ -652,7 +652,7 @@ export default function AdjustmentPanel({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-track]:bg-[#111111] [&::-webkit-scrollbar-thumb]:bg-[#2a2a2a] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-[#3a3a3a]">
+      <div className="flex-1 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/[0.1] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-white/[0.18]">
 
         {/* ── LIGHT ──────────────────────────────────────────────────────── */}
         <SectionHeader
@@ -802,7 +802,7 @@ export default function AdjustmentPanel({
                     type="button"
                     onClick={cancelHeal}
                     disabled={loadingHeal}
-                    className="flex-1 h-[34px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-sm text-[13px] text-white hover:bg-[#222222] transition-colors cursor-pointer disabled:opacity-40"
+                    className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
                   >
                     Cancel
                   </button>
@@ -810,7 +810,7 @@ export default function AdjustmentPanel({
                     type="button"
                     onClick={() => void confirmHeal()}
                     disabled={loadingHeal}
-                    className="flex-1 h-[34px] bg-white rounded-sm text-[13px] text-black font-medium hover:bg-[#e5e5e5] transition-colors cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                    className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
                   >
                     {loadingHeal ? (
                       <>
@@ -894,7 +894,7 @@ export default function AdjustmentPanel({
 
             {/* Inline resize form */}
             {showResize && (
-              <div className="bg-[#161616] border border-[#2a2a2a] rounded-sm p-3 flex flex-col gap-3">
+              <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col gap-1 flex-1">
                     <label className="text-[10px] text-[#555555] uppercase tracking-wider">
@@ -904,7 +904,7 @@ export default function AdjustmentPanel({
                       type="number"
                       value={resizeW}
                       onChange={(e) => handleResizeW(e.target.value)}
-                      className="w-full h-[30px] bg-[#111111] border border-[#2a2a2a] rounded-sm px-2 text-[12px] text-white outline-none focus:border-[#444444]"
+                      className="w-full h-[30px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
                     />
                   </div>
                   <button
@@ -926,13 +926,13 @@ export default function AdjustmentPanel({
                       type="number"
                       value={resizeH}
                       onChange={(e) => handleResizeH(e.target.value)}
-                      className="w-full h-[30px] bg-[#111111] border border-[#2a2a2a] rounded-sm px-2 text-[12px] text-white outline-none focus:border-[#444444]"
+                      className="w-full h-[30px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
                     />
                   </div>
                 </div>
                 <button
                   onClick={applyResize}
-                  className="w-full h-[30px] bg-white text-black text-[12px] font-medium rounded-sm hover:bg-[#e5e5e5] transition-colors cursor-pointer"
+                  className="w-full h-[30px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[12px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer"
                 >
                   Apply
                 </button>
@@ -962,13 +962,13 @@ export default function AdjustmentPanel({
 
       {genFillModalOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="genfill-modal-title"
         >
-          <div className="relative w-full max-w-[400px] bg-[#161616] border border-[#2a2a2a] rounded-sm shadow-xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between px-4 h-11 border-b border-[#2a2a2a] shrink-0">
+          <div className="relative w-full max-w-[400px] bg-white/[0.05] backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-4 h-11 border-b border-white/[0.07] shrink-0">
               <h2 id="genfill-modal-title" className="text-[13px] font-medium text-white">
                 Generative Fill
               </h2>
@@ -992,7 +992,7 @@ export default function AdjustmentPanel({
                   value={genFillDirection}
                   onChange={(e) => setGenFillDirection(e.target.value as ExpandDirection)}
                   disabled={loadingGenFill}
-                  className="h-[34px] bg-[#111111] border border-[#2a2a2a] rounded-sm px-2 text-[13px] text-white outline-none focus:border-[#444444] cursor-pointer disabled:opacity-40"
+                  className="h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[13px] text-white outline-none focus:border-[#682FBF]/60 cursor-pointer disabled:opacity-40"
                 >
                   <option value="top">Top</option>
                   <option value="bottom">Bottom</option>
@@ -1012,7 +1012,7 @@ export default function AdjustmentPanel({
                   value={genFillPixels}
                   onChange={(e) => setGenFillPixels(e.target.value)}
                   disabled={loadingGenFill}
-                  className="h-[34px] bg-[#111111] border border-[#2a2a2a] rounded-sm px-2 text-[13px] text-white outline-none focus:border-[#444444] disabled:opacity-40"
+                  className="h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[13px] text-white outline-none focus:border-[#682FBF]/60 disabled:opacity-40"
                 />
               </div>
 
@@ -1026,7 +1026,7 @@ export default function AdjustmentPanel({
                   disabled={loadingGenFill}
                   rows={3}
                   placeholder="Describe what should appear in the new area…"
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-sm px-2 py-2 text-[13px] text-white outline-none focus:border-[#444444] resize-none disabled:opacity-40 placeholder:text-[#555555]"
+                  className="w-full bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 py-2 text-[13px] text-white outline-none focus:border-[#682FBF]/60 resize-none disabled:opacity-40 placeholder:text-[#555555]"
                 />
               </div>
 
@@ -1035,7 +1035,7 @@ export default function AdjustmentPanel({
                   Preview (transparent = new area)
                 </span>
                 <div
-                  className="rounded-sm border border-[#2a2a2a] overflow-hidden flex items-center justify-center min-h-[120px] max-h-[200px] bg-[#1a1a1a] [background-image:linear-gradient(45deg,#222_25%,transparent_25%),linear-gradient(-45deg,#222_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#222_75%),linear-gradient(-45deg,transparent_75%,#222_75%)] [background-size:10px_10px] [background-position:0_0,0_5px,5px_-5px,-5px_0]"
+                  className="rounded-lg border border-white/[0.08] overflow-hidden flex items-center justify-center min-h-[120px] max-h-[200px] bg-white/[0.03] [background-image:linear-gradient(45deg,rgba(255,255,255,0.03)_25%,transparent_25%),linear-gradient(-45deg,rgba(255,255,255,0.03)_25%,transparent_25%),linear-gradient(45deg,transparent_75%,rgba(255,255,255,0.03)_75%),linear-gradient(-45deg,transparent_75%,rgba(255,255,255,0.03)_75%)] [background-size:10px_10px] [background-position:0_0,0_5px,5px_-5px,-5px_0]"
                 >
                   {genFillPreviewUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -1058,7 +1058,7 @@ export default function AdjustmentPanel({
                 type="button"
                 disabled={loadingGenFill}
                 onClick={() => setGenFillModalOpen(false)}
-                className="flex-1 h-[34px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-sm text-[13px] text-white hover:bg-[#222222] transition-colors cursor-pointer disabled:opacity-40"
+                className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -1066,7 +1066,7 @@ export default function AdjustmentPanel({
                 type="button"
                 disabled={loadingGenFill || !canvasImageUrl}
                 onClick={() => void applyGenerativeFill()}
-                className="flex-1 h-[34px] bg-white rounded-sm text-[13px] text-black font-medium hover:bg-[#e5e5e5] transition-colors cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
               >
                 {loadingGenFill ? (
                   <>

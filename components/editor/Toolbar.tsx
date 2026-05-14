@@ -52,11 +52,11 @@ function ToolbarBtn({
       disabled={disabled}
       title={title}
       className={[
-        "flex items-center justify-center w-[28px] h-[28px] rounded-sm transition-colors cursor-pointer",
+        "flex items-center justify-center w-[28px] h-[28px] rounded-lg transition-colors cursor-pointer",
         "disabled:opacity-30 disabled:cursor-not-allowed",
         active
-          ? "bg-[#2a2a2a] text-white"
-          : "text-[#888888] hover:bg-[#1a1a1a] hover:text-white",
+          ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
+          : "text-white/40 hover:bg-white/[0.07] hover:text-white",
       ].join(" ")}
     >
       {children}
@@ -65,7 +65,7 @@ function ToolbarBtn({
 }
 
 function Divider() {
-  return <div className="w-px h-[16px] bg-[#2a2a2a] mx-1" />;
+  return <div className="w-px h-[16px] bg-white/[0.08] mx-1" />;
 }
 
 export default function Toolbar({
@@ -88,7 +88,7 @@ export default function Toolbar({
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
   return (
-    <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-[#2a2a2a] bg-[#0a0a0a] pl-3 pr-3">
+    <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl pl-3 pr-3">
       {/* Left — logo aligned with library Header (same pl-3 + AppChromeLogo) */}
       <div className="flex h-[52px] w-[160px] shrink-0 items-center">
         <Link
@@ -109,7 +109,7 @@ export default function Toolbar({
         <button
           onClick={resetZoom}
           title="Reset zoom"
-          className="flex items-center justify-center h-[28px] px-[10px] rounded-sm text-[12px] text-white tabular-nums hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+          className="flex items-center justify-center h-[28px] px-[10px] rounded-lg text-[12px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
         >
           {zoomPercent}
         </button>
@@ -153,7 +153,6 @@ export default function Toolbar({
             className={[
               "w-[6px] h-[6px] rounded-full shrink-0 transition-colors",
               isDirty ? "bg-[#f59e0b]" : "bg-[#22c55e]",
-              // Pulse for 2 s after a successful auto-save
               justSaved ? "animate-pulse" : "",
             ].join(" ")}
           />
@@ -166,9 +165,14 @@ export default function Toolbar({
           <History size={14} strokeWidth={1.75} />
         </ToolbarBtn>
 
-        <ToolbarBtn onClick={onExport} title="Export / share">
-          <Share2 size={14} strokeWidth={1.75} />
-        </ToolbarBtn>
+        <button
+          onClick={onExport}
+          title="Export / share"
+          className="flex items-center gap-1.5 h-[28px] px-3 rounded-full text-[12px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
+        >
+          <Share2 size={12} strokeWidth={2} />
+          Export
+        </button>
       </div>
     </div>
   );

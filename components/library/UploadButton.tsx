@@ -77,7 +77,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-[6px] h-[30px] px-3 bg-white text-black text-[12px] font-medium rounded-sm hover:bg-[#e8e8e8] transition-colors shrink-0 cursor-pointer"
+        className="flex items-center gap-[6px] h-[30px] px-3 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[12px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 shrink-0 cursor-pointer"
       >
         <Upload size={12} strokeWidth={2} />
         Upload Photos
@@ -85,12 +85,12 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
           onClick={(e) => {
             if (e.target === e.currentTarget) handleClose();
           }}
         >
-          <div className="bg-[#111111] border border-[#2a2a2a] rounded-sm p-5 w-[460px]">
+          <div className="bg-white/[0.05] backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl p-5 w-[460px]">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white text-[13px] font-medium">
@@ -111,9 +111,9 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
                 onClick={() => inputRef.current?.click()}
-                className="border border-dashed border-[#2a2a2a] rounded-sm h-[140px] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#3a3a3a] transition-colors"
+                className="border border-dashed border-white/[0.12] rounded-xl h-[140px] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#682FBF]/50 hover:bg-[#682FBF]/[0.04] transition-all duration-200"
               >
-                <ImageIcon size={22} strokeWidth={1} className="text-[#3a3a3a]" />
+                <ImageIcon size={22} strokeWidth={1} className="text-[#682FBF]/50" />
                 <p className="text-[#888888] text-[12px]">
                   Drop a photo here or click to browse
                 </p>
@@ -125,8 +125,8 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
 
             {/* File preview — shown after selection */}
             {file && (
-              <div className="border border-[#2a2a2a] rounded-sm p-3 flex items-center gap-3">
-                <div className="w-8 h-8 bg-[#1a1a1a] border border-[#2a2a2a] rounded-sm flex items-center justify-center shrink-0">
+              <div className="border border-white/[0.08] rounded-lg bg-white/[0.03] p-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center shrink-0">
                   <ImageIcon size={14} strokeWidth={1.5} className="text-[#555555]" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -157,9 +157,9 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                     <span className="text-[#888888] text-[11px]">{progress}%</span>
                   )}
                 </div>
-                <div className="h-[2px] bg-[#1a1a1a] rounded-full overflow-hidden">
+                <div className="h-[2px] bg-white/[0.08] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-white rounded-full transition-all duration-150"
+                    className="h-full bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-full transition-all duration-150"
                     style={{ width: isProcessing ? "100%" : `${progress}%` }}
                   />
                 </div>
@@ -179,7 +179,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
               {file && !isUploading && !isProcessing && (
                 <button
                   onClick={handleUpload}
-                  className="flex items-center gap-[6px] h-[30px] px-4 bg-white text-black text-[12px] font-medium rounded-sm hover:bg-[#e8e8e8] transition-colors cursor-pointer"
+                  className="flex items-center gap-[6px] h-[30px] px-4 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[12px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
                 >
                   <Upload size={12} strokeWidth={2} />
                   Upload

@@ -49,10 +49,10 @@ export default function AdjustmentSlider({
         onValueCommit={([v]) => onCommit(v)}
         className="relative flex w-full touch-none select-none items-center"
       >
-        <SliderPrimitive.Track className="relative h-[2px] w-full grow rounded-full bg-[#2a2a2a]">
-          <SliderPrimitive.Range className="absolute h-full rounded-full bg-[#505050]" />
+        <SliderPrimitive.Track className="relative h-[2px] w-full grow rounded-full bg-white/[0.08]">
+          <SliderPrimitive.Range className="absolute h-full rounded-full bg-[#682FBF]" />
         </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb className="block h-[12px] w-[12px] rounded-full bg-white shadow-sm outline-none cursor-pointer transition-transform hover:scale-110" />
+        <SliderPrimitive.Thumb className="block h-[12px] w-[12px] rounded-full bg-[#8B44E8] shadow-glow-sm outline-none cursor-pointer transition-transform hover:scale-110" />
       </SliderPrimitive.Root>
     </div>
   );
