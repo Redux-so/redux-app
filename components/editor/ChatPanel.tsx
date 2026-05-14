@@ -201,7 +201,11 @@ export default function ChatPanel({
       if (res.status === 429) {
         toast("Too many requests. Please slow down.", {
           icon: "⏱",
-          style: { background: "#1a1a1a", color: "#e5e5e5", border: "1px solid #2a2a2a" },
+          style: {
+            background: "rgba(15, 10, 25, 0.9)",
+            color: "#e5e5e5",
+            border: "1px solid rgba(255,255,255,0.1)",
+          },
         });
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
         return;
@@ -211,7 +215,7 @@ export default function ChatPanel({
         toast.custom(
           (t) => (
             <div
-              className={`flex items-center gap-3 px-4 py-3 rounded-sm border border-[#2a2a2a] bg-[#1a1a1a] text-[#e5e5e5] text-[13px] shadow-lg transition-opacity ${t.visible ? "opacity-100" : "opacity-0"}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg border border-white/[0.08] bg-white/[0.05] backdrop-blur-xl text-[#e5e5e5] text-[13px] shadow-lg transition-opacity ${t.visible ? "opacity-100" : "opacity-0"}`}
             >
               <span>Insufficient credits.</span>
               <a
@@ -298,9 +302,9 @@ export default function ChatPanel({
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col w-[320px] shrink-0 h-full bg-[#111111] border-l border-[#2a2a2a]">
+    <div className="flex flex-col w-[320px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
       {/* Panel header */}
-      <div className="flex items-center justify-between px-4 h-[44px] shrink-0 border-b border-[#2a2a2a]">
+      <div className="flex items-center justify-between px-4 h-[44px] shrink-0 border-b border-white/[0.07]">
         <span className="text-[12px] font-medium uppercase tracking-widest text-[#888888] select-none">
           Chat
         </span>
@@ -312,7 +316,7 @@ export default function ChatPanel({
       {/* Message thread */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto min-h-0 px-4 py-4 flex flex-col gap-3 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-track]:bg-[#111111] [&::-webkit-scrollbar-thumb]:bg-[#2a2a2a] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-[#3a3a3a]"
+        className="flex-1 overflow-y-auto min-h-0 px-4 py-4 flex flex-col gap-3 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/[0.1] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-white/[0.18]"
       >
         {/* Empty state */}
         {messages.length === 0 && (
@@ -335,17 +339,17 @@ export default function ChatPanel({
                 <img
                   src={msg.imagePreview}
                   alt="Attached reference"
-                  className="max-w-[140px] max-h-[100px] rounded-sm object-cover border border-[#2a2a2a]"
+                  className="max-w-[140px] max-h-[100px] rounded-lg object-cover border border-white/[0.08]"
                 />
               </div>
             )}
 
             {/* Bubble */}
             <div
-              className={`max-w-[236px] rounded-sm px-[11px] py-[8px] text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
+              className={`max-w-[236px] rounded-lg px-[11px] py-[8px] text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === "user"
                   ? "bg-white text-black"
-                  : "bg-[#1a1a1a] border border-[#2a2a2a] text-[#e5e5e5]"
+                  : "bg-white/[0.05] border border-white/[0.08] text-[#e5e5e5]"
               }`}
             >
               {/* Loading dots when assistant placeholder is empty */}
@@ -376,11 +380,11 @@ export default function ChatPanel({
             <img
               src={attachedPreview}
               alt="Attached"
-              className="h-[56px] w-auto max-w-[100px] rounded-sm object-cover border border-[#2a2a2a]"
+              className="h-[56px] w-auto max-w-[100px] rounded-lg object-cover border border-white/[0.08]"
             />
             <button
               onClick={clearAttachment}
-              className="absolute -top-[6px] -right-[6px] w-[16px] h-[16px] rounded-full bg-[#333333] border border-[#555555] flex items-center justify-center text-[#aaaaaa] hover:text-white hover:bg-[#444444] transition-colors"
+              className="absolute -top-[6px] -right-[6px] w-[16px] h-[16px] rounded-full bg-white/[0.12] border border-white/[0.2] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.2] transition-colors"
             >
               <X size={9} strokeWidth={2.5} />
             </button>
@@ -418,7 +422,7 @@ export default function ChatPanel({
 
       {/* Input area */}
       <div className="px-4 pb-4 pt-2 shrink-0">
-        <div className="flex items-end gap-[8px] bg-[#111111] border border-[#2a2a2a] rounded-sm px-3 py-[8px]">
+        <div className="flex items-end gap-[8px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-3 py-[8px]">
           {/* Paperclip */}
           <button
             type="button"
