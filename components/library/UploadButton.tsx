@@ -4,6 +4,10 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Upload, X, ImageIcon } from "lucide-react";
 import { useUploadThing } from "@/lib/uploadthing";
+import {
+  glassModalPanelClassName,
+  glassModalPortalShellClassName,
+} from "@/constants/glass-modal";
 
 interface UploadButtonProps {
   onUploadComplete?: () => void;
@@ -86,12 +90,12 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
 
       {open && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[3px]"
+          className={glassModalPortalShellClassName}
           onClick={(e) => {
             if (e.target === e.currentTarget) handleClose();
           }}
         >
-          <div className="bg-[#111111]/95 backdrop-blur-xl border border-white/[0.1] rounded-2xl shadow-2xl p-5 w-[460px]">
+          <div className={`${glassModalPanelClassName} w-[460px]`}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white text-[13px] font-medium">
