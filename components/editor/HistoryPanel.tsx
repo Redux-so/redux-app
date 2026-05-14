@@ -73,9 +73,9 @@ export default function HistoryPanel({
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 bottom-0 z-40 w-[280px] bg-[#111111] border-l border-[#2a2a2a] flex flex-col shadow-2xl">
+      <div className="fixed right-0 top-0 bottom-0 z-40 w-[280px] bg-black/50 backdrop-blur-xl border-l border-white/[0.07] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 h-[44px] border-b border-[#2a2a2a] shrink-0">
+        <div className="flex items-center justify-between px-4 h-[44px] border-b border-white/[0.07] shrink-0">
           <div className="flex items-center gap-2">
             <Clock size={13} strokeWidth={1.75} className="text-[#888888]" />
             <span className="text-[12px] font-medium uppercase tracking-widest text-[#888888]">
@@ -83,15 +83,16 @@ export default function HistoryPanel({
             </span>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-[#555555] hover:text-[#888888] transition-colors cursor-pointer"
+            className="text-[#888888] hover:text-white transition-colors cursor-pointer"
           >
-            <X size={15} strokeWidth={2} />
+            <X size={15} strokeWidth={1.5} />
           </button>
         </div>
 
         {/* Version list */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/[0.1] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-white/[0.18]">
           {loading && (
             <div className="flex items-center justify-center h-24">
               <span className="text-[12px] text-[#555555]">Loading…</span>
@@ -114,7 +115,7 @@ export default function HistoryPanel({
             versions.map((version, idx) => (
               <div
                 key={version.id}
-                className="flex items-center justify-between px-4 py-3 border-b border-[#1e1e1e] hover:bg-[#161616] transition-colors group"
+                className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] hover:bg-white/[0.04] transition-colors group"
               >
                 <div className="flex flex-col gap-[2px] min-w-0">
                   <span className="text-[12px] text-[#e5e5e5]">
@@ -127,7 +128,7 @@ export default function HistoryPanel({
                 <button
                   onClick={() => handleRestore(version)}
                   disabled={restoringId === version.id}
-                  className="flex items-center gap-[5px] h-[26px] px-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-sm text-[11px] text-white hover:bg-[#222222] transition-colors cursor-pointer disabled:opacity-50 shrink-0 ml-3"
+                  className="flex items-center gap-[5px] h-[26px] px-3 rounded-lg bg-white/[0.05] border border-white/[0.08] text-[11px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-50 shrink-0 ml-3"
                 >
                   <RotateCcw size={10} strokeWidth={2} />
                   {restoringId === version.id ? "…" : "Restore"}
