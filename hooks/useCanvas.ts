@@ -224,15 +224,26 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     const el = canvasRef.current;
     if (!el) return;
 
-    let canvas: Canvas;
+    /** In-flight Fabric instance until assigned to fabricRef (avoids async race on unmount). */
+    let canvasInstance: Canvas | undefined;
     let disposed = false;
 
     (async () => {
-      const { Canvas, Point } = await import("fabric");
+      const { Canvas: FabricCanvas, Point } = await import("fabric");
       if (disposed) return;
 
       PointRef.current = Point;
-      canvas = new Canvas(el, { selection: false, renderOnAddRemove: false });
+      canvasInstance = new FabricCanvas(el, {
+        selection: false,
+        renderOnAddRemove: false,
+      });
+      const canvas = canvasInstance;
+
+      if (disposed) {
+        canvas.dispose();
+        canvasInstance = undefined;
+        return;
+      }
 
       // Size the canvas to its outer container (the flex-1 wrapper).
       // The canvas element defaults to 300×150 — do NOT use el.offsetWidth here.
@@ -337,6 +348,14 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
         wrapper.removeEventListener("pointercancel", handlePointerUp);
       };
 
+      if (disposed) {
+        eventCleanupRef.current?.();
+        eventCleanupRef.current = null;
+        canvas.dispose();
+        canvasInstance = undefined;
+        return;
+      }
+
       fabricRef.current = canvas;
       setCanvasReady(true);
     })();
@@ -345,16 +364,24 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
       disposed = true;
       healPathHandlerRef.current = null;
       healPathsRef.current = [];
-      fabricRef.current?.dispose();
-      fabricRef.current = null;
+
+      eventCleanupRef.current?.();
+      eventCleanupRef.current = null;
+
+      if (fabricRef.current) {
+        fabricRef.current.dispose();
+        fabricRef.current = null;
+      } else {
+        canvasInstance?.dispose();
+      }
+      canvasInstance = undefined;
+
       bgImageRef.current = null;
       setCanvasReady(false);
       setImageBounds(null);
       setIsHealBrush(false);
-      eventCleanupRef.current?.();
-      eventCleanupRef.current = null;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Keep activeImageUrl in sync with the imageUrl prop.

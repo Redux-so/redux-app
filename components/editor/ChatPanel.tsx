@@ -235,48 +235,54 @@ export default function ChatPanel({
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const reader = res.body?.getReader();
       const decoder = new TextDecoder();
+      const reader = res.body?.getReader();
       if (!reader) throw new Error("No response body");
 
       let rawBuffer = ""; // accumulates partial SSE lines
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        rawBuffer += decoder.decode(value, { stream: true });
+          rawBuffer += decoder.decode(value, { stream: true });
 
-        // Process complete SSE lines (each ends with \n\n)
-        const lines = rawBuffer.split("\n\n");
-        rawBuffer = lines.pop() ?? ""; // keep the incomplete last chunk
+          // Process complete SSE lines (each ends with \n\n)
+          const lines = rawBuffer.split("\n\n");
+          rawBuffer = lines.pop() ?? ""; // keep the incomplete last chunk
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const jsonStr = line.slice(6); // strip "data: "
-          let event: SseEvent;
-          try {
-            event = JSON.parse(jsonStr) as SseEvent;
-          } catch {
-            continue;
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6); // strip "data: "
+            let event: SseEvent;
+            try {
+              event = JSON.parse(jsonStr) as SseEvent;
+            } catch {
+              continue;
+            }
+
+            if (event.type === "meta") {
+              setLifetimeFreeRemaining(event.lifetimeFreeRemaining);
+              setCreditBalance(event.creditBalanceAfter);
+            } else if (event.type === "text") {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: cleanText(m.content + event.text) }
+                    : m,
+                ),
+              );
+            } else if (event.type === "adjustments") {
+              onPatch(event.adjustments as Partial<Adjustments>);
+            }
+            // "done" — nothing extra needed, the outer loop will finish
           }
-
-          if (event.type === "meta") {
-            setLifetimeFreeRemaining(event.lifetimeFreeRemaining);
-            setCreditBalance(event.creditBalanceAfter);
-          } else if (event.type === "text") {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId
-                  ? { ...m, content: cleanText(m.content + event.text) }
-                  : m,
-              ),
-            );
-          } else if (event.type === "adjustments") {
-            onPatch(event.adjustments as Partial<Adjustments>);
-          }
-          // "done" — nothing extra needed, the outer loop will finish
         }
+      } finally {
+        void reader.cancel().catch(() => {
+          /* already closed / lock released — ignore */
+        });
       }
     } catch (err) {
       console.error("[ChatPanel] send error:", err);

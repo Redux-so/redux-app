@@ -126,8 +126,8 @@ export function useEditor(imageId?: string) {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!imageId) return;
-    const id = setInterval(saveVersion, 30_000);
-    return () => clearInterval(id);
+    const intervalId = setInterval(saveVersion, 30_000);
+    return () => clearInterval(intervalId);
   }, [imageId, saveVersion]);
 
   // Cleanup timer on unmount
