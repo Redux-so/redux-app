@@ -328,7 +328,7 @@ export default function ChatPanel({
       {/* Message thread */}
       <div
         ref={scrollRef}
-        className="scrollbar-subtle flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
+        className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
       >
         {/* Empty state */}
         {messages.length === 0 && (

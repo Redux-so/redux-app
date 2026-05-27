@@ -111,7 +111,7 @@ export default function LibraryPage() {
         onSearchAbort={handleSearchAbort}
         onSearchClear={handleSearchClear}
       />
-      <main className="scrollbar-subtle flex flex-col flex-1 min-h-0 overflow-y-auto">
+      <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
         <PhotoGrid
           groups={groups}
           libraryLoading={libraryLoading}

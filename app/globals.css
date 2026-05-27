@@ -7,6 +7,8 @@
   --accent-end: #8B44E8;
   --accent-glow: rgba(104, 47, 191, 0.4);
   --accent-glow-sm: rgba(104, 47, 191, 0.25);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(104, 47, 191, 0.38);
 }
 
 @theme inline {
@@ -28,24 +30,26 @@ body {
   line-height: 1.6;
 }
 
-.scrollbar-subtle {
+/* Modern dark scrollbars — all scrollable regions (Firefox + WebKit) */
+* {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
-.scrollbar-subtle::-webkit-scrollbar {
-  width: 4px;
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
 
-.scrollbar-subtle::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.scrollbar-subtle::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
   border-radius: 9999px;
 }
 
-.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }

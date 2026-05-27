@@ -92,7 +92,7 @@ export default function HistoryPanel({
         </div>
 
         {/* Version list */}
-        <div className="scrollbar-subtle min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {loading && (
             <div className="flex h-24 items-center justify-center">
               <span className="text-[13px] text-[#555555]">Loading…</span>

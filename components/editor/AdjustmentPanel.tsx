@@ -652,7 +652,7 @@ export default function AdjustmentPanel({
       </div>
 
       {/* Scrollable content */}
-      <div className="scrollbar-subtle flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0">
 
         {/* ── LIGHT ──────────────────────────────────────────────────────── */}
         <SectionHeader
