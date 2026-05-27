@@ -248,7 +248,7 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
       // Size the canvas to its outer container (the flex-1 wrapper).
       // The canvas element defaults to 300×150 — do NOT use el.offsetWidth here.
       const container = containerRef.current;
-      const PADDING = 48; // p-6 (24px) × 2 sides
+      const PADDING = 64; // p-8 (32px) × 2 sides
       const w = container ? Math.max(300, container.clientWidth - PADDING) : 800;
       const h = container ? Math.max(200, container.clientHeight - PADDING) : 600;
       canvas.setDimensions({ width: w, height: h });

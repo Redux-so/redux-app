@@ -24,7 +24,7 @@ export default function AdjustmentSlider({
   const defaultValue = Math.max(min, Math.min(max, 0));
 
   return (
-    <div className="flex flex-col gap-[6px] px-4 py-[6px]">
+    <div className="flex flex-col gap-2 px-5 py-2">
       <div className="flex items-center justify-between">
         <span className="text-[13px] text-[#e5e5e5] leading-none select-none">
           {label}

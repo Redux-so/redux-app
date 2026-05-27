@@ -82,9 +82,9 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-[6px] h-[30px] px-3 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[12px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 shrink-0 cursor-pointer"
+        className="flex items-center gap-[6px] px-4 py-2 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[13px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 shrink-0 cursor-pointer"
       >
-        <Upload size={12} strokeWidth={2} />
+        <Upload size={14} strokeWidth={2} />
         Upload Photos
       </button>
 

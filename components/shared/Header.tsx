@@ -25,8 +25,8 @@ export default function Header({
   onSearchClear,
 }: HeaderProps) {
   return (
-    <header className="h-[52px] bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] flex items-center gap-3 shrink-0 pl-3 pr-3">
-      <div className="flex h-[52px] shrink-0 items-center">
+    <header className="bg-black/40 backdrop-blur-2xl border-b border-white/[0.08] flex items-center gap-3 shrink-0 pl-3 pr-3 py-4">
+      <div className="flex shrink-0 items-center">
         <Link
           href="/library"
           className="inline-flex items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"

@@ -47,7 +47,7 @@ export default function Canvas({
     // and the canvas never initializes.
     <div
       ref={containerRef}
-      className="relative flex-1 bg-[#0a0a0a] overflow-hidden flex items-center justify-center p-6"
+      className="relative flex-1 bg-[#0a0a0a] overflow-hidden flex items-center justify-center p-8"
     >
       {/* Canvas wrapper — positioned parent for the overlay divs */}
       <div className="relative inline-block">
@@ -122,7 +122,7 @@ export default function Canvas({
 
       {/* Placeholder shown when no image is loaded */}
       {!imageUrl && (
-        <div className="absolute inset-6 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-8 flex items-center justify-center pointer-events-none">
           <div className="border border-dashed border-[#2a2a2a] rounded-sm flex items-center justify-center w-[520px] h-[320px] max-w-full max-h-full">
             <p className="text-[#555555] text-[15px] select-none">
               Your image will appear here

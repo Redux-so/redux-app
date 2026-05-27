@@ -64,13 +64,13 @@ function formatFeature(feature: string | null): string {
 }
 
 const SECTION_LABEL =
-  "text-[10px] font-medium tracking-[0.12em] uppercase text-[#555555]";
+  "text-[12px] font-medium tracking-[0.12em] uppercase text-[#555555]";
 const SETTING_ROW =
-  "flex items-center justify-between py-3 border-b border-[#2a2a2a] last:border-0";
+  "flex items-center justify-between py-3.5 border-b border-[#2a2a2a] last:border-0";
 const BTN_GHOST =
-  "h-[28px] px-3 text-[12px] text-[#888888] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
+  "h-9 px-4 text-[14px] text-[#888888] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
 const BTN_PRIMARY =
-  "h-[28px] px-3 text-[12px] font-medium bg-white text-black rounded-sm hover:bg-[#e8e8e8] transition-colors cursor-pointer whitespace-nowrap";
+  "h-9 px-4 text-[14px] font-medium bg-white text-black rounded-sm hover:bg-[#e8e8e8] transition-colors cursor-pointer whitespace-nowrap";
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -106,14 +106,14 @@ function ConfirmDialog({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-[360px] bg-[#111111] border border-[#2a2a2a] rounded-sm shadow-2xl p-5 flex flex-col gap-4">
+      <div className="w-[360px] bg-[#111111] border border-[#2a2a2a] rounded-sm shadow-2xl p-6 flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-[30px] h-[30px] rounded-sm bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
             <AlertTriangle size={14} strokeWidth={1.5} className="text-[#ef4444]" />
           </div>
           <div>
-            <p className="text-white text-[13px] font-medium">{title}</p>
-            <p className="text-[#888888] text-[12px] mt-1 leading-relaxed">{body}</p>
+            <p className="text-white text-[14px] font-medium">{title}</p>
+            <p className="text-[#888888] text-[14px] mt-1 leading-relaxed">{body}</p>
           </div>
         </div>
         <div className="flex items-center justify-end gap-2">
@@ -123,7 +123,7 @@ function ConfirmDialog({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`flex items-center gap-[6px] h-[28px] px-3 text-[12px] font-medium rounded-sm transition-colors cursor-pointer disabled:opacity-50 ${
+            className={`flex items-center gap-[6px] h-9 px-4 text-[14px] font-medium rounded-sm transition-colors cursor-pointer disabled:opacity-50 ${
               destructive
                 ? "bg-[#ef4444] text-white hover:bg-[#dc2626]"
                 : "bg-white text-black hover:bg-[#e8e8e8]"
@@ -149,10 +149,10 @@ function Section({
 }) {
   return (
     <div className="bg-[#111111] border border-[#2a2a2a] rounded-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#2a2a2a]">
+      <div className="px-6 py-4 border-b border-[#2a2a2a]">
         <span className={SECTION_LABEL}>{label}</span>
       </div>
-      <div className="px-4">{children}</div>
+      <div className="px-6 pb-6">{children}</div>
     </div>
   );
 }
@@ -275,24 +275,24 @@ export default function SettingsPage() {
         </header>
 
         {/* Scrollable content */}
-        <main className="flex-1 min-h-0 overflow-y-auto px-4 py-5">
+        <main className="flex-1 min-h-0 overflow-y-auto px-5 py-6">
           <div className="max-w-[640px] mx-auto flex flex-col gap-4">
             {/* ── ACCOUNT & PROFILE ── */}
             <Section label="Account & Profile">
               {/* Avatar + name */}
-              <div className="flex items-center gap-4 py-4 border-b border-[#2a2a2a]">
+              <div className="flex items-center gap-4 py-5 border-b border-[#2a2a2a]">
                 {!userLoaded ? (
-                  <Skeleton className="w-[52px] h-[52px] rounded-full shrink-0" />
+                  <Skeleton className="w-[56px] h-[56px] rounded-full shrink-0" />
                 ) : user?.imageUrl ? (
                   <Image
                     src={user.imageUrl}
                     alt="avatar"
-                    width={52}
-                    height={52}
+                    width={56}
+                    height={56}
                     className="rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-[52px] h-[52px] rounded-full bg-[#1f1f1f] border border-[#2a2a2a] shrink-0" />
+                  <div className="w-[56px] h-[56px] rounded-full bg-[#1f1f1f] border border-[#2a2a2a] shrink-0" />
                 )}
                 <div className="flex flex-col gap-[2px] min-w-0">
                   {!userLoaded ? (
@@ -305,7 +305,7 @@ export default function SettingsPage() {
                       <span className="text-white text-[14px] font-medium truncate">
                         {user?.fullName ?? user?.firstName ?? "—"}
                       </span>
-                      <span className="text-[#888888] text-[12px] truncate">
+                      <span className="text-[#888888] text-[14px] truncate">
                         {user?.emailAddresses?.[0]?.emailAddress ?? "—"}
                       </span>
                     </>
@@ -315,7 +315,7 @@ export default function SettingsPage() {
 
               {/* Actions */}
               <div className={SETTING_ROW}>
-                <span className="text-[13px] text-white">Profile</span>
+                <span className="text-[14px] text-white">Profile</span>
                 <button
                   onClick={() => openUserProfile()}
                   className={BTN_GHOST}
@@ -324,7 +324,7 @@ export default function SettingsPage() {
                 </button>
               </div>
               <div className={SETTING_ROW}>
-                <span className="text-[13px] text-white">Password</span>
+                <span className="text-[14px] text-white">Password</span>
                 <button
                   onClick={() => openUserProfile({ appearance: { variables: { colorPrimary: "#ffffff" } } })}
                   className={BTN_GHOST}
@@ -334,14 +334,14 @@ export default function SettingsPage() {
               </div>
               <div className={SETTING_ROW}>
                 <div>
-                  <span className="text-[13px] text-[#ef4444]">Delete Account</span>
-                  <p className="text-[11px] text-[#555555] mt-[2px]">
+                  <span className="text-[14px] text-[#ef4444]">Delete Account</span>
+                  <p className="text-[12px] text-[#555555] mt-[2px]">
                     Permanently delete your account and all data
                   </p>
                 </div>
                 <button
                   onClick={() => setShowDeleteAccount(true)}
-                  className="h-[28px] px-3 text-[12px] text-[#ef4444] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] transition-colors cursor-pointer whitespace-nowrap"
+                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Delete Account
                 </button>
@@ -351,18 +351,18 @@ export default function SettingsPage() {
             {/* ── CREDITS & BILLING ── */}
             <Section label="Credits & Billing">
               {/* Credit balance card */}
-              <div className="py-4 border-b border-[#2a2a2a]">
-                <div className="flex items-center justify-between bg-[#161616] border border-[#2a2a2a] rounded-sm px-4 py-3">
+              <div className="py-5 border-b border-[#2a2a2a]">
+                <div className="flex items-center justify-between bg-[#161616] border border-[#2a2a2a] rounded-sm px-5 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-[32px] h-[32px] rounded-sm bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
                       <Coins size={14} strokeWidth={1.5} className="text-white" />
                     </div>
                     <div>
-                      <p className="text-[#888888] text-[11px]">Credit Balance</p>
+                      <p className="text-[#888888] text-[12px]">Credit Balance</p>
                       {loadingStats ? (
                         <Skeleton className="w-[60px] h-[20px] mt-1" />
                       ) : (
-                        <p className="text-white text-[20px] font-semibold leading-none mt-[2px]">
+                        <p className="text-white text-[24px] font-semibold leading-none mt-[2px]">
                           {(stats?.creditBalance ?? 0).toLocaleString()}
                         </p>
                       )}
@@ -378,7 +378,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Transaction history */}
-              <div className="py-4 border-b border-[#2a2a2a]">
+              <div className="py-5 border-b border-[#2a2a2a]">
                 <p className={`${SECTION_LABEL} mb-3`}>Transaction History</p>
                 {loadingStats ? (
                   <div className="flex flex-col gap-2">
@@ -387,7 +387,7 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 ) : !stats?.transactionHistory?.length ? (
-                  <p className="text-[#555555] text-[12px] py-4 text-center">
+                  <p className="text-[#555555] text-[14px] py-4 text-center">
                     No transactions yet
                   </p>
                 ) : (
@@ -405,10 +405,10 @@ export default function SettingsPage() {
                         key={tx.id}
                         className="grid grid-cols-4 px-3 py-[10px] border-b border-[#2a2a2a] last:border-0 hover:bg-[#161616] transition-colors"
                       >
-                        <span className="text-[12px] text-[#888888]">
+                        <span className="text-[14px] text-[#888888]">
                           {formatDate(tx.createdAt)}
                         </span>
-                        <span className="text-[12px] text-[#888888] truncate">
+                        <span className="text-[14px] text-[#888888] truncate">
                           {formatFeature(tx.feature)}
                         </span>
                         <span
@@ -423,7 +423,7 @@ export default function SettingsPage() {
                           {tx.type}
                         </span>
                         <span
-                          className={`text-[12px] font-medium ${
+                          className={`text-[14px] font-medium ${
                             tx.amount > 0 ? "text-[#22c55e]" : "text-white"
                           }`}
                         >
@@ -439,8 +439,8 @@ export default function SettingsPage() {
               {/* Billing portal */}
               <div className={SETTING_ROW}>
                 <div>
-                  <span className="text-[13px] text-white">Billing History</span>
-                  <p className="text-[11px] text-[#555555] mt-[2px]">
+                  <span className="text-[14px] text-white">Billing History</span>
+                  <p className="text-[12px] text-[#555555] mt-[2px]">
                     View invoices and manage payment methods
                   </p>
                 </div>
@@ -464,12 +464,12 @@ export default function SettingsPage() {
               <div className={SETTING_ROW}>
                 <div className="flex items-center gap-3">
                   <ImageIcon size={14} strokeWidth={1.5} className="text-[#555555] shrink-0" />
-                  <span className="text-[13px] text-white">Photos</span>
+                  <span className="text-[14px] text-white">Photos</span>
                 </div>
                 {loadingStats ? (
                   <Skeleton className="w-[40px] h-[14px]" />
                 ) : (
-                  <span className="text-[12px] text-[#888888]">
+                  <span className="text-[14px] text-[#888888]">
                     {(stats?.imageCount ?? 0).toLocaleString()} photo{stats?.imageCount !== 1 ? "s" : ""}
                   </span>
                 )}
@@ -478,12 +478,12 @@ export default function SettingsPage() {
               <div className={SETTING_ROW}>
                 <div className="flex items-center gap-3">
                   <Database size={14} strokeWidth={1.5} className="text-[#555555] shrink-0" />
-                  <span className="text-[13px] text-white">Storage Used</span>
+                  <span className="text-[14px] text-white">Storage Used</span>
                 </div>
                 {loadingStats ? (
                   <Skeleton className="w-[60px] h-[14px]" />
                 ) : (
-                  <span className="text-[12px] text-[#888888]">
+                  <span className="text-[14px] text-[#888888]">
                     {formatBytes(stats?.totalStorageBytes ?? 0)}
                   </span>
                 )}
@@ -491,14 +491,14 @@ export default function SettingsPage() {
 
               <div className={SETTING_ROW}>
                 <div>
-                  <span className="text-[13px] text-[#ef4444]">Clear Library</span>
-                  <p className="text-[11px] text-[#555555] mt-[2px]">
+                  <span className="text-[14px] text-[#ef4444]">Clear Library</span>
+                  <p className="text-[12px] text-[#555555] mt-[2px]">
                     Permanently delete all your photos
                   </p>
                 </div>
                 <button
                   onClick={() => setShowClearLibrary(true)}
-                  className="h-[28px] px-3 text-[12px] text-[#ef4444] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
+                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
                 >
                   <Trash2 size={12} strokeWidth={1.5} />
                   Clear Library
@@ -508,16 +508,16 @@ export default function SettingsPage() {
 
             {/* ── ABOUT ── */}
             <Section label="About">
-              <div className="py-4 border-b border-[#2a2a2a]">
+              <div className="py-5 border-b border-[#2a2a2a]">
                 <p className="text-white text-[14px] font-medium">Redux</p>
-                <p className="text-[#888888] text-[12px] mt-[2px]">Version 1.0.0</p>
-                <p className="text-[#888888] text-[12px] mt-2 leading-relaxed">
+                <p className="text-[#888888] text-[14px] mt-[2px]">Version 1.0.0</p>
+                <p className="text-[#888888] text-[14px] mt-2 leading-relaxed">
                   Your AI agent for professional photo editing
                 </p>
               </div>
 
               <div className={SETTING_ROW}>
-                <span className="text-[13px] text-white">Support</span>
+                <span className="text-[14px] text-white">Support</span>
                 <a
                   href="mailto:admin@redux.so?subject=Redux%20Support%20Request"
                   className={`${BTN_GHOST} flex items-center gap-[6px]`}
@@ -528,17 +528,17 @@ export default function SettingsPage() {
               </div>
 
               <div className={SETTING_ROW}>
-                <span className="text-[13px] text-white">Legal</span>
+                <span className="text-[14px] text-white">Legal</span>
                 <div className="flex items-center gap-3">
                   <a
                     href="#"
-                    className="text-[12px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
+                    className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
                   >
                     Terms of Service
                   </a>
                   <a
                     href="#"
-                    className="text-[12px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
+                    className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
                   >
                     Privacy Policy
                   </a>

@@ -51,7 +51,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={title}
       className={[
-        "flex shrink-0 items-center justify-center w-[28px] h-[28px] rounded-lg transition-colors cursor-pointer",
+        "flex shrink-0 items-center justify-center w-[32px] h-[32px] rounded-lg transition-colors cursor-pointer",
         "disabled:opacity-30 disabled:cursor-not-allowed",
         active
           ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
@@ -64,7 +64,7 @@ function ToolbarBtn({
 }
 
 function Divider() {
-  return <div className="w-px h-[16px] bg-white/[0.08] mx-1" />;
+  return <div className="w-px h-[18px] bg-white/[0.08] mx-1" />;
 }
 
 export default function Toolbar({
@@ -102,19 +102,19 @@ export default function Toolbar({
       <div className="flex shrink-0 items-center justify-center gap-[2px]">
         {/* Zoom */}
         <ToolbarBtn onClick={zoomOut} title="Zoom out">
-          <Minus size={13} strokeWidth={2} />
+          <Minus size={16} strokeWidth={2} />
         </ToolbarBtn>
 
         <button
           onClick={resetZoom}
           title="Reset zoom"
-          className="flex shrink-0 items-center justify-center h-[28px] px-[10px] rounded-lg text-[12px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
+          className="flex shrink-0 items-center justify-center h-[32px] px-3 rounded-lg text-[13px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
         >
           {zoomPercent}
         </button>
 
         <ToolbarBtn onClick={zoomIn} title="Zoom in">
-          <Plus size={13} strokeWidth={2} />
+          <Plus size={16} strokeWidth={2} />
         </ToolbarBtn>
 
         <Divider />
@@ -125,17 +125,17 @@ export default function Toolbar({
           active={showBefore}
           title={showBefore ? "Show after" : "Show before"}
         >
-          <Columns2 size={14} strokeWidth={1.75} />
+          <Columns2 size={16} strokeWidth={1.75} />
         </ToolbarBtn>
 
         <Divider />
 
         {/* Undo / Redo */}
         <ToolbarBtn onClick={onUndo} disabled={!canUndo} title="Undo">
-          <Undo2 size={14} strokeWidth={1.75} />
+          <Undo2 size={16} strokeWidth={1.75} />
         </ToolbarBtn>
         <ToolbarBtn onClick={onRedo} disabled={!canRedo} title="Redo">
-          <Redo2 size={14} strokeWidth={1.75} />
+          <Redo2 size={16} strokeWidth={1.75} />
         </ToolbarBtn>
       </div>
 
@@ -164,15 +164,15 @@ export default function Toolbar({
         </div>
 
         <ToolbarBtn onClick={onShowHistory} title="Version history">
-          <History size={14} strokeWidth={1.75} />
+          <History size={16} strokeWidth={1.75} />
         </ToolbarBtn>
 
         <button
           onClick={onExport}
           title="Export / share"
-          className="flex shrink-0 items-center gap-1.5 h-[28px] px-3 rounded-full text-[12px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
+          className="flex shrink-0 items-center gap-1.5 h-[32px] px-3.5 rounded-full text-[13px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
         >
-          <Share2 size={12} strokeWidth={2} />
+          <Share2 size={16} strokeWidth={2} />
           Export
         </button>
       </div>

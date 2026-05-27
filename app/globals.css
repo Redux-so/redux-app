@@ -25,4 +25,5 @@ body {
   color: var(--foreground);
   font-family: -apple-system, system-ui, BlinkMacSystemFont, "SF Pro Text",
     "SF Pro Display", sans-serif;
+  line-height: 1.6;
 }

@@ -99,7 +99,7 @@ export default function BottomNav() {
         )}
       </AnimatePresence>
 
-      <nav className="grid h-[52px] grid-cols-[140px_1fr_140px] items-center bg-black/40 backdrop-blur-2xl px-3 border-t border-white/[0.08] shrink-0">
+      <nav className="grid h-16 grid-cols-[140px_1fr_140px] items-center bg-black/40 backdrop-blur-2xl px-3 border-t border-white/[0.08] shrink-0">
         {/* User info — clickable profile area */}
         <div ref={popoverRef} className="relative flex items-center justify-self-start w-[140px]">
           {/* Popover */}
@@ -164,10 +164,10 @@ export default function BottomNav() {
               <div className="w-[26px] h-[26px] rounded-lg bg-white/[0.06] border border-white/[0.08] shrink-0" />
             )}
             <div className="flex flex-col min-w-0 text-left">
-              <span className="text-white text-[12px] leading-[1.3] font-medium truncate">
+              <span className="text-white text-[13px] leading-[1.3] font-medium truncate">
                 {user?.fullName ?? user?.firstName ?? ""}
               </span>
-              <span className="text-[#888888] text-[10px] leading-[1.3]">
+              <span className="text-[#888888] text-[11px] leading-[1.3]">
                 {credits !== null ? credits.toLocaleString() : "—"} Credits
               </span>
             </div>
@@ -193,14 +193,14 @@ export default function BottomNav() {
                     showEditorHint();
                   }}
                   className={[
-                    "flex flex-col items-center justify-center gap-[3px] px-5 py-[6px] rounded-xl transition-all cursor-pointer min-w-[72px]",
+                    "flex flex-col items-center justify-center gap-1 px-5 py-2 rounded-xl transition-all cursor-pointer min-w-[72px]",
                     isActive
                       ? "bg-[#682FBF]/20 border border-[#682FBF]/40 text-[#B07EF0]"
                       : "border border-transparent text-[#888888] hover:text-[#cccccc] hover:bg-white/[0.05]",
                   ].join(" ")}
                 >
-                  <Icon size={13} strokeWidth={1.5} />
-                  <span className="text-[11px] leading-none tracking-tight">
+                  <Icon size={20} strokeWidth={1.5} />
+                  <span className="text-[12px] leading-none tracking-tight">
                     {label}
                   </span>
                 </button>

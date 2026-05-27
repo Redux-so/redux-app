@@ -80,9 +80,9 @@ function SectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="flex items-center justify-between w-full px-4 py-[9px] hover:bg-white/[0.04] transition-colors"
+      className="flex items-center justify-between w-full px-5 py-2.5 hover:bg-white/[0.04] transition-colors"
     >
-      <span className="text-[11px] font-medium uppercase tracking-widest text-[#666666] select-none">
+      <span className="text-[12px] font-medium uppercase tracking-widest text-[#666666] select-none">
         {label}
       </span>
       <ChevronDown
@@ -110,7 +110,7 @@ function AIButton({
     <button
       onClick={onClick}
       disabled={loading || disabled}
-      className="flex items-center justify-center gap-[7px] w-full h-[34px] bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-lg text-[13px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 hover:shadow-glow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+      className="flex items-center justify-center gap-[7px] w-full h-[36px] bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-lg text-[13px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 hover:shadow-glow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
     >
       {loading ? (
         <Loader2 size={13} strokeWidth={2} className="animate-spin shrink-0" />
@@ -640,10 +640,10 @@ export default function AdjustmentPanel({
   }
 
   return (
-    <div className="flex flex-col w-[320px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-r border-white/[0.07]">
+    <div className="flex flex-col w-[360px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-r border-white/[0.07]">
       {/* Panel header */}
-      <div className="flex items-center justify-between px-4 h-[44px] shrink-0 border-b border-white/[0.07]">
-        <span className="text-[12px] font-medium uppercase tracking-widest text-[#888888] select-none">
+      <div className="flex items-center justify-between px-5 h-[48px] shrink-0 border-b border-white/[0.07]">
+        <span className="text-[13px] font-medium uppercase tracking-widest text-[#888888] select-none">
           Adjustments
         </span>
         <button className="text-[#555555] hover:text-[#888888] transition-colors">
@@ -671,7 +671,7 @@ export default function AdjustmentPanel({
                 onCommit={(v) => onCommit(key, v)}
               />
             ))}
-            <div className="flex flex-col gap-[7px] px-4 pt-3 pb-1">
+            <div className="flex flex-col gap-2 px-5 pt-3 pb-1">
               <AIButton
                 label="Auto Enhance"
                 loading={loadingEnhance}
@@ -705,7 +705,7 @@ export default function AdjustmentPanel({
                 onCommit={(v) => onCommit(key, v)}
               />
             ))}
-            <div className="flex flex-col gap-[7px] px-4 pt-3 pb-1">
+            <div className="flex flex-col gap-2 px-5 pt-3 pb-1">
               <AIButton
                 label="Smart Color Balance"
                 loading={loadingSmartColor}
@@ -767,9 +767,9 @@ export default function AdjustmentPanel({
           onToggle={() => toggleSection("retouch")}
         />
         {sections.retouch && (
-          <div className="px-4 pt-2 pb-3 flex flex-col gap-[7px]">
+          <div className="px-5 pt-2 pb-3 flex flex-col gap-2">
             {/* Row 1: Heal | Blur */}
-            <div className="grid grid-cols-2 gap-[7px]">
+            <div className="grid grid-cols-2 gap-2">
               <ToolBtn
                 label={
                   loadingHeal ? (
@@ -797,7 +797,7 @@ export default function AdjustmentPanel({
                 <p className="text-[10px] text-[#555555] leading-snug">
                   Paint over the area to heal in red, then confirm.
                 </p>
-                <div className="flex gap-[7px]">
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={cancelHeal}
@@ -825,7 +825,7 @@ export default function AdjustmentPanel({
               </div>
             )}
             {/* Row 2: Eraser (first column only) */}
-            <div className="grid grid-cols-2 gap-[7px]">
+            <div className="grid grid-cols-2 gap-2">
               <ToolBtn
                 label="Eraser"
                 active={activeTool === "eraser"}
@@ -842,9 +842,9 @@ export default function AdjustmentPanel({
           onToggle={() => toggleSection("transform")}
         />
         {sections.transform && (
-          <div className="px-4 pt-2 pb-4 flex flex-col gap-[7px]">
+          <div className="px-5 pt-2 pb-4 flex flex-col gap-2">
             {/* Row 1: Crop | Rotate */}
-            <div className="grid grid-cols-2 gap-[7px]">
+            <div className="grid grid-cols-2 gap-2">
               <ToolBtn
                 label="Crop"
                 active={activeTool === "crop"}
@@ -860,7 +860,7 @@ export default function AdjustmentPanel({
               />
             </div>
             {/* Row 2: Straighten | Resize */}
-            <div className="grid grid-cols-2 gap-[7px]">
+            <div className="grid grid-cols-2 gap-2">
               <ToolBtn
                 label="Straighten"
                 active={showStraighten}
@@ -1053,7 +1053,7 @@ export default function AdjustmentPanel({
               </div>
             </div>
 
-            <div className="flex gap-[7px] p-4 pt-0 shrink-0">
+            <div className="flex gap-2 p-5 pt-0 shrink-0">
               <button
                 type="button"
                 disabled={loadingGenFill}

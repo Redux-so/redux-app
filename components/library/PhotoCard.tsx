@@ -45,7 +45,7 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
   return (
     <div
       onClick={navigateToEditor}
-      className="group relative w-full aspect-square bg-white/[0.03] rounded-xl overflow-hidden cursor-pointer"
+      className="group relative w-full aspect-square bg-white/[0.03] rounded-2xl overflow-hidden cursor-pointer"
     >
       <Image
         src={image.originalUrl}

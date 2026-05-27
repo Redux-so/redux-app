@@ -20,11 +20,11 @@ function SkeletonGrid() {
       {[10, 8].map((count, i) => (
         <div key={i}>
           <div className="h-[10px] w-14 bg-[#1a1a1a] rounded-sm animate-pulse mb-3" />
-          <div className="grid grid-cols-5 gap-[6px]">
+          <div className="grid grid-cols-5 gap-3">
             {Array.from({ length: count }).map((_, j) => (
               <div
                 key={j}
-                className="aspect-square bg-[#161616] rounded-sm animate-pulse"
+                className="aspect-square bg-[#161616] rounded-md animate-pulse"
               />
             ))}
           </div>
@@ -36,13 +36,13 @@ function SkeletonGrid() {
 
 function SearchSkeleton() {
   return (
-    <div className="px-5 py-4">
+    <div className="px-6 py-5">
       <div className="h-[10px] w-24 bg-[#1a1a1a] rounded-sm animate-pulse mb-3" />
-      <div className="grid grid-cols-5 gap-[6px]">
+      <div className="grid grid-cols-5 gap-3">
         {Array.from({ length: 15 }).map((_, j) => (
           <div
             key={j}
-            className="aspect-square bg-[#161616] rounded-sm animate-pulse"
+            className="aspect-square bg-[#161616] rounded-md animate-pulse"
           />
         ))}
       </div>
@@ -70,8 +70,8 @@ export default function PhotoGrid({
       );
     }
     return (
-      <div className="px-5 py-4 flex flex-col gap-5">
-        <div className="grid grid-cols-5 gap-[6px]">
+      <div className="px-6 py-5 flex flex-col gap-5">
+        <div className="grid grid-cols-5 gap-3">
           {search.images.map((image) => (
             <PhotoCard key={image.id} image={image} onDelete={onDeleteImage} />
           ))}
@@ -82,7 +82,7 @@ export default function PhotoGrid({
 
   if (libraryLoading) {
     return (
-      <div className="px-5 py-4">
+      <div className="px-6 py-5">
         <SkeletonGrid />
       </div>
     );
@@ -99,14 +99,14 @@ export default function PhotoGrid({
   }
 
   return (
-    <div className="px-5 py-4 flex flex-col gap-5">
+    <div className="px-6 py-5 flex flex-col gap-5">
       {groups.map((group) =>
         group.images.length === 0 ? null : (
           <div key={group.label}>
-            <p className="text-[10px] text-[#555555] uppercase tracking-[0.14em] font-medium mb-2">
+            <p className="text-[11px] text-[#555555] uppercase tracking-[0.14em] font-medium mb-3">
               {group.label}
             </p>
-            <div className="grid grid-cols-5 gap-[6px]">
+            <div className="grid grid-cols-5 gap-3">
               {group.images.map((image) => (
                 <PhotoCard key={image.id} image={image} onDelete={onDeleteImage} />
               ))}

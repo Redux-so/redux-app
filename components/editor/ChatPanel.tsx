@@ -308,10 +308,10 @@ export default function ChatPanel({
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col w-[320px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
+    <div className="flex flex-col w-[360px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
       {/* Panel header */}
-      <div className="flex items-center justify-between px-4 h-[44px] shrink-0 border-b border-white/[0.07]">
-        <span className="text-[12px] font-medium uppercase tracking-widest text-[#888888] select-none">
+      <div className="flex items-center justify-between px-5 h-[48px] shrink-0 border-b border-white/[0.07]">
+        <span className="text-[13px] font-medium uppercase tracking-widest text-[#888888] select-none">
           Chat
         </span>
         <button
@@ -325,7 +325,7 @@ export default function ChatPanel({
       {/* Message thread */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto min-h-0 px-4 py-4 flex flex-col gap-3 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/[0.1] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-white/[0.18]"
+        className="flex-1 overflow-y-auto min-h-0 px-5 py-5 flex flex-col gap-3 [&::-webkit-scrollbar]:w-[4px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/[0.1] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-white/[0.18]"
       >
         {/* Empty state */}
         {messages.length === 0 && (
@@ -355,7 +355,7 @@ export default function ChatPanel({
 
             {/* Bubble */}
             <div
-              className={`max-w-[236px] rounded-lg px-[11px] py-[8px] text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
+              className={`max-w-[280px] rounded-lg px-3 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === "user"
                   ? "bg-white text-black"
                   : "bg-white/[0.05] border border-white/[0.08] text-[#e5e5e5]"
@@ -383,7 +383,7 @@ export default function ChatPanel({
 
       {/* Image thumbnail preview above input */}
       {attachedPreview && (
-        <div className="px-4 pb-2">
+        <div className="px-5 pb-2">
           <div className="relative inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -408,7 +408,7 @@ export default function ChatPanel({
 
       {/* Lifetime free tier + exhausted state */}
       {lifetimeFreeRemaining !== null && creditBalance !== null && (
-        <div className="px-4 pb-1 space-y-0.5">
+        <div className="px-5 pb-1 space-y-0.5">
           {lifetimeFreeRemaining > 0 ? (
             <p className="text-[11px] text-[#444444]">
               {lifetimeFreeRemaining} of 20 free message{lifetimeFreeRemaining !== 1 ? "s" : ""}{" "}
@@ -430,8 +430,8 @@ export default function ChatPanel({
       )}
 
       {/* Input area */}
-      <div className="px-4 pb-4 pt-2 shrink-0">
-        <div className="flex items-end gap-[8px] rounded-lg border border-white/[0.06] bg-[#111111] px-3 py-[8px]">
+      <div className="px-5 pb-5 pt-3 shrink-0">
+        <div className="flex items-end gap-2 rounded-lg border border-white/[0.06] bg-[#111111] px-3.5 py-2.5">
           {/* Paperclip */}
           <button
             type="button"

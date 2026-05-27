@@ -80,14 +80,14 @@ export default function SearchBar({
       className="flex-1 relative min-w-0"
     >
       <Search
-        size={12}
+        size={14}
         strokeWidth={1.5}
-        className="absolute left-[10px] top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none"
       />
       {isSearching ? (
         <Loader2
-          size={14}
-          className="absolute right-[10px] top-1/2 -translate-y-1/2 text-[#888888] animate-spin"
+          size={16}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] animate-spin"
           aria-hidden
         />
       ) : null}
@@ -98,7 +98,7 @@ export default function SearchBar({
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Search by keyword, color, scene, mood..."
         disabled={isSearching}
-        className="w-full h-[30px] bg-[#111111] border border-[#2a2a2a] rounded-sm pl-[28px] pr-9 text-[12px] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-60"
+        className="w-full h-[38px] bg-[#111111] border border-[#2a2a2a] rounded-sm pl-9 pr-10 text-[14px] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-60"
       />
     </form>
   );
