@@ -308,29 +308,29 @@ export default function ChatPanel({
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col w-[360px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
+    <div className="flex flex-col w-[400px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
       {/* Panel header */}
-      <div className="flex items-center justify-between px-5 h-[48px] shrink-0 border-b border-white/[0.07]">
-        <span className="text-[13px] font-medium uppercase tracking-widest text-[#888888] select-none">
+      <div className="flex items-center justify-between px-6 h-[52px] shrink-0 border-b border-white/[0.07]">
+        <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
           Chat
         </span>
         <button
           type="button"
           className="text-[#555555] hover:text-[#888888] transition-colors"
         >
-          <Minus size={13} strokeWidth={2} />
+          <Minus size={14} strokeWidth={2} />
         </button>
       </div>
 
       {/* Message thread */}
       <div
         ref={scrollRef}
-        className="scrollbar-subtle flex-1 overflow-y-auto min-h-0 px-5 py-5 flex flex-col gap-3"
+        className="scrollbar-subtle flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
       >
         {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-[13px] text-[#444444] text-center select-none leading-relaxed px-2">
+            <p className="text-[14px] text-[#444444] text-center select-none leading-relaxed px-2">
               Describe the edits you want or ask a question about your photo.
             </p>
           </div>
@@ -355,7 +355,7 @@ export default function ChatPanel({
 
             {/* Bubble */}
             <div
-              className={`max-w-[280px] rounded-lg px-3 py-2.5 text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
+              className={`max-w-[320px] rounded-lg px-3 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === "user"
                   ? "bg-white text-black"
                   : "bg-white/[0.05] border border-white/[0.08] text-[#e5e5e5]"
@@ -383,13 +383,13 @@ export default function ChatPanel({
 
       {/* Image thumbnail preview above input */}
       {attachedPreview && (
-        <div className="px-5 pb-2">
+        <div className="px-6 pb-2">
           <div className="relative inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={attachedPreview}
               alt="Attached"
-              className="h-[56px] w-auto max-w-[100px] rounded-lg object-cover border border-white/[0.08]"
+              className="h-[56px] w-auto max-w-[120px] rounded-lg object-cover border border-white/[0.08]"
             />
             <button
               onClick={clearAttachment}
@@ -408,14 +408,14 @@ export default function ChatPanel({
 
       {/* Lifetime free tier + exhausted state */}
       {lifetimeFreeRemaining !== null && creditBalance !== null && (
-        <div className="px-5 pb-1 space-y-0.5">
+        <div className="px-6 pb-1 space-y-0.5">
           {lifetimeFreeRemaining > 0 ? (
-            <p className="text-[11px] text-[#444444]">
+            <p className="text-[12px] text-[#444444]">
               {lifetimeFreeRemaining} of 20 free message{lifetimeFreeRemaining !== 1 ? "s" : ""}{" "}
               remaining
             </p>
           ) : creditBalance === 0 ? (
-            <p className="text-[11px] text-[#666666] leading-snug">
+            <p className="text-[12px] text-[#666666] leading-snug">
               Free messages used.{" "}
               <a
                 href="/settings"
@@ -430,8 +430,8 @@ export default function ChatPanel({
       )}
 
       {/* Input area */}
-      <div className="px-5 pb-5 pt-3 shrink-0">
-        <div className="flex items-end gap-2 rounded-lg border border-white/[0.06] bg-[#111111] px-3.5 py-2.5">
+      <div className="px-6 pb-6 pt-3 shrink-0">
+        <div className="flex items-end gap-2 rounded-lg border border-white/[0.06] bg-[#111111] px-4 py-3">
           {/* Paperclip */}
           <button
             type="button"
@@ -440,7 +440,7 @@ export default function ChatPanel({
             disabled={chatBlocked}
             className="shrink-0 text-[#555555] hover:text-[#888888] transition-colors self-end pb-[1px] disabled:opacity-40 disabled:pointer-events-none"
           >
-            <Paperclip size={15} strokeWidth={1.5} />
+            <Paperclip size={16} strokeWidth={1.5} />
           </button>
           <input
             ref={fileInputRef}
@@ -463,7 +463,7 @@ export default function ChatPanel({
             }
             rows={1}
             disabled={chatBlocked}
-            className="flex-1 resize-none bg-transparent text-[13px] text-white placeholder:text-[#555555] outline-none leading-relaxed min-h-[20px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 resize-none bg-transparent text-[14px] text-white placeholder:text-[#555555] outline-none leading-relaxed min-h-[20px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ fieldSizing: "content" } as React.CSSProperties}
           />
 
@@ -472,9 +472,9 @@ export default function ChatPanel({
             onClick={() => { void handleSend(); }}
             disabled={!input.trim() || sending || chatBlocked}
             title="Send"
-            className="shrink-0 flex items-center justify-center w-[24px] h-[24px] rounded-full bg-white text-black hover:bg-[#e5e5e5] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer self-end"
+            className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white text-black hover:bg-[#e5e5e5] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer self-end"
           >
-            <ArrowUp size={13} strokeWidth={2.5} />
+            <ArrowUp size={14} strokeWidth={2.5} />
           </button>
         </div>
       </div>
