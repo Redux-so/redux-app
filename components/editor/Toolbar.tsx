@@ -51,7 +51,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={title}
       className={[
-        "flex shrink-0 items-center justify-center w-[32px] h-[32px] rounded-lg transition-colors cursor-pointer",
+        "flex shrink-0 items-center justify-center h-9 w-9 rounded-lg transition-colors cursor-pointer",
         "disabled:opacity-30 disabled:cursor-not-allowed",
         active
           ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
@@ -64,7 +64,7 @@ function ToolbarBtn({
 }
 
 function Divider() {
-  return <div className="w-px h-[18px] bg-white/[0.08] mx-1" />;
+  return <div className="w-px h-5 bg-white/[0.08] mx-1" />;
 }
 
 export default function Toolbar({
@@ -87,7 +87,7 @@ export default function Toolbar({
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
   return (
-    <div className="grid h-[52px] shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl pl-3 pr-3">
+    <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl pl-3 pr-3">
       {/* Left — logo aligned with library Header (same pl-3 + AppChromeLogo) */}
       <div className="flex min-w-0 shrink-0 items-center justify-self-start gap-3">
         <Link
@@ -102,19 +102,19 @@ export default function Toolbar({
       <div className="flex shrink-0 items-center justify-center gap-[2px]">
         {/* Zoom */}
         <ToolbarBtn onClick={zoomOut} title="Zoom out">
-          <Minus size={16} strokeWidth={2} />
+          <Minus size={18} strokeWidth={2} />
         </ToolbarBtn>
 
         <button
           onClick={resetZoom}
           title="Reset zoom"
-          className="flex shrink-0 items-center justify-center h-[32px] px-3 rounded-lg text-[13px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
+          className="flex shrink-0 items-center justify-center h-9 px-3 rounded-lg text-[14px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
         >
           {zoomPercent}
         </button>
 
         <ToolbarBtn onClick={zoomIn} title="Zoom in">
-          <Plus size={16} strokeWidth={2} />
+          <Plus size={18} strokeWidth={2} />
         </ToolbarBtn>
 
         <Divider />
@@ -125,17 +125,17 @@ export default function Toolbar({
           active={showBefore}
           title={showBefore ? "Show after" : "Show before"}
         >
-          <Columns2 size={16} strokeWidth={1.75} />
+          <Columns2 size={18} strokeWidth={1.75} />
         </ToolbarBtn>
 
         <Divider />
 
         {/* Undo / Redo */}
         <ToolbarBtn onClick={onUndo} disabled={!canUndo} title="Undo">
-          <Undo2 size={16} strokeWidth={1.75} />
+          <Undo2 size={18} strokeWidth={1.75} />
         </ToolbarBtn>
         <ToolbarBtn onClick={onRedo} disabled={!canRedo} title="Redo">
-          <Redo2 size={16} strokeWidth={1.75} />
+          <Redo2 size={18} strokeWidth={1.75} />
         </ToolbarBtn>
       </div>
 
@@ -144,7 +144,7 @@ export default function Toolbar({
         {filename && (
           <span
             title={filename}
-            className="min-w-0 max-w-[22ch] shrink truncate text-left text-[12px] text-[#888888]"
+            className="min-w-0 max-w-[22ch] shrink truncate text-left text-[13px] text-[#888888]"
           >
             {filename}
           </span>
@@ -153,26 +153,26 @@ export default function Toolbar({
         <div className="flex shrink-0 items-center gap-[5px]">
           <span
             className={[
-              "w-[6px] h-[6px] rounded-full shrink-0 transition-colors",
+              "w-2 h-2 rounded-full shrink-0 transition-colors",
               isDirty ? "bg-[#f59e0b]" : "bg-[#22c55e]",
               justSaved ? "animate-pulse" : "",
             ].join(" ")}
           />
-          <span className="text-[11px] text-[#888888] whitespace-nowrap">
+          <span className="text-[12px] text-[#888888] whitespace-nowrap">
             {isDirty ? "Unsaved" : justSaved ? "Saving…" : "Auto-saved"}
           </span>
         </div>
 
         <ToolbarBtn onClick={onShowHistory} title="Version history">
-          <History size={16} strokeWidth={1.75} />
+          <History size={18} strokeWidth={1.75} />
         </ToolbarBtn>
 
         <button
           onClick={onExport}
           title="Export / share"
-          className="flex shrink-0 items-center gap-1.5 h-[32px] px-3.5 rounded-full text-[13px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
+          className="flex shrink-0 items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
         >
-          <Share2 size={16} strokeWidth={2} />
+          <Share2 size={14} strokeWidth={2} />
           Export
         </button>
       </div>

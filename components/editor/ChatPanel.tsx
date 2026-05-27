@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Minus, Paperclip, X } from "lucide-react";
+import { ArrowUp, MessageCircle, Minus, Paperclip, X } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
@@ -311,9 +311,12 @@ export default function ChatPanel({
     <div className="flex flex-col w-[400px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
       {/* Panel header */}
       <div className="flex items-center justify-between px-6 h-[52px] shrink-0 border-b border-white/[0.07]">
-        <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
-          Chat
-        </span>
+        <div className="flex items-center gap-2">
+          <MessageCircle size={14} strokeWidth={1.75} className="text-[#888888]" />
+          <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
+            Chat
+          </span>
+        </div>
         <button
           type="button"
           className="text-[#555555] hover:text-[#888888] transition-colors"
