@@ -111,7 +111,7 @@ export default function BottomNav() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 4 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute bottom-full mb-2 left-0 z-50 w-[208px] bg-black/70 backdrop-blur-2xl border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+                className="absolute bottom-full mb-2 left-0 z-50 w-[208px] bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
               >
                 <div className="py-1.5">
                   <button
