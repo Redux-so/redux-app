@@ -111,35 +111,35 @@ export default function BottomNav() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 4 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute bottom-full mb-2 left-0 z-50 w-[180px] bg-black/70 backdrop-blur-2xl border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+                className="absolute bottom-full mb-2 left-0 z-50 w-[208px] bg-black/70 backdrop-blur-2xl border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
               >
-                <div className="py-1">
+                <div className="py-1.5">
                   <button
                     onClick={() => {
                       setPopoverOpen(false);
                       router.push("/settings");
                     }}
-                    className="w-full flex items-center gap-[10px] px-3 py-[8px] text-[12px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
                   >
-                    <Settings size={13} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
+                    <Settings size={15} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
                     Settings
                   </button>
 
                   <button
                     onClick={openCreditShop}
-                    className="w-full flex items-center gap-[10px] px-3 py-[8px] text-[12px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
                   >
-                    <CreditCard size={13} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
+                    <CreditCard size={15} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
                     Purchase Credits
                   </button>
 
-                  <div className="my-1 border-t border-white/[0.08]" />
+                  <div className="my-1.5 border-t border-white/[0.08]" />
 
                   <button
                     onClick={() => void handleSignOut()}
-                    className="w-full flex items-center gap-[10px] px-3 py-[8px] text-[12px] text-[#ef4444] hover:bg-white/[0.07] transition-colors cursor-pointer rounded-lg"
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#ef4444] hover:bg-white/[0.07] transition-colors cursor-pointer rounded-lg"
                   >
-                    <LogOut size={13} strokeWidth={1.5} className="shrink-0" />
+                    <LogOut size={15} strokeWidth={1.5} className="shrink-0" />
                     Log Out
                   </button>
                 </div>
