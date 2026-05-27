@@ -87,47 +87,47 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed z-50 inset-0 flex items-center justify-center pointer-events-none"
           >
-            <div className="pointer-events-auto w-[400px] bg-[#111111] border border-[#2a2a2a] rounded-sm shadow-2xl">
+            <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#111111]/95 backdrop-blur-xl border border-white/[0.1] rounded-2xl shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-[#2a2a2a]">
+              <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4">
                 <div>
-                  <h2 className="text-white text-[14px] font-medium">Purchase Credits</h2>
-                  <p className="text-[#888888] text-[11px] mt-[2px]">
+                  <h2 className="text-white text-[16px] font-medium">Purchase Credits</h2>
+                  <p className="text-[#888888] text-[12px] mt-[2px]">
                     Credits power all AI features in Redux
                   </p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="flex items-center justify-center w-[26px] h-[26px] rounded-sm text-[#888888] hover:text-white hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer"
                 >
-                  <X size={14} strokeWidth={1.5} />
+                  <X size={16} strokeWidth={1.5} />
                 </button>
               </div>
 
               {/* Body */}
-              <div className="px-5 py-4">
+              <div className="px-6 py-5">
                 {loading ? (
                   <div className="flex items-center justify-center py-10">
-                    <Loader2 size={18} className="animate-spin text-[#888888]" />
+                    <Loader2 size={20} className="animate-spin text-[#888888]" />
                   </div>
                 ) : bundles.length === 0 ? (
-                  <p className="text-[#888888] text-[12px] text-center py-8">
+                  <p className="text-[#888888] text-[13px] text-center py-8">
                     No credit packages available right now.
                   </p>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2.5">
                     {bundles.map((bundle) => (
                       <div
                         key={bundle.id}
-                        className="flex items-center justify-between px-4 py-3 bg-[#161616] border border-[#2a2a2a] rounded-sm"
+                        className="flex items-center justify-between rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3.5"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-[30px] h-[30px] rounded-sm bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
-                            <Coins size={14} strokeWidth={1.5} className="text-white" />
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.05]">
+                            <Coins size={16} strokeWidth={1.5} className="text-white" />
                           </div>
                           <div>
-                            <p className="text-white text-[12px] font-medium">{bundle.name}</p>
-                            <p className="text-[#888888] text-[11px]">
+                            <p className="text-white text-[13px] font-medium">{bundle.name}</p>
+                            <p className="text-[#888888] text-[12px]">
                               {bundle.credits.toLocaleString()} credits
                             </p>
                           </div>
@@ -135,10 +135,10 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         <button
                           onClick={() => void handlePurchase(bundle.id)}
                           disabled={purchasing === bundle.id}
-                          className="flex items-center gap-[5px] h-[28px] px-3 bg-white text-black text-[11px] font-medium rounded-sm hover:bg-[#e8e8e8] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-white px-4 text-[13px] font-medium text-black hover:bg-[#e8e8e8] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {purchasing === bundle.id ? (
-                            <Loader2 size={11} className="animate-spin" />
+                            <Loader2 size={13} className="animate-spin" />
                           ) : null}
                           {formatPrice(bundle.price)}
                         </button>
@@ -149,8 +149,8 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3 border-t border-[#2a2a2a]">
-                <p className="text-[#555555] text-[10px] text-center">
+              <div className="border-t border-white/[0.08] px-6 py-3.5">
+                <p className="text-[#555555] text-[12px] text-center">
                   Secure checkout powered by Stripe · Credits never expire
                 </p>
               </div>
