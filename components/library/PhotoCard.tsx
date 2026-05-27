@@ -56,21 +56,21 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
       />
 
       {/* Hover overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2.5">
         <button
           onClick={handleEdit}
-          className="flex items-center gap-[5px] h-[28px] px-[10px] bg-white/[0.12] backdrop-blur-sm border border-white/[0.15] rounded-lg text-white text-[11px] font-medium hover:bg-white/[0.2] transition-all cursor-pointer"
+          className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.15] bg-white/[0.12] px-4 text-[13px] font-medium text-white backdrop-blur-sm hover:bg-white/[0.2] transition-all cursor-pointer"
         >
-          <Pencil size={11} strokeWidth={2} />
+          <Pencil size={15} strokeWidth={2} />
           Edit
         </button>
 
         <button
           onClick={handleDelete}
           disabled={isDeleting}
-          className="flex items-center gap-[5px] h-[28px] px-[10px] bg-black/40 backdrop-blur-sm border border-red-500/20 rounded-lg text-[#ef4444] text-[11px] font-medium hover:bg-red-500/10 transition-all cursor-pointer disabled:opacity-50"
+          className="flex h-9 items-center gap-2 rounded-lg border border-red-500/20 bg-black/40 px-4 text-[13px] font-medium text-[#ef4444] backdrop-blur-sm hover:bg-red-500/10 transition-all cursor-pointer disabled:opacity-50"
         >
-          <Trash2 size={11} strokeWidth={2} />
+          <Trash2 size={15} strokeWidth={2} />
           {isDeleting ? "Deleting..." : "Delete"}
         </button>
       </div>
