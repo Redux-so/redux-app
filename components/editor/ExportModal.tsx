@@ -6,10 +6,6 @@ import * as SliderPrimitive from "@radix-ui/react-slider";
 import { X, Download, BookImage, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
-import {
-  glassModalPanelClassName,
-  glassModalPortalShellClassName,
-} from "@/constants/glass-modal";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
 
@@ -130,7 +126,7 @@ export default function ExportModal({
 
   return createPortal(
     <div
-      className={glassModalPortalShellClassName}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
       onClick={(e) => {
         if (e.target === e.currentTarget && !loading) {
           onClose();
@@ -141,27 +137,27 @@ export default function ExportModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`${glassModalPanelClassName} w-[460px] max-w-[min(460px,calc(100vw-2rem))]`}
+        className="mx-4 w-full max-w-[480px] rounded-2xl border border-white/[0.1] bg-[#111111] p-6 shadow-2xl"
       >
         {/* Header — same typography as Upload modal */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 id={titleId} className="text-[13px] font-medium text-white">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 id={titleId} className="text-[16px] font-medium text-white">
             Export Image
           </h2>
           <button
             type="button"
             disabled={loading}
-            className="text-[#888888] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
             onClick={onClose}
           >
-            <X size={15} strokeWidth={1.5} />
+            <X size={16} strokeWidth={1.5} />
           </button>
         </div>
 
         {/* Body inset — echoes upload “card” zones */}
-        <div className="border border-white/[0.08] rounded-xl bg-white/[0.03] p-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
           <div className="flex flex-col gap-2">
-            <span className="text-[11px] text-[#555555] uppercase tracking-wider">
+            <span className="text-[12px] uppercase tracking-wider text-[#555555]">
               Format
             </span>
             <div className="flex gap-[6px]">
@@ -171,7 +167,7 @@ export default function ExportModal({
                   type="button"
                   onClick={() => setFormat(f)}
                   className={[
-                    "flex-1 h-[32px] rounded-lg border text-[12px] font-medium uppercase tracking-wide transition-all cursor-pointer",
+                    "flex-1 h-9 rounded-lg border text-[13px] font-medium uppercase tracking-wide transition-all cursor-pointer",
                     format === f
                       ? "bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white border-transparent shadow-glow-sm"
                       : "border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15]",
@@ -186,10 +182,10 @@ export default function ExportModal({
           {format === "jpeg" && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#555555] uppercase tracking-wider">
+                <span className="text-[12px] uppercase tracking-wider text-[#555555]">
                   Quality
                 </span>
-                <span className="text-[12px] text-[#888888] tabular-nums">
+                <span className="text-[13px] tabular-nums text-[#888888]">
                   {quality}
                 </span>
               </div>
@@ -206,35 +202,35 @@ export default function ExportModal({
                 </SliderPrimitive.Track>
                 <SliderPrimitive.Thumb className="block h-[12px] w-[12px] rounded-full bg-[#e5e5e5] shadow-[0_0_0_1px_rgba(255,255,255,0.15)] outline-none cursor-pointer transition-transform hover:scale-110" />
               </SliderPrimitive.Root>
-              <span className="text-[11px] text-[#555555]">
+              <span className="text-[12px] text-[#555555]">
                 Estimated size: {estimateSize(format, quality)}
               </span>
             </div>
           )}
 
           {format !== "jpeg" && (
-            <span className="text-[11px] text-[#555555]">
+            <span className="text-[12px] text-[#555555]">
               Estimated size: {estimateSize(format, quality)}
             </span>
           )}
         </div>
 
         {error && (
-          <p className="text-[12px] text-[#ef4444] mt-4">{error}</p>
+          <p className="mt-4 text-[13px] text-[#ef4444]">{error}</p>
         )}
 
-        {/* Footer — same rhythm as Upload: justify-between mt-4, gradient CTA */}
-        <div className="flex items-center justify-between mt-4">
+        {/* Footer — same rhythm as Upload: justify-between mt-5, gradient CTA */}
+        <div className="mt-5 flex items-center justify-between">
           <button
             type="button"
             onClick={() => void triggerExport("save")}
             disabled={loading || !imageId}
-            className="flex items-center gap-[6px] h-[30px] px-3 rounded-lg border border-white/[0.08] bg-white/[0.05] text-white/90 text-[12px] font-medium hover:bg-white/[0.09] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.05] px-4 text-[13px] font-medium text-white/90 hover:bg-white/[0.09] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
           >
             {pendingAction === "save" ? (
-              <Loader2 size={12} strokeWidth={2} className="animate-spin shrink-0" />
+              <Loader2 size={14} strokeWidth={2} className="shrink-0 animate-spin" />
             ) : (
-              <BookImage size={12} strokeWidth={1.75} />
+              <BookImage size={14} strokeWidth={1.75} />
             )}
             Save to library
           </button>
@@ -242,12 +238,12 @@ export default function ExportModal({
             type="button"
             onClick={() => void triggerExport("download")}
             disabled={loading || !imageId}
-            className="flex items-center gap-[6px] h-[30px] px-4 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[12px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
           >
             {pendingAction === "download" ? (
-              <Loader2 size={12} strokeWidth={2} className="animate-spin shrink-0" />
+              <Loader2 size={14} strokeWidth={2} className="shrink-0 animate-spin" />
             ) : (
-              <Download size={12} strokeWidth={2} />
+              <Download size={14} strokeWidth={2} />
             )}
             {pendingAction === "download" ? "Exporting…" : "Download"}
           </button>
