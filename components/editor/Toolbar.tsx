@@ -10,7 +10,7 @@ import {
   Undo2,
   Redo2,
   History,
-  Share2,
+  Upload,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -170,9 +170,9 @@ export default function Toolbar({
         <button
           onClick={onExport}
           title="Export / share"
-          className="flex shrink-0 items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-medium text-white bg-gradient-to-r from-[#682FBF] to-[#8B44E8] shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
+          className="flex items-center gap-[6px] px-4 py-2 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[13px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 shrink-0 cursor-pointer"
         >
-          <Share2 size={14} strokeWidth={2} />
+          <Upload size={14} strokeWidth={2} className="shrink-0 -scale-x-100 -scale-y-100" />
           Export
         </button>
       </div>
