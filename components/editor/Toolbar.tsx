@@ -3,7 +3,6 @@
 import Link from "next/link";
 
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
-import AppChromePageTitle from "@/components/shared/AppChromePageTitle";
 import {
   Minus,
   Plus,
@@ -97,7 +96,6 @@ export default function Toolbar({
         >
           <AppChromeLogo />
         </Link>
-        <AppChromePageTitle title="Editor" variant="glass" />
       </div>
 
       {/* Center — canvas controls (true viewport center via symmetric 1fr columns) */}

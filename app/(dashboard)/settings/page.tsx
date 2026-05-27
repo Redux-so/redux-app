@@ -19,7 +19,6 @@ import { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import BottomNav from "@/components/shared/BottomNav";
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
-import AppChromePageTitle from "@/components/shared/AppChromePageTitle";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -269,7 +268,6 @@ export default function SettingsPage() {
           >
             <AppChromeLogo />
           </Link>
-          <AppChromePageTitle title="Settings" variant="solid" />
         </header>
 
         {/* Scrollable content */}
