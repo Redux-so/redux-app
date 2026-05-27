@@ -4,10 +4,6 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Upload, X, ImageIcon } from "lucide-react";
 import { useUploadThing } from "@/lib/uploadthing";
-import {
-  glassModalPanelClassName,
-  glassModalPortalShellClassName,
-} from "@/constants/glass-modal";
 
 interface UploadButtonProps {
   onUploadComplete?: () => void;
@@ -90,23 +86,23 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
 
       {open && createPortal(
         <div
-          className={glassModalPortalShellClassName}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
           onClick={(e) => {
             if (e.target === e.currentTarget) handleClose();
           }}
         >
-          <div className={`${glassModalPanelClassName} w-[460px]`}>
+          <div className="mx-4 w-full max-w-[480px] rounded-2xl border border-white/[0.1] bg-[#111111] p-6 shadow-2xl">
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white text-[13px] font-medium">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-[16px] font-medium text-white">
                 Upload Photos
               </h2>
               <button
                 onClick={handleClose}
                 disabled={isUploading || isProcessing}
-                className="text-[#888888] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
               >
-                <X size={15} strokeWidth={1.5} />
+                <X size={16} strokeWidth={1.5} />
               </button>
             </div>
 
@@ -116,13 +112,13 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
                 onClick={() => inputRef.current?.click()}
-                className="border border-dashed border-white/[0.12] rounded-xl h-[140px] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#682FBF]/50 hover:bg-[#682FBF]/[0.04] transition-all duration-200"
+                className="flex h-[180px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.12] transition-all duration-200 hover:border-[#682FBF]/50 hover:bg-[#682FBF]/[0.04]"
               >
-                <ImageIcon size={22} strokeWidth={1} className="text-[#682FBF]/50" />
-                <p className="text-[#888888] text-[12px]">
+                <ImageIcon size={28} strokeWidth={1} className="text-[#682FBF]/50" />
+                <p className="text-[13px] text-[#888888]">
                   Drop a photo here or click to browse
                 </p>
-                <p className="text-[#555555] text-[10px]">
+                <p className="text-[12px] text-[#555555]">
                   JPEG, PNG, TIFF · up to 32 MB
                 </p>
               </div>
@@ -130,22 +126,22 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
 
             {/* File preview — shown after selection */}
             {file && (
-              <div className="border border-white/[0.08] rounded-lg bg-white/[0.03] p-3 flex items-center gap-3">
-                <div className="w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center shrink-0">
-                  <ImageIcon size={14} strokeWidth={1.5} className="text-[#555555]" />
+              <div className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.06]">
+                  <ImageIcon size={16} strokeWidth={1.5} className="text-[#555555]" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-[12px] truncate">{file.name}</p>
-                  <p className="text-[#888888] text-[10px]">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] text-white">{file.name}</p>
+                  <p className="text-[12px] text-[#888888]">
                     {formatBytes(file.size)}
                   </p>
                 </div>
                 {!isUploading && !isProcessing && (
                   <button
                     onClick={() => setFile(null)}
-                    className="text-[#555555] hover:text-white transition-colors cursor-pointer shrink-0"
+                    className="shrink-0 text-[#555555] hover:text-white transition-colors cursor-pointer"
                   >
-                    <X size={13} strokeWidth={1.5} />
+                    <X size={15} strokeWidth={1.5} />
                   </button>
                 )}
               </div>
@@ -154,17 +150,17 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
             {/* Progress bar */}
             {(isUploading || isProcessing) && (
               <div className="mt-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[#888888] text-[11px]">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[13px] text-[#888888]">
                     {isProcessing ? "Saving to library..." : "Uploading..."}
                   </span>
                   {!isProcessing && (
-                    <span className="text-[#888888] text-[11px]">{progress}%</span>
+                    <span className="text-[13px] text-[#888888]">{progress}%</span>
                   )}
                 </div>
-                <div className="h-[2px] bg-white/[0.08] rounded-full overflow-hidden">
+                <div className="h-[2px] overflow-hidden rounded-full bg-white/[0.08]">
                   <div
-                    className="h-full bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-full transition-all duration-150"
+                    className="h-full rounded-full bg-gradient-to-r from-[#682FBF] to-[#8B44E8] transition-all duration-150"
                     style={{ width: isProcessing ? "100%" : `${progress}%` }}
                   />
                 </div>
@@ -172,11 +168,11 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
             )}
 
             {/* Footer actions */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="mt-5 flex items-center justify-between">
               <button
                 onClick={() => inputRef.current?.click()}
                 disabled={isUploading || isProcessing}
-                className="text-[#555555] text-[11px] hover:text-[#888888] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default"
+                className="text-[12px] text-[#555555] hover:text-[#888888] transition-colors cursor-pointer disabled:cursor-default disabled:opacity-40"
               >
                 {file ? "Change file" : ""}
               </button>
@@ -184,9 +180,9 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
               {file && !isUploading && !isProcessing && (
                 <button
                   onClick={handleUpload}
-                  className="flex items-center gap-[6px] h-[30px] px-4 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[12px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 cursor-pointer"
+                  className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow"
                 >
-                  <Upload size={12} strokeWidth={2} />
+                  <Upload size={14} strokeWidth={2} />
                   Upload
                 </button>
               )}
