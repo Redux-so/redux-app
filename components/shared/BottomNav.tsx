@@ -99,9 +99,9 @@ export default function BottomNav() {
         )}
       </AnimatePresence>
 
-      <nav className="grid h-16 grid-cols-[140px_1fr_140px] items-center bg-black/40 backdrop-blur-2xl px-3 border-t border-white/[0.08] shrink-0">
+      <nav className="grid h-16 grid-cols-[168px_1fr_168px] items-center bg-black/40 backdrop-blur-2xl px-3 border-t border-white/[0.08] shrink-0">
         {/* User info — clickable profile area */}
-        <div ref={popoverRef} className="relative flex items-center justify-self-start w-[140px]">
+        <div ref={popoverRef} className="relative flex min-w-0 items-center justify-self-start w-[168px] max-w-[180px]">
           {/* Popover */}
           <AnimatePresence>
             {popoverOpen && (
@@ -150,24 +150,24 @@ export default function BottomNav() {
           {/* Profile trigger */}
           <button
             onClick={() => setPopoverOpen((prev) => !prev)}
-            className="flex items-center gap-2 w-full rounded-lg px-1 py-1 -mx-1 hover:bg-white/[0.06] transition-colors cursor-pointer"
+            className="flex min-w-0 items-center gap-2.5 w-full rounded-lg px-1.5 py-1.5 -mx-1 hover:bg-white/[0.06] transition-colors cursor-pointer"
           >
             {user?.imageUrl ? (
               <Image
                 src={user.imageUrl}
                 alt="avatar"
-                width={26}
-                height={26}
-                className="rounded-lg object-cover shrink-0"
+                width={36}
+                height={36}
+                className="h-[36px] w-[36px] rounded-lg object-cover shrink-0"
               />
             ) : (
-              <div className="w-[26px] h-[26px] rounded-lg bg-white/[0.06] border border-white/[0.08] shrink-0" />
+              <div className="w-[36px] h-[36px] rounded-lg bg-white/[0.06] border border-white/[0.08] shrink-0" />
             )}
-            <div className="flex flex-col min-w-0 text-left">
-              <span className="text-white text-[13px] leading-[1.3] font-medium truncate">
+            <div className="flex min-w-0 flex-col text-left">
+              <span className="text-white text-[14px] leading-[1.3] font-medium truncate">
                 {user?.fullName ?? user?.firstName ?? ""}
               </span>
-              <span className="text-[#888888] text-[11px] leading-[1.3]">
+              <span className="text-[#888888] text-[12px] leading-[1.3] whitespace-nowrap truncate">
                 {credits !== null ? credits.toLocaleString() : "—"} Credits
               </span>
             </div>
@@ -210,7 +210,7 @@ export default function BottomNav() {
         </div>
 
         {/* Mirrors profile column width so tabs stay visually centered in the nav */}
-        <div className="w-[140px] justify-self-end shrink-0" aria-hidden />
+        <div className="w-[168px] justify-self-end shrink-0" aria-hidden />
       </nav>
 
       <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />
