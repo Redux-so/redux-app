@@ -89,10 +89,10 @@ export default function BottomNav() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="fixed top-[72px] left-5 z-50 flex items-center gap-2.5 rounded-xl border border-[#22c55e]/40 bg-black/60 backdrop-blur-xl px-[14px] py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.5)] pointer-events-none"
+            className="fixed top-[72px] left-5 z-50 flex items-center gap-3 rounded-xl border border-[#682FBF] bg-black/60 backdrop-blur-xl px-4 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.5)] pointer-events-none"
           >
-            <ImageIcon size={14} strokeWidth={1.5} className="text-[#22c55e] shrink-0" />
-            <span className="text-white text-[13px]">
+            <ImageIcon size={16} strokeWidth={1.5} className="text-[#B07EF0] shrink-0" />
+            <span className="text-white text-[14px] leading-snug">
               Select a photo from your library to start editing
             </span>
           </motion.div>

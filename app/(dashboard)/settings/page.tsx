@@ -19,6 +19,7 @@ import { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import BottomNav from "@/components/shared/BottomNav";
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
+import AppChromePageTitle from "@/components/shared/AppChromePageTitle";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -261,17 +262,14 @@ export default function SettingsPage() {
 
       <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
         {/* Header */}
-        <header className="h-[52px] bg-[#0a0a0a] border-b border-[#2a2a2a] flex items-center gap-3 shrink-0 pl-3 pr-3">
-          <div className="flex h-[52px] shrink-0 items-center">
-            <Link
-              href="/library"
-              className="inline-flex items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
-            >
-              <AppChromeLogo />
-            </Link>
-          </div>
-          <div className="w-px h-[18px] bg-[#2a2a2a] shrink-0" />
-          <span className="text-white text-[13px] font-medium">Settings</span>
+        <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-[#2a2a2a] bg-[#0a0a0a] pl-3 pr-3">
+          <Link
+            href="/library"
+            className="inline-flex shrink-0 items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
+          >
+            <AppChromeLogo />
+          </Link>
+          <AppChromePageTitle title="Settings" variant="solid" />
         </header>
 
         {/* Scrollable content */}
