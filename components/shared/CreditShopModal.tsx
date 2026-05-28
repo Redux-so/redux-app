@@ -135,7 +135,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         <button
                           onClick={() => void handlePurchase(bundle.id)}
                           disabled={purchasing === bundle.id}
-                          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-white px-4 text-[13px] font-medium text-black hover:bg-[#e8e8e8] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {purchasing === bundle.id ? (
                             <Loader2 size={13} className="animate-spin" />
