@@ -3,6 +3,8 @@
 :root {
   --background: #0a0a0a;
   --foreground: #ededed;
+  /* Opaque match for bg-black/50 on --background (editor side panels) */
+  --surface-chrome: color-mix(in srgb, black 50%, #0a0a0a);
   --accent: #682FBF;
   --accent-end: #8B44E8;
   --accent-glow: rgba(104, 47, 191, 0.4);
@@ -14,6 +16,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface-chrome: var(--surface-chrome);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 

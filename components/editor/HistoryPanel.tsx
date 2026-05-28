@@ -73,7 +73,7 @@ export default function HistoryPanel({
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 bottom-0 z-40 flex w-[400px] flex-col border-l border-white/[0.07] bg-[#111111] shadow-2xl">
+      <div className="fixed right-0 top-0 bottom-0 z-40 flex w-[400px] flex-col border-l border-white/[0.07] bg-surface-chrome shadow-2xl">
         {/* Header */}
         <div className="flex h-[52px] shrink-0 items-center justify-between border-b border-white/[0.07] px-6">
           <div className="flex items-center gap-2">
