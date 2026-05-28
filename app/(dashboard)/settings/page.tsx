@@ -70,7 +70,7 @@ const SETTING_ROW =
 const BTN_GHOST =
   "h-9 px-4 text-[14px] text-[#888888] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
 const BTN_PRIMARY =
-  "h-9 px-4 text-[14px] font-medium bg-white text-black rounded-sm hover:bg-[#e8e8e8] transition-colors cursor-pointer whitespace-nowrap";
+  "h-9 px-4 text-[13px] font-medium rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow cursor-pointer whitespace-nowrap";
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
