@@ -72,6 +72,9 @@ const BTN_GHOST =
 const BTN_PRIMARY =
   "h-9 px-4 text-[13px] font-medium rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow cursor-pointer whitespace-nowrap";
 
+/** Transaction list scrolls after this many rows (~40px per row → max-h-[400px]) */
+const TRANSACTION_HISTORY_VISIBLE_ROWS = 10;
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton({ className }: { className?: string }) {
@@ -396,38 +399,46 @@ export default function SettingsPage() {
                         </span>
                       ))}
                     </div>
-                    {stats.transactionHistory.map((tx) => (
-                      <div
-                        key={tx.id}
-                        className="grid grid-cols-4 px-3 py-[10px] border-b border-[#2a2a2a] last:border-0 hover:bg-[#161616] transition-colors"
-                      >
-                        <span className="text-[14px] text-[#888888]">
-                          {formatDate(tx.createdAt)}
-                        </span>
-                        <span className="text-[14px] text-[#888888] truncate">
-                          {formatFeature(tx.feature)}
-                        </span>
-                        <span
-                          className={`text-[11px] font-medium uppercase tracking-wide ${
-                            tx.type === "PURCHASE" || tx.type === "BONUS"
-                              ? "text-[#22c55e]"
-                              : tx.type === "REFUND"
-                              ? "text-[#f59e0b]"
-                              : "text-[#888888]"
-                          }`}
+                    <div
+                      className={
+                        stats.transactionHistory.length > TRANSACTION_HISTORY_VISIBLE_ROWS
+                          ? "max-h-[400px] overflow-y-auto"
+                          : undefined
+                      }
+                    >
+                      {stats.transactionHistory.map((tx) => (
+                        <div
+                          key={tx.id}
+                          className="grid grid-cols-4 px-3 py-[10px] border-b border-[#2a2a2a] last:border-0 hover:bg-[#161616] transition-colors"
                         >
-                          {tx.type}
-                        </span>
-                        <span
-                          className={`text-[14px] font-medium ${
-                            tx.amount > 0 ? "text-[#22c55e]" : "text-white"
-                          }`}
-                        >
-                          {tx.amount > 0 ? "+" : ""}
-                          {tx.amount}
-                        </span>
-                      </div>
-                    ))}
+                          <span className="text-[14px] text-[#888888]">
+                            {formatDate(tx.createdAt)}
+                          </span>
+                          <span className="text-[14px] text-[#888888] truncate">
+                            {formatFeature(tx.feature)}
+                          </span>
+                          <span
+                            className={`text-[11px] font-medium uppercase tracking-wide ${
+                              tx.type === "PURCHASE" || tx.type === "BONUS"
+                                ? "text-[#22c55e]"
+                                : tx.type === "REFUND"
+                                ? "text-[#f59e0b]"
+                                : "text-[#888888]"
+                            }`}
+                          >
+                            {tx.type}
+                          </span>
+                          <span
+                            className={`text-[14px] font-medium ${
+                              tx.amount > 0 ? "text-[#22c55e]" : "text-white"
+                            }`}
+                          >
+                            {tx.amount > 0 ? "+" : ""}
+                            {tx.amount}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
