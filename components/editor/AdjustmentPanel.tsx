@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Minus, ChevronDown, Star, Lock, Unlock, X } from "lucide-react";
 import toast from "react-hot-toast";
-import AdjustmentSlider from "./AdjustmentSlider";
+import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
@@ -59,6 +59,12 @@ const LIGHT_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
   { key: "highlights", label: "Highlights" },
   { key: "shadows", label: "Shadows" },
 ];
+
+const COLOR_TRACK_VARIANTS: Partial<Record<AdjustmentKey, SliderTrackVariant>> = {
+  temperature: "temperature",
+  tint: "tint",
+  hue: "hue",
+};
 
 const COLOR_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
   { key: "vibrance", label: "Vibrance" },
@@ -705,6 +711,7 @@ export default function AdjustmentPanel({
                 value={adjustments[key]}
                 onChange={(v) => onPreview(key, v)}
                 onCommit={(v) => onCommit(key, v)}
+                trackVariant={COLOR_TRACK_VARIANTS[key] ?? "neutral"}
               />
             ))}
             <div className="flex flex-col gap-2 px-6 pt-3 pb-1">
