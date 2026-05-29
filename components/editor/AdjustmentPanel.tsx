@@ -28,6 +28,9 @@ interface AdjustmentPanelProps {
   enableHealBrush?: () => void | Promise<void>;
   disableHealBrush?: () => void;
   exportHealMask?: () => Promise<string>;
+  enableEraserBrush?: () => void | Promise<void>;
+  disableEraserBrush?: () => void;
+  exportEraserMask?: () => Promise<string>;
 }
 
 interface SectionState {
@@ -204,6 +207,9 @@ export default function AdjustmentPanel({
   enableHealBrush,
   disableHealBrush,
   exportHealMask,
+  enableEraserBrush,
+  disableEraserBrush,
+  exportEraserMask,
 }: AdjustmentPanelProps) {
   const [sections, setSections] = useState<SectionState>({
     light: true,
@@ -269,6 +275,7 @@ export default function AdjustmentPanel({
   const [genFillPreviewUrl, setGenFillPreviewUrl] = useState<string | null>(null);
   const [loadingRemoveBg, setLoadingRemoveBg] = useState(false);
   const [loadingHeal, setLoadingHeal] = useState(false);
+  const [loadingEraser, setLoadingEraser] = useState(false);
 
   const prevActiveToolRef = useRef<ActiveTool>(null);
   useEffect(() => {
@@ -279,8 +286,14 @@ export default function AdjustmentPanel({
     if (activeTool !== "heal" && prev === "heal") {
       disableHealBrush?.();
     }
+    if (activeTool === "eraser" && prev !== "eraser") {
+      void enableEraserBrush?.();
+    }
+    if (activeTool !== "eraser" && prev === "eraser") {
+      disableEraserBrush?.();
+    }
     prevActiveToolRef.current = activeTool;
-  }, [activeTool, enableHealBrush, disableHealBrush]);
+  }, [activeTool, enableHealBrush, disableHealBrush, enableEraserBrush, disableEraserBrush]);
 
   function toggleSection(key: keyof SectionState) {
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -536,6 +549,52 @@ export default function AdjustmentPanel({
   }
 
   function cancelHeal() {
+    setActiveTool(null);
+  }
+
+  // ── Eraser (inpainting via heal API) ──────────────────────────────────────
+  async function confirmEraser() {
+    if (!canvasImageUrl || !imageId || !exportEraserMask) return;
+    const darkStyle = {
+      background: "rgba(15, 10, 25, 0.9)",
+      color: "#e5e5e5",
+      border: "1px solid rgba(255,255,255,0.1)",
+    };
+    setLoadingEraser(true);
+    try {
+      let maskBase64: string;
+      try {
+        maskBase64 = await exportEraserMask();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Could not export mask";
+        toast.error(msg, { style: darkStyle });
+        return;
+      }
+      const res = await fetch("/api/images/erase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId }),
+      });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(errBody.detail ?? `HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { resultUrl?: string };
+      if (data.resultUrl) {
+        onReloadCanvas?.(data.resultUrl);
+      }
+      toast.success("Eraser applied successfully", { style: darkStyle });
+      disableEraserBrush?.();
+      setActiveTool(null);
+    } catch (err) {
+      console.error("[AdjustmentPanel] eraser failed:", err);
+      toast.error("Eraser failed", { style: darkStyle });
+    } finally {
+      setLoadingEraser(false);
+    }
+  }
+
+  function cancelEraser() {
     setActiveTool(null);
   }
 
@@ -841,6 +900,37 @@ export default function AdjustmentPanel({
                 onClick={() => toggleTool("eraser")}
               />
             </div>
+            {activeTool === "eraser" && (
+              <div className="flex flex-col gap-2 pt-1">
+                <p className="text-[12px] text-[#888888] leading-relaxed">
+                  Paint over the area to erase in white, then confirm.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelEraser}
+                    className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void confirmEraser()}
+                    disabled={loadingEraser}
+                    className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                  >
+                    {loadingEraser ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Processing…
+                      </>
+                    ) : (
+                      "Confirm"
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

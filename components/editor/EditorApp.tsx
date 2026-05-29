@@ -74,6 +74,9 @@ export default function EditorApp() {
     enableHealBrush,
     disableHealBrush,
     exportMask,
+    enableEraserBrush,
+    disableEraserBrush,
+    exportEraserMask,
   } = useCanvas(image?.originalUrl ?? null, adjustments);
 
   return (
@@ -114,6 +117,9 @@ export default function EditorApp() {
           enableHealBrush={enableHealBrush}
           disableHealBrush={disableHealBrush}
           exportHealMask={exportMask}
+          enableEraserBrush={enableEraserBrush}
+          disableEraserBrush={disableEraserBrush}
+          exportEraserMask={exportEraserMask}
         />
 
         {/* Canvas must always be rendered — never conditionally unmount it.
