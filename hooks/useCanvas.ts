@@ -323,6 +323,7 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
         vpt[5] += dy;
         canvas.setViewportTransform(vpt);
         canvas.requestRenderAll();
+        setViewportTransform([vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]]);
       };
 
       const handlePointerUp = (e: PointerEvent) => {
