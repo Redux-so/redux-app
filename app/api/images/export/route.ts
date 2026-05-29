@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
     pipeline = pipeline.sharpen({ sigma });
   }
 
-  // noise reduction via blur
-  if (noiseReduction > 0) {
-    const sigma = (noiseReduction / 100) * 2;
+  // Noise reduction via blur — slider left (negative) = more softening.
+  if (noiseReduction < 0) {
+    const sigma = (Math.abs(noiseReduction) / 100) * 2;
     pipeline = pipeline.blur(sigma);
   }
 

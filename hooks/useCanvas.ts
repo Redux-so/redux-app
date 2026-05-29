@@ -115,10 +115,10 @@ function buildCssFilter(adj: CanvasAdjustments): string {
   ];
 
   // Noise reduction: CSS Gaussian blur is a valid real-time approximation.
-  // noiseReduction=0 → 0px blur, noiseReduction=100 → 2px blur.
+  // Slider left (negative) = more blur: noiseReduction=-100 → 2px, 0 → 0px.
   // The real noise reduction (via Replicate) is applied server-side on export.
-  if (normalized.noiseReduction > 0) {
-    const blurPx = (normalized.noiseReduction / 100) * 2;
+  if (normalized.noiseReduction < 0) {
+    const blurPx = (Math.abs(normalized.noiseReduction) / 100) * 2;
     parts.push(`blur(${blurPx.toFixed(2)}px)`);
   }
 
