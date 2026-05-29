@@ -221,6 +221,8 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   const healPathHandlerRef = useRef<((e: { path: FabricObject }) => void) | null>(null);
   const eraserPathsRef = useRef<FabricObject[]>([]);
   const eraserPathHandlerRef = useRef<((e: { path: FabricObject }) => void) | null>(null);
+  const blurPathsRef = useRef<FabricObject[]>([]);
+  const blurPathHandlerRef = useRef<((e: { path: FabricObject }) => void) | null>(null);
 
   // ---------------------------------------------------------------------------
   // Initialize Fabric canvas
@@ -372,6 +374,8 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
       healPathsRef.current = [];
       eraserPathHandlerRef.current = null;
       eraserPathsRef.current = [];
+      blurPathHandlerRef.current = null;
+      blurPathsRef.current = [];
 
       eventCleanupRef.current?.();
       eventCleanupRef.current = null;
@@ -869,6 +873,107 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
   }, []);
 
+  const enableBlurBrush = useCallback(async () => {
+    const canvas = fabricRef.current;
+    if (!canvas || !bgImageRef.current) return;
+
+    const { PencilBrush } = await import("fabric");
+
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+    canvas.requestRenderAll();
+    setZoom(1);
+    setViewportTransform([1, 0, 0, 1, 0, 0]);
+
+    if (blurPathHandlerRef.current) {
+      canvas.off("path:created", blurPathHandlerRef.current);
+      blurPathHandlerRef.current = null;
+    }
+    for (const p of blurPathsRef.current) {
+      try { canvas.remove(p); } catch { /* ignore */ }
+    }
+    blurPathsRef.current = [];
+
+    const onPathCreated = (e: { path: FabricObject }) => {
+      blurPathsRef.current.push(e.path);
+    };
+    canvas.on("path:created", onPathCreated);
+    blurPathHandlerRef.current = onPathCreated;
+
+    const brush = new PencilBrush(canvas);
+    brush.color = "rgba(255, 200, 50, 0.7)";
+    brush.width = 20;
+    canvas.freeDrawingBrush = brush;
+    canvas.isDrawingMode = true;
+    canvas.selection = false;
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+  }, []);
+
+  const disableBlurBrush = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+
+    canvas.isDrawingMode = false;
+    if (blurPathHandlerRef.current) {
+      canvas.off("path:created", blurPathHandlerRef.current);
+      blurPathHandlerRef.current = null;
+    }
+    for (const p of blurPathsRef.current) {
+      try { canvas.remove(p); } catch { /* ignore */ }
+    }
+    blurPathsRef.current = [];
+    canvas.requestRenderAll();
+  }, []);
+
+  const exportBlurMask = useCallback(async (): Promise<string> => {
+    const canvas = fabricRef.current;
+    const img = bgImageRef.current;
+    if (!canvas || !img) throw new Error("Canvas not ready");
+    const paths = blurPathsRef.current;
+    if (paths.length === 0) throw new Error("Paint over the area to blur first");
+
+    const nw = img.width ?? 1;
+    const nh = img.height ?? 1;
+    const cw = canvas.getWidth();
+    const ch = canvas.getHeight();
+    const br = img.getBoundingRect();
+
+    const { StaticCanvas } = await import("fabric");
+    const el = document.createElement("canvas");
+    el.width = cw;
+    el.height = ch;
+    const tmp = new StaticCanvas(el, { width: cw, height: ch, backgroundColor: "#000000" });
+
+    for (const p of paths) {
+      const cloned = await p.clone();
+      cloned.set({ stroke: "#ffffff", fill: "", opacity: 1 });
+      tmp.add(cloned);
+    }
+    tmp.renderAll();
+    const fullMaskDataUrl = tmp.toDataURL({ format: "png", multiplier: 1 });
+    tmp.dispose();
+
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = nw;
+    maskCanvas.height = nh;
+    const ctx = maskCanvas.getContext("2d");
+    if (!ctx) throw new Error("Could not get 2d context");
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, nw, nh);
+
+    const bitmap = new Image();
+    await new Promise<void>((resolve, reject) => {
+      bitmap.onload = () => resolve();
+      bitmap.onerror = () => reject(new Error("Failed to load blur mask bitmap"));
+      bitmap.src = fullMaskDataUrl;
+    });
+    ctx.drawImage(bitmap, br.left, br.top, br.width, br.height, 0, 0, nw, nh);
+
+    const dataUrl = maskCanvas.toDataURL("image/png");
+    const comma = dataUrl.indexOf(",");
+    return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  }, []);
+
   const exportMask = useCallback(async (): Promise<string> => {
     const canvas = fabricRef.current;
     const img = bgImageRef.current;
@@ -958,5 +1063,8 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     enableEraserBrush,
     disableEraserBrush,
     exportEraserMask,
+    enableBlurBrush,
+    disableBlurBrush,
+    exportBlurMask,
   };
 }

@@ -31,6 +31,9 @@ interface AdjustmentPanelProps {
   enableEraserBrush?: () => void | Promise<void>;
   disableEraserBrush?: () => void;
   exportEraserMask?: () => Promise<string>;
+  enableBlurBrush?: () => void | Promise<void>;
+  disableBlurBrush?: () => void;
+  exportBlurMask?: () => Promise<string>;
 }
 
 interface SectionState {
@@ -210,6 +213,9 @@ export default function AdjustmentPanel({
   enableEraserBrush,
   disableEraserBrush,
   exportEraserMask,
+  enableBlurBrush,
+  disableBlurBrush,
+  exportBlurMask,
 }: AdjustmentPanelProps) {
   const [sections, setSections] = useState<SectionState>({
     light: true,
@@ -276,6 +282,8 @@ export default function AdjustmentPanel({
   const [loadingRemoveBg, setLoadingRemoveBg] = useState(false);
   const [loadingHeal, setLoadingHeal] = useState(false);
   const [loadingEraser, setLoadingEraser] = useState(false);
+  const [loadingBlur, setLoadingBlur] = useState(false);
+  const [blurIntensity, setBlurIntensity] = useState(30);
 
   const prevActiveToolRef = useRef<ActiveTool>(null);
   useEffect(() => {
@@ -292,8 +300,14 @@ export default function AdjustmentPanel({
     if (activeTool !== "eraser" && prev === "eraser") {
       disableEraserBrush?.();
     }
+    if (activeTool === "blur" && prev !== "blur") {
+      void enableBlurBrush?.();
+    }
+    if (activeTool !== "blur" && prev === "blur") {
+      disableBlurBrush?.();
+    }
     prevActiveToolRef.current = activeTool;
-  }, [activeTool, enableHealBrush, disableHealBrush, enableEraserBrush, disableEraserBrush]);
+  }, [activeTool, enableHealBrush, disableHealBrush, enableEraserBrush, disableEraserBrush, enableBlurBrush, disableBlurBrush]);
 
   function toggleSection(key: keyof SectionState) {
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -598,6 +612,52 @@ export default function AdjustmentPanel({
     setActiveTool(null);
   }
 
+  // ── Blur (Sharp Gaussian blur via painted mask) ───────────────────────────
+  async function confirmBlur() {
+    if (!canvasImageUrl || !imageId || !exportBlurMask) return;
+    const darkStyle = {
+      background: "rgba(15, 10, 25, 0.9)",
+      color: "#e5e5e5",
+      border: "1px solid rgba(255,255,255,0.1)",
+    };
+    setLoadingBlur(true);
+    try {
+      let maskBase64: string;
+      try {
+        maskBase64 = await exportBlurMask();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Could not export mask";
+        toast.error(msg, { style: darkStyle });
+        return;
+      }
+      const res = await fetch("/api/images/blur", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId, blurIntensity }),
+      });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(errBody.detail ?? `HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { resultUrl?: string };
+      if (data.resultUrl) {
+        onReloadCanvas?.(data.resultUrl);
+      }
+      toast.success("Blur applied successfully", { style: darkStyle });
+      disableBlurBrush?.();
+      setActiveTool(null);
+    } catch (err) {
+      console.error("[AdjustmentPanel] blur failed:", err);
+      toast.error("Blur failed", { style: darkStyle });
+    } finally {
+      setLoadingBlur(false);
+    }
+  }
+
+  function cancelBlur() {
+    setActiveTool(null);
+  }
+
   const darkToastStyle = {
     background: "rgba(15, 10, 25, 0.9)",
     color: "#e5e5e5",
@@ -854,12 +914,65 @@ export default function AdjustmentPanel({
                 onClick={() => toggleTool("heal")}
               />
               <ToolBtn
-                label="Blur"
+                label={
+                  loadingBlur ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 size={14} className="animate-spin shrink-0" />
+                      Working…
+                    </span>
+                  ) : (
+                    "Blur"
+                  )
+                }
                 active={activeTool === "blur"}
-                disabled={loadingHeal}
+                disabled={loadingBlur}
                 onClick={() => toggleTool("blur")}
               />
             </div>
+            {activeTool === "blur" && (
+              <div className="flex flex-col gap-2 pt-1">
+                <p className="text-[10px] text-[#555555] leading-snug">
+                  Paint over the area to blur in yellow, then confirm.
+                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-[#888888] shrink-0">Intensity</span>
+                  <input
+                    type="range"
+                    min={1}
+                    max={100}
+                    step={1}
+                    value={blurIntensity}
+                    onChange={(e) => setBlurIntensity(Number(e.target.value))}
+                    className="flex-1 accent-[#8B44E8] h-[3px] cursor-pointer"
+                  />
+                  <span className="text-[11px] text-[#888888] w-[24px] text-right shrink-0">{blurIntensity}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelBlur}
+                    className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void confirmBlur()}
+                    disabled={loadingBlur}
+                    className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                  >
+                    {loadingBlur ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Processing…
+                      </>
+                    ) : (
+                      "Confirm"
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
             {activeTool === "heal" && (
               <div className="flex flex-col gap-2">
                 <p className="text-[10px] text-[#555555] leading-snug">

@@ -77,6 +77,9 @@ export default function EditorApp() {
     enableEraserBrush,
     disableEraserBrush,
     exportEraserMask,
+    enableBlurBrush,
+    disableBlurBrush,
+    exportBlurMask,
   } = useCanvas(image?.originalUrl ?? null, adjustments);
 
   return (
@@ -120,6 +123,9 @@ export default function EditorApp() {
           enableEraserBrush={enableEraserBrush}
           disableEraserBrush={disableEraserBrush}
           exportEraserMask={exportEraserMask}
+          enableBlurBrush={enableBlurBrush}
+          disableBlurBrush={disableBlurBrush}
+          exportBlurMask={exportBlurMask}
         />
 
         {/* Canvas must always be rendered — never conditionally unmount it.
