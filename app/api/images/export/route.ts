@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { normalizeAdjustments } from "@/constants/adjustments";
-import { getTemperatureOverlay } from "@/lib/temperature-overlay";
+import { getColorOverlays } from "@/lib/color-overlays";
 import { prisma } from "@/lib/prisma";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
@@ -77,25 +77,15 @@ export async function POST(request: NextRequest) {
   const hue = normalized.hue;
 
   // exposure → modulate brightness (1.0 = neutral)
-  // Sharp modulate expects multipliers; -100 → ~0.2, 0 → 1.0, 100 → 2.0
-  const brightnessMultiplier = Math.max(
-    0.1,
-    1 + exposure / 100,
-  );
+  const brightnessMultiplier = Math.max(0.1, 1 + exposure / 100);
 
   // saturation + vibrance → modulate saturation (1.0 = neutral)
-  const saturationMultiplier = Math.max(
-    0,
-    1 + (saturation + vibrance * 0.5) / 100,
-  );
+  const saturationMultiplier = Math.max(0, 1 + (saturation + vibrance * 0.5) / 100);
 
-  // Hue rotation for hue + tint only (temperature uses overlay composite below)
-  const hueRotation = hue * 1.8 + tint * 0.3;
-
+  // Temperature, tint, and hue all use overlay composites — no hue rotation
   let pipeline = sharp(inputBuffer).modulate({
     brightness: brightnessMultiplier,
     saturation: saturationMultiplier,
-    hue: hueRotation,
   });
 
   // contrast → linear adjustment (a = 1 + contrast/100, b offset)
@@ -117,29 +107,42 @@ export async function POST(request: NextRequest) {
     pipeline = pipeline.blur(sigma);
   }
 
-  // Temperature — warm/cool overlay (matches canvas preview blend)
-  const temperatureOverlay = getTemperatureOverlay(temperature);
-  if (temperatureOverlay) {
+  // Color overlays — temperature, tint, hue (same order and blend modes as canvas preview)
+  const colorOverlays = getColorOverlays({ temperature, tint, hue });
+  const activeOverlays = [
+    colorOverlays.temperature,
+    colorOverlays.tint,
+    colorOverlays.hue,
+  ].filter(Boolean) as NonNullable<typeof colorOverlays.temperature>[];
+
+  if (activeOverlays.length > 0) {
     const metadata = await pipeline.metadata();
     const width = metadata.width ?? 0;
     const height = metadata.height ?? 0;
 
     if (width > 0 && height > 0) {
-      const { r, g, b } = temperatureOverlay.rgb;
-      const overlayBuffer = await sharp({
-        create: {
-          width,
-          height,
-          channels: 4,
-          background: { r, g, b, alpha: temperatureOverlay.opacity },
-        },
-      })
-        .png()
-        .toBuffer();
+      for (const ol of activeOverlays) {
+        const { r, g, b } = ol.rgb;
+        const overlayBuffer = await sharp({
+          create: {
+            width,
+            height,
+            channels: 4,
+            background: { r, g, b, alpha: ol.opacity },
+          },
+        })
+          .png()
+          .toBuffer();
 
-      pipeline = pipeline.composite([
-        { input: overlayBuffer, blend: "soft-light" },
-      ]);
+        pipeline = pipeline.composite([
+          {
+            input: overlayBuffer,
+            // CSS "color" blend has no Sharp equivalent; "multiply" gives a
+            // similar spectral tint without a full hue-rotate.
+            blend: ol.blendMode === "color" ? "multiply" : "soft-light",
+          },
+        ]);
+      }
     }
   }
 

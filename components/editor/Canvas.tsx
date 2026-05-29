@@ -1,6 +1,6 @@
 "use client";
 
-import { getTemperatureOverlay, type CanvasAdjustments, type ImageBounds } from "@/hooks/useCanvas";
+import { getColorOverlays, type CanvasAdjustments, type ImageBounds } from "@/hooks/useCanvas";
 
 interface CanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -34,10 +34,15 @@ export default function Canvas({
 }: CanvasProps) {
   const vignetteOpacity = Math.max(0, adjustments.vignette / 100);
   const grainOpacity = Math.max(0, adjustments.grain / 100);
-  const temperatureOverlay = getTemperatureOverlay(adjustments.temperature);
+  const { temperature: temperatureOverlay, tint: tintOverlay, hue: hueOverlay } =
+    getColorOverlays(adjustments);
   const showImageOverlays =
     imageBounds &&
-    (vignetteOpacity > 0 || grainOpacity > 0 || temperatureOverlay !== null);
+    (vignetteOpacity > 0 ||
+      grainOpacity > 0 ||
+      temperatureOverlay !== null ||
+      tintOverlay !== null ||
+      hueOverlay !== null);
 
   // Build the CSS matrix string from Fabric's viewport transform so the
   // overlay container transforms in lock-step with the canvas contents.
@@ -73,20 +78,24 @@ export default function Canvas({
                 transform: overlayMatrix,
               }}
             >
-              {/* Temperature — warm/cool color cast overlay */}
-              {temperatureOverlay && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: imageBounds.left,
-                    top: imageBounds.top,
-                    width: imageBounds.width,
-                    height: imageBounds.height,
-                    backgroundColor: temperatureOverlay.color,
-                    opacity: temperatureOverlay.opacity,
-                    mixBlendMode: temperatureOverlay.blendMode,
-                  }}
-                />
+              {/* Color overlays — temperature, tint, hue (applied in order) */}
+              {[temperatureOverlay, tintOverlay, hueOverlay].map(
+                (ol, i) =>
+                  ol && (
+                    <div
+                      key={i}
+                      style={{
+                        position: "absolute",
+                        left: imageBounds.left,
+                        top: imageBounds.top,
+                        width: imageBounds.width,
+                        height: imageBounds.height,
+                        backgroundColor: ol.color,
+                        opacity: ol.opacity,
+                        mixBlendMode: ol.blendMode,
+                      }}
+                    />
+                  ),
               )}
 
               {/* Vignette — radial gradient clipped to the image bounds */}

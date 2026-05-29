@@ -6,8 +6,12 @@ import { normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustment
 
 export {
   getTemperatureOverlay,
-  type TemperatureOverlay,
-} from "@/lib/temperature-overlay";
+  getTintOverlay,
+  getHueOverlay,
+  getColorOverlays,
+  type ColorOverlay,
+  type ActiveColorOverlays,
+} from "@/lib/color-overlays";
 
 export type CanvasAdjustments = Record<AdjustmentKey, number>;
 
@@ -100,17 +104,14 @@ function buildCssFilter(adj: CanvasAdjustments): string {
   // Saturation: saturation + vibrance at half weight
   const saturate = Math.max(0, 1 + (normalized.saturation + normalized.vibrance * 0.5) / 100);
 
-  // Hue rotation: hue + tint only (temperature uses a separate color overlay)
-  const hueRotate = normalized.hue * 1.8 + normalized.tint * 0.3;
-
   // Sharpen: approximate via contrast boost — real unsharp mask in Sharp on export
   const sharpenedContrast = contrast * (1 + Math.max(0, normalized.sharpen) * 0.005);
 
+  // Temperature, tint, and hue all use separate color overlays — no hue-rotate
   const parts = [
     `brightness(${brightness.toFixed(3)})`,
     `contrast(${sharpenedContrast.toFixed(3)})`,
     `saturate(${saturate.toFixed(3)})`,
-    `hue-rotate(${hueRotate.toFixed(2)}deg)`,
   ];
 
   // Noise reduction: CSS Gaussian blur is a valid real-time approximation.
