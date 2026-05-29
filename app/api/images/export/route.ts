@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { normalizeAdjustments } from "@/constants/adjustments";
+import { getTemperatureOverlay } from "@/lib/temperature-overlay";
 import { prisma } from "@/lib/prisma";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
   const sharpenVal = normalized.sharpen;
   const noiseReduction = normalized.noiseReduction;
   const temperature = normalized.temperature;
+  const tint = normalized.tint;
   const hue = normalized.hue;
 
   // exposure → modulate brightness (1.0 = neutral)
@@ -87,8 +89,8 @@ export async function POST(request: NextRequest) {
     1 + (saturation + vibrance * 0.5) / 100,
   );
 
-  // hue rotation in degrees (temperature is approximated as hue shift too)
-  const hueRotation = hue * 1.8 + temperature * 0.5;
+  // Hue rotation for hue + tint only (temperature uses overlay composite below)
+  const hueRotation = hue * 1.8 + tint * 0.3;
 
   let pipeline = sharp(inputBuffer).modulate({
     brightness: brightnessMultiplier,
@@ -113,6 +115,32 @@ export async function POST(request: NextRequest) {
   if (noiseReduction > 0) {
     const sigma = (noiseReduction / 100) * 2;
     pipeline = pipeline.blur(sigma);
+  }
+
+  // Temperature — warm/cool overlay (matches canvas preview blend)
+  const temperatureOverlay = getTemperatureOverlay(temperature);
+  if (temperatureOverlay) {
+    const metadata = await pipeline.metadata();
+    const width = metadata.width ?? 0;
+    const height = metadata.height ?? 0;
+
+    if (width > 0 && height > 0) {
+      const { r, g, b } = temperatureOverlay.rgb;
+      const overlayBuffer = await sharp({
+        create: {
+          width,
+          height,
+          channels: 4,
+          background: { r, g, b, alpha: temperatureOverlay.opacity },
+        },
+      })
+        .png()
+        .toBuffer();
+
+      pipeline = pipeline.composite([
+        { input: overlayBuffer, blend: "soft-light" },
+      ]);
+    }
   }
 
   // Format and quality

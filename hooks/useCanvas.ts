@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
 import { normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustments";
 
+export {
+  getTemperatureOverlay,
+  type TemperatureOverlay,
+} from "@/lib/temperature-overlay";
+
 export type CanvasAdjustments = Record<AdjustmentKey, number>;
 
 export interface ImageBounds {
@@ -95,14 +100,11 @@ function buildCssFilter(adj: CanvasAdjustments): string {
   // Saturation: saturation + vibrance at half weight
   const saturate = Math.max(0, 1 + (normalized.saturation + normalized.vibrance * 0.5) / 100);
 
-  // Hue rotation: direct hue + temperature and tint approximations
-  const hueRotate = normalized.hue * 1.8 + normalized.temperature * 0.5 + normalized.tint * 0.3;
+  // Hue rotation: hue + tint only (temperature uses a separate color overlay)
+  const hueRotate = normalized.hue * 1.8 + normalized.tint * 0.3;
 
   // Sharpen: approximate via contrast boost — real unsharp mask in Sharp on export
   const sharpenedContrast = contrast * (1 + Math.max(0, normalized.sharpen) * 0.005);
-
-  // Warm temperature: subtle sepia for warm tones
-  const sepia = normalized.temperature > 0 ? Math.min(0.25, normalized.temperature / 400) : 0;
 
   const parts = [
     `brightness(${brightness.toFixed(3)})`,
@@ -110,8 +112,6 @@ function buildCssFilter(adj: CanvasAdjustments): string {
     `saturate(${saturate.toFixed(3)})`,
     `hue-rotate(${hueRotate.toFixed(2)}deg)`,
   ];
-
-  if (sepia > 0) parts.push(`sepia(${sepia.toFixed(3)})`);
 
   // Noise reduction: CSS Gaussian blur is a valid real-time approximation.
   // noiseReduction=0 → 0px blur, noiseReduction=100 → 2px blur.

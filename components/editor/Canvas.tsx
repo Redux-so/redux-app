@@ -1,6 +1,6 @@
 "use client";
 
-import type { CanvasAdjustments, ImageBounds } from "@/hooks/useCanvas";
+import { getTemperatureOverlay, type CanvasAdjustments, type ImageBounds } from "@/hooks/useCanvas";
 
 interface CanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -34,6 +34,10 @@ export default function Canvas({
 }: CanvasProps) {
   const vignetteOpacity = Math.max(0, adjustments.vignette / 100);
   const grainOpacity = Math.max(0, adjustments.grain / 100);
+  const temperatureOverlay = getTemperatureOverlay(adjustments.temperature);
+  const showImageOverlays =
+    imageBounds &&
+    (vignetteOpacity > 0 || grainOpacity > 0 || temperatureOverlay !== null);
 
   // Build the CSS matrix string from Fabric's viewport transform so the
   // overlay container transforms in lock-step with the canvas contents.
@@ -60,7 +64,7 @@ export default function Canvas({
             positioned in canvas-space coordinates track the image at any
             zoom level or pan position. overflow-hidden clips anything that
             pans/zooms outside the canvas boundary. */}
-        {imageBounds && (vignetteOpacity > 0 || grainOpacity > 0) && (
+        {showImageOverlays && (
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div
               style={{
@@ -69,6 +73,22 @@ export default function Canvas({
                 transform: overlayMatrix,
               }}
             >
+              {/* Temperature — warm/cool color cast overlay */}
+              {temperatureOverlay && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: imageBounds.left,
+                    top: imageBounds.top,
+                    width: imageBounds.width,
+                    height: imageBounds.height,
+                    backgroundColor: temperatureOverlay.color,
+                    opacity: temperatureOverlay.opacity,
+                    mixBlendMode: temperatureOverlay.blendMode,
+                  }}
+                />
+              )}
+
               {/* Vignette — radial gradient clipped to the image bounds */}
               {vignetteOpacity > 0 && (
                 <div
