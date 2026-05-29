@@ -6,6 +6,7 @@ import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
+import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 
 const STYLE_MATCH_COST = 3;
 
@@ -14,7 +15,7 @@ const SYSTEM_PROMPT =
   "Analyze the reference image and identify its visual style — including color temperature, " +
   "contrast, saturation, shadows, highlights, and overall mood. Then return ONLY a JSON object " +
   "of adjustment values that would make the target image match the style of the reference image. " +
-  "Available adjustments: brightness, exposure, contrast, blacks, whites, highlights, shadows, " +
+  "Available adjustments: exposure, contrast, blacks, whites, highlights, shadows, " +
   "vibrance, saturation, temperature, tint, hue, sharpen, vignette, grain, clarity. " +
   "All values range from -100 to 100. Only include adjustments that need to change from 0. " +
   "No explanation, just the JSON.";
@@ -153,7 +154,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
 
-    return NextResponse.json({ adjustments });
+    return NextResponse.json({
+      adjustments: normalizeAdjustmentPatch(
+        adjustments as Partial<Record<string, number>>,
+      ),
+    });
   } catch (err) {
     console.error("[/api/ai/style-match]", err);
     await refundCredits("Refund: style match failed");

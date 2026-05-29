@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
-import type { AdjustmentKey } from "@/constants/adjustments";
+import { normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustments";
 
 export type CanvasAdjustments = Record<AdjustmentKey, number>;
 
@@ -76,31 +76,33 @@ export function createExpandedCanvas(
 // re-render because it never touches Fabric's pixel buffer.
 // ---------------------------------------------------------------------------
 function buildCssFilter(adj: CanvasAdjustments): string {
-  // Brightness: base + exposure + partial contributions from tonal controls
+  const normalized = normalizeAdjustments(adj);
+
+  // Exposure + partial contributions from tonal controls → CSS brightness()
   const brightness = Math.max(
     0.05,
     1 +
-      (adj.brightness + adj.exposure) / 100 +
-      adj.shadows / 300 +
-      adj.highlights / 300 +
-      adj.whites / 300 +
-      -adj.blacks / 300,
+      normalized.exposure / 100 +
+      normalized.shadows / 300 +
+      normalized.highlights / 300 +
+      normalized.whites / 300 +
+      -normalized.blacks / 300,
   );
 
   // Contrast: base + clarity approximation (clarity ≈ midtone contrast)
-  const contrast = Math.max(0.05, 1 + (adj.contrast + adj.clarity * 0.4) / 100);
+  const contrast = Math.max(0.05, 1 + (normalized.contrast + normalized.clarity * 0.4) / 100);
 
   // Saturation: saturation + vibrance at half weight
-  const saturate = Math.max(0, 1 + (adj.saturation + adj.vibrance * 0.5) / 100);
+  const saturate = Math.max(0, 1 + (normalized.saturation + normalized.vibrance * 0.5) / 100);
 
   // Hue rotation: direct hue + temperature and tint approximations
-  const hueRotate = adj.hue * 1.8 + adj.temperature * 0.5 + adj.tint * 0.3;
+  const hueRotate = normalized.hue * 1.8 + normalized.temperature * 0.5 + normalized.tint * 0.3;
 
   // Sharpen: approximate via contrast boost — real unsharp mask in Sharp on export
-  const sharpenedContrast = contrast * (1 + Math.max(0, adj.sharpen) * 0.005);
+  const sharpenedContrast = contrast * (1 + Math.max(0, normalized.sharpen) * 0.005);
 
   // Warm temperature: subtle sepia for warm tones
-  const sepia = adj.temperature > 0 ? Math.min(0.25, adj.temperature / 400) : 0;
+  const sepia = normalized.temperature > 0 ? Math.min(0.25, normalized.temperature / 400) : 0;
 
   const parts = [
     `brightness(${brightness.toFixed(3)})`,
@@ -114,8 +116,8 @@ function buildCssFilter(adj: CanvasAdjustments): string {
   // Noise reduction: CSS Gaussian blur is a valid real-time approximation.
   // noiseReduction=0 → 0px blur, noiseReduction=100 → 2px blur.
   // The real noise reduction (via Replicate) is applied server-side on export.
-  if (adj.noiseReduction > 0) {
-    const blurPx = (adj.noiseReduction / 100) * 2;
+  if (normalized.noiseReduction > 0) {
+    const blurPx = (normalized.noiseReduction / 100) * 2;
     parts.push(`blur(${blurPx.toFixed(2)}px)`);
   }
 

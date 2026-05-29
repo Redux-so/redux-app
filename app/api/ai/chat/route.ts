@@ -5,6 +5,7 @@ import { anthropic, formatAdjustmentsForPrompt } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
+import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 
 // ---------------------------------------------------------------------------
 // System prompt
@@ -14,7 +15,7 @@ When the user asks for edits, respond with a helpful, concise message AND — \
 whenever you recommend any adjustments — include a JSON object of the changes \
 wrapped in adjustment tags exactly like this:
 
-[adjustments]{"brightness": 20, "contrast": 10}[/adjustments]
+[adjustments]{"exposure": 20, "contrast": 10}[/adjustments]
 
 If the user attaches a reference image, analyze its color grading, tone, \
 contrast, and mood, then translate those characteristics into adjustment values.
@@ -23,7 +24,7 @@ Rules:
 - Only include adjustments that should change from their current value.
 - Keep explanations brief and practical.
 - Available adjustments (all range from -100 to 100):
-  brightness, exposure, contrast, blacks, whites, highlights, shadows,
+  exposure, contrast, blacks, whites, highlights, shadows,
   vibrance, saturation, temperature, tint, hue, sharpen, noiseReduction,
   vignette, grain, clarity
 - Put the [adjustments] block at the very end of your response.
@@ -192,7 +193,9 @@ export async function POST(request: Request) {
         const adjMatch = fullText.match(/\[adjustments\]([\s\S]*?)\[\/adjustments\]/);
         if (adjMatch) {
           try {
-            const parsed = JSON.parse(adjMatch[1]) as Partial<Record<AdjustmentKey, number>>;
+            const parsed = normalizeAdjustmentPatch(
+              JSON.parse(adjMatch[1]) as Partial<Record<string, number>>,
+            );
             controller.enqueue(encodeEvent({ type: "adjustments", adjustments: parsed }));
           } catch {
             console.error("[/api/ai/chat] Failed to parse [adjustments] JSON:", adjMatch[1]);

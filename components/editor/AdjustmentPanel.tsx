@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Minus, ChevronDown, Star, Lock, Unlock, X } from "lucide-react";
 import toast from "react-hot-toast";
 import AdjustmentSlider from "./AdjustmentSlider";
-import type { AdjustmentKey } from "@/constants/adjustments";
-import type { Adjustments } from "@/hooks/useEditor";
+import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
+import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
 
 interface AdjustmentPanelProps {
@@ -40,8 +40,18 @@ interface SectionState {
 
 type ActiveTool = "heal" | "blur" | "eraser" | "crop" | "straighten" | null;
 
+function applyAiAdjustments(
+  patch: Partial<Record<string, number>>,
+  current: Adjustments,
+  onCommit: (key: AdjustmentKey, value: number) => void,
+) {
+  const next = normalizeAdjustments({ ...current, ...patch });
+  (Object.keys(DEFAULT_ADJUSTMENTS) as AdjustmentKey[]).forEach((key) => {
+    if (next[key] !== current[key]) onCommit(key, next[key]);
+  });
+}
+
 const LIGHT_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
-  { key: "brightness", label: "Brightness" },
   { key: "exposure", label: "Exposure" },
   { key: "contrast", label: "Contrast" },
   { key: "blacks", label: "Blacks" },
@@ -303,9 +313,7 @@ export default function AdjustmentPanel({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        (Object.entries(data.adjustments) as [AdjustmentKey, number][]).forEach(
-          ([key, value]) => onCommit(key, value),
-        );
+        applyAiAdjustments(data.adjustments, adjustments, onCommit);
       }
       toast.success("Auto Enhance applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
@@ -334,9 +342,7 @@ export default function AdjustmentPanel({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        (Object.entries(data.adjustments) as [AdjustmentKey, number][]).forEach(
-          ([key, value]) => onCommit(key, value),
-        );
+        applyAiAdjustments(data.adjustments, adjustments, onCommit);
       }
       toast.success("Auto Tone Balance applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
@@ -365,9 +371,7 @@ export default function AdjustmentPanel({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        (Object.entries(data.adjustments) as [AdjustmentKey, number][]).forEach(
-          ([key, value]) => onCommit(key, value),
-        );
+        applyAiAdjustments(data.adjustments, adjustments, onCommit);
       }
       toast.success("Smart Color Balance applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
@@ -425,9 +429,7 @@ export default function AdjustmentPanel({
 
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        (Object.entries(data.adjustments) as [AdjustmentKey, number][]).forEach(
-          ([key, value]) => onCommit(key, value),
-        );
+        applyAiAdjustments(data.adjustments, adjustments, onCommit);
       }
       toast.success("Style Match applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },

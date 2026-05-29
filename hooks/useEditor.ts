@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import useUndo from "use-undo";
-import { DEFAULT_ADJUSTMENTS, type AdjustmentKey } from "@/constants/adjustments";
+import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustments";
 
 export type Adjustments = typeof DEFAULT_ADJUSTMENTS;
 
@@ -82,9 +82,9 @@ export function useEditor(imageId?: string) {
 
   // Applies a batch of adjustment patches — used by the AI assistant
   const patchAdjustments = useCallback(
-    (patch: Partial<Adjustments>) => {
+    (patch: Partial<Adjustments> & Partial<Record<string, number>>) => {
       isFirstPreviewRef.current = true;
-      set({ ...state.present, ...patch } as Adjustments, true);
+      set(normalizeAdjustments({ ...state.present, ...patch }) as Adjustments, true);
     },
     [set, state.present],
   );

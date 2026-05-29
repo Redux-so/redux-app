@@ -5,12 +5,13 @@ import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
+import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor. Analyze this image and return optimal adjustment values " +
   "to enhance it. Consider the exposure, white balance, contrast, and color. Return ONLY a " +
-  "JSON object with adjustment values, no explanation. Available adjustments: brightness, " +
-  "exposure, contrast, blacks, whites, highlights, shadows, vibrance, saturation, temperature, " +
+  "JSON object with adjustment values, no explanation. Available adjustments: exposure, " +
+  "contrast, blacks, whites, highlights, shadows, vibrance, saturation, temperature, " +
   "tint. All values range from -100 to 100. Only include adjustments that need to change from 0.";
 
 /**
@@ -116,7 +117,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
 
-    return NextResponse.json({ adjustments });
+    return NextResponse.json({
+      adjustments: normalizeAdjustmentPatch(
+        adjustments as Partial<Record<string, number>>,
+      ),
+    });
   } catch (err) {
     console.error("[/api/ai/enhance] Error:", err);
     // Refund credit on unexpected failure

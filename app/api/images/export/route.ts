@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { normalizeAdjustments } from "@/constants/adjustments";
 import { prisma } from "@/lib/prisma";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
@@ -63,21 +64,21 @@ export async function POST(request: NextRequest) {
   const sharp = (await import("sharp")).default;
 
   // Map adjustment values (-100..100) → Sharp parameters
-  const brightness = adjustments.brightness ?? 0;
-  const exposure = adjustments.exposure ?? 0;
-  const contrast = adjustments.contrast ?? 0;
-  const saturation = adjustments.saturation ?? 0;
-  const vibrance = adjustments.vibrance ?? 0;
-  const sharpenVal = adjustments.sharpen ?? 0;
-  const noiseReduction = adjustments.noiseReduction ?? 0;
-  const temperature = adjustments.temperature ?? 0;
-  const hue = adjustments.hue ?? 0;
+  const normalized = normalizeAdjustments(adjustments);
+  const exposure = normalized.exposure;
+  const contrast = normalized.contrast;
+  const saturation = normalized.saturation;
+  const vibrance = normalized.vibrance;
+  const sharpenVal = normalized.sharpen;
+  const noiseReduction = normalized.noiseReduction;
+  const temperature = normalized.temperature;
+  const hue = normalized.hue;
 
-  // brightness + exposure combined → modulate brightness (1.0 = neutral)
+  // exposure → modulate brightness (1.0 = neutral)
   // Sharp modulate expects multipliers; -100 → ~0.2, 0 → 1.0, 100 → 2.0
   const brightnessMultiplier = Math.max(
     0.1,
-    1 + (brightness + exposure) / 100,
+    1 + exposure / 100,
   );
 
   // saturation + vibrance → modulate saturation (1.0 = neutral)
