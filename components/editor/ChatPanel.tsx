@@ -306,6 +306,8 @@ export default function ChatPanel({
     }
   }
 
+  const canSend = !!input.trim() && !sending && !chatBlocked;
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col w-[400px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
@@ -434,26 +436,8 @@ export default function ChatPanel({
 
       {/* Input area */}
       <div className="px-6 pb-6 pt-3 shrink-0">
-        <div className="flex items-end gap-2 rounded-lg border border-white/[0.06] bg-[#111111] px-4 py-3">
-          {/* Paperclip */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            title="Attach reference image"
-            disabled={chatBlocked}
-            className="shrink-0 text-[#555555] hover:text-[#888888] transition-colors self-end pb-[1px] disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <Paperclip size={16} strokeWidth={1.5} />
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => { void handleFileChange(e); }}
-          />
-
-          {/* Textarea */}
+        <div className="flex flex-col gap-2 rounded-lg border border-white/[0.06] bg-[#111111] px-4 py-3">
+          {/* Textarea — full width above attach/send controls */}
           <textarea
             ref={textareaRef}
             value={input}
@@ -466,19 +450,45 @@ export default function ChatPanel({
             }
             rows={1}
             disabled={chatBlocked}
-            className="flex-1 resize-none bg-transparent text-[14px] text-white placeholder:text-[#555555] outline-none leading-relaxed min-h-[20px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full resize-none bg-transparent text-[14px] text-white placeholder:text-[#555555] outline-none leading-relaxed min-h-[20px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ fieldSizing: "content" } as React.CSSProperties}
           />
 
-          {/* Send */}
-          <button
-            onClick={() => { void handleSend(); }}
-            disabled={!input.trim() || sending || chatBlocked}
-            title="Send"
-            className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white text-black hover:bg-[#e5e5e5] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer self-end"
-          >
-            <ArrowUp size={14} strokeWidth={2.5} />
-          </button>
+          <div className="flex items-center justify-between">
+            {/* Paperclip */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach reference image"
+              disabled={chatBlocked}
+              className="shrink-0 text-[#555555] hover:text-[#888888] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <Paperclip size={16} strokeWidth={1.5} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { void handleFileChange(e); }}
+            />
+
+            {/* Send */}
+            <button
+              type="button"
+              onClick={() => { void handleSend(); }}
+              disabled={!canSend}
+              title="Send"
+              className={[
+                "shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-shadow duration-300",
+                canSend
+                  ? "bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white shadow-glow-sm hover:shadow-glow cursor-pointer"
+                  : "bg-white/[0.08] text-[#555555] opacity-50 cursor-not-allowed",
+              ].join(" ")}
+            >
+              <ArrowUp size={14} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
