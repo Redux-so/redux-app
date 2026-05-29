@@ -898,18 +898,9 @@ export default function AdjustmentPanel({
           <div className="px-6 pt-2 pb-3 flex flex-col gap-2">
             {/* Row 1: Heal | Blur */}
             <div className="grid grid-cols-2 gap-2">
-              <ToolBtn
-                label={
-                  loadingHeal ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Loader2 size={14} className="animate-spin shrink-0" />
-                      Working…
-                    </span>
-                  ) : (
-                    "Heal"
-                  )
-                }
-                active={activeTool === "heal"}
+              <AIButton
+                label="Heal"
+                loading={loadingHeal}
                 disabled={!canvasImageUrl || loadingHeal}
                 onClick={() => toggleTool("heal")}
               />
