@@ -1,11 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Adjustments } from "@/hooks/useEditor";
 import { useSearchParams } from "next/navigation";
 import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
 import type { ImageRecord } from "@/types/image";
+import { isStoredPreviewUrl } from "@/lib/resolve-preview-source";
+import type { PreviewPayload } from "@/lib/preview-request";
+
+function stripDataUrlBase64(dataUrl: string): string {
+  const comma = dataUrl.indexOf(",");
+  return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+}
 
 import Toolbar from "@/components/editor/Toolbar";
 import AdjustmentPanel from "@/components/editor/AdjustmentPanel";
@@ -14,6 +20,7 @@ import ChatPanel from "@/components/editor/ChatPanel";
 import HistoryPanel from "@/components/editor/HistoryPanel";
 import ExportModal from "@/components/editor/ExportModal";
 import BottomNav from "@/components/shared/BottomNav";
+import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
 
 export default function EditorApp() {
   const searchParams = useSearchParams();
@@ -23,6 +30,15 @@ export default function EditorApp() {
   const [loadingImage, setLoadingImage] = useState(!!imageId);
   const [showHistory, setShowHistory] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [baseImageUrl, setBaseImageUrl] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const savePreviewRef = useRef<(() => Promise<string | null>) | null>(null);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewPixelsRef = useRef<Pick<PreviewPayload, "baseImageUrl" | "imageBase64">>({
+    baseImageUrl: null,
+    imageBase64: null,
+  });
+  const [transformVersion, setTransformVersion] = useState(0);
 
   useEffect(() => {
     if (!imageId) return;
@@ -35,6 +51,17 @@ export default function EditorApp() {
       .catch(console.error)
       .finally(() => setLoadingImage(false));
   }, [imageId]);
+
+  useEffect(() => {
+    if (image?.originalUrl) {
+      setBaseImageUrl(image.originalUrl);
+      setImageBase64(null);
+      previewPixelsRef.current = {
+        baseImageUrl: image.originalUrl,
+        imageBase64: null,
+      };
+    }
+  }, [image?.id, image?.originalUrl]);
 
   const {
     adjustments,
@@ -49,6 +76,8 @@ export default function EditorApp() {
     justSaved,
   } = useEditor(imageId);
 
+  const canvasSourceUrl = baseImageUrl ?? image?.originalUrl ?? null;
+
   const {
     canvasRef,
     containerRef,
@@ -62,7 +91,6 @@ export default function EditorApp() {
     resetZoom,
     toggleBefore,
     rotateCW,
-    rotateCCW,
     flipH,
     flipV,
     straightenImage,
@@ -85,24 +113,119 @@ export default function EditorApp() {
     undoLastCanvas,
     canUndoCanvas,
     getTransformSnapshot,
-  } = useCanvas(image?.previewUrl ?? image?.originalUrl ?? null, adjustments);
+  } = useCanvas(canvasSourceUrl, adjustments);
 
-  // Wrap loadImageUrl so AI retouch operations (heal, erase, blur, remove bg,
-  // gen fill) automatically push canvas undo history before replacing the image
-  // and persist the new Cloudinary URL as the image's previewUrl.
-  const reloadCanvas = useCallback((url: string) => {
-    if (activeImageUrl) pushImageHistory(activeImageUrl, getTransformSnapshot());
-    void loadImageUrl(url);
-    if (imageId && url.startsWith("https://")) {
-      void fetch(`/api/images/${imageId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ previewUrl: url }),
-      });
+  useEffect(() => {
+    if (!activeImageUrl) return;
+    if (activeImageUrl.startsWith("data:")) {
+      const b64 = stripDataUrlBase64(activeImageUrl);
+      setImageBase64(b64);
+      previewPixelsRef.current.imageBase64 = b64;
+      return;
     }
-  }, [activeImageUrl, pushImageHistory, getTransformSnapshot, loadImageUrl, imageId]);
+    if (
+      activeImageUrl.startsWith("https://") &&
+      !isStoredPreviewUrl(activeImageUrl, image?.previewUrl)
+    ) {
+      setBaseImageUrl(activeImageUrl);
+      setImageBase64(null);
+      previewPixelsRef.current = {
+        baseImageUrl: activeImageUrl,
+        imageBase64: null,
+      };
+    }
+  }, [activeImageUrl, image?.previewUrl]);
 
-  // Unified undo: canvas history first, then adjustment slider undo
+  const schedulePreviewSave = useCallback(() => {
+    if (!imageId) return;
+    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = setTimeout(() => {
+      void savePreviewRef.current?.();
+    }, 2000);
+  }, [imageId]);
+
+  const savePreviewNow = useCallback(async () => {
+    if (previewTimerRef.current) {
+      clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+    await savePreviewRef.current?.();
+  }, []);
+
+  const reloadCanvas = useCallback(
+    async (url: string) => {
+      if (activeImageUrl) {
+        pushImageHistory(activeImageUrl, getTransformSnapshot());
+      }
+      await loadImageUrl(url);
+      if (!isStoredPreviewUrl(url, image?.previewUrl)) {
+        setBaseImageUrl(url);
+        setImageBase64(null);
+        previewPixelsRef.current = { baseImageUrl: url, imageBase64: null };
+      }
+      await savePreviewNow();
+    },
+    [
+      activeImageUrl,
+      pushImageHistory,
+      getTransformSnapshot,
+      loadImageUrl,
+      image?.previewUrl,
+      savePreviewNow,
+    ],
+  );
+
+  const handleConfirmCrop = useCallback(async () => {
+    const dataUrl = await confirmCrop();
+    if (dataUrl) {
+      const b64 = stripDataUrlBase64(dataUrl);
+      previewPixelsRef.current.imageBase64 = b64;
+      setImageBase64(b64);
+    }
+    await savePreviewNow();
+  }, [confirmCrop, savePreviewNow]);
+
+  const handleResize = useCallback(
+    async (newW: number, newH: number) => {
+      const dataUrl = await resizeCanvas(newW, newH);
+      if (dataUrl) {
+        const b64 = stripDataUrlBase64(dataUrl);
+        previewPixelsRef.current.imageBase64 = b64;
+        setImageBase64(b64);
+      }
+      await savePreviewNow();
+    },
+    [resizeCanvas, savePreviewNow],
+  );
+
+  const bumpTransformPreview = useCallback(() => {
+    setTransformVersion((v) => v + 1);
+    schedulePreviewSave();
+  }, [schedulePreviewSave]);
+
+  const handleRotateCW = useCallback(() => {
+    rotateCW();
+    bumpTransformPreview();
+  }, [rotateCW, bumpTransformPreview]);
+
+  const handleFlipH = useCallback(() => {
+    flipH();
+    bumpTransformPreview();
+  }, [flipH, bumpTransformPreview]);
+
+  const handleFlipV = useCallback(() => {
+    flipV();
+    bumpTransformPreview();
+  }, [flipV, bumpTransformPreview]);
+
+  const handleStraighten = useCallback(
+    (degrees: number) => {
+      straightenImage(degrees);
+      bumpTransformPreview();
+    },
+    [straightenImage, bumpTransformPreview],
+  );
+
   const handleUndo = useCallback(() => {
     if (canUndoCanvas) {
       void undoLastCanvas();
@@ -113,138 +236,134 @@ export default function EditorApp() {
 
   const handleCanUndo = canUndoCanvas || canUndo;
 
-  // Refs for unmount preview generation — cleanup reads latest values.
-  const imageIdRef = useRef(imageId);
-  const adjustmentsRef = useRef<Adjustments>(adjustments);
-  const activeImageUrlRef = useRef(activeImageUrl);
-  imageIdRef.current = imageId;
-  adjustmentsRef.current = adjustments;
-  activeImageUrlRef.current = activeImageUrl;
+  const getPreviewPayload = useCallback(
+    () => ({
+      adjustments,
+      originalUrl: image?.originalUrl ?? null,
+      storedPreviewUrl: image?.previewUrl ?? null,
+      baseImageUrl: previewPixelsRef.current.baseImageUrl ?? baseImageUrl,
+      imageBase64: previewPixelsRef.current.imageBase64 ?? imageBase64,
+      transform: getTransformSnapshot(),
+    }),
+    [
+      adjustments,
+      image?.originalUrl,
+      image?.previewUrl,
+      baseImageUrl,
+      imageBase64,
+      getTransformSnapshot,
+    ],
+  );
 
   useEffect(() => {
+    schedulePreviewSave();
     return () => {
-      const id = imageIdRef.current;
-      if (!id) return;
-
-      void (async () => {
-        try {
-          const exportRes = await fetch("/api/images/export", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              imageId: id,
-              adjustments: adjustmentsRef.current,
-              format: "jpeg",
-              quality: 60,
-              imageUrl: activeImageUrlRef.current ?? undefined,
-            }),
-          });
-          if (!exportRes.ok) return;
-
-          const blob = await exportRes.blob();
-          const formData = new FormData();
-          formData.append("file", blob, "preview.jpg");
-
-          await fetch(`/api/images/${id}/preview`, {
-            method: "POST",
-            body: formData,
-          });
-        } catch (err) {
-          console.error("[EditorApp] Failed to save preview thumbnail:", err);
-        }
-      })();
+      if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     };
-  }, []);
+  }, [
+    schedulePreviewSave,
+    adjustments,
+    baseImageUrl,
+    imageBase64,
+    transformVersion,
+  ]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
-      <Toolbar
-        filename={image?.filename}
-        zoom={zoom}
-        showBefore={showBefore}
-        zoomIn={zoomIn}
-        zoomOut={zoomOut}
-        resetZoom={resetZoom}
-        toggleBefore={toggleBefore}
-        canUndo={handleCanUndo}
-        canRedo={canRedo}
-        onUndo={handleUndo}
-        onRedo={redo}
-        isDirty={isDirty}
-        justSaved={justSaved}
-        onExport={() => setShowExport(true)}
-        onShowHistory={() => setShowHistory(true)}
-      />
-
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        <AdjustmentPanel
-          adjustments={adjustments}
-          onPreview={previewAdjustment}
-          onCommit={updateAdjustment}
-          onPatch={patchAdjustments}
-          imageId={imageId}
-          imageUrl={image?.originalUrl ?? null}
-          imageWidth={image?.width ?? undefined}
-          imageHeight={image?.height ?? undefined}
-          onCrop={startCrop}
-          onRotateCW={rotateCW}
-          onStraighten={straightenImage}
-          onResize={resizeCanvas}
-          onReloadCanvas={reloadCanvas}
-          canvasImageUrl={activeImageUrl ?? image?.originalUrl ?? null}
-          enableHealBrush={enableHealBrush}
-          disableHealBrush={disableHealBrush}
-          exportHealMask={exportMask}
-          enableEraserBrush={enableEraserBrush}
-          disableEraserBrush={disableEraserBrush}
-          exportEraserMask={exportEraserMask}
-          enableBlurBrush={enableBlurBrush}
-          disableBlurBrush={disableBlurBrush}
-          exportBlurMask={exportBlurMask}
+    <EditorPreviewProvider
+      imageId={imageId}
+      getPayload={getPreviewPayload}
+      savePreviewRef={savePreviewRef}
+    >
+      <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
+        <Toolbar
+          filename={image?.filename}
+          zoom={zoom}
+          showBefore={showBefore}
+          zoomIn={zoomIn}
+          zoomOut={zoomOut}
+          resetZoom={resetZoom}
+          toggleBefore={toggleBefore}
+          canUndo={handleCanUndo}
+          canRedo={canRedo}
+          onUndo={handleUndo}
+          onRedo={redo}
+          isDirty={isDirty}
+          justSaved={justSaved}
+          onExport={() => setShowExport(true)}
+          onShowHistory={() => setShowHistory(true)}
         />
 
-        {/* Canvas must always be rendered — never conditionally unmount it.
-            If Canvas is hidden while loadingImage=true, the Fabric init effect
-            fires with canvasRef.current=null ([] deps = runs once) and Fabric
-            never initializes. The placeholder inside Canvas shows while
-            imageUrl is null; the image appears once it loads. */}
-        <Canvas
-          canvasRef={canvasRef}
-          containerRef={containerRef}
-          imageUrl={image?.originalUrl ?? null}
-          adjustments={adjustments}
-          imageBounds={imageBounds}
-          viewportTransform={viewportTransform}
-          isCropping={isCropping}
-          onConfirmCrop={confirmCrop}
-          onCancelCrop={cancelCrop}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          <AdjustmentPanel
+            adjustments={adjustments}
+            onPreview={previewAdjustment}
+            onCommit={updateAdjustment}
+            onPatch={patchAdjustments}
+            imageId={imageId}
+            imageUrl={image?.originalUrl ?? null}
+            imageWidth={image?.width ?? undefined}
+            imageHeight={image?.height ?? undefined}
+            onCrop={startCrop}
+            onRotateCW={handleRotateCW}
+            onStraighten={handleStraighten}
+            onResize={handleResize}
+            onReloadCanvas={reloadCanvas}
+            canvasImageUrl={activeImageUrl ?? baseImageUrl ?? image?.originalUrl ?? null}
+            enableHealBrush={enableHealBrush}
+            disableHealBrush={disableHealBrush}
+            exportHealMask={exportMask}
+            enableEraserBrush={enableEraserBrush}
+            disableEraserBrush={disableEraserBrush}
+            exportEraserMask={exportEraserMask}
+            enableBlurBrush={enableBlurBrush}
+            disableBlurBrush={disableBlurBrush}
+            exportBlurMask={exportBlurMask}
+          />
+
+          <div className="relative flex flex-1 min-h-0">
+            <Canvas
+              canvasRef={canvasRef}
+              containerRef={containerRef}
+              imageUrl={canvasSourceUrl}
+              adjustments={adjustments}
+              imageBounds={imageBounds}
+              viewportTransform={viewportTransform}
+              isCropping={isCropping}
+              onConfirmCrop={handleConfirmCrop}
+              onCancelCrop={cancelCrop}
+            />
+            {loadingImage && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0a0a0a]/80 text-[#888888] pointer-events-none">
+                Loading…
+              </div>
+            )}
+          </div>
+
+          <ChatPanel
+            adjustments={adjustments}
+            onPatch={patchAdjustments}
+            imageId={imageId}
+          />
+        </div>
+
+        <BottomNav />
+
+        <HistoryPanel
+          open={showHistory}
+          onClose={() => setShowHistory(false)}
+          imageId={imageId}
+          onRestore={patchAdjustments}
         />
 
-        <ChatPanel
-          adjustments={adjustments}
-          onPatch={patchAdjustments}
+        <ExportModal
+          open={showExport}
+          onClose={() => setShowExport(false)}
           imageId={imageId}
+          filename={image?.filename}
+          adjustments={adjustments}
+          activeImageUrl={baseImageUrl ?? activeImageUrl}
         />
       </div>
-
-      <BottomNav />
-
-      <HistoryPanel
-        open={showHistory}
-        onClose={() => setShowHistory(false)}
-        imageId={imageId}
-        onRestore={patchAdjustments}
-      />
-
-      <ExportModal
-        open={showExport}
-        onClose={() => setShowExport(false)}
-        imageId={imageId}
-        filename={image?.filename}
-        adjustments={adjustments}
-        activeImageUrl={activeImageUrl}
-      />
-
-    </div>
+    </EditorPreviewProvider>
   );
 }

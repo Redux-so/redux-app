@@ -616,11 +616,11 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     setIsCropping(true);
   }, [isCropping]);
 
-  const confirmCrop = useCallback(async () => {
+  const confirmCrop = useCallback(async (): Promise<string | null> => {
     const canvas = fabricRef.current;
     const rect = cropRectRef.current;
     const bgImg = bgImageRef.current;
-    if (!canvas || !rect || !bgImg) return;
+    if (!canvas || !rect || !bgImg) return null;
 
     // Remove crop rect and force a clean render to clear selection handles (Bug 2)
     canvas.remove(rect);
@@ -653,7 +653,10 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     srcW = Math.min(imgNatW - srcX, srcW);
     srcH = Math.min(imgNatH - srcY, srcH);
 
-    if (srcW <= 1 || srcH <= 1) { setIsCropping(false); return; }
+    if (srcW <= 1 || srcH <= 1) {
+      setIsCropping(false);
+      return null;
+    }
 
     const outW = Math.round(srcW);
     const outH = Math.round(srcH);
@@ -691,7 +694,9 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     canvas.backgroundImage = newImg as unknown as import("fabric").FabricObject;
     canvas.renderAll();
     updateImageBounds();
+    setActiveImageUrl(dataUrl);
     setIsCropping(false);
+    return dataUrl;
   }, [updateImageBounds, activeImageUrl, pushImageHistory]);
 
   const cancelCrop = useCallback(() => {
@@ -749,10 +754,10 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   // ---------------------------------------------------------------------------
   // Resize canvas + re-fit background image
   // ---------------------------------------------------------------------------
-  const resizeCanvas = useCallback(async (newW: number, newH: number) => {
+  const resizeCanvas = useCallback(async (newW: number, newH: number): Promise<string | null> => {
     const canvas = fabricRef.current;
     const img = bgImageRef.current;
-    if (!canvas || !img) return;
+    if (!canvas || !img) return null;
 
     if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
 
@@ -803,6 +808,8 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     canvas.backgroundImage = newImg as unknown as import("fabric").FabricObject;
     canvas.renderAll();
     updateImageBounds();
+    setActiveImageUrl(dataUrl);
+    return dataUrl;
   }, [updateImageBounds, activeImageUrl, pushImageHistory]);
 
   // ---------------------------------------------------------------------------

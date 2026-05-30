@@ -14,6 +14,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import CreditShopModal from "@/components/shared/CreditShopModal";
+import { useEditorPreview } from "@/components/editor/EditorPreviewContext";
 
 const TABS = [
   { label: "Library", icon: LayoutGrid, href: "/library" },
@@ -29,8 +30,10 @@ export default function BottomNav() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [creditShopOpen, setCreditShopOpen] = useState(false);
   const [editorHintVisible, setEditorHintVisible] = useState(false);
+  const [navigatingToLibrary, setNavigatingToLibrary] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const editorHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorPreview = useEditorPreview();
 
   useEffect(() => {
     fetch("/api/credits")
@@ -70,6 +73,29 @@ export default function BottomNav() {
   function openCreditShop() {
     setPopoverOpen(false);
     setCreditShopOpen(true);
+  }
+
+  async function handleTabClick(label: string, href: string) {
+    if (label === "Editor") {
+      if (pathname.startsWith("/editor")) return;
+      showEditorHint();
+      return;
+    }
+
+    if (
+      label === "Library" &&
+      pathname.startsWith("/editor") &&
+      editorPreview?.imageId
+    ) {
+      setNavigatingToLibrary(true);
+      try {
+        await editorPreview.savePreview();
+      } finally {
+        setNavigatingToLibrary(false);
+      }
+    }
+
+    router.push(href);
   }
 
   async function handleSignOut() {
@@ -180,28 +206,25 @@ export default function BottomNav() {
             {TABS.map(({ label, icon: Icon, href }) => {
               const isActive =
                 pathname === href || pathname.startsWith(href + "/");
+              const isLibraryLoading =
+                label === "Library" && navigatingToLibrary;
 
               return (
                 <button
                   key={label}
-                  onClick={() => {
-                    if (label !== "Editor") {
-                      router.push(href);
-                      return;
-                    }
-                    if (pathname.startsWith("/editor")) return;
-                    showEditorHint();
-                  }}
+                  disabled={isLibraryLoading}
+                  onClick={() => void handleTabClick(label, href)}
                   className={[
                     "flex flex-col items-center justify-center gap-1 px-5 py-2 rounded-xl transition-all cursor-pointer min-w-[72px]",
                     isActive
                       ? "bg-[#682FBF]/20 border border-[#682FBF]/40 text-[#B07EF0]"
                       : "border border-transparent text-[#888888] hover:text-[#cccccc] hover:bg-white/[0.05]",
+                    isLibraryLoading ? "opacity-60 cursor-wait" : "",
                   ].join(" ")}
                 >
                   <Icon size={20} strokeWidth={1.5} />
                   <span className="text-[12px] leading-none tracking-tight">
-                    {label}
+                    {isLibraryLoading ? "Saving…" : label}
                   </span>
                 </button>
               );

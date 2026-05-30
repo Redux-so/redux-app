@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
-import { normalizeAdjustments } from "@/constants/adjustments";
-import { getColorOverlays } from "@/lib/color-overlays";
+import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import { prisma } from "@/lib/prisma";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
@@ -14,6 +13,8 @@ interface ExportBody {
   /** Active canvas URL — overrides the DB original when the image has been
    *  replaced by an AI operation (e.g. background removal). */
   imageUrl?: string;
+  /** Optional max width for preview thumbnails — applied after all effects. */
+  maxWidth?: number;
 }
 
 const FORMAT_MIME: Record<ExportFormat, string> = {
@@ -34,7 +35,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json()) as ExportBody;
-  const { imageId, adjustments = {}, format = "jpeg", quality = 90, imageUrl } = body;
+  const {
+    imageId,
+    adjustments = {},
+    format = "jpeg",
+    quality = 90,
+    imageUrl,
+    maxWidth,
+  } = body;
 
   if (!imageId) {
     return NextResponse.json({ error: "imageId is required" }, { status: 400 });
@@ -47,9 +55,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  // Use the provided active canvas URL when available (e.g. after background
-  // removal the canvas shows a different image than the DB original).
-  // Fall back to the stored original URL.
   const fetchUrl = imageUrl ?? image.originalUrl;
   const imgResponse = await fetch(fetchUrl);
   if (!imgResponse.ok) {
@@ -58,117 +63,27 @@ export async function POST(request: NextRequest) {
       { status: 502 },
     );
   }
-  const arrayBuffer = await imgResponse.arrayBuffer();
-  const inputBuffer = Buffer.from(arrayBuffer);
 
-  // Apply adjustments with Sharp
-  const sharp = (await import("sharp")).default;
+  const inputBuffer = Buffer.from(await imgResponse.arrayBuffer());
 
-  // Map adjustment values (-100..100) → Sharp parameters
-  const normalized = normalizeAdjustments(adjustments);
-  const exposure = normalized.exposure;
-  const contrast = normalized.contrast;
-  const saturation = normalized.saturation;
-  const vibrance = normalized.vibrance;
-  const sharpenVal = normalized.sharpen;
-  const noiseReduction = normalized.noiseReduction;
-  const temperature = normalized.temperature;
-  const tint = normalized.tint;
-  const hue = normalized.hue;
+  try {
+    const outputBuffer = await renderAdjustedImage(inputBuffer, {
+      adjustments,
+      format,
+      quality,
+      maxWidth,
+    });
 
-  // exposure → modulate brightness (1.0 = neutral)
-  const brightnessMultiplier = Math.max(0.1, 1 + exposure / 100);
-
-  // saturation + vibrance → modulate saturation (1.0 = neutral)
-  const saturationMultiplier = Math.max(0, 1 + (saturation + vibrance * 0.5) / 100);
-
-  // Temperature, tint, and hue all use overlay composites — no hue rotation
-  let pipeline = sharp(inputBuffer).modulate({
-    brightness: brightnessMultiplier,
-    saturation: saturationMultiplier,
-  });
-
-  // contrast → linear adjustment (a = 1 + contrast/100, b offset)
-  if (contrast !== 0) {
-    const factor = Math.max(0, 1 + contrast / 100);
-    const offset = -128 * (factor - 1);
-    pipeline = pipeline.linear(factor, offset);
+    return new NextResponse(outputBuffer as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        "Content-Type": FORMAT_MIME[format],
+        "Content-Disposition": `attachment; filename="export.${format}"`,
+        "Content-Length": String(outputBuffer.length),
+      },
+    });
+  } catch (err) {
+    console.error("[export] Error:", err);
+    return NextResponse.json({ error: "Export failed" }, { status: 500 });
   }
-
-  // sharpen
-  if (sharpenVal > 0) {
-    const sigma = 0.5 + (sharpenVal / 100) * 3;
-    pipeline = pipeline.sharpen({ sigma });
-  }
-
-  // Noise reduction via blur — slider left (negative) = more softening.
-  if (noiseReduction < 0) {
-    const sigma = (Math.abs(noiseReduction) / 100) * 2;
-    pipeline = pipeline.blur(sigma);
-  }
-
-  // Color overlays — temperature, tint, hue (same order and blend modes as canvas preview)
-  const colorOverlays = getColorOverlays({ temperature, tint, hue });
-  const activeOverlays = [
-    colorOverlays.temperature,
-    colorOverlays.tint,
-    colorOverlays.hue,
-  ].filter(Boolean) as NonNullable<typeof colorOverlays.temperature>[];
-
-  if (activeOverlays.length > 0) {
-    const metadata = await pipeline.metadata();
-    const width = metadata.width ?? 0;
-    const height = metadata.height ?? 0;
-
-    if (width > 0 && height > 0) {
-      for (const ol of activeOverlays) {
-        const { r, g, b } = ol.rgb;
-        const overlayBuffer = await sharp({
-          create: {
-            width,
-            height,
-            channels: 4,
-            background: { r, g, b, alpha: ol.opacity },
-          },
-        })
-          .png()
-          .toBuffer();
-
-        pipeline = pipeline.composite([
-          {
-            input: overlayBuffer,
-            // CSS "color" blend has no Sharp equivalent; "multiply" gives a
-            // similar spectral tint without a full hue-rotate.
-            blend: ol.blendMode === "color" ? "multiply" : "soft-light",
-          },
-        ]);
-      }
-    }
-  }
-
-  // Format and quality
-  let outputBuffer: Buffer;
-  if (format === "jpeg") {
-    // JPEG does not support transparency — flatten against white before encoding
-    outputBuffer = await pipeline
-      .flatten({ background: { r: 255, g: 255, b: 255 } })
-      .jpeg({ quality: Math.min(100, Math.max(1, quality)) })
-      .toBuffer();
-  } else if (format === "png") {
-    // compressionLevel: 9 = maximum lossless compression; alpha channel is
-    // preserved automatically by Sharp when the input has transparency.
-    outputBuffer = await pipeline.png({ compressionLevel: 9 }).toBuffer();
-  } else {
-    // TIFF supports alpha — pass through without flattening
-    outputBuffer = await pipeline.tiff({ compression: "lzw" }).toBuffer();
-  }
-
-  return new NextResponse(outputBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type": FORMAT_MIME[format],
-      "Content-Disposition": `attachment; filename="export.${format}"`,
-      "Content-Length": String(outputBuffer.length),
-    },
-  });
 }

@@ -65,6 +65,15 @@ export default function LibraryPage() {
     if (pathname === "/library") void fetchImages();
   }, [pathname, fetchImages]);
 
+  // Backup refetch — catches previews that finish shortly after navigation.
+  useEffect(() => {
+    if (pathname !== "/library") return;
+    const timer = setTimeout(() => {
+      void fetchImages();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [pathname, fetchImages]);
+
   const handleDeleteImage = useCallback((id: string) => {
     setImages((prev) => prev.filter((img) => img.id !== id));
     setSearchOverlay((prev) =>

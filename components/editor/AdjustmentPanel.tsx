@@ -24,7 +24,7 @@ interface AdjustmentPanelProps {
   onStraighten?: (degrees: number) => void;
   onResize?: (width: number, height: number) => void | Promise<void>;
   /** Called with the new URL after an AI operation replaces the canvas image. */
-  onReloadCanvas?: (url: string) => void;
+  onReloadCanvas?: (url: string) => void | Promise<void>;
   /** Active canvas image URL (may differ from library original after AI edits). */
   canvasImageUrl?: string | null;
   enableHealBrush?: () => void | Promise<void>;
@@ -469,7 +469,7 @@ export default function AdjustmentPanel({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
-        onReloadCanvas?.(data.resultUrl);
+        await onReloadCanvas?.(data.resultUrl);
       }
       toast.success("Background removed successfully");
     } catch (err) {
@@ -516,7 +516,7 @@ export default function AdjustmentPanel({
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
-        onReloadCanvas?.(data.resultUrl);
+        await onReloadCanvas?.(data.resultUrl);
       }
       toast.success("Heal applied successfully");
       disableHealBrush?.();
@@ -557,7 +557,7 @@ export default function AdjustmentPanel({
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
-        onReloadCanvas?.(data.resultUrl);
+        await onReloadCanvas?.(data.resultUrl);
       }
       toast.success("Eraser applied successfully");
       disableEraserBrush?.();
@@ -598,7 +598,7 @@ export default function AdjustmentPanel({
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
-        onReloadCanvas?.(data.resultUrl);
+        await onReloadCanvas?.(data.resultUrl);
       }
       toast.success("Blur applied successfully");
       disableBlurBrush?.();
@@ -705,7 +705,7 @@ export default function AdjustmentPanel({
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
-        onReloadCanvas?.(data.resultUrl);
+        await onReloadCanvas?.(data.resultUrl);
       }
       toast.success("Generative Fill applied successfully");
       setGenFillModalOpen(false);
