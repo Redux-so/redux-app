@@ -585,56 +585,78 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   const confirmCrop = useCallback(async () => {
     const canvas = fabricRef.current;
     const rect = cropRectRef.current;
-    if (!canvas || !rect) return;
+    const bgImg = bgImageRef.current;
+    if (!canvas || !rect || !bgImg) return;
 
-    const cropX = Math.max(0, (rect.left as number) ?? 0);
-    const cropY = Math.max(0, (rect.top as number) ?? 0);
-    const cropW = Math.min(
-      canvas.getWidth() - cropX,
-      ((rect.width as number) ?? 100) * ((rect.scaleX as number) ?? 1),
-    );
-    const cropH = Math.min(
-      canvas.getHeight() - cropY,
-      ((rect.height as number) ?? 100) * ((rect.scaleY as number) ?? 1),
-    );
-
+    // Remove crop rect and force a clean render to clear selection handles (Bug 2)
     canvas.remove(rect);
     canvas.discardActiveObject();
+    canvas.renderAll();
     canvas.selection = false;
     cropRectRef.current = null;
 
-    if (cropW <= 1 || cropH <= 1) { setIsCropping(false); return; }
+    // Use getBoundingRect() for reliable canvas-space positions — accounts for
+    // all Fabric transforms (origin, scale, position) without manual math.
+    const imgBounds = bgImg.getBoundingRect();
+    const rectBounds = rect.getBoundingRect();
 
-    const rW = Math.round(cropW);
-    const rH = Math.round(cropH);
-    const rX = Math.round(cropX);
-    const rY = Math.round(cropY);
+    // Get the image's natural pixel dimensions from the source element
+    const srcEl = bgImg.getElement() as HTMLImageElement;
+    const imgNatW = srcEl.naturalWidth || (bgImg.width ?? 1);
+    const imgNatH = srcEl.naturalHeight || (bgImg.height ?? 1);
 
-    const htmlCanvas = canvas.getElement();
-    const output = document.createElement("canvas");
-    output.width = rW;
-    output.height = rH;
-    output.getContext("2d")?.drawImage(htmlCanvas, rX, rY, rW, rH, 0, 0, rW, rH);
+    // Map crop rect from canvas space to image natural-pixel space
+    let srcX = ((rectBounds.left - imgBounds.left) / imgBounds.width) * imgNatW;
+    let srcY = ((rectBounds.top - imgBounds.top) / imgBounds.height) * imgNatH;
+    let srcW = (rectBounds.width / imgBounds.width) * imgNatW;
+    let srcH = (rectBounds.height / imgBounds.height) * imgNatH;
 
-    const dataUrl = output.toDataURL("image/png");
+    // Clamp to image natural bounds
+    srcX = Math.max(0, srcX);
+    srcY = Math.max(0, srcY);
+    srcW = Math.min(imgNatW - srcX, srcW);
+    srcH = Math.min(imgNatH - srcY, srcH);
+
+    if (srcW <= 1 || srcH <= 1) { setIsCropping(false); return; }
+
+    const outW = Math.round(srcW);
+    const outH = Math.round(srcH);
+    const offscreen = document.createElement("canvas");
+    offscreen.width = outW;
+    offscreen.height = outH;
+    offscreen.getContext("2d")?.drawImage(
+      srcEl,
+      Math.round(srcX), Math.round(srcY), outW, outH,
+      0, 0, outW, outH,
+    );
+
+    const dataUrl = offscreen.toDataURL("image/png");
     const { FabricImage } = await import("fabric");
-    const img = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+    const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
 
-    canvas.setDimensions({ width: rW, height: rH });
-    img.set({
-      scaleX: 1, scaleY: 1,
-      originX: "center", originY: "center",
-      left: rW / 2, top: rH / 2,
-      angle: 0, flipX: false, flipY: false,
+    // Fit the cropped image into the existing canvas (keep canvas dimensions stable)
+    const cW = canvas.getWidth();
+    const cH = canvas.getHeight();
+    const fitScale = Math.min(cW / outW, cH / outH) * 0.95;
+    newImg.set({
+      scaleX: fitScale,
+      scaleY: fitScale,
+      originX: "center",
+      originY: "center",
+      left: cW / 2,
+      top: cH / 2,
+      angle: 0,
+      flipX: false,
+      flipY: false,
     });
 
     transformRef.current = { rotation: 0, flipX: false, flipY: false, straighten: 0 };
-    bgImageRef.current = img;
-    canvas.backgroundImage = img as unknown as import("fabric").FabricObject;
+    bgImageRef.current = newImg;
+    canvas.backgroundImage = newImg as unknown as import("fabric").FabricObject;
     canvas.renderAll();
-    setImageBounds({ left: 0, top: 0, width: rW, height: rH });
+    updateImageBounds();
     setIsCropping(false);
-  }, []);
+  }, [updateImageBounds]);
 
   const cancelCrop = useCallback(() => {
     const canvas = fabricRef.current;
