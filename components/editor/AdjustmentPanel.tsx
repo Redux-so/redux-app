@@ -12,6 +12,8 @@ interface AdjustmentPanelProps {
   adjustments: Adjustments;
   onPreview: (key: AdjustmentKey, value: number) => void;
   onCommit: (key: AdjustmentKey, value: number) => void;
+  /** Batch-apply AI adjustment patches with a single undo checkpoint. */
+  onPatch?: (patch: Partial<Record<string, number>>) => void;
   imageId?: string;
   imageUrl?: string | null;
   imageWidth?: number;
@@ -48,13 +50,9 @@ type ActiveTool = "heal" | "blur" | "eraser" | "crop" | "straighten" | null;
 
 function applyAiAdjustments(
   patch: Partial<Record<string, number>>,
-  current: Adjustments,
-  onCommit: (key: AdjustmentKey, value: number) => void,
+  onPatch: (p: Partial<Record<string, number>>) => void,
 ) {
-  const next = normalizeAdjustments({ ...current, ...patch });
-  (Object.keys(DEFAULT_ADJUSTMENTS) as AdjustmentKey[]).forEach((key) => {
-    if (next[key] !== current[key]) onCommit(key, next[key]);
-  });
+  onPatch(patch);
 }
 
 const LIGHT_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
@@ -197,6 +195,7 @@ export default function AdjustmentPanel({
   adjustments,
   onPreview,
   onCommit,
+  onPatch,
   imageId,
   imageUrl,
   imageWidth,
@@ -346,7 +345,7 @@ export default function AdjustmentPanel({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, adjustments, onCommit);
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
       toast.success("Auto Enhance applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
@@ -375,7 +374,7 @@ export default function AdjustmentPanel({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, adjustments, onCommit);
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
       toast.success("Auto Tone Balance applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
@@ -404,7 +403,7 @@ export default function AdjustmentPanel({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, adjustments, onCommit);
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
       toast.success("Smart Color Balance applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
@@ -462,7 +461,7 @@ export default function AdjustmentPanel({
 
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, adjustments, onCommit);
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
       toast.success("Style Match applied", {
         style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },

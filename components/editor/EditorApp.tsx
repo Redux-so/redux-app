@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
@@ -80,7 +80,29 @@ export default function EditorApp() {
     enableBlurBrush,
     disableBlurBrush,
     exportBlurMask,
+    pushImageHistory,
+    undoLastCanvas,
+    canUndoCanvas,
+    getTransformSnapshot,
   } = useCanvas(image?.originalUrl ?? null, adjustments);
+
+  // Wrap loadImageUrl so AI retouch operations (heal, erase, blur, remove bg,
+  // gen fill) automatically push canvas undo history before replacing the image.
+  const reloadCanvas = useCallback((url: string) => {
+    if (activeImageUrl) pushImageHistory(activeImageUrl, getTransformSnapshot());
+    void loadImageUrl(url);
+  }, [activeImageUrl, pushImageHistory, getTransformSnapshot, loadImageUrl]);
+
+  // Unified undo: canvas history first, then adjustment slider undo
+  const handleUndo = useCallback(() => {
+    if (canUndoCanvas) {
+      void undoLastCanvas();
+    } else {
+      undo();
+    }
+  }, [canUndoCanvas, undoLastCanvas, undo]);
+
+  const handleCanUndo = canUndoCanvas || canUndo;
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
@@ -92,9 +114,9 @@ export default function EditorApp() {
         zoomOut={zoomOut}
         resetZoom={resetZoom}
         toggleBefore={toggleBefore}
-        canUndo={canUndo}
+        canUndo={handleCanUndo}
         canRedo={canRedo}
-        onUndo={undo}
+        onUndo={handleUndo}
         onRedo={redo}
         isDirty={isDirty}
         justSaved={justSaved}
@@ -107,6 +129,7 @@ export default function EditorApp() {
           adjustments={adjustments}
           onPreview={previewAdjustment}
           onCommit={updateAdjustment}
+          onPatch={patchAdjustments}
           imageId={imageId}
           imageUrl={image?.originalUrl ?? null}
           imageWidth={image?.width ?? undefined}
@@ -115,7 +138,7 @@ export default function EditorApp() {
           onRotateCW={rotateCW}
           onStraighten={straightenImage}
           onResize={resizeCanvas}
-          onReloadCanvas={loadImageUrl}
+          onReloadCanvas={reloadCanvas}
           canvasImageUrl={activeImageUrl ?? image?.originalUrl ?? null}
           enableHealBrush={enableHealBrush}
           disableHealBrush={disableHealBrush}

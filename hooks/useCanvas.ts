@@ -171,6 +171,35 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   // prop but can diverge after AI operations (e.g. background removal) that
   // replace the canvas image with a new URL via loadImageUrl().
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(imageUrl);
+  const [imageHistory, setImageHistory] = useState<{ url: string; transform: TransformState }[]>([]);
+  // Ref so undoLastCanvas can call loadImageUrl without a forward-reference TDZ
+  const loadImageUrlRef = useRef<((url: string) => Promise<void>) | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // Canvas image undo history — declared early so rotate/flip/crop can reference
+  // ---------------------------------------------------------------------------
+  const pushImageHistory = useCallback((url: string, transform: TransformState) => {
+    setImageHistory(prev => [...prev, { url, transform }]);
+  }, []);
+
+  const undoLastCanvas = useCallback(async () => {
+    let entry: { url: string; transform: TransformState } | undefined;
+    setImageHistory(prev => {
+      const next = [...prev];
+      entry = next.pop();
+      return next;
+    });
+    // Yield one microtask so setState above is enqueued before the async load
+    await Promise.resolve();
+    if (entry) {
+      // Restore transform BEFORE reloading so loadImageUrl picks it up
+      transformRef.current = { ...entry.transform };
+      await loadImageUrlRef.current?.(entry.url);
+    }
+  }, []);
+
+  // Derived — reactive because imageHistory is useState
+  const canUndoCanvas = imageHistory.length > 0;
 
   // ---------------------------------------------------------------------------
   // Compute the image's rendered bounds from the current FabricImage state.
@@ -510,35 +539,40 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   // Rotate (multiples of 90°)
   // ---------------------------------------------------------------------------
   const rotateCW = useCallback(() => {
+    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.rotation = (transformRef.current.rotation + 90) % 360;
     applyTransform();
-  }, [applyTransform]);
+  }, [applyTransform, activeImageUrl, pushImageHistory]);
 
   const rotateCCW = useCallback(() => {
+    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.rotation = ((transformRef.current.rotation - 90) + 360) % 360;
     applyTransform();
-  }, [applyTransform]);
+  }, [applyTransform, activeImageUrl, pushImageHistory]);
 
   // ---------------------------------------------------------------------------
   // Flip
   // ---------------------------------------------------------------------------
   const flipH = useCallback(() => {
+    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.flipX = !transformRef.current.flipX;
     applyTransform();
-  }, [applyTransform]);
+  }, [applyTransform, activeImageUrl, pushImageHistory]);
 
   const flipV = useCallback(() => {
+    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.flipY = !transformRef.current.flipY;
     applyTransform();
-  }, [applyTransform]);
+  }, [applyTransform, activeImageUrl, pushImageHistory]);
 
   // ---------------------------------------------------------------------------
   // Straighten
   // ---------------------------------------------------------------------------
   const straightenImage = useCallback((degrees: number) => {
+    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.straighten = degrees;
     applyTransform();
-  }, [applyTransform]);
+  }, [applyTransform, activeImageUrl, pushImageHistory]);
 
   // ---------------------------------------------------------------------------
   // Crop
@@ -594,6 +628,8 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     canvas.renderAll();
     canvas.selection = false;
     cropRectRef.current = null;
+
+    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
 
     // Use getBoundingRect() for reliable canvas-space positions — accounts for
     // all Fabric transforms (origin, scale, position) without manual math.
@@ -656,7 +692,7 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     canvas.renderAll();
     updateImageBounds();
     setIsCropping(false);
-  }, [updateImageBounds]);
+  }, [updateImageBounds, activeImageUrl, pushImageHistory]);
 
   const cancelCrop = useCallback(() => {
     const canvas = fabricRef.current;
@@ -707,6 +743,8 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     updateImageBounds();
     setActiveImageUrl(url);
   }, [updateImageBounds]);
+  // Keep ref in sync so undoLastCanvas can call loadImageUrl without a forward ref
+  loadImageUrlRef.current = loadImageUrl;
 
   // ---------------------------------------------------------------------------
   // Resize canvas + re-fit background image
@@ -715,6 +753,8 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     const canvas = fabricRef.current;
     const img = bgImageRef.current;
     if (!canvas || !img) return;
+
+    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
 
     // Pure center crop at native pixel resolution — no resampling
     const srcEl = img.getElement() as HTMLImageElement;
@@ -763,7 +803,7 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     canvas.backgroundImage = newImg as unknown as import("fabric").FabricObject;
     canvas.renderAll();
     updateImageBounds();
-  }, [updateImageBounds]);
+  }, [updateImageBounds, activeImageUrl, pushImageHistory]);
 
   // ---------------------------------------------------------------------------
   // Heal brush — free drawing in red; export mask aligned to image pixels
@@ -1127,5 +1167,9 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     enableBlurBrush,
     disableBlurBrush,
     exportBlurMask,
+    pushImageHistory,
+    undoLastCanvas,
+    canUndoCanvas,
+    getTransformSnapshot: () => ({ ...transformRef.current }),
   };
 }
