@@ -1170,7 +1170,7 @@ export default function AdjustmentPanel({
           aria-modal="true"
           aria-labelledby="genfill-modal-title"
         >
-          <div className="relative w-full max-w-[400px] bg-white/[0.05] backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="relative w-full max-w-[480px] bg-[#111111] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-4 h-11 border-b border-white/[0.07] shrink-0">
               <h2 id="genfill-modal-title" className="text-[13px] font-medium text-white">
                 Generative Fill
