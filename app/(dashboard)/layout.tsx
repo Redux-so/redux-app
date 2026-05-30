@@ -13,11 +13,12 @@ export default function DashboardLayout({
         toastOptions={{
           duration: 3000,
           style: {
-            background: "rgba(15, 10, 25, 0.9)",
-            color: "#fff",
-            border: "1px solid rgba(255,255,255,0.1)",
-            fontSize: "12px",
-            backdropFilter: "blur(12px)",
+            background: "rgba(0, 0, 0, 0.6)",
+            color: "#ffffff",
+            border: "1px solid #682FBF",
+            fontSize: "13px",
+            backdropFilter: "blur(16px)",
+            borderRadius: "12px",
           },
         }}
       />

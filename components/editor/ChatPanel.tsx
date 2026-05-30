@@ -199,14 +199,7 @@ export default function ChatPanel({
       });
 
       if (res.status === 429) {
-        toast("Too many requests. Please slow down.", {
-          icon: "⏱",
-          style: {
-            background: "rgba(15, 10, 25, 0.9)",
-            color: "#e5e5e5",
-            border: "1px solid rgba(255,255,255,0.1)",
-          },
-        });
+        toast("Too many requests. Please slow down.", { icon: "⏱" });
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
         return;
       }

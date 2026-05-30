@@ -254,10 +254,12 @@ export default function SettingsPage() {
         position="top-center"
         toastOptions={{
           style: {
-            background: "#111111",
-            color: "#fff",
-            border: "1px solid #2a2a2a",
-            fontSize: "12px",
+            background: "rgba(0, 0, 0, 0.6)",
+            color: "#ffffff",
+            border: "1px solid #682FBF",
+            fontSize: "13px",
+            backdropFilter: "blur(16px)",
+            borderRadius: "12px",
           },
         }}
       />

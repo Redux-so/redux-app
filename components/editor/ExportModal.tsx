@@ -20,13 +20,6 @@ interface ExportModalProps {
   activeImageUrl?: string | null;
 }
 
-const successToastStyle = {
-  background: "rgba(15, 10, 25, 0.9)",
-  color: "#ffffff",
-  border: "1px solid rgba(255,255,255,0.1)",
-  fontSize: "12px",
-} as const;
-
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -103,14 +96,10 @@ export default function ExportModal({
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        toast.success("Image downloaded!", {
-          style: successToastStyle,
-        });
+        toast.success("Image downloaded!");
         onClose();
       } else {
-        toast.success("Saved to library!", {
-          style: successToastStyle,
-        });
+        toast.success("Saved to library!");
         onClose();
       }
     } catch (err) {

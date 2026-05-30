@@ -319,13 +319,12 @@ export default function AdjustmentPanel({
   // ── Shared AI error handler ───────────────────────────────────────────────
   /** Returns true if the error was handled (caller should return early). */
   function handleAiError(status: number): boolean {
-    const darkStyle = { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" };
     if (status === 402) {
-      toast("Insufficient credits — purchase more to continue.", { icon: "💳", style: darkStyle });
+      toast("Insufficient credits — purchase more to continue.", { icon: "💳" });
       return true;
     }
     if (status === 429) {
-      toast("Rate limit exceeded. Please try again later.", { icon: "⏱", style: darkStyle });
+      toast("Rate limit exceeded. Please try again later.", { icon: "⏱" });
       return true;
     }
     return false;
@@ -347,14 +346,10 @@ export default function AdjustmentPanel({
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
-      toast.success("Auto Enhance applied", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.success("Auto Enhance applied");
     } catch (err) {
       console.error("[AdjustmentPanel] auto_enhance failed:", err);
-      toast.error("Auto Enhance failed", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.error("Auto Enhance failed");
     } finally {
       setLoadingEnhance(false);
     }
@@ -376,14 +371,10 @@ export default function AdjustmentPanel({
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
-      toast.success("Auto Tone Balance applied", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.success("Auto Tone Balance applied");
     } catch (err) {
       console.error("[AdjustmentPanel] auto_tone_balance failed:", err);
-      toast.error("Auto Tone Balance failed", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.error("Auto Tone Balance failed");
     } finally {
       setLoadingToneBalance(false);
     }
@@ -405,14 +396,10 @@ export default function AdjustmentPanel({
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
-      toast.success("Smart Color Balance applied", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.success("Smart Color Balance applied");
     } catch (err) {
       console.error("[AdjustmentPanel] smart_color_balance failed:", err);
-      toast.error("Smart Color Balance failed", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.error("Smart Color Balance failed");
     } finally {
       setLoadingSmartColor(false);
     }
@@ -423,12 +410,6 @@ export default function AdjustmentPanel({
     const file = e.target.files?.[0] ?? null;
     e.target.value = "";
     if (!file || !imageUrl) return;
-
-    const darkStyle = {
-      background: "rgba(15, 10, 25, 0.9)",
-      color: "#e5e5e5",
-      border: "1px solid rgba(255,255,255,0.1)",
-    };
 
     try {
       const { dataUrl, base64, mediaType } = await fileToBase64(file);
@@ -446,12 +427,12 @@ export default function AdjustmentPanel({
       });
 
       if (res.status === 402) {
-        toast("Insufficient credits", { icon: "💳", style: darkStyle });
+        toast("Insufficient credits", { icon: "💳" });
         setStyleMatchPreview(null);
         return;
       }
       if (res.status === 429) {
-        toast("Rate limit exceeded. Please try again later.", { icon: "⏱", style: darkStyle });
+        toast("Rate limit exceeded. Please try again later.", { icon: "⏱" });
         setStyleMatchPreview(null);
         return;
       }
@@ -463,15 +444,11 @@ export default function AdjustmentPanel({
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
-      toast.success("Style Match applied", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.success("Style Match applied");
       setStyleMatchPreview(null);
     } catch (err) {
       console.error("[AdjustmentPanel] style_match failed:", err);
-      toast.error("Style Match failed", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.error("Style Match failed");
       setStyleMatchPreview(null);
     } finally {
       setLoadingStyleMatch(false);
@@ -494,14 +471,10 @@ export default function AdjustmentPanel({
       if (data.resultUrl) {
         onReloadCanvas?.(data.resultUrl);
       }
-      toast.success("Background removed successfully", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.success("Background removed successfully");
     } catch (err) {
       console.error("[AdjustmentPanel] remove_background failed:", err);
-      toast.error("Background removal failed", {
-        style: { background: "rgba(15, 10, 25, 0.9)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.1)" },
-      });
+      toast.error("Background removal failed");
     } finally {
       setLoadingRemoveBg(false);
     }
@@ -510,11 +483,6 @@ export default function AdjustmentPanel({
   // ── Heal (inpainting) ─────────────────────────────────────────────────────
   async function confirmHeal() {
     if (!canvasImageUrl || !imageId || !exportHealMask) return;
-    const darkStyle = {
-      background: "rgba(15, 10, 25, 0.9)",
-      color: "#e5e5e5",
-      border: "1px solid rgba(255,255,255,0.1)",
-    };
     setLoadingHeal(true);
     try {
       let maskBase64: string;
@@ -522,7 +490,7 @@ export default function AdjustmentPanel({
         maskBase64 = await exportHealMask();
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not export mask";
-        toast.error(msg, { style: darkStyle });
+        toast.error(msg);
         return;
       }
       const res = await fetch("/api/ai/heal", {
@@ -535,11 +503,11 @@ export default function AdjustmentPanel({
         }),
       });
       if (res.status === 402) {
-        toast("Insufficient credits", { icon: "💳", style: darkStyle });
+        toast("Insufficient credits", { icon: "💳" });
         return;
       }
       if (res.status === 429) {
-        toast("Rate limit exceeded", { icon: "⏱", style: darkStyle });
+        toast("Rate limit exceeded", { icon: "⏱" });
         return;
       }
       if (!res.ok) {
@@ -550,12 +518,12 @@ export default function AdjustmentPanel({
       if (data.resultUrl) {
         onReloadCanvas?.(data.resultUrl);
       }
-      toast.success("Heal applied successfully", { style: darkStyle });
+      toast.success("Heal applied successfully");
       disableHealBrush?.();
       setActiveTool(null);
     } catch (err) {
       console.error("[AdjustmentPanel] heal failed:", err);
-      toast.error("Heal failed", { style: darkStyle });
+      toast.error("Heal failed");
     } finally {
       setLoadingHeal(false);
     }
@@ -568,11 +536,6 @@ export default function AdjustmentPanel({
   // ── Eraser (inpainting via heal API) ──────────────────────────────────────
   async function confirmEraser() {
     if (!canvasImageUrl || !imageId || !exportEraserMask) return;
-    const darkStyle = {
-      background: "rgba(15, 10, 25, 0.9)",
-      color: "#e5e5e5",
-      border: "1px solid rgba(255,255,255,0.1)",
-    };
     setLoadingEraser(true);
     try {
       let maskBase64: string;
@@ -580,7 +543,7 @@ export default function AdjustmentPanel({
         maskBase64 = await exportEraserMask();
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not export mask";
-        toast.error(msg, { style: darkStyle });
+        toast.error(msg);
         return;
       }
       const res = await fetch("/api/images/erase", {
@@ -596,12 +559,12 @@ export default function AdjustmentPanel({
       if (data.resultUrl) {
         onReloadCanvas?.(data.resultUrl);
       }
-      toast.success("Eraser applied successfully", { style: darkStyle });
+      toast.success("Eraser applied successfully");
       disableEraserBrush?.();
       setActiveTool(null);
     } catch (err) {
       console.error("[AdjustmentPanel] eraser failed:", err);
-      toast.error("Eraser failed", { style: darkStyle });
+      toast.error("Eraser failed");
     } finally {
       setLoadingEraser(false);
     }
@@ -614,11 +577,6 @@ export default function AdjustmentPanel({
   // ── Blur (Sharp Gaussian blur via painted mask) ───────────────────────────
   async function confirmBlur() {
     if (!canvasImageUrl || !imageId || !exportBlurMask) return;
-    const darkStyle = {
-      background: "rgba(15, 10, 25, 0.9)",
-      color: "#e5e5e5",
-      border: "1px solid rgba(255,255,255,0.1)",
-    };
     setLoadingBlur(true);
     try {
       let maskBase64: string;
@@ -626,7 +584,7 @@ export default function AdjustmentPanel({
         maskBase64 = await exportBlurMask();
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not export mask";
-        toast.error(msg, { style: darkStyle });
+        toast.error(msg);
         return;
       }
       const res = await fetch("/api/images/blur", {
@@ -642,12 +600,12 @@ export default function AdjustmentPanel({
       if (data.resultUrl) {
         onReloadCanvas?.(data.resultUrl);
       }
-      toast.success("Blur applied successfully", { style: darkStyle });
+      toast.success("Blur applied successfully");
       disableBlurBrush?.();
       setActiveTool(null);
     } catch (err) {
       console.error("[AdjustmentPanel] blur failed:", err);
-      toast.error("Blur failed", { style: darkStyle });
+      toast.error("Blur failed");
     } finally {
       setLoadingBlur(false);
     }
@@ -656,12 +614,6 @@ export default function AdjustmentPanel({
   function cancelBlur() {
     setActiveTool(null);
   }
-
-  const darkToastStyle = {
-    background: "rgba(15, 10, 25, 0.9)",
-    color: "#e5e5e5",
-    border: "1px solid rgba(255,255,255,0.1)",
-  };
 
   useEffect(() => {
     if (!genFillModalOpen || !canvasImageUrl) {
@@ -717,12 +669,12 @@ export default function AdjustmentPanel({
     if (!canvasImageUrl) return;
     const px = Math.round(parseInt(genFillPixels, 10));
     if (!Number.isFinite(px) || px < 1 || px > 512) {
-      toast.error("Enter expand pixels between 1 and 512", { style: darkToastStyle });
+      toast.error("Enter expand pixels between 1 and 512");
       return;
     }
     const promptTrim = genFillPrompt.trim();
     if (!promptTrim) {
-      toast.error("Enter a prompt", { style: darkToastStyle });
+      toast.error("Enter a prompt");
       return;
     }
 
@@ -740,11 +692,11 @@ export default function AdjustmentPanel({
       });
 
       if (res.status === 402) {
-        toast("Insufficient credits", { icon: "💳", style: darkToastStyle });
+        toast("Insufficient credits", { icon: "💳" });
         return;
       }
       if (res.status === 429) {
-        toast("Rate limit exceeded. Please try again later.", { icon: "⏱", style: darkToastStyle });
+        toast("Rate limit exceeded. Please try again later.", { icon: "⏱" });
         return;
       }
       if (!res.ok) {
@@ -755,11 +707,11 @@ export default function AdjustmentPanel({
       if (data.resultUrl) {
         onReloadCanvas?.(data.resultUrl);
       }
-      toast.success("Generative Fill applied successfully", { style: darkToastStyle });
+      toast.success("Generative Fill applied successfully");
       setGenFillModalOpen(false);
     } catch (err) {
       console.error("[AdjustmentPanel] generative_fill failed:", err);
-      toast.error("Generative Fill failed", { style: darkToastStyle });
+      toast.error("Generative Fill failed");
     } finally {
       setLoadingGenFill(false);
     }
