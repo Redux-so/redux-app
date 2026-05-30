@@ -20,7 +20,7 @@ interface AdjustmentPanelProps {
   onCrop?: () => void;
   onRotateCW?: () => void;
   onStraighten?: (degrees: number) => void;
-  onResize?: (width: number, height: number) => void;
+  onResize?: (width: number, height: number) => void | Promise<void>;
   /** Called with the new URL after an AI operation replaces the canvas image. */
   onReloadCanvas?: (url: string) => void;
   /** Active canvas image URL (may differ from library original after AI edits). */
@@ -261,7 +261,7 @@ export default function AdjustmentPanel({
     const w = parseInt(resizeW);
     const h = parseInt(resizeH);
     if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
-      onResize?.(w, h);
+      void onResize?.(w, h);
       setShowResize(false);
     }
   }

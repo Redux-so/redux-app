@@ -711,19 +711,58 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   // ---------------------------------------------------------------------------
   // Resize canvas + re-fit background image
   // ---------------------------------------------------------------------------
-  const resizeCanvas = useCallback((newW: number, newH: number) => {
+  const resizeCanvas = useCallback(async (newW: number, newH: number) => {
     const canvas = fabricRef.current;
     const img = bgImageRef.current;
-    if (!canvas) return;
+    if (!canvas || !img) return;
 
-    canvas.setDimensions({ width: newW, height: newH });
+    // Pure center crop at native pixel resolution — no resampling
+    const srcEl = img.getElement() as HTMLImageElement;
+    const natW = srcEl.naturalWidth;
+    const natH = srcEl.naturalHeight;
 
-    if (img) {
-      const scale = Math.min(newW / (img.width ?? newW), newH / (img.height ?? newH)) * 0.95;
-      img.set({ scaleX: scale, scaleY: scale, left: newW / 2, top: newH / 2 });
-      canvas.renderAll();
-      updateImageBounds();
-    }
+    // Clamp target to source dimensions (can't crop to larger than source)
+    const outW = Math.min(newW, natW);
+    const outH = Math.min(newH, natH);
+
+    // Take center outW × outH pixels at native resolution
+    const srcX = (natW - outW) / 2;
+    const srcY = (natH - outH) / 2;
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width = outW;
+    offscreen.height = outH;
+    offscreen.getContext("2d")?.drawImage(
+      srcEl,
+      srcX, srcY, outW, outH,
+      0, 0, outW, outH,
+    );
+
+    const dataUrl = offscreen.toDataURL("image/png");
+    const { FabricImage } = await import("fabric");
+    const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+
+    // Fit the cropped image into the existing Fabric canvas (don't resize canvas element)
+    const cW = canvas.getWidth();
+    const cH = canvas.getHeight();
+    const fitScale = Math.min(cW / outW, cH / outH) * 0.95;
+    newImg.set({
+      scaleX: fitScale,
+      scaleY: fitScale,
+      originX: "center",
+      originY: "center",
+      left: cW / 2,
+      top: cH / 2,
+      angle: 0,
+      flipX: false,
+      flipY: false,
+    });
+
+    transformRef.current = { rotation: 0, flipX: false, flipY: false, straighten: 0 };
+    bgImageRef.current = newImg;
+    canvas.backgroundImage = newImg as unknown as import("fabric").FabricObject;
+    canvas.renderAll();
+    updateImageBounds();
   }, [updateImageBounds]);
 
   // ---------------------------------------------------------------------------
