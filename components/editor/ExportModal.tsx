@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { X, Download, BookImage, Loader2 } from "lucide-react";
+import { X, Download, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 
@@ -44,9 +44,7 @@ export default function ExportModal({
   const titleId = useId();
   const [format, setFormat] = useState<ExportFormat>("jpeg");
   const [quality, setQuality] = useState(90);
-  const [pendingAction, setPendingAction] = useState<
-    null | "download" | "save"
-  >(null);
+  const [pendingAction, setPendingAction] = useState<null | "download">(null);
   const [error, setError] = useState<string | null>(null);
 
   const loading = pendingAction !== null;
@@ -61,9 +59,9 @@ export default function ExportModal({
     return () => window.removeEventListener("keydown", onEsc);
   }, [open, loading, onClose]);
 
-  async function triggerExport(action: "download" | "save") {
+  async function triggerExport() {
     if (!imageId) return;
-    setPendingAction(action);
+    setPendingAction("download");
     setError(null);
 
     try {
@@ -84,24 +82,19 @@ export default function ExportModal({
         throw new Error(data.error ?? "Export failed");
       }
 
-      if (action === "download") {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        const base = filename ? filename.replace(/\.[^.]+$/, "") : "export";
-        a.download = `${base}.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const base = filename ? filename.replace(/\.[^.]+$/, "") : "export";
+      a.download = `${base}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
-        toast.success("Image downloaded!");
-        onClose();
-      } else {
-        toast.success("Saved to library!");
-        onClose();
-      }
+      toast.success("Image downloaded!");
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -208,24 +201,11 @@ export default function ExportModal({
           <p className="mt-4 text-[13px] text-[#ef4444]">{error}</p>
         )}
 
-        {/* Footer — same rhythm as Upload: justify-between mt-5, gradient CTA */}
-        <div className="mt-5 flex items-center justify-between">
+        {/* Footer */}
+        <div className="mt-5 flex justify-end">
           <button
             type="button"
-            onClick={() => void triggerExport("save")}
-            disabled={loading || !imageId}
-            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.05] px-4 text-[13px] font-medium text-white/90 hover:bg-white/[0.09] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {pendingAction === "save" ? (
-              <Loader2 size={14} strokeWidth={2} className="shrink-0 animate-spin" />
-            ) : (
-              <BookImage size={14} strokeWidth={1.75} />
-            )}
-            Save to library
-          </button>
-          <button
-            type="button"
-            onClick={() => void triggerExport("download")}
+            onClick={() => void triggerExport()}
             disabled={loading || !imageId}
             className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
           >

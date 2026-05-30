@@ -48,7 +48,7 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
       className="group relative w-full aspect-square bg-white/[0.03] rounded-2xl overflow-hidden cursor-pointer"
     >
       <Image
-        src={image.originalUrl}
+        src={image.previewUrl ?? image.originalUrl}
         alt={image.filename}
         fill
         sizes="(max-width: 768px) 50vw, 20vw"

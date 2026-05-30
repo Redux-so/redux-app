@@ -27,6 +27,7 @@ model Image {
   user        User           @relation(fields: [userId], references: [id])
   filename    String
   originalUrl String
+  previewUrl  String?
   publicId    String
   width       Int
   height      Int

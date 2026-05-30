@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         id: true,
         filename: true,
         originalUrl: true,
+        previewUrl: true,
         publicId: true,
         utKey: true,
         width: true,

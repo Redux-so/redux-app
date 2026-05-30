@@ -12,6 +12,23 @@ export function useEditor(imageId?: string) {
     { useCheckpoints: true },
   );
 
+  // Load the most recent saved version's adjustments when imageId changes.
+  // This restores slider state when the user re-opens an image they edited.
+  useEffect(() => {
+    if (!imageId) return;
+    fetch(`/api/images/versions?imageId=${imageId}`)
+      .then((res) => res.json())
+      .then((data: { versions?: Array<{ adjustments: Record<string, number> }> }) => {
+        const latest = data.versions?.[0];
+        if (!latest) return;
+        const restored = normalizeAdjustments(latest.adjustments) as Adjustments;
+        reset(restored);
+        lastSavedRef.current = { ...restored };
+      })
+      .catch((err) => console.error("[useEditor] Failed to load saved adjustments:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageId]);
+
   const adjustments = state.present;
   const lastSavedRef = useRef<Adjustments>({ ...DEFAULT_ADJUSTMENTS });
 
@@ -123,11 +140,16 @@ export function useEditor(imageId?: string) {
   // ---------------------------------------------------------------------------
   // Auto-save every 30 s.  saveVersion is stable (empty useCallback deps), so
   // this effect only restarts when imageId changes — not on every slider move.
+  // Also fires on unmount so unsaved changes aren't lost when the user
+  // navigates away before the 30-second interval fires.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!imageId) return;
     const intervalId = setInterval(saveVersion, 30_000);
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      void saveVersion();
+    };
   }, [imageId, saveVersion]);
 
   // Cleanup timer on unmount

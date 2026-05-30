@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Adjustments } from "@/hooks/useEditor";
 import { useSearchParams } from "next/navigation";
 import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
@@ -84,14 +85,22 @@ export default function EditorApp() {
     undoLastCanvas,
     canUndoCanvas,
     getTransformSnapshot,
-  } = useCanvas(image?.originalUrl ?? null, adjustments);
+  } = useCanvas(image?.previewUrl ?? image?.originalUrl ?? null, adjustments);
 
   // Wrap loadImageUrl so AI retouch operations (heal, erase, blur, remove bg,
-  // gen fill) automatically push canvas undo history before replacing the image.
+  // gen fill) automatically push canvas undo history before replacing the image
+  // and persist the new Cloudinary URL as the image's previewUrl.
   const reloadCanvas = useCallback((url: string) => {
     if (activeImageUrl) pushImageHistory(activeImageUrl, getTransformSnapshot());
     void loadImageUrl(url);
-  }, [activeImageUrl, pushImageHistory, getTransformSnapshot, loadImageUrl]);
+    if (imageId && url.startsWith("https://")) {
+      void fetch(`/api/images/${imageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ previewUrl: url }),
+      });
+    }
+  }, [activeImageUrl, pushImageHistory, getTransformSnapshot, loadImageUrl, imageId]);
 
   // Unified undo: canvas history first, then adjustment slider undo
   const handleUndo = useCallback(() => {
@@ -103,6 +112,49 @@ export default function EditorApp() {
   }, [canUndoCanvas, undoLastCanvas, undo]);
 
   const handleCanUndo = canUndoCanvas || canUndo;
+
+  // Refs for unmount preview generation — cleanup reads latest values.
+  const imageIdRef = useRef(imageId);
+  const adjustmentsRef = useRef<Adjustments>(adjustments);
+  const activeImageUrlRef = useRef(activeImageUrl);
+  imageIdRef.current = imageId;
+  adjustmentsRef.current = adjustments;
+  activeImageUrlRef.current = activeImageUrl;
+
+  useEffect(() => {
+    return () => {
+      const id = imageIdRef.current;
+      if (!id) return;
+
+      void (async () => {
+        try {
+          const exportRes = await fetch("/api/images/export", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              imageId: id,
+              adjustments: adjustmentsRef.current,
+              format: "jpeg",
+              quality: 60,
+              imageUrl: activeImageUrlRef.current ?? undefined,
+            }),
+          });
+          if (!exportRes.ok) return;
+
+          const blob = await exportRes.blob();
+          const formData = new FormData();
+          formData.append("file", blob, "preview.jpg");
+
+          await fetch(`/api/images/${id}/preview`, {
+            method: "POST",
+            body: formData,
+          });
+        } catch (err) {
+          console.error("[EditorApp] Failed to save preview thumbnail:", err);
+        }
+      })();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import Header from "@/components/shared/Header";
 import BottomNav from "@/components/shared/BottomNav";
 import PhotoGrid from "@/components/library/PhotoGrid";
@@ -41,6 +42,7 @@ type LibrarySearchOverlay =
   | { kind: "results"; images: ImageRecord[] };
 
 export default function LibraryPage() {
+  const pathname = usePathname();
   const [images, setImages] = useState<ImageRecord[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [searchOverlay, setSearchOverlay] = useState<LibrarySearchOverlay>({
@@ -50,7 +52,7 @@ export default function LibraryPage() {
   const fetchImages = useCallback(async () => {
     setLibraryLoading(true);
     try {
-      const res = await fetch("/api/images");
+      const res = await fetch("/api/images", { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as { images: ImageRecord[] };
       setImages(data.images);
@@ -60,8 +62,8 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
-    fetchImages();
-  }, [fetchImages]);
+    if (pathname === "/library") void fetchImages();
+  }, [pathname, fetchImages]);
 
   const handleDeleteImage = useCallback((id: string) => {
     setImages((prev) => prev.filter((img) => img.id !== id));
