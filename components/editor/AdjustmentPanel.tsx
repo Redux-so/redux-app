@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Loader2, Minus, ChevronDown, Star, Lock, Unlock, X } from "lucide-react";
+import { Loader2, ChevronDown, ChevronLeft, ChevronRight, Star, Lock, Unlock, X } from "lucide-react";
 import toast from "react-hot-toast";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
@@ -223,6 +223,7 @@ export default function AdjustmentPanel({
     retouch: true,
     transform: true,
   });
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [activeTool, setActiveTool] = useState<ActiveTool>(null);
 
   // Straighten inline slider
@@ -718,18 +719,43 @@ export default function AdjustmentPanel({
   }
 
   return (
-    <div className="flex flex-col w-[400px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-r border-white/[0.07]">
+    <div
+      className={[
+        "flex flex-col shrink-0 h-full min-w-0 bg-black/50 backdrop-blur-xl border-r border-white/[0.07] overflow-hidden transition-[width] duration-200 ease-out",
+        panelCollapsed ? "w-[44px]" : "w-[400px]",
+      ].join(" ")}
+    >
       {/* Panel header */}
-      <div className="flex items-center justify-between px-6 h-[52px] shrink-0 border-b border-white/[0.07]">
-        <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
-          Adjustments
-        </span>
-        <button className="text-[#555555] hover:text-[#888888] transition-colors">
-          <Minus size={14} strokeWidth={2} />
+      <div
+        className={[
+          "flex items-center shrink-0 h-[52px] border-b border-white/[0.07]",
+          panelCollapsed ? "justify-center px-0" : "justify-between px-6",
+        ].join(" ")}
+      >
+        {!panelCollapsed && (
+          <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
+            Adjustments
+          </span>
+        )}
+        <button
+          type="button"
+          aria-expanded={!panelCollapsed}
+          aria-label={
+            panelCollapsed ? "Expand adjustments panel" : "Collapse adjustments panel"
+          }
+          onClick={() => setPanelCollapsed((prev) => !prev)}
+          className="text-[#555555] hover:text-[#888888] transition-colors cursor-pointer"
+        >
+          {panelCollapsed ? (
+            <ChevronRight size={14} strokeWidth={2} />
+          ) : (
+            <ChevronLeft size={14} strokeWidth={2} />
+          )}
         </button>
       </div>
 
       {/* Scrollable content */}
+      {!panelCollapsed && (
       <div className="flex-1 overflow-y-auto min-h-0">
 
         {/* ── LIGHT ──────────────────────────────────────────────────────── */}
@@ -1113,6 +1139,7 @@ export default function AdjustmentPanel({
         )}
 
       </div>
+      )}
 
       {genFillModalOpen && (
         <div

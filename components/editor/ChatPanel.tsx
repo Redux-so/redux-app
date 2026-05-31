@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, MessageCircle, Minus, Paperclip, X } from "lucide-react";
+import { ArrowUp, MessageCircle, ChevronLeft, ChevronRight, Paperclip, X } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
@@ -75,6 +75,7 @@ export default function ChatPanel({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
 
   // Attached image state
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -303,28 +304,54 @@ export default function ChatPanel({
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col w-[400px] shrink-0 h-full bg-black/50 backdrop-blur-xl border-l border-white/[0.07]">
+    <div
+      className={[
+        "flex flex-col shrink-0 h-full min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
+        "bg-black/50 backdrop-blur-xl border-l border-white/[0.07]",
+        panelCollapsed ? "w-[44px]" : "w-[400px]",
+      ].join(" ")}
+    >
       {/* Panel header */}
-      <div className="flex items-center justify-between px-6 h-[52px] shrink-0 border-b border-white/[0.07]">
-        <div className="flex items-center gap-2">
-          <MessageCircle size={14} strokeWidth={1.75} className="text-[#888888]" />
-          <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
-            Chat
-          </span>
-        </div>
+      <div
+        className={[
+          "flex items-center shrink-0 h-[52px] border-b border-white/[0.07] gap-2",
+          panelCollapsed ? "justify-center px-0" : "px-6",
+        ].join(" ")}
+      >
         <button
           type="button"
-          className="text-[#555555] hover:text-[#888888] transition-colors"
+          aria-expanded={!panelCollapsed}
+          aria-label={panelCollapsed ? "Expand chat panel" : "Collapse chat panel"}
+          onClick={() => setPanelCollapsed((prev) => !prev)}
+          className="shrink-0 text-[#555555] hover:text-[#888888] transition-colors cursor-pointer"
         >
-          <Minus size={14} strokeWidth={2} />
+          {panelCollapsed ? (
+            <ChevronLeft size={14} strokeWidth={2} />
+          ) : (
+            <ChevronRight size={14} strokeWidth={2} />
+          )}
         </button>
+        {!panelCollapsed && (
+          <div className="flex items-center gap-2 min-w-0">
+            <MessageCircle size={14} strokeWidth={1.75} className="text-[#888888] shrink-0" />
+            <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none truncate">
+              Chat
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Message thread */}
       <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
+        className={[
+          "flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden",
+          panelCollapsed ? "hidden" : "flex",
+        ].join(" ")}
       >
+        {/* Message thread */}
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
+        >
         {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
@@ -485,5 +512,6 @@ export default function ChatPanel({
         </div>
       </div>
     </div>
+  </div>
   );
 }

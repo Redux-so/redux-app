@@ -232,6 +232,36 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     });
   }, []);
 
+  const relayoutCanvas = useCallback(() => {
+    const canvas = fabricRef.current;
+    const container = containerRef.current;
+    const img = bgImageRef.current;
+    if (!canvas || !container) return;
+
+    const PADDING = 64;
+    const w = Math.max(300, container.clientWidth - PADDING);
+    const h = Math.max(200, container.clientHeight - PADDING);
+    canvas.setDimensions({ width: w, height: h });
+
+    if (img) {
+      const scale = Math.min(w / (img.width ?? w), h / (img.height ?? h)) * 0.95;
+      const { rotation, flipX, flipY, straighten } = transformRef.current;
+      img.set({
+        scaleX: scale,
+        scaleY: scale,
+        originX: "center",
+        originY: "center",
+        left: w / 2,
+        top: h / 2,
+        angle: rotation + straighten,
+        flipX,
+        flipY,
+      });
+      canvas.renderAll();
+      updateImageBounds();
+    }
+  }, [updateImageBounds]);
+
   // Apply the current transform ref values to the loaded background image
   const applyTransform = useCallback(() => {
     const canvas = fabricRef.current;
@@ -483,6 +513,19 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
 
     return () => { cancelled = true; };
   }, [imageUrl, canvasReady]);
+
+  // Resize Fabric canvas when the container grows or shrinks (e.g. panel collapse).
+  useEffect(() => {
+    if (!canvasReady) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      relayoutCanvas();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [canvasReady, relayoutCanvas]);
 
   // ---------------------------------------------------------------------------
   // Apply CSS filters in real time

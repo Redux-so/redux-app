@@ -293,7 +293,7 @@ export default function EditorApp() {
           onShowHistory={() => setShowHistory(true)}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+        <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
           <AdjustmentPanel
             adjustments={adjustments}
             onPreview={previewAdjustment}
@@ -320,7 +320,7 @@ export default function EditorApp() {
             exportBlurMask={exportBlurMask}
           />
 
-          <div className="relative flex flex-1 min-h-0">
+          <div className="relative flex flex-1 min-h-0 min-w-0">
             <Canvas
               canvasRef={canvasRef}
               containerRef={containerRef}
