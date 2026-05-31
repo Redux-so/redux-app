@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X, RotateCcw, Clock } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import type { Adjustments } from "@/hooks/useEditor";
 
 interface ImageVersion {
@@ -95,7 +96,7 @@ export default function HistoryPanel({
         <div className="min-h-0 flex-1 overflow-y-auto">
           {loading && (
             <div className="flex h-24 items-center justify-center">
-              <span className="text-[13px] text-[#555555]">Loading…</span>
+              <LoadingSpinner size="sm" label="Loading version history" />
             </div>
           )}
 

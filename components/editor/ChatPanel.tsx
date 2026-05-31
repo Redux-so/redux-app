@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUp, MessageCircle, ChevronLeft, ChevronRight, Paperclip, X } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
@@ -388,11 +389,7 @@ export default function ChatPanel({
             >
               {/* Loading dots when assistant placeholder is empty */}
               {msg.content === "" && msg.role === "assistant" ? (
-                <span className="inline-flex gap-[4px] items-center py-[2px]">
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#555555] animate-bounce [animation-delay:0ms]" />
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#555555] animate-bounce [animation-delay:150ms]" />
-                  <span className="w-[4px] h-[4px] rounded-full bg-[#555555] animate-bounce [animation-delay:300ms]" />
-                </span>
+                <LoadingSpinner size="xs" variant="muted" label="Assistant is typing" />
               ) : (
                 msg.content
               )}

@@ -21,6 +21,7 @@ import HistoryPanel from "@/components/editor/HistoryPanel";
 import ExportModal from "@/components/editor/ExportModal";
 import BottomNav from "@/components/shared/BottomNav";
 import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
+import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
 
 export default function EditorApp() {
   const searchParams = useSearchParams();
@@ -333,9 +334,11 @@ export default function EditorApp() {
               onCancelCrop={cancelCrop}
             />
             {loadingImage && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0a0a0a]/80 text-[#888888] pointer-events-none">
-                Loading…
-              </div>
+              <LoadingOverlay
+                className="absolute inset-0 z-10 bg-[#0a0a0a]/80 pointer-events-none"
+                message="Loading image"
+                srOnlyMessage
+              />
             )}
           </div>
 

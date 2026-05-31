@@ -14,6 +14,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import CreditShopModal from "@/components/shared/CreditShopModal";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { useEditorPreview } from "@/components/editor/EditorPreviewContext";
 
 const TABS = [
@@ -222,9 +223,13 @@ export default function BottomNav() {
                     isLibraryLoading ? "opacity-60 cursor-wait" : "",
                   ].join(" ")}
                 >
-                  <Icon size={20} strokeWidth={1.5} />
+                  {isLibraryLoading ? (
+                    <LoadingSpinner size="xs" variant="brand" label="Saving preview" />
+                  ) : (
+                    <Icon size={20} strokeWidth={1.5} />
+                  )}
                   <span className="text-[12px] leading-none tracking-tight">
-                    {isLibraryLoading ? "Saving…" : label}
+                    {isLibraryLoading ? "Saving" : label}
                   </span>
                 </button>
               );

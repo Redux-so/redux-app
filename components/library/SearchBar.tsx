@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { ImageRecord } from "@/types/image";
 
@@ -85,10 +86,10 @@ export default function SearchBar({
         className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none"
       />
       {isSearching ? (
-        <Loader2
-          size={16}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] animate-spin"
-          aria-hidden
+        <LoadingSpinner
+          size="xs"
+          className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          label="Searching"
         />
       ) : null}
       <input

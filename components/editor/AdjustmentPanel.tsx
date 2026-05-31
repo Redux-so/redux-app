@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Loader2, ChevronDown, ChevronLeft, ChevronRight, Star, Lock, Unlock, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Star, Lock, Unlock, X } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
@@ -133,11 +134,11 @@ function AIButton({
       className="flex items-center justify-center gap-[7px] w-full h-9 bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-lg text-[13px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 hover:shadow-glow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
     >
       {loading ? (
-        <Loader2 size={14} strokeWidth={2} className="animate-spin shrink-0" />
+        <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
       ) : (
         <Star size={14} strokeWidth={1.5} className="text-[#9B6EE8]" />
       )}
-      {loading ? "Working…" : label}
+      {label}
     </button>
   );
 }
@@ -884,10 +885,7 @@ export default function AdjustmentPanel({
               <ToolBtn
                 label={
                   loadingBlur ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Loader2 size={14} className="animate-spin shrink-0" />
-                      Working…
-                    </span>
+                    <LoadingSpinner size="sm" variant="brand" label="Blur loading" />
                   ) : (
                     "Blur"
                   )
@@ -930,10 +928,7 @@ export default function AdjustmentPanel({
                     className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
                   >
                     {loadingBlur ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        Processing…
-                      </>
+                      <LoadingSpinner size="sm" variant="brand" label="Processing blur" />
                     ) : (
                       "Confirm"
                     )}
@@ -962,10 +957,7 @@ export default function AdjustmentPanel({
                     className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
                   >
                     {loadingHeal ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        Processing…
-                      </>
+                      <LoadingSpinner size="sm" variant="brand" label="Processing heal" />
                     ) : (
                       "Confirm"
                     )}
@@ -1001,10 +993,7 @@ export default function AdjustmentPanel({
                     className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
                   >
                     {loadingEraser ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        Processing…
-                      </>
+                      <LoadingSpinner size="sm" variant="brand" label="Processing eraser" />
                     ) : (
                       "Confirm"
                     )}
@@ -1225,9 +1214,11 @@ export default function AdjustmentPanel({
                       alt="Expanded canvas preview"
                       className="max-w-full max-h-[200px] w-auto h-auto object-contain"
                     />
+                  ) : canvasImageUrl ? (
+                    <LoadingSpinner size="xs" label="Loading preview" />
                   ) : (
                     <span className="text-[11px] text-[#555555] px-4 py-6 text-center">
-                      {canvasImageUrl ? "Loading preview…" : "No image"}
+                      No image
                     </span>
                   )}
                 </div>
@@ -1250,10 +1241,7 @@ export default function AdjustmentPanel({
                 className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
               >
                 {loadingGenFill ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    Processing…
-                  </>
+                  <LoadingSpinner size="sm" variant="brand" label="Applying generative fill" />
                 ) : (
                   "Apply"
                 )}

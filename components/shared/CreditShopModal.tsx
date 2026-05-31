@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, Coins } from "lucide-react";
+import { X, Coins } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { AnimatePresence, motion } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -108,7 +109,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
               <div className="px-6 py-5">
                 {loading ? (
                   <div className="flex items-center justify-center py-10">
-                    <Loader2 size={20} className="animate-spin text-[#888888]" />
+                    <LoadingSpinner size="md" label="Loading credit bundles" />
                   </div>
                 ) : bundles.length === 0 ? (
                   <p className="text-[#888888] text-[13px] text-center py-8">
@@ -138,7 +139,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                           className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {purchasing === bundle.id ? (
-                            <Loader2 size={13} className="animate-spin" />
+                            <LoadingSpinner size="xs" variant="brand" label="Processing purchase" />
                           ) : null}
                           {formatPrice(bundle.price)}
                         </button>

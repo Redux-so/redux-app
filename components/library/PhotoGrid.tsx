@@ -2,6 +2,7 @@
 
 import type { ImageGroup, ImageRecord } from "@/types/image";
 import PhotoCard from "./PhotoCard";
+import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
 
 interface PhotoGridProps {
   groups: ImageGroup[];
@@ -14,42 +15,6 @@ interface PhotoGridProps {
   onDeleteImage?: (id: string) => void;
 }
 
-function SkeletonGrid() {
-  return (
-    <div className="flex flex-col gap-5">
-      {[10, 8].map((count, i) => (
-        <div key={i}>
-          <div className="h-[10px] w-14 bg-[#1a1a1a] rounded-sm animate-pulse mb-3" />
-          <div className="grid grid-cols-5 gap-3">
-            {Array.from({ length: count }).map((_, j) => (
-              <div
-                key={j}
-                className="aspect-square bg-[#161616] rounded-md animate-pulse"
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SearchSkeleton() {
-  return (
-    <div className="px-6 py-5">
-      <div className="h-[10px] w-24 bg-[#1a1a1a] rounded-sm animate-pulse mb-3" />
-      <div className="grid grid-cols-5 gap-3">
-        {Array.from({ length: 15 }).map((_, j) => (
-          <div
-            key={j}
-            className="aspect-square bg-[#161616] rounded-md animate-pulse"
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function PhotoGrid({
   groups,
   libraryLoading,
@@ -58,7 +23,13 @@ export default function PhotoGrid({
 }: PhotoGridProps) {
   if (search) {
     if (search.loading) {
-      return <SearchSkeleton />;
+      return (
+        <LoadingOverlay
+          className="h-full min-h-[240px] w-full"
+          message="Searching photos"
+          size="md"
+        />
+      );
     }
     if (search.images.length === 0) {
       return (
@@ -82,9 +53,11 @@ export default function PhotoGrid({
 
   if (libraryLoading) {
     return (
-      <div className="px-6 py-5">
-        <SkeletonGrid />
-      </div>
+      <LoadingOverlay
+        className="h-full min-h-[240px] w-full"
+        message="Loading library"
+        size="md"
+      />
     );
   }
 

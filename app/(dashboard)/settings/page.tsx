@@ -12,8 +12,8 @@ import {
   ExternalLink,
   Mail,
   AlertTriangle,
-  Loader2,
 } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
 import Link from "next/link";
@@ -132,7 +132,7 @@ function ConfirmDialog({
                 : "bg-white text-black hover:bg-[#e8e8e8]"
             }`}
           >
-            {loading && <Loader2 size={12} className="animate-spin" />}
+            {loading && <LoadingSpinner size="xs" label="Processing" />}
             {confirmLabel}
           </button>
         </div>
@@ -459,7 +459,7 @@ export default function SettingsPage() {
                   className={`${BTN_GHOST} flex items-center gap-[6px]`}
                 >
                   {portalLoading ? (
-                    <Loader2 size={11} className="animate-spin" />
+                    <LoadingSpinner size="xs" label="Opening billing portal" />
                   ) : (
                     <ExternalLink size={11} strokeWidth={1.5} />
                   )}

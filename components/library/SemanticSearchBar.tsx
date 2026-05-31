@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 interface SemanticSearchBarProps {
   value: string;
@@ -45,10 +46,10 @@ export default function SemanticSearchBar({
           className="w-full h-[30px] bg-[#111111] border border-[#2a2a2a] rounded-sm pl-[28px] pr-3 text-[12px] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-50"
         />
         {loading && (
-          <Loader2
-            size={12}
-            strokeWidth={2}
-            className="absolute right-[10px] top-1/2 -translate-y-1/2 text-[#888888] animate-spin pointer-events-none"
+          <LoadingSpinner
+            size="xs"
+            className="absolute right-[10px] top-1/2 -translate-y-1/2 pointer-events-none"
+            label="Searching"
           />
         )}
       </div>

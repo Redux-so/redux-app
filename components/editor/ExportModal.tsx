@@ -3,7 +3,8 @@
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { X, Download, Loader2 } from "lucide-react";
+import { X, Download } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 
@@ -210,7 +211,7 @@ export default function ExportModal({
             className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
           >
             {pendingAction === "download" ? (
-              <Loader2 size={14} strokeWidth={2} className="shrink-0 animate-spin" />
+              <LoadingSpinner size="sm" variant="brand" label="Exporting" />
             ) : (
               <Download size={14} strokeWidth={2} />
             )}
