@@ -93,6 +93,11 @@ export default function AdjustmentSlider({
   const trackGradient = getTrackGradient(trackVariant);
   const accentColor = getSliderAccentColor(trackVariant, value, min, max);
 
+  function resetToDefault() {
+    onChange(defaultValue);
+    onCommit(defaultValue);
+  }
+
   return (
     <div className="flex flex-col gap-2 px-6 py-2">
       <div className="flex items-center justify-between">
@@ -101,10 +106,7 @@ export default function AdjustmentSlider({
         </span>
         <span
           className="text-[14px] text-[#888888] leading-none tabular-nums cursor-default select-none"
-          onDoubleClick={() => {
-            onChange(defaultValue);
-            onCommit(defaultValue);
-          }}
+          onDoubleClick={resetToDefault}
         >
           {Number.isInteger(value) ? value : value.toFixed(1)}
         </span>
@@ -139,6 +141,7 @@ export default function AdjustmentSlider({
           )}
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
+          title="Double-click to reset"
           className={[
             "block h-[12px] w-[12px] rounded-full outline-none cursor-pointer transition-transform hover:scale-110",
             isColorTrack
@@ -146,6 +149,10 @@ export default function AdjustmentSlider({
               : "bg-[#e5e5e5] shadow-[0_0_0_1px_rgba(255,255,255,0.15)]",
           ].join(" ")}
           style={isColorTrack ? { backgroundColor: accentColor } : undefined}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            resetToDefault();
+          }}
         />
       </SliderPrimitive.Root>
     </div>
