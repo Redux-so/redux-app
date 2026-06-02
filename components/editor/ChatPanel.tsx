@@ -383,10 +383,10 @@ export default function ChatPanel({
 
             {/* Bubble */}
             <div
-              className={`max-w-[320px] rounded-lg px-3 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap break-words ${
+              className={`max-w-[320px] leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === "user"
-                  ? "bg-white text-black"
-                  : "bg-white/[0.05] border border-white/[0.08] text-[#e5e5e5]"
+                  ? TOAST_SHELL_CLASS
+                  : "rounded-lg px-3 py-2.5 text-[14px] bg-white/[0.05] border border-white/[0.08] text-[#e5e5e5]"
               }`}
             >
               {/* Loading dots when assistant placeholder is empty */}
