@@ -21,6 +21,7 @@ import HistoryPanel from "@/components/editor/HistoryPanel";
 import ExportModal from "@/components/editor/ExportModal";
 import BottomNav from "@/components/shared/BottomNav";
 import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
+import EditorErrorBoundary from "@/components/shared/EditorErrorBoundary";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
 
 export default function EditorApp() {
@@ -321,32 +322,36 @@ export default function EditorApp() {
             exportBlurMask={exportBlurMask}
           />
 
-          <div className="relative flex flex-1 min-h-0 min-w-0">
-            <Canvas
-              canvasRef={canvasRef}
-              containerRef={containerRef}
-              imageUrl={canvasSourceUrl}
-              adjustments={adjustments}
-              imageBounds={imageBounds}
-              viewportTransform={viewportTransform}
-              isCropping={isCropping}
-              onConfirmCrop={handleConfirmCrop}
-              onCancelCrop={cancelCrop}
-            />
-            {loadingImage && (
-              <LoadingOverlay
-                className="absolute inset-0 z-10 bg-[#0a0a0a]/80 pointer-events-none"
-                message="Loading image"
-                srOnlyMessage
+          <EditorErrorBoundary label="canvas">
+            <div className="relative flex flex-1 min-h-0 min-w-0">
+              <Canvas
+                canvasRef={canvasRef}
+                containerRef={containerRef}
+                imageUrl={canvasSourceUrl}
+                adjustments={adjustments}
+                imageBounds={imageBounds}
+                viewportTransform={viewportTransform}
+                isCropping={isCropping}
+                onConfirmCrop={handleConfirmCrop}
+                onCancelCrop={cancelCrop}
               />
-            )}
-          </div>
+              {loadingImage && (
+                <LoadingOverlay
+                  className="absolute inset-0 z-10 bg-[#0a0a0a]/80 pointer-events-none"
+                  message="Loading image"
+                  srOnlyMessage
+                />
+              )}
+            </div>
+          </EditorErrorBoundary>
 
-          <ChatPanel
-            adjustments={adjustments}
-            onPatch={patchAdjustments}
-            imageId={imageId}
-          />
+          <EditorErrorBoundary label="chat">
+            <ChatPanel
+              adjustments={adjustments}
+              onPatch={patchAdjustments}
+              imageId={imageId}
+            />
+          </EditorErrorBoundary>
         </div>
 
         <BottomNav />

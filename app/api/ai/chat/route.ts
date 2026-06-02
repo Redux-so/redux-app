@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic, formatAdjustmentsForPrompt } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit } from "@/lib/kv";
+import {
+  checkRateLimit,
+  checkRateLimitPerMinute,
+  RATE_LIMIT_MINUTE,
+} from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 
@@ -85,8 +89,20 @@ export async function POST(request: Request) {
   /** True while the user still has lifetime free messages (before the 21st send). */
   const onFreeTier = user.lifetimeFreeAI < 20;
 
-  // ── Hourly rate limiting ─────────────────────────────────────────────────
+  // ── Rate limiting (per-minute burst, then hourly) ───────────────────────
   if (onFreeTier) {
+    const minuteLimit = await checkRateLimitPerMinute(
+      user.id,
+      "chat_free",
+      RATE_LIMIT_MINUTE.chat_free,
+    );
+    if (!minuteLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429 },
+      );
+    }
+
     const hourly = await checkRateLimit(user.id, "chat_free", FREE_HOURLY_LIMIT);
     if (!hourly.allowed) {
       return NextResponse.json(
@@ -95,6 +111,18 @@ export async function POST(request: Request) {
       );
     }
   } else {
+    const minuteLimit = await checkRateLimitPerMinute(
+      user.id,
+      "chat_credit",
+      RATE_LIMIT_MINUTE.chat_credit,
+    );
+    if (!minuteLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429 },
+      );
+    }
+
     const hourly = await checkRateLimit(user.id, "chat_credit", CREDIT_HOURLY_LIMIT);
     if (!hourly.allowed) {
       return NextResponse.json(

@@ -1,7 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit } from "@/lib/kv";
+import {
+  checkRateLimit,
+  checkRateLimitPerMinute,
+  RATE_LIMIT_MINUTE,
+} from "@/lib/kv";
 import { embedSearchQueryText } from "@/lib/search-clip";
 import { CLIP_VECTOR_DIM, vectorToPgLiteral } from "@/lib/pgvector";
 import type { ImageRecord } from "@/types/image";
@@ -73,6 +77,18 @@ export async function GET(request: Request) {
 
     if (user.creditBalance < SEMANTIC_SEARCH_COST) {
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    }
+
+    const minuteLimit = await checkRateLimitPerMinute(
+      user.id,
+      "semantic_search",
+      RATE_LIMIT_MINUTE.semantic_search,
+    );
+    if (!minuteLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429 },
+      );
     }
 
     const rateLimit = await checkRateLimit(user.id, "semantic_search", 20);

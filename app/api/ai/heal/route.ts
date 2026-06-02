@@ -4,7 +4,11 @@ import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit } from "@/lib/kv";
+import {
+  checkRateLimit,
+  checkRateLimitPerMinute,
+  RATE_LIMIT_MINUTE,
+} from "@/lib/kv";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -66,6 +70,18 @@ export async function POST(request: Request) {
 
     if (user.creditBalance < HEAL_COST) {
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    }
+
+    const minuteLimit = await checkRateLimitPerMinute(
+      user.id,
+      "heal",
+      RATE_LIMIT_MINUTE.heal,
+    );
+    if (!minuteLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429 },
+      );
     }
 
     const rateLimit = await checkRateLimit(user.id, "heal", 20);

@@ -64,3 +64,6 @@ next-env.d.ts
 # context
 .context
 .devnotes
+
+# Sentry Config File
+.env.sentry-build-plugin

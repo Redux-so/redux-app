@@ -4,7 +4,11 @@ import sharp from "sharp";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimit } from "@/lib/kv";
+import {
+  checkRateLimit,
+  checkRateLimitPerMinute,
+  RATE_LIMIT_MINUTE,
+} from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 
@@ -43,6 +47,18 @@ export async function POST(request: Request) {
 
   if (user.creditBalance < STYLE_MATCH_COST) {
     return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+  }
+
+  const minuteLimit = await checkRateLimitPerMinute(
+    user.id,
+    "style_match",
+    RATE_LIMIT_MINUTE.style_match,
+  );
+  if (!minuteLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please slow down." },
+      { status: 429 },
+    );
   }
 
   const rateLimit = await checkRateLimit(user.id, "style_match", 20);
