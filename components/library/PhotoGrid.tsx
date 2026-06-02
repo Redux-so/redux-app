@@ -3,6 +3,7 @@
 import type { ImageGroup, ImageRecord } from "@/types/image";
 import PhotoCard from "./PhotoCard";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface PhotoGridProps {
   groups: ImageGroup[];
@@ -13,6 +14,49 @@ interface PhotoGridProps {
     images: ImageRecord[];
   } | null;
   onDeleteImage?: (id: string) => void;
+}
+
+function AnimatedPhotoGrid({
+  images,
+  onDeleteImage,
+}: {
+  images: ImageRecord[];
+  onDeleteImage?: (id: string) => void;
+}) {
+  const prefersReducedMotion = useReducedMotion();
+  const duration = prefersReducedMotion ? 0 : 0.25;
+  const stagger = prefersReducedMotion ? 0 : 0.035;
+
+  return (
+    <motion.div
+      className="grid grid-cols-5 gap-3"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: {},
+        visible: { transition: { staggerChildren: stagger } },
+      }}
+    >
+      {images.map((image) => (
+        <motion.div
+          key={image.id}
+          variants={{
+            hidden: {
+              opacity: prefersReducedMotion ? 1 : 0,
+              y: prefersReducedMotion ? 0 : 8,
+            },
+            visible: {
+              opacity: 1,
+              y: 0,
+              transition: { duration, ease: "easeOut" },
+            },
+          }}
+        >
+          <PhotoCard image={image} onDelete={onDeleteImage} />
+        </motion.div>
+      ))}
+    </motion.div>
+  );
 }
 
 export default function PhotoGrid({
@@ -42,11 +86,7 @@ export default function PhotoGrid({
     }
     return (
       <div className="px-6 py-5 flex flex-col gap-5">
-        <div className="grid grid-cols-5 gap-3">
-          {search.images.map((image) => (
-            <PhotoCard key={image.id} image={image} onDelete={onDeleteImage} />
-          ))}
-        </div>
+        <AnimatedPhotoGrid images={search.images} onDeleteImage={onDeleteImage} />
       </div>
     );
   }
@@ -79,11 +119,7 @@ export default function PhotoGrid({
             <p className="text-[11px] text-[#555555] uppercase tracking-[0.14em] font-medium mb-3">
               {group.label}
             </p>
-            <div className="grid grid-cols-5 gap-3">
-              {group.images.map((image) => (
-                <PhotoCard key={image.id} image={image} onDelete={onDeleteImage} />
-              ))}
-            </div>
+            <AnimatedPhotoGrid images={group.images} onDeleteImage={onDeleteImage} />
           </div>
         ),
       )}

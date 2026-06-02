@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronRight, Star, Lock, Unlock, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
@@ -225,6 +226,8 @@ export default function AdjustmentPanel({
     transform: true,
   });
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
+  const panelFadeDuration = prefersReducedMotion ? 0 : 0.2;
   const [activeTool, setActiveTool] = useState<ActiveTool>(null);
 
   // Straighten inline slider
@@ -756,8 +759,16 @@ export default function AdjustmentPanel({
       </div>
 
       {/* Scrollable content */}
-      {!panelCollapsed && (
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <AnimatePresence initial={false}>
+        {!panelCollapsed && (
+          <motion.div
+            key="adjustments-content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: panelFadeDuration, ease: "easeOut" }}
+            className="flex-1 overflow-y-auto min-h-0"
+          >
 
         {/* ── LIGHT ──────────────────────────────────────────────────────── */}
         <SectionHeader
@@ -1127,8 +1138,9 @@ export default function AdjustmentPanel({
           </div>
         )}
 
-      </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {genFillModalOpen && (
         <div

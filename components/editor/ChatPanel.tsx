@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowUp, MessageCircle, ChevronLeft, ChevronRight, Paperclip, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
@@ -79,6 +80,10 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
+  const panelFadeDuration = prefersReducedMotion ? 0 : 0.2;
+  const messageDuration = prefersReducedMotion ? 0 : 0.2;
+  const messageInitialY = prefersReducedMotion ? 0 : 6;
 
   // Attached image state
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -344,12 +349,16 @@ export default function ChatPanel({
         )}
       </div>
 
-      <div
-        className={[
-          "flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden",
-          panelCollapsed ? "hidden" : "flex",
-        ].join(" ")}
-      >
+      <AnimatePresence initial={false}>
+        {!panelCollapsed && (
+          <motion.div
+            key="chat-content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: panelFadeDuration, ease: "easeOut" }}
+            className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden"
+          >
         {/* Message thread */}
         <div
           ref={scrollRef}
@@ -365,8 +374,11 @@ export default function ChatPanel({
         )}
 
         {messages.map((msg) => (
-          <div
+          <motion.div
             key={msg.id}
+            initial={{ opacity: 0, y: messageInitialY }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: messageDuration, ease: "easeOut" }}
             className={`flex flex-col gap-[4px] ${msg.role === "user" ? "items-end" : "items-start"}`}
           >
             {/* Image thumbnail (user messages only) */}
@@ -401,7 +413,7 @@ export default function ChatPanel({
             <span className="text-[10px] text-[#444444] px-[2px] select-none">
               {formatTime(msg.timestamp)}
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -509,7 +521,9 @@ export default function ChatPanel({
           </div>
         </div>
       </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
-  </div>
   );
 }
