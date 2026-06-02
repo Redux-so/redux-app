@@ -149,17 +149,6 @@ export default function Canvas({
         )}
       </div>
 
-      {/* Placeholder shown when no image is loaded */}
-      {!imageUrl && (
-        <div className="absolute inset-8 flex items-center justify-center pointer-events-none">
-          <div className="border border-dashed border-[#2a2a2a] rounded-sm flex items-center justify-center w-[520px] h-[320px] max-w-full max-h-full">
-            <p className="text-[#555555] text-[15px] select-none">
-              Your image will appear here
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Crop confirm / cancel — floats above the canvas at the bottom center */}
       {isCropping && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-10">
