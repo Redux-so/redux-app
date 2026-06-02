@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X, Coins } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { AnimatePresence, motion } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -136,7 +137,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         <button
                           onClick={() => void handlePurchase(bundle.id)}
                           disabled={purchasing === bundle.id}
-                          className="flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
+                          className={`${BTN_PRIMARY_SOLID} shrink-0`}
                         >
                           {purchasing === bundle.id ? (
                             <LoadingSpinner size="xs" variant="brand" label="Processing purchase" />

@@ -23,6 +23,18 @@
   --shadow-glow: 0 0 16px rgba(104, 47, 191, 0.5), 0 0 40px rgba(104, 47, 191, 0.2);
   --shadow-glow-sm: 0 0 8px rgba(104, 47, 191, 0.4);
   --shadow-glow-hover: 0 0 24px rgba(104, 47, 191, 0.65), 0 0 50px rgba(104, 47, 191, 0.25);
+  --shadow-btn-primary:
+    0 0 0 2px rgba(255, 255, 255, 0.12),
+    0 4px 24px rgba(135, 88, 237, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --shadow-btn-primary-hover:
+    0 0 0 2px rgba(255, 255, 255, 0.12),
+    0 6px 28px rgba(135, 88, 237, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --shadow-btn-primary-active:
+    0 0 0 2px rgba(255, 255, 255, 0.12),
+    0 2px 16px rgba(135, 88, 237, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 body {

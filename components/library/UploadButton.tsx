@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Upload, X, ImageIcon } from "lucide-react";
 import { useUploadThing } from "@/lib/uploadthing";
+import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 
 interface UploadButtonProps {
   onUploadComplete?: () => void;
@@ -78,7 +79,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-[6px] px-4 py-2 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[13px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 shrink-0 cursor-pointer"
+        className={BTN_PRIMARY_SOLID}
       >
         <Upload size={14} strokeWidth={2} />
         Upload Photos
@@ -180,7 +181,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
               {file && !isUploading && !isProcessing && (
                 <button
                   onClick={handleUpload}
-                  className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow"
+                  className={BTN_PRIMARY_SOLID}
                 >
                   <Upload size={14} strokeWidth={2} />
                   Upload

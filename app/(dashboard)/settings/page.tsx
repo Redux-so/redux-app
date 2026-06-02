@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import BottomNav from "@/components/shared/BottomNav";
+import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 
@@ -69,8 +70,6 @@ const SETTING_ROW =
   "flex items-center justify-between py-3.5 border-b border-[#2a2a2a] last:border-0";
 const BTN_GHOST =
   "h-9 px-4 text-[14px] text-[#888888] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
-const BTN_PRIMARY =
-  "h-9 px-4 text-[13px] font-medium rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow cursor-pointer whitespace-nowrap";
 
 /** Transaction list scrolls after this many rows (~40px per row → max-h-[400px]) */
 const TRANSACTION_HISTORY_VISIBLE_ROWS = 10;
@@ -371,7 +370,7 @@ export default function SettingsPage() {
                   </div>
                   <button
                     onClick={() => setCreditShopOpen(true)}
-                    className={BTN_PRIMARY}
+                    className={BTN_PRIMARY_SOLID}
                   >
                     Purchase Credits
                   </button>

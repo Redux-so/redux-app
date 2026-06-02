@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
+import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import {
   Minus,
   Plus,
@@ -170,7 +171,7 @@ export default function Toolbar({
         <button
           onClick={onExport}
           title="Export / share"
-          className="flex items-center gap-[6px] px-4 py-2 bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[13px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow duration-300 shrink-0 cursor-pointer"
+          className={`${BTN_PRIMARY_SOLID} shrink-0`}
         >
           <Upload size={14} strokeWidth={2} className="shrink-0 -scale-x-100 -scale-y-100" />
           Export

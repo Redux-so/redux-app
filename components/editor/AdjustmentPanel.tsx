@@ -8,6 +8,7 @@ import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
+import { BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 
 interface AdjustmentPanelProps {
   adjustments: Adjustments;
@@ -160,14 +161,13 @@ function ToolBtn({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={[
-        "flex items-center justify-center h-9 border rounded-sm text-[13px] capitalize transition-colors",
+      className={
         disabled
-          ? "opacity-40 cursor-not-allowed bg-white/[0.03] text-white/20 border-white/[0.05] rounded-lg"
+          ? "flex w-full items-center justify-center h-9 px-3 text-[13px] font-medium capitalize rounded-xl border border-white/[0.05] bg-white/[0.03] text-white/20 opacity-40 cursor-not-allowed"
           : active
-            ? "bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white border-transparent shadow-glow-sm rounded-lg cursor-pointer"
-            : "bg-white/[0.05] text-white/80 border-white/[0.08] hover:bg-white/[0.09] hover:border-white/[0.15] rounded-lg transition-all cursor-pointer",
-      ].join(" ")}
+            ? `${BTN_PRIMARY_SOLID} w-full capitalize`
+            : "flex w-full items-center justify-center h-9 px-3 text-[13px] font-medium capitalize rounded-xl border border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer"
+      }
     >
       {label}
     </button>
@@ -925,7 +925,7 @@ export default function AdjustmentPanel({
                     type="button"
                     onClick={() => void confirmBlur()}
                     disabled={loadingBlur}
-                    className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                    className={BTN_PRIMARY_PANEL}
                   >
                     {loadingBlur ? (
                       <LoadingSpinner size="sm" variant="brand" label="Processing blur" />
@@ -954,7 +954,7 @@ export default function AdjustmentPanel({
                     type="button"
                     onClick={() => void confirmHeal()}
                     disabled={loadingHeal}
-                    className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                    className={BTN_PRIMARY_PANEL}
                   >
                     {loadingHeal ? (
                       <LoadingSpinner size="sm" variant="brand" label="Processing heal" />
@@ -990,7 +990,7 @@ export default function AdjustmentPanel({
                     type="button"
                     onClick={() => void confirmEraser()}
                     disabled={loadingEraser}
-                    className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                    className={BTN_PRIMARY_PANEL}
                   >
                     {loadingEraser ? (
                       <LoadingSpinner size="sm" variant="brand" label="Processing eraser" />
@@ -1101,7 +1101,7 @@ export default function AdjustmentPanel({
                 </div>
                 <button
                   onClick={applyResize}
-                  className="w-full h-[30px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white text-[12px] font-medium rounded-lg shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer"
+                  className={BTN_PRIMARY_BLOCK}
                 >
                   Apply
                 </button>
@@ -1238,7 +1238,7 @@ export default function AdjustmentPanel({
                 type="button"
                 disabled={loadingGenFill || !canvasImageUrl}
                 onClick={() => void applyGenerativeFill()}
-                className="flex-1 h-[34px] bg-gradient-to-r from-[#682FBF] to-[#8B44E8] rounded-lg text-[13px] text-white font-medium shadow-glow-sm hover:shadow-glow transition-shadow cursor-pointer disabled:opacity-40 inline-flex items-center justify-center gap-2"
+                className={BTN_PRIMARY_PANEL}
               >
                 {loadingGenFill ? (
                   <LoadingSpinner size="sm" variant="brand" label="Applying generative fill" />

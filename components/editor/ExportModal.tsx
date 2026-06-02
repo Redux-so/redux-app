@@ -5,6 +5,11 @@ import { createPortal } from "react-dom";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { X, Download } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import {
+  BTN_FORMAT_IDLE,
+  BTN_FORMAT_SELECTED,
+  BTN_PRIMARY_SOLID,
+} from "@/lib/button-styles";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 
@@ -149,12 +154,9 @@ export default function ExportModal({
                   key={f}
                   type="button"
                   onClick={() => setFormat(f)}
-                  className={[
-                    "flex-1 h-9 rounded-lg border text-[13px] font-medium uppercase tracking-wide transition-all cursor-pointer",
-                    format === f
-                      ? "bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white border-transparent shadow-glow-sm"
-                      : "border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15]",
-                  ].join(" ")}
+                  className={
+                    format === f ? BTN_FORMAT_SELECTED : BTN_FORMAT_IDLE
+                  }
                 >
                   {f}
                 </button>
@@ -208,7 +210,7 @@ export default function ExportModal({
             type="button"
             onClick={() => void triggerExport()}
             disabled={loading || !imageId}
-            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#682FBF] to-[#8B44E8] px-4 text-[13px] font-medium text-white shadow-glow-sm transition-shadow duration-300 hover:shadow-glow disabled:cursor-not-allowed disabled:opacity-40"
+            className={BTN_PRIMARY_SOLID}
           >
             {pendingAction === "download" ? (
               <LoadingSpinner size="sm" variant="brand" label="Exporting" />

@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
+import { BTN_PRIMARY_ICON } from "@/lib/button-styles";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -497,10 +498,9 @@ export default function ChatPanel({
               disabled={!canSend}
               title="Send"
               className={[
-                "shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-shadow duration-300",
                 canSend
-                  ? "bg-gradient-to-r from-[#682FBF] to-[#8B44E8] text-white shadow-glow-sm hover:shadow-glow cursor-pointer"
-                  : "bg-white/[0.08] text-[#555555] opacity-50 cursor-not-allowed",
+                  ? BTN_PRIMARY_ICON
+                  : "shrink-0 flex items-center justify-center w-8 h-8 rounded-xl bg-white/[0.08] text-[#555555] opacity-50 cursor-not-allowed",
               ].join(" ")}
             >
               <ArrowUp size={14} strokeWidth={2.5} />
