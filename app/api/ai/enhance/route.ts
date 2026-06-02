@@ -10,6 +10,7 @@ import {
 } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
+import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor. Analyze this image and return optimal adjustment values " +
@@ -70,6 +71,11 @@ export async function POST(request: Request) {
   const { imageUrl } = body;
   if (!imageUrl) {
     return NextResponse.json({ error: "imageUrl is required" }, { status: 400 });
+  }
+
+  const ownedImage = await assertUserOwnsImageUrl(user.id, imageUrl);
+  if (!ownedImage) {
+    return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
   // Deduct credit before calling the API

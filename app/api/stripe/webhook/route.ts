@@ -1,3 +1,4 @@
+// PUBLIC: verified via Stripe webhook signature (STRIPE_WEBHOOK_SECRET)
 import { prisma } from "@/lib/prisma";
 import type Stripe from "stripe";
 

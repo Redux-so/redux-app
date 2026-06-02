@@ -9,6 +9,7 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
+import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor specializing in color correction. Analyze this image for any " +
@@ -65,6 +66,11 @@ export async function POST(request: Request) {
   const { imageUrl } = body;
   if (!imageUrl) {
     return NextResponse.json({ error: "imageUrl is required" }, { status: 400 });
+  }
+
+  const ownedImage = await assertUserOwnsImageUrl(user.id, imageUrl);
+  if (!ownedImage) {
+    return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
   // Deduct credit before calling the API

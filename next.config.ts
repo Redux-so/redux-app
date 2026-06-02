@@ -1,5 +1,11 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import {
+  buildContentSecurityPolicy,
+  SECURITY_HEADERS,
+} from "./lib/content-security-policy";
+
+const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
   images: {
@@ -23,6 +29,8 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const csp = buildContentSecurityPolicy(isDev);
+
     return [
       {
         source: "/:path*\\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)",
@@ -31,6 +39,16 @@ const nextConfig: NextConfig = {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
           },
+        ],
+      },
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: csp,
+          },
+          ...SECURITY_HEADERS,
         ],
       },
     ];

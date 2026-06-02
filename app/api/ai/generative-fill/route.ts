@@ -9,6 +9,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -59,21 +60,6 @@ interface RequestBody {
   expandDirection: ExpandDirection;
   expandPixels: number;
   prompt: string;
-}
-
-async function resolveUserImage(userId: string, imageUrl: string) {
-  const base = imageUrl.split("?")[0] ?? imageUrl;
-  return prisma.image.findFirst({
-    where: {
-      userId,
-      OR: [
-        { originalUrl: imageUrl },
-        { originalUrl: base },
-        { versions: { some: { url: imageUrl } } },
-        { versions: { some: { url: { startsWith: base } } } },
-      ],
-    },
-  });
 }
 
 export async function POST(request: Request) {
@@ -137,7 +123,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "prompt is required" }, { status: 400 });
     }
 
-    const image = await resolveUserImage(user.id, imageUrl);
+    const image = await assertUserOwnsImageUrl(user.id, imageUrl);
     if (!image) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }

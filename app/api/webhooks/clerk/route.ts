@@ -1,3 +1,4 @@
+// PUBLIC: verified via Svix webhook signature (CLERK_WEBHOOK_SECRET)
 import { headers } from "next/headers";
 import { Webhook, WebhookVerificationError } from "svix/dist/webhook";
 import { prisma } from "@/lib/prisma";

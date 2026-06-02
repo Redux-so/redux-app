@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const versions = await prisma.imageVersion.findMany({
-    where: { imageId },
+    where: { imageId, image: { userId: user.id } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

@@ -11,6 +11,7 @@ import {
 } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
+import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 
 const STYLE_MATCH_COST = 3;
 
@@ -77,6 +78,11 @@ export async function POST(request: Request) {
       { error: "imageUrl, referenceImageBase64, and referenceImageMediaType are required" },
       { status: 400 },
     );
+  }
+
+  const ownedImage = await assertUserOwnsImageUrl(user.id, imageUrl);
+  if (!ownedImage) {
+    return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
   await prisma.user.update({
