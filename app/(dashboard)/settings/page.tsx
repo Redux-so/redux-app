@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
-import { Toaster } from "react-hot-toast";
 import Link from "next/link";
 import BottomNav from "@/components/shared/BottomNav";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
@@ -249,20 +248,6 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: "rgba(0, 0, 0, 0.6)",
-            color: "#ffffff",
-            border: "1px solid #682FBF",
-            fontSize: "13px",
-            backdropFilter: "blur(16px)",
-            borderRadius: "12px",
-          },
-        }}
-      />
-
       <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
         {/* Header */}
         <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-[#2a2a2a] bg-[#0a0a0a] pl-3 pr-3">

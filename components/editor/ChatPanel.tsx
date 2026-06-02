@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { BTN_PRIMARY_ICON } from "@/lib/button-styles";
+import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -211,12 +212,12 @@ export default function ChatPanel({
         toast.custom(
           (t) => (
             <div
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg border border-white/[0.08] bg-white/[0.05] backdrop-blur-xl text-[#e5e5e5] text-[13px] shadow-lg transition-opacity ${t.visible ? "opacity-100" : "opacity-0"}`}
+              className={`flex items-center gap-3 transition-opacity ${TOAST_SHELL_CLASS} ${t.visible ? "opacity-100" : "opacity-0"}`}
             >
               <span>Insufficient credits.</span>
               <a
                 href="/settings"
-                className="text-white underline underline-offset-2 font-medium whitespace-nowrap"
+                className="underline underline-offset-2 font-medium whitespace-nowrap"
                 onClick={() => toast.dismiss(t.id)}
               >
                 Purchase credits →
