@@ -8,11 +8,11 @@ import {
   Settings,
   CreditCard,
   LogOut,
-  ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import toast from "react-hot-toast";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { useEditorPreview } from "@/components/editor/EditorPreviewContext";
@@ -22,6 +22,8 @@ const TABS = [
   { label: "Editor", icon: SlidersHorizontal, href: "/editor" },
 ] as const;
 
+const EDITOR_HINT_TOAST_ID = "editor-hint";
+
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -30,10 +32,8 @@ export default function BottomNav() {
   const [credits, setCredits] = useState<number | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [creditShopOpen, setCreditShopOpen] = useState(false);
-  const [editorHintVisible, setEditorHintVisible] = useState(false);
   const [navigatingToLibrary, setNavigatingToLibrary] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const editorHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const editorPreview = useEditorPreview();
 
   useEffect(() => {
@@ -45,12 +45,6 @@ export default function BottomNav() {
         }
       })
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (editorHintTimer.current) clearTimeout(editorHintTimer.current);
-    };
   }, []);
 
   // Close popover on outside click
@@ -66,9 +60,11 @@ export default function BottomNav() {
   }, [popoverOpen]);
 
   function showEditorHint() {
-    if (editorHintTimer.current) clearTimeout(editorHintTimer.current);
-    setEditorHintVisible(true);
-    editorHintTimer.current = setTimeout(() => setEditorHintVisible(false), 4000);
+    toast.dismiss(EDITOR_HINT_TOAST_ID);
+    toast("Select a photo from your library to start editing", {
+      id: EDITOR_HINT_TOAST_ID,
+      duration: 4000,
+    });
   }
 
   function openCreditShop() {
@@ -107,25 +103,6 @@ export default function BottomNav() {
 
   return (
     <>
-      {/* Editor hint notification — rendered directly in BottomNav, no external toast library */}
-      <AnimatePresence>
-        {editorHintVisible && (
-          <motion.div
-            key="editor-hint"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="fixed top-[72px] left-5 z-50 flex items-center gap-3 rounded-xl border border-[#682FBF] bg-black/60 backdrop-blur-xl px-4 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.5)] pointer-events-none"
-          >
-            <ImageIcon size={16} strokeWidth={1.5} className="text-[#B07EF0] shrink-0" />
-            <span className="text-white text-[14px] leading-snug">
-              Select a photo from your library to start editing
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <nav className="grid h-16 grid-cols-[168px_1fr_168px] items-center bg-black/40 backdrop-blur-2xl px-3 border-t border-white/[0.08] shrink-0">
         {/* User info — clickable profile area */}
         <div ref={popoverRef} className="relative flex min-w-0 items-center justify-self-start w-[168px] max-w-[180px]">
