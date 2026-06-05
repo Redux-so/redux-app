@@ -7,6 +7,9 @@ import { Pencil, Trash2 } from "lucide-react";
 import type { ImageRecord } from "@/types/image";
 import { cloudinaryThumbnailUrl } from "@/lib/cloudinary-url";
 
+const OVERLAY_ACTION =
+  "pointer-events-auto flex shrink-0 cursor-pointer items-center justify-center rounded-lg border backdrop-blur-sm transition-all";
+
 interface PhotoCardProps {
   image: ImageRecord;
   onDelete?: (id: string) => void;
@@ -46,7 +49,7 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
   return (
     <div
       onClick={navigateToEditor}
-      className="group relative w-full aspect-square bg-white/[0.03] rounded-2xl overflow-hidden cursor-pointer"
+      className="@container group relative aspect-square w-full min-w-0 cursor-pointer overflow-hidden rounded-2xl bg-white/[0.03]"
     >
       <Image
         src={cloudinaryThumbnailUrl(image.previewUrl ?? image.originalUrl)}
@@ -57,23 +60,30 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
         loading="lazy"
       />
 
-      {/* Hover overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2.5">
+      <div className="pointer-events-none absolute inset-0 flex min-w-0 items-center justify-center gap-1.5 overflow-hidden bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <button
+          type="button"
           onClick={handleEdit}
-          className="flex h-9 items-center gap-2 rounded-lg border border-white/[0.15] bg-white/[0.12] px-4 text-[13px] font-medium text-white backdrop-blur-sm hover:bg-white/[0.2] transition-all cursor-pointer"
+          aria-label="Edit photo"
+          className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-white/[0.15] bg-white/[0.12] hover:bg-white/[0.2] @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-2 @[11rem]:px-4`}
         >
-          <Pencil size={15} strokeWidth={2} />
-          Edit
+          <Pencil size={14} strokeWidth={2} />
+          <span className="hidden text-[13px] font-medium text-white @[11rem]:inline">
+            Edit
+          </span>
         </button>
 
         <button
+          type="button"
           onClick={handleDelete}
           disabled={isDeleting}
-          className="flex h-9 items-center gap-2 rounded-lg border border-red-500/20 bg-black/40 px-4 text-[13px] font-medium text-[#ef4444] backdrop-blur-sm hover:bg-red-500/10 transition-all cursor-pointer disabled:opacity-50"
+          aria-label={isDeleting ? "Deleting photo" : "Delete photo"}
+          className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-red-500/20 bg-black/40 text-[#ef4444] hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-2 @[11rem]:px-4`}
         >
-          <Trash2 size={15} strokeWidth={2} />
-          {isDeleting ? "Deleting..." : "Delete"}
+          <Trash2 size={14} strokeWidth={2} />
+          <span className="hidden text-[13px] font-medium @[11rem]:inline">
+            {isDeleting ? "Deleting..." : "Delete"}
+          </span>
         </button>
       </div>
     </div>
