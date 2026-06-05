@@ -68,3 +68,44 @@ body {
 *::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
+
+/* Clerk auth — full-width pill CTAs; avoid clipping button shadows */
+.auth-clerk-root,
+.auth-clerk-root :is(
+  .cl-rootBox,
+  .cl-cardBox,
+  .cl-card,
+  .cl-main,
+  .cl-form,
+  .cl-formButtonRow,
+  .cl-socialButtons
+) {
+  width: 100% !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+.auth-clerk-root .cl-socialButtons {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.75rem !important;
+}
+
+.auth-clerk-root .cl-socialButtonsIconButton {
+  display: none !important;
+}
+
+.auth-clerk-root :is(
+  .cl-formButtonPrimary,
+  .cl-socialButtonsBlockButton,
+  .cl-alternativeMethodsBlockButton
+) {
+  box-sizing: border-box !important;
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 3rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+}

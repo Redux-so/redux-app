@@ -7,7 +7,10 @@ const AFTER_AUTH = "/library";
 
 export default function Page() {
   return (
-    <ReduxClerkAuthShell>
+    <ReduxClerkAuthShell
+      title="Welcome back"
+      subtitle="Enter your credentials to access your account"
+    >
       <SignIn
         appearance={reduxAuthAppearance}
         forceRedirectUrl={AFTER_AUTH}
