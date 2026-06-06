@@ -10,6 +10,9 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { BTN_PRIMARY_ICON } from "@/lib/button-styles";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 
+const USER_CHAT_BUBBLE_CLASS =
+  "rounded-xl border border-white/[0.08] bg-[#1e0d3a] text-[13px] font-medium text-white py-2.5 px-4";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -397,7 +400,7 @@ export default function ChatPanel({
             <div
               className={`max-w-[320px] leading-relaxed whitespace-pre-wrap break-words ${
                 msg.role === "user"
-                  ? TOAST_SHELL_CLASS
+                  ? USER_CHAT_BUBBLE_CLASS
                   : "rounded-lg px-3 py-2.5 text-[14px] bg-white/[0.05] border border-white/[0.08] text-[#e5e5e5]"
               }`}
             >
