@@ -154,7 +154,7 @@ function AIButton({
     <button
       onClick={onClick}
       disabled={loading || disabled}
-      className="flex items-center justify-center gap-[7px] w-full h-9 bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-lg text-[13px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 hover:shadow-glow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+      className="flex items-center justify-center gap-[7px] w-full h-11 my-1.5 bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-lg text-[14px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 hover:shadow-glow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
     >
       {loading ? (
         <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
@@ -185,10 +185,10 @@ function ToolBtn({
       disabled={disabled}
       className={
         disabled
-          ? "flex w-full items-center justify-center h-9 px-3 text-[13px] font-medium capitalize rounded-xl border border-white/[0.05] bg-white/[0.03] text-white/20 opacity-40 cursor-not-allowed"
+          ? "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-xl border border-white/[0.05] bg-white/[0.03] text-white/20 opacity-40 cursor-not-allowed"
           : active
-            ? `${BTN_PRIMARY_SOLID} w-full capitalize`
-            : "flex w-full items-center justify-center h-9 px-3 text-[13px] font-medium capitalize rounded-xl border border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer"
+            ? `${BTN_PRIMARY_SOLID} w-full capitalize my-1`
+            : "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-xl border border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer"
       }
     >
       {label}
@@ -772,15 +772,15 @@ export default function AdjustmentPanel({
                 transition={{ duration: panelFadeDuration, ease: "easeOut" }}
                 className="flex flex-col h-full w-[400px] min-w-[400px]"
               >
-                <div className="flex items-center shrink-0 h-[52px] border-b border-white/[0.07] px-6">
-                  <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
+                <div className="flex items-center shrink-0 min-h-[60px] py-4 border-b border-white/[0.07] px-8">
+                  <span className="text-[15px] font-medium uppercase tracking-widest text-[#888888] select-none">
                     {activeSectionMeta.label}
                   </span>
                 </div>
 
                 <div className="flex-1 overflow-y-auto min-h-0">
                   {activeSection === "light" && (
-                    <div className="pb-2">
+                    <div className="pb-4 pt-4">
                       {LIGHT_ADJUSTMENTS.map(({ key, label }) => (
                         <AdjustmentSlider
                           key={key}
@@ -790,7 +790,7 @@ export default function AdjustmentPanel({
                           onCommit={(v) => onCommit(key, v)}
                         />
                       ))}
-                      <div className="flex flex-col gap-2 px-6 pt-3 pb-1">
+                      <div className="flex flex-col gap-3 px-8 pt-5 pb-3">
                         <AIButton
                           label="Auto Enhance"
                           loading={loadingEnhance}
@@ -808,7 +808,7 @@ export default function AdjustmentPanel({
                   )}
 
                   {activeSection === "color" && (
-                    <div className="pb-2">
+                    <div className="pb-4 pt-4">
                       {COLOR_ADJUSTMENTS.map(({ key, label }) => (
                         <AdjustmentSlider
                           key={key}
@@ -819,7 +819,7 @@ export default function AdjustmentPanel({
                           trackVariant={COLOR_TRACK_VARIANTS[key] ?? "neutral"}
                         />
                       ))}
-                      <div className="flex flex-col gap-2 px-6 pt-3 pb-1">
+                      <div className="flex flex-col gap-3 px-8 pt-5 pb-3">
                         <AIButton
                           label="Smart Color Balance"
                           loading={loadingSmartColor}
@@ -855,7 +855,7 @@ export default function AdjustmentPanel({
                   )}
 
                   {activeSection === "effects" && (
-                    <div className="pb-2">
+                    <div className="pb-4 pt-4">
                       {EFFECTS_ADJUSTMENTS.map(({ key, label }) => (
                         <AdjustmentSlider
                           key={key}
@@ -869,8 +869,8 @@ export default function AdjustmentPanel({
                   )}
 
                   {activeSection === "retouch" && (
-                    <div className="px-6 pt-2 pb-3 flex flex-col gap-2">
-                      <div className="grid grid-cols-2 gap-2">
+                    <div className="px-8 pt-4 pb-5 flex flex-col gap-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <AIButton
                           label="Heal"
                           loading={loadingHeal}
@@ -891,7 +891,7 @@ export default function AdjustmentPanel({
                         />
                       </div>
                       {activeTool === "blur" && (
-                        <div className="flex flex-col gap-2 pt-1">
+                        <div className="flex flex-col gap-3 pt-1">
                           <p className="text-[10px] text-[#555555] leading-snug">
                             Paint over the area to blur in yellow, then confirm.
                           </p>
@@ -932,7 +932,7 @@ export default function AdjustmentPanel({
                         </div>
                       )}
                       {activeTool === "heal" && (
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-3">
                           <p className="text-[10px] text-[#555555] leading-snug">
                             Paint over the area to heal in red, then confirm.
                           </p>
@@ -960,7 +960,7 @@ export default function AdjustmentPanel({
                           </div>
                         </div>
                       )}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         <ToolBtn
                           label="Eraser"
                           active={activeTool === "eraser"}
@@ -968,7 +968,7 @@ export default function AdjustmentPanel({
                         />
                       </div>
                       {activeTool === "eraser" && (
-                        <div className="flex flex-col gap-2 pt-1">
+                        <div className="flex flex-col gap-3 pt-1">
                           <p className="text-[12px] text-[#888888] leading-relaxed">
                             Paint over the area to erase in white, then confirm.
                           </p>
@@ -999,8 +999,8 @@ export default function AdjustmentPanel({
                   )}
 
                   {activeSection === "transform" && (
-                    <div className="px-6 pt-2 pb-4 flex flex-col gap-2">
-                      <div className="grid grid-cols-2 gap-2">
+                    <div className="px-8 pt-4 pb-5 flex flex-col gap-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <ToolBtn
                           label="Crop"
                           active={activeTool === "crop"}
@@ -1015,7 +1015,7 @@ export default function AdjustmentPanel({
                           onClick={() => onRotateCW?.()}
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         <ToolBtn
                           label="Straighten"
                           active={showStraighten}
@@ -1089,9 +1089,6 @@ export default function AdjustmentPanel({
                           </button>
                         </div>
                       )}
-                      <p className="text-[10px] text-[#555555] uppercase tracking-widest pt-1 pb-0.5">
-                        Edit / Expand
-                      </p>
                       <AIButton
                         label="Generative Fill"
                         loading={loadingGenFill}

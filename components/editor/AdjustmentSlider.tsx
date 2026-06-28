@@ -99,13 +99,13 @@ export default function AdjustmentSlider({
   }
 
   return (
-    <div className="flex flex-col gap-2 px-6 py-2">
+    <div className="flex flex-col gap-3 px-8 py-3.5">
       <div className="flex items-center justify-between">
-        <span className="text-[14px] text-[#e5e5e5] leading-none select-none">
+        <span className="text-[15px] text-[#e5e5e5] leading-none select-none">
           {label}
         </span>
         <span
-          className="text-[14px] text-[#888888] leading-none tabular-nums cursor-default select-none"
+          className="text-[15px] text-[#888888] leading-none tabular-nums cursor-default select-none"
           onDoubleClick={resetToDefault}
         >
           {Number.isInteger(value) ? value : value.toFixed(1)}
@@ -124,7 +124,7 @@ export default function AdjustmentSlider({
         <SliderPrimitive.Track
           className={[
             "relative w-full grow rounded-full",
-            isColorTrack ? "h-[4px]" : "h-[2px] bg-white/[0.08]",
+            isColorTrack ? "h-[5px]" : "h-[3px] bg-white/[0.08]",
           ].join(" ")}
           style={trackGradient ? { background: trackGradient } : undefined}
         >
@@ -132,7 +132,7 @@ export default function AdjustmentSlider({
             <>
               <span
                 aria-hidden
-                className="pointer-events-none absolute left-1/2 top-1/2 h-[10px] w-px -translate-x-1/2 -translate-y-1/2 bg-white/25"
+                className="pointer-events-none absolute left-1/2 top-1/2 h-[12px] w-px -translate-x-1/2 -translate-y-1/2 bg-white/25"
               />
               <SliderPrimitive.Range className="absolute h-full rounded-full bg-transparent" />
             </>
@@ -143,7 +143,7 @@ export default function AdjustmentSlider({
         <SliderPrimitive.Thumb
           title="Double-click to reset"
           className={[
-            "block h-[12px] w-[12px] rounded-full outline-none cursor-pointer transition-transform hover:scale-110",
+            "block h-[14px] w-[14px] rounded-full outline-none cursor-pointer transition-transform hover:scale-110",
             isColorTrack
               ? "shadow-[0_0_0_2px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.2)]"
               : "bg-[#e5e5e5] shadow-[0_0_0_1px_rgba(255,255,255,0.15)]",
