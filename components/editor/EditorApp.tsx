@@ -17,7 +17,6 @@ import Toolbar from "@/components/editor/Toolbar";
 import AdjustmentPanel from "@/components/editor/AdjustmentPanel";
 import Canvas from "@/components/editor/Canvas";
 import ChatPanel from "@/components/editor/ChatPanel";
-import HistoryPanel from "@/components/editor/HistoryPanel";
 import ExportModal from "@/components/editor/ExportModal";
 import BottomNav from "@/components/shared/BottomNav";
 import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
@@ -30,7 +29,6 @@ export default function EditorApp() {
 
   const [image, setImage] = useState<ImageRecord | null>(null);
   const [loadingImage, setLoadingImage] = useState(!!imageId);
-  const [showHistory, setShowHistory] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [baseImageUrl, setBaseImageUrl] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -292,7 +290,6 @@ export default function EditorApp() {
           isDirty={isDirty}
           justSaved={justSaved}
           onExport={() => setShowExport(true)}
-          onShowHistory={() => setShowHistory(true)}
         />
 
         <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
@@ -320,6 +317,7 @@ export default function EditorApp() {
             enableBlurBrush={enableBlurBrush}
             disableBlurBrush={disableBlurBrush}
             exportBlurMask={exportBlurMask}
+            onRestoreHistory={patchAdjustments}
           />
 
           <EditorErrorBoundary label="canvas">
@@ -355,13 +353,6 @@ export default function EditorApp() {
         </div>
 
         <BottomNav />
-
-        <HistoryPanel
-          open={showHistory}
-          onClose={() => setShowHistory(false)}
-          imageId={imageId}
-          onRestore={patchAdjustments}
-        />
 
         <ExportModal
           open={showExport}

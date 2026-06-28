@@ -8,6 +8,7 @@ import {
   Sparkles,
   Bandage,
   Crop,
+  History,
   Star,
   Lock,
   Unlock,
@@ -17,6 +18,7 @@ import {
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
+import { HistoryVersionList } from "./HistoryPanel";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
@@ -50,9 +52,10 @@ interface AdjustmentPanelProps {
   enableBlurBrush?: () => void | Promise<void>;
   disableBlurBrush?: () => void;
   exportBlurMask?: () => Promise<string>;
+  onRestoreHistory?: (patch: Partial<Record<string, number>>) => void;
 }
 
-type ToolSection = "light" | "color" | "effects" | "retouch" | "transform";
+type ToolSection = "light" | "color" | "effects" | "retouch" | "transform" | "history";
 
 type ActiveTool = "heal" | "blur" | "eraser" | "crop" | "straighten" | null;
 
@@ -238,6 +241,7 @@ export default function AdjustmentPanel({
   enableBlurBrush,
   disableBlurBrush,
   exportBlurMask,
+  onRestoreHistory,
 }: AdjustmentPanelProps) {
   const [activeSection, setActiveSection] = useState<ToolSection | null>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -737,22 +741,35 @@ export default function AdjustmentPanel({
   }
 
   const activeSectionMeta = TOOL_SECTIONS.find((s) => s.id === activeSection);
+  const activeSectionLabel =
+    activeSection === "history"
+      ? "History"
+      : activeSectionMeta?.label ?? "";
 
   return (
     <>
       <div className="flex shrink-0 h-full min-w-0">
         {/* Icon tool rail */}
-        <div className="flex flex-col shrink-0 w-[72px] h-full items-center bg-black/50 backdrop-blur-xl border-r border-white/[0.07] py-4 gap-4">
-          {TOOL_SECTIONS.map(({ id, title, Icon }) => (
+        <div className="flex flex-col shrink-0 w-[72px] h-full items-center bg-black/50 backdrop-blur-xl border-r border-white/[0.07]">
+          <div className="flex flex-col items-center py-4 gap-4">
+            {TOOL_SECTIONS.map(({ id, title, Icon }) => (
+              <RailBtn
+                key={id}
+                active={activeSection === id}
+                title={title}
+                onClick={() => toggleActiveSection(id)}
+              >
+                <Icon size={28} strokeWidth={1.75} />
+              </RailBtn>
+            ))}
             <RailBtn
-              key={id}
-              active={activeSection === id}
-              title={title}
-              onClick={() => toggleActiveSection(id)}
+              active={activeSection === "history"}
+              title="Version history"
+              onClick={() => toggleActiveSection("history")}
             >
-              <Icon size={28} strokeWidth={1.75} />
+              <History size={28} strokeWidth={1.75} />
             </RailBtn>
-          ))}
+          </div>
         </div>
 
         {/* Section panel */}
@@ -763,7 +780,7 @@ export default function AdjustmentPanel({
           ].join(" ")}
         >
           <AnimatePresence initial={false}>
-            {activeSection && activeSectionMeta && (
+            {activeSection && (
               <motion.div
                 key={activeSection}
                 initial={{ opacity: 0 }}
@@ -774,10 +791,17 @@ export default function AdjustmentPanel({
               >
                 <div className="flex items-center shrink-0 min-h-[60px] py-4 border-b border-white/[0.07] px-8">
                   <span className="text-[15px] font-medium uppercase tracking-widest text-[#888888] select-none">
-                    {activeSectionMeta.label}
+                    {activeSectionLabel}
                   </span>
                 </div>
 
+                {activeSection === "history" ? (
+                  <HistoryVersionList
+                    imageId={imageId}
+                    enabled={activeSection === "history"}
+                    onRestore={onRestoreHistory ?? (() => {})}
+                  />
+                ) : (
                 <div className="flex-1 overflow-y-auto min-h-0">
                   {activeSection === "light" && (
                     <div className="pb-4 pt-4">
@@ -1104,6 +1128,7 @@ export default function AdjustmentPanel({
                     </div>
                   )}
                 </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

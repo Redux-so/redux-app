@@ -10,7 +10,6 @@ import {
   Columns2,
   Undo2,
   Redo2,
-  History,
   Upload,
 } from "lucide-react";
 
@@ -30,7 +29,6 @@ interface ToolbarProps {
   // true for ~2 s after a successful auto-save — triggers the pulse animation
   justSaved?: boolean;
   onExport: () => void;
-  onShowHistory: () => void;
 }
 
 function ToolbarBtn({
@@ -83,7 +81,6 @@ export default function Toolbar({
   isDirty,
   justSaved = false,
   onExport,
-  onShowHistory,
 }: ToolbarProps) {
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
@@ -163,10 +160,6 @@ export default function Toolbar({
             {isDirty ? "Unsaved" : justSaved ? "Saving…" : "Auto-saved"}
           </span>
         </div>
-
-        <ToolbarBtn onClick={onShowHistory} title="Version history">
-          <History size={18} strokeWidth={1.75} />
-        </ToolbarBtn>
 
         <button
           onClick={onExport}
