@@ -72,6 +72,9 @@ const TOOL_SECTIONS: {
   { id: "transform", label: "Transform", title: "Crop and geometry", Icon: Crop },
 ];
 
+const RAIL_ICON_SIZE = 22;
+const RAIL_ICON_STROKE = 1.25;
+
 function applyAiAdjustments(
   patch: Partial<Record<string, number>>,
   onPatch: (p: Partial<Record<string, number>>) => void,
@@ -759,7 +762,7 @@ export default function AdjustmentPanel({
                 title={title}
                 onClick={() => toggleActiveSection(id)}
               >
-                <Icon size={28} strokeWidth={1.75} />
+                <Icon size={RAIL_ICON_SIZE} strokeWidth={RAIL_ICON_STROKE} />
               </RailBtn>
             ))}
             <RailBtn
@@ -767,7 +770,7 @@ export default function AdjustmentPanel({
               title="Version history"
               onClick={() => toggleActiveSection("history")}
             >
-              <History size={28} strokeWidth={1.75} />
+              <History size={RAIL_ICON_SIZE} strokeWidth={RAIL_ICON_STROKE} />
             </RailBtn>
           </div>
         </div>
