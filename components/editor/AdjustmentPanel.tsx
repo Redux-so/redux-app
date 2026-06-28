@@ -2,7 +2,18 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronDown, ChevronLeft, ChevronRight, Star, Lock, Unlock, X } from "lucide-react";
+import {
+  Sun,
+  Palette,
+  Sparkles,
+  Bandage,
+  Crop,
+  Star,
+  Lock,
+  Unlock,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
@@ -41,15 +52,22 @@ interface AdjustmentPanelProps {
   exportBlurMask?: () => Promise<string>;
 }
 
-interface SectionState {
-  light: boolean;
-  color: boolean;
-  effects: boolean;
-  retouch: boolean;
-  transform: boolean;
-}
+type ToolSection = "light" | "color" | "effects" | "retouch" | "transform";
 
 type ActiveTool = "heal" | "blur" | "eraser" | "crop" | "straighten" | null;
+
+const TOOL_SECTIONS: {
+  id: ToolSection;
+  label: string;
+  title: string;
+  Icon: LucideIcon;
+}[] = [
+  { id: "light", label: "Light", title: "Light adjustments", Icon: Sun },
+  { id: "color", label: "Color", title: "Color adjustments", Icon: Palette },
+  { id: "effects", label: "Effects", title: "Effects adjustments", Icon: Sparkles },
+  { id: "retouch", label: "Retouch", title: "Retouch tools", Icon: Bandage },
+  { id: "transform", label: "Transform", title: "Crop and geometry", Icon: Crop },
+];
 
 function applyAiAdjustments(
   patch: Partial<Record<string, number>>,
@@ -91,28 +109,31 @@ const EFFECTS_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
 
 // ── Shared sub-components ────────────────────────────────────────────────────
 
-function SectionHeader({
-  label,
-  open,
-  onToggle,
+function RailBtn({
+  active,
+  title,
+  onClick,
+  children,
 }: {
-  label: string;
-  open: boolean;
-  onToggle: () => void;
+  active: boolean;
+  title: string;
+  onClick: () => void;
+  children: ReactNode;
 }) {
   return (
     <button
-      onClick={onToggle}
-      className="flex items-center justify-between w-full px-6 py-3 hover:bg-white/[0.04] transition-colors"
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-pressed={active}
+      className={[
+        "flex shrink-0 items-center justify-center h-12 w-12 rounded-xl transition-colors cursor-pointer",
+        active
+          ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
+          : "text-white/40 hover:bg-white/[0.07] hover:text-white",
+      ].join(" ")}
     >
-      <span className="text-[13px] font-medium uppercase tracking-widest text-[#666666] select-none">
-        {label}
-      </span>
-      <ChevronDown
-        size={12}
-        strokeWidth={2}
-        className={`text-[#555555] transition-transform duration-150 ${open ? "" : "-rotate-90"}`}
-      />
+      {children}
     </button>
   );
 }
@@ -218,14 +239,7 @@ export default function AdjustmentPanel({
   disableBlurBrush,
   exportBlurMask,
 }: AdjustmentPanelProps) {
-  const [sections, setSections] = useState<SectionState>({
-    light: true,
-    color: true,
-    effects: true,
-    retouch: true,
-    transform: true,
-  });
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState<ToolSection | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const panelFadeDuration = prefersReducedMotion ? 0 : 0.2;
   const [activeTool, setActiveTool] = useState<ActiveTool>(null);
@@ -313,8 +327,8 @@ export default function AdjustmentPanel({
     prevActiveToolRef.current = activeTool;
   }, [activeTool, enableHealBrush, disableHealBrush, enableEraserBrush, disableEraserBrush, enableBlurBrush, disableBlurBrush]);
 
-  function toggleSection(key: keyof SectionState) {
-    setSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  function toggleActiveSection(section: ToolSection) {
+    setActiveSection((prev) => (prev === section ? null : section));
   }
 
   function toggleTool(tool: ActiveTool) {
@@ -722,425 +736,382 @@ export default function AdjustmentPanel({
     }
   }
 
+  const activeSectionMeta = TOOL_SECTIONS.find((s) => s.id === activeSection);
+
   return (
-    <div
-      className={[
-        "flex flex-col shrink-0 h-full min-w-0 bg-black/50 backdrop-blur-xl border-r border-white/[0.07] overflow-hidden transition-[width] duration-200 ease-out",
-        panelCollapsed ? "w-[44px]" : "w-[400px]",
-      ].join(" ")}
-    >
-      {/* Panel header */}
-      <div
-        className={[
-          "flex items-center shrink-0 h-[52px] border-b border-white/[0.07]",
-          panelCollapsed ? "justify-center px-0" : "justify-between px-6",
-        ].join(" ")}
-      >
-        {!panelCollapsed && (
-          <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
-            Adjustments
-          </span>
-        )}
-        <button
-          type="button"
-          aria-expanded={!panelCollapsed}
-          aria-label={
-            panelCollapsed ? "Expand adjustments panel" : "Collapse adjustments panel"
-          }
-          onClick={() => setPanelCollapsed((prev) => !prev)}
-          className="text-[#555555] hover:text-[#888888] transition-colors cursor-pointer"
+    <>
+      <div className="flex shrink-0 h-full min-w-0">
+        {/* Icon tool rail */}
+        <div className="flex flex-col shrink-0 w-[72px] h-full items-center bg-black/50 backdrop-blur-xl border-r border-white/[0.07] py-4 gap-4">
+          {TOOL_SECTIONS.map(({ id, title, Icon }) => (
+            <RailBtn
+              key={id}
+              active={activeSection === id}
+              title={title}
+              onClick={() => toggleActiveSection(id)}
+            >
+              <Icon size={28} strokeWidth={1.75} />
+            </RailBtn>
+          ))}
+        </div>
+
+        {/* Section panel */}
+        <div
+          className={[
+            "flex flex-col shrink-0 h-full min-w-0 bg-black/50 backdrop-blur-xl border-r border-white/[0.07] overflow-hidden transition-[width] duration-200 ease-out",
+            activeSection ? "w-[400px]" : "w-0",
+          ].join(" ")}
         >
-          {panelCollapsed ? (
-            <ChevronRight size={14} strokeWidth={2} />
-          ) : (
-            <ChevronLeft size={14} strokeWidth={2} />
-          )}
-        </button>
+          <AnimatePresence initial={false}>
+            {activeSection && activeSectionMeta && (
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: panelFadeDuration, ease: "easeOut" }}
+                className="flex flex-col h-full w-[400px] min-w-[400px]"
+              >
+                <div className="flex items-center shrink-0 h-[52px] border-b border-white/[0.07] px-6">
+                  <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
+                    {activeSectionMeta.label}
+                  </span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  {activeSection === "light" && (
+                    <div className="pb-2">
+                      {LIGHT_ADJUSTMENTS.map(({ key, label }) => (
+                        <AdjustmentSlider
+                          key={key}
+                          label={label}
+                          value={adjustments[key]}
+                          onChange={(v) => onPreview(key, v)}
+                          onCommit={(v) => onCommit(key, v)}
+                        />
+                      ))}
+                      <div className="flex flex-col gap-2 px-6 pt-3 pb-1">
+                        <AIButton
+                          label="Auto Enhance"
+                          loading={loadingEnhance}
+                          disabled={!imageUrl}
+                          onClick={() => void runAutoEnhance()}
+                        />
+                        <AIButton
+                          label="Auto Tone Balance"
+                          loading={loadingToneBalance}
+                          disabled={!imageUrl}
+                          onClick={() => void runAutoToneBalance()}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSection === "color" && (
+                    <div className="pb-2">
+                      {COLOR_ADJUSTMENTS.map(({ key, label }) => (
+                        <AdjustmentSlider
+                          key={key}
+                          label={label}
+                          value={adjustments[key]}
+                          onChange={(v) => onPreview(key, v)}
+                          onCommit={(v) => onCommit(key, v)}
+                          trackVariant={COLOR_TRACK_VARIANTS[key] ?? "neutral"}
+                        />
+                      ))}
+                      <div className="flex flex-col gap-2 px-6 pt-3 pb-1">
+                        <AIButton
+                          label="Smart Color Balance"
+                          loading={loadingSmartColor}
+                          disabled={!imageUrl}
+                          onClick={() => void runSmartColorBalance()}
+                        />
+                        <input
+                          ref={styleMatchInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => { void handleStyleMatchFilePick(e); }}
+                        />
+                        {styleMatchPreview && (
+                          <div className="px-0 pb-1">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={styleMatchPreview}
+                              alt="Style reference"
+                              className="h-[48px] w-auto max-w-full rounded-sm object-cover border border-[#2a2a2a]"
+                            />
+                            <p className="text-[10px] text-[#555555] mt-1">Reference style</p>
+                          </div>
+                        )}
+                        <AIButton
+                          label="Style Match"
+                          loading={loadingStyleMatch}
+                          disabled={!imageUrl}
+                          onClick={() => styleMatchInputRef.current?.click()}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeSection === "effects" && (
+                    <div className="pb-2">
+                      {EFFECTS_ADJUSTMENTS.map(({ key, label }) => (
+                        <AdjustmentSlider
+                          key={key}
+                          label={label}
+                          value={adjustments[key]}
+                          onChange={(v) => onPreview(key, v)}
+                          onCommit={(v) => onCommit(key, v)}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {activeSection === "retouch" && (
+                    <div className="px-6 pt-2 pb-3 flex flex-col gap-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <AIButton
+                          label="Heal"
+                          loading={loadingHeal}
+                          disabled={!canvasImageUrl || loadingHeal}
+                          onClick={() => toggleTool("heal")}
+                        />
+                        <ToolBtn
+                          label={
+                            loadingBlur ? (
+                              <LoadingSpinner size="sm" variant="brand" label="Blur loading" />
+                            ) : (
+                              "Blur"
+                            )
+                          }
+                          active={activeTool === "blur"}
+                          disabled={loadingBlur}
+                          onClick={() => toggleTool("blur")}
+                        />
+                      </div>
+                      {activeTool === "blur" && (
+                        <div className="flex flex-col gap-2 pt-1">
+                          <p className="text-[10px] text-[#555555] leading-snug">
+                            Paint over the area to blur in yellow, then confirm.
+                          </p>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-[#888888] shrink-0">Intensity</span>
+                            <input
+                              type="range"
+                              min={1}
+                              max={100}
+                              step={1}
+                              value={blurIntensity}
+                              onChange={(e) => setBlurIntensity(Number(e.target.value))}
+                              className="flex-1 accent-[#8B44E8] h-[3px] cursor-pointer"
+                            />
+                            <span className="text-[11px] text-[#888888] w-[24px] text-right shrink-0">{blurIntensity}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelBlur}
+                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void confirmBlur()}
+                              disabled={loadingBlur}
+                              className={BTN_PRIMARY_PANEL}
+                            >
+                              {loadingBlur ? (
+                                <LoadingSpinner size="sm" variant="brand" label="Processing blur" />
+                              ) : (
+                                "Confirm"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {activeTool === "heal" && (
+                        <div className="flex flex-col gap-2">
+                          <p className="text-[10px] text-[#555555] leading-snug">
+                            Paint over the area to heal in red, then confirm.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelHeal}
+                              disabled={loadingHeal}
+                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void confirmHeal()}
+                              disabled={loadingHeal}
+                              className={BTN_PRIMARY_PANEL}
+                            >
+                              {loadingHeal ? (
+                                <LoadingSpinner size="sm" variant="brand" label="Processing heal" />
+                              ) : (
+                                "Confirm"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-2">
+                        <ToolBtn
+                          label="Eraser"
+                          active={activeTool === "eraser"}
+                          onClick={() => toggleTool("eraser")}
+                        />
+                      </div>
+                      {activeTool === "eraser" && (
+                        <div className="flex flex-col gap-2 pt-1">
+                          <p className="text-[12px] text-[#888888] leading-relaxed">
+                            Paint over the area to erase in white, then confirm.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelEraser}
+                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void confirmEraser()}
+                              disabled={loadingEraser}
+                              className={BTN_PRIMARY_PANEL}
+                            >
+                              {loadingEraser ? (
+                                <LoadingSpinner size="sm" variant="brand" label="Processing eraser" />
+                              ) : (
+                                "Confirm"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeSection === "transform" && (
+                    <div className="px-6 pt-2 pb-4 flex flex-col gap-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <ToolBtn
+                          label="Crop"
+                          active={activeTool === "crop"}
+                          onClick={() => {
+                            toggleTool("crop");
+                            onCrop?.();
+                          }}
+                        />
+                        <ToolBtn
+                          label="Rotate"
+                          active={false}
+                          onClick={() => onRotateCW?.()}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <ToolBtn
+                          label="Straighten"
+                          active={showStraighten}
+                          onClick={() => setShowStraighten((v) => !v)}
+                        />
+                        <ToolBtn
+                          label="Resize"
+                          active={showResize}
+                          onClick={() => setShowResize((v) => !v)}
+                        />
+                      </div>
+                      {showStraighten && (
+                        <AdjustmentSlider
+                          label="Angle"
+                          value={straightenDeg}
+                          min={-45}
+                          max={45}
+                          step={0.5}
+                          onChange={(v) => {
+                            setStraightenDeg(v);
+                            onStraighten?.(v);
+                          }}
+                          onCommit={(v) => {
+                            setStraightenDeg(v);
+                            onStraighten?.(v);
+                          }}
+                        />
+                      )}
+                      {showResize && (
+                        <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 flex flex-col gap-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-1 flex-1">
+                              <label className="text-[10px] text-[#555555] uppercase tracking-wider">
+                                Width
+                              </label>
+                              <input
+                                type="number"
+                                value={resizeW}
+                                onChange={(e) => handleResizeW(e.target.value)}
+                                className="w-full h-[30px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
+                              />
+                            </div>
+                            <button
+                              onClick={() => setResizeLocked((v) => !v)}
+                              className="mt-4 text-[#555555] hover:text-[#888888] transition-colors shrink-0"
+                              title={resizeLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
+                            >
+                              {resizeLocked ? (
+                                <Lock size={13} strokeWidth={1.75} />
+                              ) : (
+                                <Unlock size={13} strokeWidth={1.75} />
+                              )}
+                            </button>
+                            <div className="flex flex-col gap-1 flex-1">
+                              <label className="text-[10px] text-[#555555] uppercase tracking-wider">
+                                Height
+                              </label>
+                              <input
+                                type="number"
+                                value={resizeH}
+                                onChange={(e) => handleResizeH(e.target.value)}
+                                className="w-full h-[30px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            onClick={applyResize}
+                            className={BTN_PRIMARY_BLOCK}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      )}
+                      <p className="text-[10px] text-[#555555] uppercase tracking-widest pt-1 pb-0.5">
+                        Edit / Expand
+                      </p>
+                      <AIButton
+                        label="Generative Fill"
+                        loading={loadingGenFill}
+                        disabled={!canvasImageUrl}
+                        onClick={openGenerativeFillModal}
+                      />
+                      <AIButton
+                        label="Remove Background"
+                        loading={loadingRemoveBg}
+                        disabled={!imageUrl || !imageId}
+                        onClick={() => void runRemoveBackground()}
+                      />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-
-      {/* Scrollable content */}
-      <AnimatePresence initial={false}>
-        {!panelCollapsed && (
-          <motion.div
-            key="adjustments-content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: panelFadeDuration, ease: "easeOut" }}
-            className="flex-1 overflow-y-auto min-h-0"
-          >
-
-        {/* ── LIGHT ──────────────────────────────────────────────────────── */}
-        <SectionHeader
-          label="Light"
-          open={sections.light}
-          onToggle={() => toggleSection("light")}
-        />
-        {sections.light && (
-          <div className="pb-2">
-            {LIGHT_ADJUSTMENTS.map(({ key, label }) => (
-              <AdjustmentSlider
-                key={key}
-                label={label}
-                value={adjustments[key]}
-                onChange={(v) => onPreview(key, v)}
-                onCommit={(v) => onCommit(key, v)}
-              />
-            ))}
-            <div className="flex flex-col gap-2 px-6 pt-3 pb-1">
-              <AIButton
-                label="Auto Enhance"
-                loading={loadingEnhance}
-                disabled={!imageUrl}
-                onClick={() => void runAutoEnhance()}
-              />
-              <AIButton
-                label="Auto Tone Balance"
-                loading={loadingToneBalance}
-                disabled={!imageUrl}
-                onClick={() => void runAutoToneBalance()}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── COLOR ──────────────────────────────────────────────────────── */}
-        <SectionHeader
-          label="Color"
-          open={sections.color}
-          onToggle={() => toggleSection("color")}
-        />
-        {sections.color && (
-          <div className="pb-2">
-            {COLOR_ADJUSTMENTS.map(({ key, label }) => (
-              <AdjustmentSlider
-                key={key}
-                label={label}
-                value={adjustments[key]}
-                onChange={(v) => onPreview(key, v)}
-                onCommit={(v) => onCommit(key, v)}
-                trackVariant={COLOR_TRACK_VARIANTS[key] ?? "neutral"}
-              />
-            ))}
-            <div className="flex flex-col gap-2 px-6 pt-3 pb-1">
-              <AIButton
-                label="Smart Color Balance"
-                loading={loadingSmartColor}
-                disabled={!imageUrl}
-                onClick={() => void runSmartColorBalance()}
-              />
-              <input
-                ref={styleMatchInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => { void handleStyleMatchFilePick(e); }}
-              />
-              {styleMatchPreview && (
-                <div className="px-0 pb-1">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={styleMatchPreview}
-                    alt="Style reference"
-                    className="h-[48px] w-auto max-w-full rounded-sm object-cover border border-[#2a2a2a]"
-                  />
-                  <p className="text-[10px] text-[#555555] mt-1">Reference style</p>
-                </div>
-              )}
-              <AIButton
-                label="Style Match"
-                loading={loadingStyleMatch}
-                disabled={!imageUrl}
-                onClick={() => styleMatchInputRef.current?.click()}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── EFFECTS ────────────────────────────────────────────────────── */}
-        <SectionHeader
-          label="Effects"
-          open={sections.effects}
-          onToggle={() => toggleSection("effects")}
-        />
-        {sections.effects && (
-          <div className="pb-2">
-            {EFFECTS_ADJUSTMENTS.map(({ key, label }) => (
-              <AdjustmentSlider
-                key={key}
-                label={label}
-                value={adjustments[key]}
-                onChange={(v) => onPreview(key, v)}
-                onCommit={(v) => onCommit(key, v)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* ── RETOUCH ────────────────────────────────────────────────────── */}
-        <SectionHeader
-          label="Retouch"
-          open={sections.retouch}
-          onToggle={() => toggleSection("retouch")}
-        />
-        {sections.retouch && (
-          <div className="px-6 pt-2 pb-3 flex flex-col gap-2">
-            {/* Row 1: Heal | Blur */}
-            <div className="grid grid-cols-2 gap-2">
-              <AIButton
-                label="Heal"
-                loading={loadingHeal}
-                disabled={!canvasImageUrl || loadingHeal}
-                onClick={() => toggleTool("heal")}
-              />
-              <ToolBtn
-                label={
-                  loadingBlur ? (
-                    <LoadingSpinner size="sm" variant="brand" label="Blur loading" />
-                  ) : (
-                    "Blur"
-                  )
-                }
-                active={activeTool === "blur"}
-                disabled={loadingBlur}
-                onClick={() => toggleTool("blur")}
-              />
-            </div>
-            {activeTool === "blur" && (
-              <div className="flex flex-col gap-2 pt-1">
-                <p className="text-[10px] text-[#555555] leading-snug">
-                  Paint over the area to blur in yellow, then confirm.
-                </p>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-[#888888] shrink-0">Intensity</span>
-                  <input
-                    type="range"
-                    min={1}
-                    max={100}
-                    step={1}
-                    value={blurIntensity}
-                    onChange={(e) => setBlurIntensity(Number(e.target.value))}
-                    className="flex-1 accent-[#8B44E8] h-[3px] cursor-pointer"
-                  />
-                  <span className="text-[11px] text-[#888888] w-[24px] text-right shrink-0">{blurIntensity}</span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={cancelBlur}
-                    className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void confirmBlur()}
-                    disabled={loadingBlur}
-                    className={BTN_PRIMARY_PANEL}
-                  >
-                    {loadingBlur ? (
-                      <LoadingSpinner size="sm" variant="brand" label="Processing blur" />
-                    ) : (
-                      "Confirm"
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-            {activeTool === "heal" && (
-              <div className="flex flex-col gap-2">
-                <p className="text-[10px] text-[#555555] leading-snug">
-                  Paint over the area to heal in red, then confirm.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={cancelHeal}
-                    disabled={loadingHeal}
-                    className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void confirmHeal()}
-                    disabled={loadingHeal}
-                    className={BTN_PRIMARY_PANEL}
-                  >
-                    {loadingHeal ? (
-                      <LoadingSpinner size="sm" variant="brand" label="Processing heal" />
-                    ) : (
-                      "Confirm"
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-            {/* Row 2: Eraser (first column only) */}
-            <div className="grid grid-cols-2 gap-2">
-              <ToolBtn
-                label="Eraser"
-                active={activeTool === "eraser"}
-                onClick={() => toggleTool("eraser")}
-              />
-            </div>
-            {activeTool === "eraser" && (
-              <div className="flex flex-col gap-2 pt-1">
-                <p className="text-[12px] text-[#888888] leading-relaxed">
-                  Paint over the area to erase in white, then confirm.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={cancelEraser}
-                    className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void confirmEraser()}
-                    disabled={loadingEraser}
-                    className={BTN_PRIMARY_PANEL}
-                  >
-                    {loadingEraser ? (
-                      <LoadingSpinner size="sm" variant="brand" label="Processing eraser" />
-                    ) : (
-                      "Confirm"
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── TRANSFORM ──────────────────────────────────────────────────── */}
-        <SectionHeader
-          label="Transform"
-          open={sections.transform}
-          onToggle={() => toggleSection("transform")}
-        />
-        {sections.transform && (
-          <div className="px-6 pt-2 pb-4 flex flex-col gap-2">
-            {/* Row 1: Crop | Rotate */}
-            <div className="grid grid-cols-2 gap-2">
-              <ToolBtn
-                label="Crop"
-                active={activeTool === "crop"}
-                onClick={() => {
-                  toggleTool("crop");
-                  onCrop?.();
-                }}
-              />
-              <ToolBtn
-                label="Rotate"
-                active={false}
-                onClick={() => onRotateCW?.()}
-              />
-            </div>
-            {/* Row 2: Straighten | Resize */}
-            <div className="grid grid-cols-2 gap-2">
-              <ToolBtn
-                label="Straighten"
-                active={showStraighten}
-                onClick={() => setShowStraighten((v) => !v)}
-              />
-              <ToolBtn
-                label="Resize"
-                active={showResize}
-                onClick={() => setShowResize((v) => !v)}
-              />
-            </div>
-
-            {/* Inline straighten slider */}
-            {showStraighten && (
-              <AdjustmentSlider
-                label="Angle"
-                value={straightenDeg}
-                min={-45}
-                max={45}
-                step={0.5}
-                onChange={(v) => {
-                  setStraightenDeg(v);
-                  onStraighten?.(v);
-                }}
-                onCommit={(v) => {
-                  setStraightenDeg(v);
-                  onStraighten?.(v);
-                }}
-              />
-            )}
-
-            {/* Inline resize form */}
-            {showResize && (
-              <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-col gap-1 flex-1">
-                    <label className="text-[10px] text-[#555555] uppercase tracking-wider">
-                      Width
-                    </label>
-                    <input
-                      type="number"
-                      value={resizeW}
-                      onChange={(e) => handleResizeW(e.target.value)}
-                      className="w-full h-[30px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
-                    />
-                  </div>
-                  <button
-                    onClick={() => setResizeLocked((v) => !v)}
-                    className="mt-4 text-[#555555] hover:text-[#888888] transition-colors shrink-0"
-                    title={resizeLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
-                  >
-                    {resizeLocked ? (
-                      <Lock size={13} strokeWidth={1.75} />
-                    ) : (
-                      <Unlock size={13} strokeWidth={1.75} />
-                    )}
-                  </button>
-                  <div className="flex flex-col gap-1 flex-1">
-                    <label className="text-[10px] text-[#555555] uppercase tracking-wider">
-                      Height
-                    </label>
-                    <input
-                      type="number"
-                      value={resizeH}
-                      onChange={(e) => handleResizeH(e.target.value)}
-                      className="w-full h-[30px] bg-white/[0.05] border border-white/[0.08] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={applyResize}
-                  className={BTN_PRIMARY_BLOCK}
-                >
-                  Apply
-                </button>
-              </div>
-            )}
-
-            <p className="text-[10px] text-[#555555] uppercase tracking-widest pt-1 pb-0.5">
-              Edit / Expand
-            </p>
-            {/* AI transform buttons */}
-            <AIButton
-              label="Generative Fill"
-              loading={loadingGenFill}
-              disabled={!canvasImageUrl}
-              onClick={openGenerativeFillModal}
-            />
-            <AIButton
-              label="Remove Background"
-              loading={loadingRemoveBg}
-              disabled={!imageUrl || !imageId}
-              onClick={() => void runRemoveBackground()}
-            />
-          </div>
-        )}
-
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {genFillModalOpen && (
         <div
@@ -1262,6 +1233,6 @@ export default function AdjustmentPanel({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
