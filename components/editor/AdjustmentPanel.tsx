@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Sun,
   Palette,
@@ -247,8 +246,7 @@ export default function AdjustmentPanel({
   onRestoreHistory,
 }: AdjustmentPanelProps) {
   const [activeSection, setActiveSection] = useState<ToolSection | null>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const panelFadeDuration = prefersReducedMotion ? 0 : 0.2;
+  const panelInnerRef = useRef<HTMLDivElement>(null);
   const [activeTool, setActiveTool] = useState<ActiveTool>(null);
 
   // Straighten inline slider
@@ -337,6 +335,12 @@ export default function AdjustmentPanel({
   function toggleActiveSection(section: ToolSection) {
     setActiveSection((prev) => (prev === section ? null : section));
   }
+
+  useEffect(() => {
+    if (!activeSection) return;
+    const scrollEl = panelInnerRef.current?.querySelector<HTMLElement>("[data-panel-scroll]");
+    if (scrollEl) scrollEl.scrollTop = 0;
+  }, [activeSection]);
 
   function toggleTool(tool: ActiveTool) {
     setActiveTool((prev) => (prev === tool ? null : tool));
@@ -782,30 +786,25 @@ export default function AdjustmentPanel({
             activeSection ? "w-[400px]" : "w-0",
           ].join(" ")}
         >
-          <AnimatePresence initial={false}>
-            {activeSection && (
-              <motion.div
-                key={activeSection}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: panelFadeDuration, ease: "easeOut" }}
-                className="flex flex-col h-full w-[400px] min-w-[400px]"
-              >
-                <div className="flex items-center shrink-0 min-h-[60px] py-4 border-b border-white/[0.07] px-8">
-                  <span className="text-[15px] font-medium uppercase tracking-widest text-[#888888] select-none">
-                    {activeSectionLabel}
-                  </span>
-                </div>
+          {activeSection && (
+            <div
+              ref={panelInnerRef}
+              className="flex flex-col h-full w-[400px] min-w-[400px]"
+            >
+              <div className="flex items-center shrink-0 min-h-[60px] py-4 border-b border-white/[0.07] px-8">
+                <span className="text-[15px] font-medium uppercase tracking-widest text-[#888888] select-none">
+                  {activeSectionLabel}
+                </span>
+              </div>
 
-                {activeSection === "history" ? (
-                  <HistoryVersionList
-                    imageId={imageId}
-                    enabled={activeSection === "history"}
-                    onRestore={onRestoreHistory ?? (() => {})}
-                  />
-                ) : (
-                <div className="flex-1 overflow-y-auto min-h-0">
+              {activeSection === "history" ? (
+                <HistoryVersionList
+                  imageId={imageId}
+                  enabled={activeSection === "history"}
+                  onRestore={onRestoreHistory ?? (() => {})}
+                />
+              ) : (
+                <div className="flex-1 overflow-y-auto min-h-0" data-panel-scroll>
                   {activeSection === "light" && (
                     <div className="pb-4 pt-4">
                       {LIGHT_ADJUSTMENTS.map(({ key, label }) => (
@@ -1131,10 +1130,9 @@ export default function AdjustmentPanel({
                     </div>
                   )}
                 </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
