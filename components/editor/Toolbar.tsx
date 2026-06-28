@@ -138,7 +138,7 @@ export default function Toolbar({
       </div>
 
       {/* Right — file info + actions */}
-      <div className="flex min-w-0 w-full max-w-full items-center justify-end gap-3 pl-3">
+      <div className="flex min-w-0 w-full max-w-full items-center justify-end gap-6 pl-3">
         {filename && (
           <span
             title={filename}
