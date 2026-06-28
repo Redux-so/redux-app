@@ -28,6 +28,8 @@ const BTN_SECONDARY =
   "inline-flex items-center justify-center h-8 px-3.5 rounded-[10px] border border-white/[0.08] bg-white/[0.05] text-[12px] font-semibold text-white/90 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
 
 const CHAT_MODEL_LABEL = "Claude Sonnet 4.5";
+const FREE_MESSAGE_ALLOWANCE = 20;
+const USAGE_TOOLTIP_DELAY_MS = 125;
 
 /** Reference-matched surfaces — Redux dark palette, Adam proportions/weight. */
 const CHAT_SURFACE_SHADOW =
@@ -126,6 +128,101 @@ async function fileToBase64(
 // Component
 // ---------------------------------------------------------------------------
 
+function UsageRingWithTooltip({
+  active,
+  freeRemaining,
+}: {
+  active: boolean;
+  freeRemaining: number | null;
+}) {
+  const [visible, setVisible] = useState(false);
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    setIsCoarsePointer(mq.matches);
+    const onChange = () => setIsCoarsePointer(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!visible || !isCoarsePointer) return;
+    function onDocumentPointerDown(e: PointerEvent) {
+      if (!wrapperRef.current?.contains(e.target as Node)) {
+        setVisible(false);
+      }
+    }
+    document.addEventListener("pointerdown", onDocumentPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocumentPointerDown);
+  }, [visible, isCoarsePointer]);
+
+  function clearHoverTimer() {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  }
+
+  function handleMouseEnter() {
+    if (isCoarsePointer) return;
+    clearHoverTimer();
+    hoverTimerRef.current = setTimeout(() => setVisible(true), USAGE_TOOLTIP_DELAY_MS);
+  }
+
+  function handleMouseLeave() {
+    if (isCoarsePointer) return;
+    clearHoverTimer();
+    setVisible(false);
+  }
+
+  function handleClick() {
+    if (!isCoarsePointer) return;
+    setVisible((prev) => !prev);
+  }
+
+  const tooltipText =
+    freeRemaining === null
+      ? "Loading…"
+      : `${freeRemaining} free message${freeRemaining !== 1 ? "s" : ""} left`;
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="relative shrink-0"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
+    >
+      {visible && (
+        <div
+          role="tooltip"
+          className={[
+            "absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap",
+            "rounded-[10px] border border-white/[0.08] bg-[#111111] px-3 py-2",
+            CHAT_SURFACE_SHADOW,
+          ].join(" ")}
+        >
+          <p className="text-[12px] text-[#888888] leading-snug">{tooltipText}</p>
+          <div
+            aria-hidden
+            className="absolute left-1/2 top-full -translate-x-1/2 -mt-px border-[5px] border-transparent border-t-[#111111]"
+          />
+        </div>
+      )}
+      <UsageRing active={active} />
+    </div>
+  );
+}
+
 function UsageRing({ active }: { active: boolean }) {
   return (
     <svg
@@ -222,7 +319,7 @@ export default function ChatPanel({
             return;
           }
           setCreditBalance(data.creditBalance);
-          setLifetimeFreeRemaining(Math.max(0, 20 - data.lifetimeFreeAI));
+          setLifetimeFreeRemaining(Math.max(0, FREE_MESSAGE_ALLOWANCE - data.lifetimeFreeAI));
         },
       )
       .catch(() => {});
@@ -736,7 +833,7 @@ export default function ChatPanel({
                     <ChevronDown size={12} strokeWidth={ICON_STROKE_BOLD} className="shrink-0 text-[#888888]" />
                   </button>
 
-                  <UsageRing active={sending} />
+                  <UsageRingWithTooltip active={sending} freeRemaining={lifetimeFreeRemaining} />
                 </div>
 
                 <div className="flex shrink-0 items-center">
