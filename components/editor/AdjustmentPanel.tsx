@@ -71,8 +71,8 @@ const TOOL_SECTIONS: {
   { id: "transform", label: "Transform", title: "Crop and geometry", Icon: Crop },
 ];
 
-const RAIL_ICON_SIZE = 26;
-const RAIL_ICON_STROKE = 1.75;
+const RAIL_ICON_SIZE = 24;
+const RAIL_ICON_STROKE = 1.25;
 
 function RailIcon({ icon: Icon }: { icon: LucideIcon }) {
   return <Icon size={RAIL_ICON_SIZE} strokeWidth={RAIL_ICON_STROKE} />;
