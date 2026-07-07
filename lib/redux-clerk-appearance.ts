@@ -16,7 +16,7 @@ export const reduxAuthAppearance = {
   },
   layout: {
     socialButtonsVariant: "blockButton" as const,
-    socialButtonsPlacement: "bottom" as const,
+    socialButtonsPlacement: "top" as const,
   },
   elements: {
     rootBox: "mx-auto w-full max-w-none overflow-visible shadow-none",
@@ -48,9 +48,9 @@ export const reduxAuthAppearance = {
       "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-full !border !border-white/15 !bg-transparent !px-5 !text-white hover:!bg-white/[0.05]",
     socialButtons: "!flex !w-full !max-w-none !flex-col !gap-3 !overflow-visible",
     socialButtonsBlockButton:
-      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-full !border !border-solid !border-white/15 !bg-transparent !px-5 !text-white !shadow-none hover:!bg-white/[0.05]",
+      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-full !border !border-solid !border-white/20 !bg-white !px-5 !text-[#111111] !shadow-none hover:!bg-white/90",
     socialButtonsBlockButtonText:
-      "!text-[13px] !font-medium !leading-none !text-white",
+      "!text-[13px] !font-medium !leading-none !text-[#111111]",
     socialButtonsProviderIcon: "!h-5 !w-5 shrink-0",
     socialButtonsIconButton: "!hidden",
     dividerRow: "!my-2 !w-full",

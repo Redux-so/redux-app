@@ -109,3 +109,11 @@ body {
   justify-content: center !important;
   border-radius: 9999px !important;
 }
+
+.auth-clerk-root .cl-formButtonPrimary::after {
+  content: "›";
+  margin-left: 0.35rem;
+  font-size: 1.125rem;
+  line-height: 1;
+  font-weight: 500;
+}
