@@ -1,5 +1,10 @@
 /** Public page routes — no Clerk session required. */
-export const PUBLIC_PAGE_ROUTES = ["/", "/sign-in(.*)", "/sign-up(.*)"];
+export const PUBLIC_PAGE_ROUTES = [
+  "/",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/sso-callback",
+];
 
 /** Public API routes — verified via webhook signature in the route handler. */
 export const PUBLIC_API_ROUTES = ["/api/webhooks/clerk", "/api/stripe/webhook"];

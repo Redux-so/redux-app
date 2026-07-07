@@ -117,3 +117,38 @@ body {
   line-height: 1;
   font-weight: 500;
 }
+
+/* Sign-in card — form → Or → Google (Clerk socialButtonsPlacement: bottom) */
+.auth-clerk-root--sign-in .cl-main {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+}
+
+.auth-clerk-root--sign-in .cl-form {
+  order: 1 !important;
+}
+
+.auth-clerk-root--sign-in .cl-dividerRow {
+  order: 2 !important;
+}
+
+.auth-clerk-root--sign-in .cl-socialButtons {
+  order: 3 !important;
+}
+
+.auth-clerk-root--sign-in .cl-footer {
+  order: 4 !important;
+}
+
+.auth-clerk-root--sign-in .cl-formFieldRow__password {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+.auth-clerk-root--sign-in .cl-formFieldRow__password .cl-formFieldLabel {
+  margin-bottom: 0 !important;
+}
