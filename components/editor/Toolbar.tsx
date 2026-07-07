@@ -50,7 +50,7 @@ function ToolbarBtn({
       disabled={disabled}
       title={title}
       className={[
-        "flex shrink-0 items-center justify-center h-9 w-9 rounded-lg transition-colors cursor-pointer",
+        "flex shrink-0 items-center justify-center h-9 w-9 rounded-md transition-colors cursor-pointer",
         "disabled:opacity-30 disabled:cursor-not-allowed",
         active
           ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
@@ -106,7 +106,7 @@ export default function Toolbar({
         <button
           onClick={resetZoom}
           title="Reset zoom"
-          className="flex shrink-0 items-center justify-center h-9 px-3 rounded-lg text-[14px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
+          className="flex shrink-0 items-center justify-center h-9 px-3 rounded-md text-[14px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
         >
           {zoomPercent}
         </button>

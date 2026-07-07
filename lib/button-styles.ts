@@ -4,7 +4,7 @@ export const BTN_PRIMARY_TYPE =
 
 /** Shared primary CTA shell — bg, border, radius, shadows, hover/active */
 const BTN_PRIMARY_VISUAL =
-  "rounded-xl border border-white/20 bg-[#8758ed] shadow-btn-primary transition-[background-color,box-shadow,transform] duration-200 hover:bg-[#9a6ff2] hover:shadow-btn-primary-hover active:scale-[0.98] active:shadow-btn-primary-active disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100";
+  "rounded-md border border-white/20 bg-[#8758ed] shadow-btn-primary transition-[background-color,box-shadow,transform] duration-200 hover:bg-[#9a6ff2] hover:shadow-btn-primary-hover active:scale-[0.98] active:shadow-btn-primary-active disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100";
 
 /** Standalone CTA — header, toolbar, modal footers (matches h-9 chrome controls) */
 export const BTN_PRIMARY_SOLID = [
@@ -36,10 +36,10 @@ export const BTN_PRIMARY_ICON = [
 
 /** Segmented control — selected format tab */
 export const BTN_FORMAT_SELECTED = [
-  "flex flex-1 items-center justify-center h-9 px-3 uppercase tracking-wide cursor-pointer select-none",
+  "flex flex-1 items-center justify-center h-9 px-3 cursor-pointer select-none",
   BTN_PRIMARY_TYPE,
   BTN_PRIMARY_VISUAL,
 ].join(" ");
 
 export const BTN_FORMAT_IDLE =
-  "flex flex-1 items-center justify-center h-9 px-3 rounded-xl border border-white/[0.08] bg-white/[0.05] text-[13px] font-medium text-white/80 uppercase tracking-wide hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none";
+  "flex flex-1 items-center justify-center h-9 px-3 rounded-md border border-white/[0.08] bg-white/[0.05] text-[13px] font-medium text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none";

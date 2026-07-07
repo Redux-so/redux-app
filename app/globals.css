@@ -6,9 +6,6 @@
   /* Opaque match for bg-black/50 on --background (editor side panels) */
   --surface-chrome: color-mix(in srgb, black 50%, #0a0a0a);
   --accent: #682FBF;
-  --accent-end: #8B44E8;
-  --accent-glow: rgba(104, 47, 191, 0.4);
-  --accent-glow-sm: rgba(104, 47, 191, 0.25);
   --scrollbar-thumb: rgba(255, 255, 255, 0.12);
   --scrollbar-thumb-hover: rgba(104, 47, 191, 0.38);
 }
@@ -20,21 +17,17 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  --shadow-glow: 0 0 16px rgba(104, 47, 191, 0.5), 0 0 40px rgba(104, 47, 191, 0.2);
-  --shadow-glow-sm: 0 0 8px rgba(104, 47, 191, 0.4);
-  --shadow-glow-hover: 0 0 24px rgba(104, 47, 191, 0.65), 0 0 50px rgba(104, 47, 191, 0.25);
   --shadow-btn-primary:
-    0 0 0 2px rgba(255, 255, 255, 0.12),
-    0 4px 24px rgba(135, 88, 237, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
   --shadow-btn-primary-hover:
-    0 0 0 2px rgba(255, 255, 255, 0.12),
-    0 6px 28px rgba(135, 88, 237, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --shadow-btn-primary-active:
-    0 0 0 2px rgba(255, 255, 255, 0.12),
-    0 2px 16px rgba(135, 88, 237, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 body {
@@ -107,7 +100,7 @@ body {
   min-height: 3rem !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 9999px !important;
+  border-radius: 6px !important;
 }
 
 .auth-clerk-root .cl-formButtonPrimary::after {

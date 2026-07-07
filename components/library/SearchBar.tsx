@@ -99,7 +99,7 @@ export default function SearchBar({
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Search by keyword, color, scene, mood..."
         disabled={isSearching}
-        className="w-full h-[38px] bg-[#111111] border border-[#2a2a2a] rounded-sm pl-9 pr-10 text-[14px] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-60"
+        className="w-full h-[38px] bg-[#111111] border border-[#2a2a2a] rounded-lg pl-9 pr-10 text-[14px] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-60"
       />
     </form>
   );

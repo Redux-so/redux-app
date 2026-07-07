@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  MessageCircle,
   Paperclip,
   Square,
   X,
@@ -25,7 +24,7 @@ const USER_CHAT_BUBBLE_CLASS =
   "rounded-xl border border-white/[0.08] bg-[#1e0d3a] text-[13px] font-medium text-white py-2.5 px-4";
 
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center h-8 px-3.5 rounded-[10px] border border-white/[0.08] bg-white/[0.05] text-[12px] font-semibold text-white/90 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-white/[0.08] bg-white/[0.05] text-[12px] font-semibold text-white/90 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
 
 const CHAT_MODEL_LABEL = "Claude Sonnet 4.5";
 const FREE_MESSAGE_ALLOWANCE = 20;
@@ -36,7 +35,7 @@ const CHAT_SURFACE_SHADOW =
   "shadow-[0_1px_3px_rgba(0,0,0,0.32),0_2px_8px_rgba(0,0,0,0.14)]";
 const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
-  "rounded-[10px] border border-white/[0.08] bg-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
+  "rounded-md border border-white/[0.08] bg-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
 const ICON_STROKE = 2;
 const ICON_STROKE_BOLD = 2.25;
 
@@ -207,7 +206,7 @@ function UsageRingWithTooltip({
           role="tooltip"
           className={[
             "absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap",
-            "rounded-[10px] border border-white/[0.08] bg-[#111111] px-3 py-2",
+            "rounded-md border border-white/[0.08] bg-[#111111] px-3 py-2",
             CHAT_SURFACE_SHADOW,
           ].join(" ")}
         >
@@ -611,8 +610,7 @@ export default function ChatPanel({
             >
               <ChevronRight size={14} strokeWidth={ICON_STROKE} />
             </button>
-            <MessageCircle size={14} strokeWidth={1.75} className="shrink-0 text-[#888888]" aria-hidden />
-            <span className="text-[14px] font-medium uppercase tracking-widest text-[#888888] select-none">
+            <span className="text-[13px] font-semibold text-white/70 select-none">
               Chat
             </span>
           </div>
@@ -677,7 +675,7 @@ export default function ChatPanel({
           {/* Changes indicator bar */}
           {pendingChanges.length > 0 && (
             <div
-              className={`mx-6 mb-2 shrink-0 overflow-hidden rounded-[10px] border border-white/[0.08] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
+              className={`mx-6 mb-2 shrink-0 overflow-hidden rounded-md border border-white/[0.08] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
             >
               <div className="flex items-center gap-2 px-3 py-2 min-w-0">
                 <button
@@ -708,7 +706,7 @@ export default function ChatPanel({
                   <button
                     type="button"
                     onClick={handleKeepAllChanges}
-                    className={`${BTN_PRIMARY_SOLID} !h-8 !px-3.5 !text-[12px] !font-semibold !rounded-[10px]`}
+                    className={`${BTN_PRIMARY_SOLID} !h-8 !px-3.5 !text-[12px] !font-semibold !rounded-md`}
                   >
                     Keep all
                   </button>
@@ -746,7 +744,7 @@ export default function ChatPanel({
                     onClick={clearAttachment}
                     className="absolute -top-[6px] -right-[6px] w-[16px] h-[16px] rounded-full bg-white/[0.12] border border-white/[0.2] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.2] transition-colors"
                   >
-                    <X size={9} strokeWidth={2.5} />
+                    <X size={14} strokeWidth={1.5} />
                   </button>
                 </div>
                 {attachedFile && (
@@ -771,7 +769,7 @@ export default function ChatPanel({
             )}
 
             <div
-              className={`overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#111111] ${CHAT_SURFACE_SHADOW}`}
+              className={`overflow-hidden rounded-xl border border-white/[0.08] bg-[#111111] ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
@@ -781,7 +779,7 @@ export default function ChatPanel({
                     alt=""
                     width={42}
                     height={42}
-                    className="shrink-0 rounded-[5px]"
+                    className="shrink-0 rounded"
                     aria-hidden
                   />
                   <textarea
@@ -856,8 +854,8 @@ export default function ChatPanel({
                       title="Send"
                       className={[
                         canSend
-                          ? `${BTN_PRIMARY_ICON} !h-8 !w-8 !rounded-[10px]`
-                          : "shrink-0 flex items-center justify-center w-8 h-8 rounded-[10px] bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
+                          ? `${BTN_PRIMARY_ICON} !h-8 !w-8 !rounded-md`
+                          : "shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
                       ].join(" ")}
                     >
                       <ArrowUp size={12} strokeWidth={ICON_STROKE_BOLD} />

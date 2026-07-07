@@ -10,7 +10,7 @@ export const reduxAuthAppearance = {
     colorInput: "#1a1a1a",
     colorInputForeground: "#ffffff",
     colorBorder: "rgba(255, 255, 255, 0.1)",
-    borderRadius: "9999px",
+    borderRadius: "6px",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   },
@@ -30,10 +30,10 @@ export const reduxAuthAppearance = {
     formFieldRow: "!w-full !overflow-visible",
     formButtonRow: "!w-full !overflow-visible",
     formButtonPrimary:
-      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-full !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
+      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
     formFieldLabel: "!text-[13px] !font-medium !text-[#888888]",
     formFieldInput:
-      "!h-11 !rounded-xl !border !border-solid !border-white/10 !bg-[#1a1a1a] !text-[14px] !text-white placeholder:!text-[#555555] focus:!border-white/20",
+      "!h-11 !rounded-lg !border !border-solid !border-white/10 !bg-[#1a1a1a] !text-[14px] !text-white placeholder:!text-[#555555] focus:!border-white/20",
     formFieldInputShowPasswordButton: "!text-[#888888] hover:!text-white",
     identityPreviewText: "!text-[#888888]",
     formResendCodeLink: "!text-[#8758ed] hover:!text-[#9a6ff2]",
@@ -45,10 +45,10 @@ export const reduxAuthAppearance = {
     footerPages: "!text-[#888888]",
     footerPagesLink: "!text-[#8758ed] hover:!text-[#9a6ff2]",
     alternativeMethodsBlockButton:
-      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-full !border !border-white/15 !bg-transparent !px-5 !text-white hover:!bg-white/[0.05]",
+      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/15 !bg-transparent !px-5 !text-white hover:!bg-white/[0.05]",
     socialButtons: "!flex !w-full !max-w-none !flex-col !gap-3 !overflow-visible",
     socialButtonsBlockButton:
-      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-full !border !border-solid !border-white/15 !bg-transparent !px-5 !text-white !shadow-none hover:!bg-white/[0.05]",
+      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-md !border !border-solid !border-white/15 !bg-transparent !px-5 !text-white !shadow-none hover:!bg-white/[0.05]",
     socialButtonsBlockButtonText:
       "!text-[13px] !font-medium !leading-none !text-white",
     socialButtonsProviderIcon: "!h-5 !w-5 shrink-0",
@@ -56,9 +56,9 @@ export const reduxAuthAppearance = {
     dividerRow: "!my-2 !w-full",
     dividerLine: "!bg-white/[0.08]",
     dividerText:
-      "!text-[11px] !font-medium !uppercase !tracking-[0.14em] !text-[#555555]",
+      "!text-[12px] !font-medium !text-[#555555]",
     otpCodeFieldInput:
-      "!rounded-xl !border-white/10 !bg-[#1a1a1a] !text-white",
+      "!rounded-lg !border-white/10 !bg-[#1a1a1a] !text-white",
     formFieldErrorText: "!text-red-400",
     logoBox: "!hidden",
     logoImage: "!hidden",
@@ -85,9 +85,9 @@ export const reduxSignInAppearance = {
     dividerText:
       "!text-[13px] !font-normal !normal-case !tracking-normal !text-[#555555]",
     socialButtonsBlockButton:
-      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-xl !border !border-solid !border-white/10 !bg-[#1a1a1a] !px-5 !text-white !shadow-none hover:!bg-white/[0.05]",
+      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-md !border !border-solid !border-white/10 !bg-[#1a1a1a] !px-5 !text-white !shadow-none hover:!bg-white/[0.05]",
     formButtonPrimary:
-      "!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-xl !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
+      "!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
   },
 };
 

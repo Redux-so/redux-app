@@ -7,15 +7,15 @@ import { useAuth, useClerk, useSignIn } from "@clerk/nextjs";
 const AFTER_AUTH = "/library";
 
 const AUTH_INPUT =
-  "h-[46px] w-full rounded-xl border border-solid border-white/10 bg-[#1a1a1a] px-3.5 text-[14px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed";
+  "h-[46px] w-full rounded-lg border border-solid border-white/10 bg-[#1a1a1a] px-3.5 text-[14px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed";
 
 const AUTH_LABEL = "text-[14px] font-medium text-white";
 
 const AUTH_PRIMARY_BTN =
-  "inline-flex h-[46px] w-full items-center justify-center gap-1 rounded-xl border border-white/20 bg-[#8758ed] text-[14px] font-medium leading-none text-white shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:bg-[#9a6ff2] hover:shadow-btn-primary-hover active:shadow-btn-primary-active disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex h-[46px] w-full items-center justify-center gap-1 rounded-md border border-white/20 bg-[#8758ed] text-[14px] font-medium leading-none text-white shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:bg-[#9a6ff2] hover:shadow-btn-primary-hover active:shadow-btn-primary-active disabled:opacity-40 disabled:cursor-not-allowed";
 
 const AUTH_GOOGLE_BTN =
-  "inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-solid border-white/10 bg-[#1a1a1a] px-5 text-[14px] font-medium leading-none text-white transition-colors hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-md border border-solid border-white/10 bg-[#1a1a1a] px-5 text-[14px] font-medium leading-none text-white transition-colors hover:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed";
 
 const AUTH_SECONDARY_LINK =
   "text-[14px] font-medium text-white underline underline-offset-2 hover:text-white/80 transition-colors";
@@ -58,7 +58,7 @@ function FormError({ message }: { message?: string | null }) {
   return (
     <p
       role="alert"
-      className="rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-300 leading-snug"
+      className="rounded-md border border-red-500/20 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-300 leading-snug"
     >
       {message}
     </p>

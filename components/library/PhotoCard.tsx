@@ -8,7 +8,7 @@ import type { ImageRecord } from "@/types/image";
 import { cloudinaryThumbnailUrl } from "@/lib/cloudinary-url";
 
 const OVERLAY_ACTION =
-  "pointer-events-auto flex shrink-0 cursor-pointer items-center justify-center rounded-lg border backdrop-blur-sm transition-all";
+  "pointer-events-auto flex shrink-0 cursor-pointer items-center justify-center rounded-md border backdrop-blur-sm transition-all";
 
 interface PhotoCardProps {
   image: ImageRecord;
@@ -49,7 +49,7 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
   return (
     <div
       onClick={navigateToEditor}
-      className="@container group relative aspect-square w-full min-w-0 cursor-pointer overflow-hidden rounded-2xl bg-white/[0.03]"
+      className="@container group relative aspect-square w-full min-w-0 cursor-pointer overflow-hidden rounded-xl bg-white/[0.03]"
     >
       <Image
         src={cloudinaryThumbnailUrl(image.previewUrl ?? image.originalUrl)}

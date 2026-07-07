@@ -92,7 +92,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
             if (e.target === e.currentTarget) handleClose();
           }}
         >
-          <div className="mx-4 w-full max-w-[480px] rounded-2xl border border-white/[0.1] bg-[#111111] p-6 shadow-2xl">
+          <div className="mx-4 w-full max-w-[480px] rounded-xl border border-white/[0.1] bg-[#111111] p-6 shadow-2xl">
             {/* Header */}
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-[16px] font-medium text-white">
@@ -101,7 +101,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
               <button
                 onClick={handleClose}
                 disabled={isUploading || isProcessing}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+                className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
               >
                 <X size={16} strokeWidth={1.5} />
               </button>
@@ -161,7 +161,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                 </div>
                 <div className="h-[2px] overflow-hidden rounded-full bg-white/[0.08]">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#682FBF] to-[#8B44E8] transition-all duration-150"
+                    className="h-full rounded-full bg-[#794ADE] transition-all duration-150"
                     style={{ width: isProcessing ? "100%" : `${progress}%` }}
                   />
                 </div>

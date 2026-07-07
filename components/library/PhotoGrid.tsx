@@ -116,7 +116,7 @@ export default function PhotoGrid({
       {groups.map((group) =>
         group.images.length === 0 ? null : (
           <div key={group.label}>
-            <p className="text-[11px] text-[#555555] uppercase tracking-[0.14em] font-medium mb-3">
+            <p className="text-[12px] font-semibold text-[#888888] mb-3">
               {group.label}
             </p>
             <AnimatedPhotoGrid images={group.images} onDeleteImage={onDeleteImage} />

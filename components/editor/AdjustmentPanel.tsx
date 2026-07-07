@@ -72,7 +72,7 @@ const TOOL_SECTIONS: {
 ];
 
 const RAIL_ICON_SIZE = 24;
-const RAIL_ICON_STROKE = 1.25;
+const RAIL_ICON_STROKE = 1.5;
 
 function RailIcon({ icon: Icon }: { icon: LucideIcon }) {
   return <Icon size={RAIL_ICON_SIZE} strokeWidth={RAIL_ICON_STROKE} />;
@@ -163,7 +163,7 @@ function AIButton({
     <button
       onClick={onClick}
       disabled={loading || disabled}
-      className="flex items-center justify-center gap-[7px] w-full h-11 my-1.5 bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-lg text-[14px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 hover:shadow-glow-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+      className="flex items-center justify-center gap-[7px] w-full h-11 my-1.5 bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-md text-[14px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
     >
       {loading ? (
         <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
@@ -194,10 +194,10 @@ function ToolBtn({
       disabled={disabled}
       className={
         disabled
-          ? "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-xl border border-white/[0.05] bg-white/[0.03] text-white/20 opacity-40 cursor-not-allowed"
+          ? "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-md border border-white/[0.05] bg-white/[0.03] text-white/20 opacity-40 cursor-not-allowed"
           : active
             ? `${BTN_PRIMARY_SOLID} w-full capitalize my-1`
-            : "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-xl border border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer"
+            : "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-md border border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer"
       }
     >
       {label}
@@ -796,7 +796,7 @@ export default function AdjustmentPanel({
               className="flex flex-col h-full w-[400px] min-w-[400px]"
             >
               <div className="flex items-center shrink-0 min-h-[60px] py-4 border-b border-white/[0.07] px-8">
-                <span className="text-[15px] font-medium uppercase tracking-widest text-[#888888] select-none">
+                <span className="text-[13px] font-semibold text-white/70 select-none">
                   {activeSectionLabel}
                 </span>
               </div>
@@ -942,7 +942,7 @@ export default function AdjustmentPanel({
                             <button
                               type="button"
                               onClick={cancelBlur}
-                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
+                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-md text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -971,7 +971,7 @@ export default function AdjustmentPanel({
                               type="button"
                               onClick={cancelHeal}
                               disabled={loadingHeal}
-                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
+                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-md text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
                             >
                               Cancel
                             </button>
@@ -1006,7 +1006,7 @@ export default function AdjustmentPanel({
                             <button
                               type="button"
                               onClick={cancelEraser}
-                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
+                              className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-md text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -1078,7 +1078,7 @@ export default function AdjustmentPanel({
                         <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 flex flex-col gap-3">
                           <div className="flex items-center gap-2">
                             <div className="flex flex-col gap-1 flex-1">
-                              <label className="text-[10px] text-[#555555] uppercase tracking-wider">
+                              <label className="text-[11px] font-medium text-[#555555]">
                                 Width
                               </label>
                               <input
@@ -1100,7 +1100,7 @@ export default function AdjustmentPanel({
                               )}
                             </button>
                             <div className="flex flex-col gap-1 flex-1">
-                              <label className="text-[10px] text-[#555555] uppercase tracking-wider">
+                              <label className="text-[11px] font-medium text-[#555555]">
                                 Height
                               </label>
                               <input
@@ -1147,7 +1147,7 @@ export default function AdjustmentPanel({
           aria-modal="true"
           aria-labelledby="genfill-modal-title"
         >
-          <div className="relative w-full max-w-[480px] bg-[#111111] border border-white/[0.1] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+          <div className="relative w-full max-w-[480px] bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-4 h-11 border-b border-white/[0.07] shrink-0">
               <h2 id="genfill-modal-title" className="text-[13px] font-medium text-white">
                 Generative Fill
@@ -1165,7 +1165,7 @@ export default function AdjustmentPanel({
 
             <div className="p-4 flex flex-col gap-3 overflow-y-auto min-h-0">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-[#555555] uppercase tracking-wider">
+                <label className="text-[11px] font-medium text-[#555555]">
                   Expand direction
                 </label>
                 <select
@@ -1182,7 +1182,7 @@ export default function AdjustmentPanel({
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-[#555555] uppercase tracking-wider">
+                <label className="text-[11px] font-medium text-[#555555]">
                   Expand pixels (1–512)
                 </label>
                 <input
@@ -1197,7 +1197,7 @@ export default function AdjustmentPanel({
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-[#555555] uppercase tracking-wider">
+                <label className="text-[11px] font-medium text-[#555555]">
                   Prompt
                 </label>
                 <textarea
@@ -1211,7 +1211,7 @@ export default function AdjustmentPanel({
               </div>
 
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] text-[#555555] uppercase tracking-wider">
+                <span className="text-[11px] font-medium text-[#555555]">
                   Preview (transparent = new area)
                 </span>
                 <div
@@ -1240,7 +1240,7 @@ export default function AdjustmentPanel({
                 type="button"
                 disabled={loadingGenFill}
                 onClick={() => setGenFillModalOpen(false)}
-                className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-lg text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
+                className="flex-1 h-[34px] bg-white/[0.05] border border-white/[0.08] rounded-md text-[13px] text-white hover:bg-white/[0.09] transition-colors cursor-pointer disabled:opacity-40"
               >
                 Cancel
               </button>

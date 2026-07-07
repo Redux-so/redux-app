@@ -64,11 +64,11 @@ function formatFeature(feature: string | null): string {
 }
 
 const SECTION_LABEL =
-  "text-[12px] font-medium tracking-[0.12em] uppercase text-[#555555]";
+  "text-[12px] font-semibold text-[#888888]";
 const SETTING_ROW =
   "flex items-center justify-between py-3.5 border-b border-[#2a2a2a] last:border-0";
 const BTN_GHOST =
-  "h-9 px-4 text-[14px] text-[#888888] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
+  "h-9 px-4 text-[14px] text-[#888888] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
 
 /** Transaction list scrolls after this many rows (~40px per row → max-h-[400px]) */
 const TRANSACTION_HISTORY_VISIBLE_ROWS = 10;
@@ -77,9 +77,7 @@ const TRANSACTION_HISTORY_VISIBLE_ROWS = 10;
 
 function Skeleton({ className }: { className?: string }) {
   return (
-    <div
-      className={`bg-[#1a1a1a] rounded-sm animate-pulse ${className ?? ""}`}
-    />
+    <div className={`bg-[#1a1a1a] rounded animate-pulse ${className ?? ""}`} />
   );
 }
 
@@ -107,9 +105,9 @@ function ConfirmDialog({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-[360px] bg-[#111111] border border-[#2a2a2a] rounded-sm shadow-2xl p-6 flex flex-col gap-4">
+      <div className="w-[360px] bg-[#111111] border border-[#2a2a2a] rounded-xl shadow-2xl p-6 flex flex-col gap-4">
         <div className="flex items-start gap-3">
-          <div className="shrink-0 w-[30px] h-[30px] rounded-sm bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
+          <div className="shrink-0 w-[30px] h-[30px] rounded-md bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
             <AlertTriangle size={14} strokeWidth={1.5} className="text-[#ef4444]" />
           </div>
           <div>
@@ -124,7 +122,7 @@ function ConfirmDialog({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`flex items-center gap-[6px] h-9 px-4 text-[14px] font-medium rounded-sm transition-colors cursor-pointer disabled:opacity-50 ${
+            className={`flex items-center gap-[6px] h-9 px-4 text-[14px] font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50 ${
               destructive
                 ? "bg-[#ef4444] text-white hover:bg-[#dc2626]"
                 : "bg-white text-black hover:bg-[#e8e8e8]"
@@ -149,7 +147,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-[#111111] border border-[#2a2a2a] rounded-sm overflow-hidden">
+    <div className="bg-[#111111] border border-[#2a2a2a] rounded-xl overflow-hidden">
       <div className="px-6 py-4 border-b border-[#2a2a2a]">
         <span className={SECTION_LABEL}>{label}</span>
       </div>
@@ -326,7 +324,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => setShowDeleteAccount(true)}
-                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] transition-colors cursor-pointer whitespace-nowrap"
+                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer whitespace-nowrap"
                 >
                   Delete Account
                 </button>
@@ -337,9 +335,9 @@ export default function SettingsPage() {
             <Section label="Credits & Billing">
               {/* Credit balance card */}
               <div className="py-5 border-b border-[#2a2a2a]">
-                <div className="flex items-center justify-between bg-[#161616] border border-[#2a2a2a] rounded-sm px-5 py-4">
+                <div className="flex items-center justify-between bg-[#161616] border border-[#2a2a2a] rounded-xl px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-[32px] h-[32px] rounded-sm bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
+                    <div className="w-[32px] h-[32px] rounded-md bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
                       <Coins size={14} strokeWidth={1.5} className="text-white" />
                     </div>
                     <div>
@@ -347,7 +345,7 @@ export default function SettingsPage() {
                       {loadingStats ? (
                         <Skeleton className="w-[60px] h-[20px] mt-1" />
                       ) : (
-                        <p className="text-white text-[24px] font-semibold leading-none mt-[2px]">
+                        <p className="text-white text-[28px] font-bold leading-none mt-[2px]">
                           {(stats?.creditBalance ?? 0).toLocaleString()}
                         </p>
                       )}
@@ -376,11 +374,11 @@ export default function SettingsPage() {
                     No transactions yet
                   </p>
                 ) : (
-                  <div className="border border-[#2a2a2a] rounded-sm overflow-hidden">
+                  <div className="border border-[#2a2a2a] rounded-xl overflow-hidden">
                     {/* Table header */}
                     <div className="grid grid-cols-4 px-3 py-2 bg-[#161616] border-b border-[#2a2a2a]">
                       {["Date", "Feature", "Type", "Amount"].map((h) => (
-                        <span key={h} className="text-[10px] text-[#555555] uppercase tracking-[0.1em] font-medium">
+                        <span key={h} className="text-[11px] font-medium text-[#555555]">
                           {h}
                         </span>
                       ))}
@@ -404,15 +402,15 @@ export default function SettingsPage() {
                             {formatFeature(tx.feature)}
                           </span>
                           <span
-                            className={`text-[11px] font-medium uppercase tracking-wide ${
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
                               tx.type === "PURCHASE" || tx.type === "BONUS"
-                                ? "text-[#22c55e]"
+                                ? "bg-[#22c55e]/10 text-[#22c55e]"
                                 : tx.type === "REFUND"
-                                ? "text-[#f59e0b]"
-                                : "text-[#888888]"
+                                ? "bg-[#f59e0b]/10 text-[#f59e0b]"
+                                : "bg-white/[0.06] text-[#888888]"
                             }`}
                           >
-                            {tx.type}
+                            {tx.type.charAt(0) + tx.type.slice(1).toLowerCase()}
                           </span>
                           <span
                             className={`text-[14px] font-medium ${
@@ -445,7 +443,7 @@ export default function SettingsPage() {
                   {portalLoading ? (
                     <LoadingSpinner size="xs" label="Opening billing portal" />
                   ) : (
-                    <ExternalLink size={11} strokeWidth={1.5} />
+                    <ExternalLink size={14} strokeWidth={1.5} />
                   )}
                   Billing Portal
                 </button>
@@ -491,7 +489,7 @@ export default function SettingsPage() {
                 </div>
                 <button
                   onClick={() => setShowClearLibrary(true)}
-                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-sm hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
+                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
                 >
                   <Trash2 size={12} strokeWidth={1.5} />
                   Clear Library
@@ -515,7 +513,7 @@ export default function SettingsPage() {
                   href="mailto:admin@redux.so?subject=Redux%20Support%20Request"
                   className={`${BTN_GHOST} flex items-center gap-[6px]`}
                 >
-                  <Mail size={11} strokeWidth={1.5} />
+                  <Mail size={14} strokeWidth={1.5} />
                   Contact Support
                 </a>
               </div>
