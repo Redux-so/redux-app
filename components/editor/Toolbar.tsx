@@ -4,14 +4,7 @@ import Link from "next/link";
 
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
-import {
-  Minus,
-  Plus,
-  Columns2,
-  Undo2,
-  Redo2,
-  Upload,
-} from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 
 interface ToolbarProps {
   filename?: string;
@@ -100,7 +93,7 @@ export default function Toolbar({
       <div className="flex shrink-0 items-center justify-center gap-[2px]">
         {/* Zoom */}
         <ToolbarBtn onClick={zoomOut} title="Zoom out">
-          <Minus size={18} strokeWidth={2} />
+          <Icon name="Minus" size={20} aria-hidden />
         </ToolbarBtn>
 
         <button
@@ -112,7 +105,7 @@ export default function Toolbar({
         </button>
 
         <ToolbarBtn onClick={zoomIn} title="Zoom in">
-          <Plus size={18} strokeWidth={2} />
+          <Icon name="Plus" size={20} aria-hidden />
         </ToolbarBtn>
 
         <Divider />
@@ -123,17 +116,17 @@ export default function Toolbar({
           active={showBefore}
           title={showBefore ? "Show after" : "Show before"}
         >
-          <Columns2 size={18} strokeWidth={1.75} />
+          <Icon name="Columns02" size={20} aria-hidden />
         </ToolbarBtn>
 
         <Divider />
 
         {/* Undo / Redo */}
         <ToolbarBtn onClick={onUndo} disabled={!canUndo} title="Undo">
-          <Undo2 size={18} strokeWidth={1.75} />
+          <Icon name="FlipBackward" size={20} aria-hidden />
         </ToolbarBtn>
         <ToolbarBtn onClick={onRedo} disabled={!canRedo} title="Redo">
-          <Redo2 size={18} strokeWidth={1.75} />
+          <Icon name="FlipForward" size={20} aria-hidden />
         </ToolbarBtn>
       </div>
 
@@ -166,7 +159,7 @@ export default function Toolbar({
           title="Export / share"
           className={`${BTN_PRIMARY_SOLID} shrink-0`}
         >
-          <Upload size={14} strokeWidth={2} className="shrink-0 -scale-x-100 -scale-y-100" />
+          <Icon name="Download01" size={16} aria-hidden />
           Export
         </button>
       </div>

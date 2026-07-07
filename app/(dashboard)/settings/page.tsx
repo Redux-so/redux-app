@@ -4,15 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
-import {
-  Coins,
-  ImageIcon,
-  Database,
-  Trash2,
-  ExternalLink,
-  Mail,
-  AlertTriangle,
-} from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -108,7 +100,7 @@ function ConfirmDialog({
       <div className="w-[360px] bg-[#111111] border border-[#2a2a2a] rounded-xl shadow-2xl p-6 flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-[30px] h-[30px] rounded-md bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
-            <AlertTriangle size={14} strokeWidth={1.5} className="text-[#ef4444]" />
+            <Icon name="AlertTriangle" size={16} className="text-[#ef4444]" aria-hidden />
           </div>
           <div>
             <p className="text-white text-[14px] font-medium">{title}</p>
@@ -338,7 +330,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between bg-[#161616] border border-[#2a2a2a] rounded-xl px-5 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-[32px] h-[32px] rounded-md bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
-                      <Coins size={14} strokeWidth={1.5} className="text-white" />
+                      <Icon name="Coins01" size={16} className="text-white" aria-hidden />
                     </div>
                     <div>
                       <p className="text-[#888888] text-[12px]">Credit Balance</p>
@@ -443,7 +435,7 @@ export default function SettingsPage() {
                   {portalLoading ? (
                     <LoadingSpinner size="xs" label="Opening billing portal" />
                   ) : (
-                    <ExternalLink size={14} strokeWidth={1.5} />
+                    <Icon name="LinkExternal01" size={16} aria-hidden />
                   )}
                   Billing Portal
                 </button>
@@ -454,7 +446,7 @@ export default function SettingsPage() {
             <Section label="Storage">
               <div className={SETTING_ROW}>
                 <div className="flex items-center gap-3">
-                  <ImageIcon size={14} strokeWidth={1.5} className="text-[#555555] shrink-0" />
+                  <Icon name="Image01" size={16} className="text-[#555555] shrink-0" aria-hidden />
                   <span className="text-[14px] text-white">Photos</span>
                 </div>
                 {loadingStats ? (
@@ -468,7 +460,7 @@ export default function SettingsPage() {
 
               <div className={SETTING_ROW}>
                 <div className="flex items-center gap-3">
-                  <Database size={14} strokeWidth={1.5} className="text-[#555555] shrink-0" />
+                  <Icon name="Database01" size={16} className="text-[#555555] shrink-0" aria-hidden />
                   <span className="text-[14px] text-white">Storage Used</span>
                 </div>
                 {loadingStats ? (
@@ -491,7 +483,7 @@ export default function SettingsPage() {
                   onClick={() => setShowClearLibrary(true)}
                   className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
                 >
-                  <Trash2 size={12} strokeWidth={1.5} />
+                  <Icon name="Trash01" size={16} aria-hidden />
                   Clear Library
                 </button>
               </div>
@@ -513,7 +505,7 @@ export default function SettingsPage() {
                   href="mailto:admin@redux.so?subject=Redux%20Support%20Request"
                   className={`${BTN_GHOST} flex items-center gap-[6px]`}
                 >
-                  <Mail size={14} strokeWidth={1.5} />
+                  <Icon name="Mail01" size={16} aria-hidden />
                   Contact Support
                 </a>
               </div>

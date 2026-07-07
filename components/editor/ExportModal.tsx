@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { X, Download } from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import {
   BTN_FORMAT_IDLE,
@@ -138,7 +138,7 @@ export default function ExportModal({
             className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
             onClick={onClose}
           >
-            <X size={16} strokeWidth={1.5} />
+            <Icon name="XClose" size={16} aria-hidden />
           </button>
         </div>
 
@@ -215,7 +215,7 @@ export default function ExportModal({
             {pendingAction === "download" ? (
               <LoadingSpinner size="sm" variant="brand" label="Exporting" />
             ) : (
-              <Download size={14} strokeWidth={2} />
+              <Icon name="Download01" size={16} aria-hidden />
             )}
             {pendingAction === "download" ? "Exporting…" : "Download"}
           </button>

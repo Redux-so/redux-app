@@ -1,19 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  Sun,
-  Palette,
-  Sparkles,
-  Bandage,
-  Crop,
-  History,
-  Star,
-  Lock,
-  Unlock,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { Icon, type IconName } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
@@ -62,20 +50,17 @@ const TOOL_SECTIONS: {
   id: ToolSection;
   label: string;
   title: string;
-  Icon: LucideIcon;
+  iconName: IconName;
 }[] = [
-  { id: "light", label: "Light", title: "Light adjustments", Icon: Sun },
-  { id: "color", label: "Color", title: "Color adjustments", Icon: Palette },
-  { id: "effects", label: "Effects", title: "Effects adjustments", Icon: Sparkles },
-  { id: "retouch", label: "Retouch", title: "Retouch tools", Icon: Bandage },
-  { id: "transform", label: "Transform", title: "Crop and geometry", Icon: Crop },
+  { id: "light", label: "Light", title: "Light adjustments", iconName: "Sun" },
+  { id: "color", label: "Color", title: "Color adjustments", iconName: "Palette" },
+  { id: "effects", label: "Effects", title: "Effects adjustments", iconName: "Stars03" },
+  { id: "retouch", label: "Retouch", title: "Retouch tools", iconName: "Brush03" },
+  { id: "transform", label: "Transform", title: "Crop and geometry", iconName: "Crop01" },
 ];
 
-const RAIL_ICON_SIZE = 24;
-const RAIL_ICON_STROKE = 1.5;
-
-function RailIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return <Icon size={RAIL_ICON_SIZE} strokeWidth={RAIL_ICON_STROKE} />;
+function RailIcon({ iconName }: { iconName: IconName }) {
+  return <Icon name={iconName} size={24} aria-hidden />;
 }
 
 function applyAiAdjustments(
@@ -168,7 +153,7 @@ function AIButton({
       {loading ? (
         <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
       ) : (
-        <Star size={14} strokeWidth={1.5} className="text-[#9B6EE8]" />
+        <Icon name="MagicWand01" size={16} className="text-[#9B6EE8]" aria-hidden />
       )}
       {label}
     </button>
@@ -763,14 +748,14 @@ export default function AdjustmentPanel({
         {/* Icon tool rail */}
         <div className="flex flex-col shrink-0 w-[72px] h-full items-center bg-black/50 backdrop-blur-xl border-r border-white/[0.07]">
           <div className="flex flex-col items-center py-4 gap-4">
-            {TOOL_SECTIONS.map(({ id, title, Icon }) => (
+            {TOOL_SECTIONS.map(({ id, title, iconName }) => (
               <RailBtn
                 key={id}
                 active={activeSection === id}
                 title={title}
                 onClick={() => toggleActiveSection(id)}
               >
-                <RailIcon icon={Icon} />
+                <RailIcon iconName={iconName} />
               </RailBtn>
             ))}
             <RailBtn
@@ -778,7 +763,7 @@ export default function AdjustmentPanel({
               title="Version history"
               onClick={() => toggleActiveSection("history")}
             >
-              <RailIcon icon={History} />
+              <RailIcon iconName="ClockRewind" />
             </RailBtn>
           </div>
         </div>
@@ -1094,9 +1079,9 @@ export default function AdjustmentPanel({
                               title={resizeLocked ? "Unlock aspect ratio" : "Lock aspect ratio"}
                             >
                               {resizeLocked ? (
-                                <Lock size={13} strokeWidth={1.75} />
+                                <Icon name="Lock01" size={16} aria-hidden />
                               ) : (
-                                <Unlock size={13} strokeWidth={1.75} />
+                                <Icon name="LockUnlocked01" size={16} aria-hidden />
                               )}
                             </button>
                             <div className="flex flex-col gap-1 flex-1">
@@ -1159,7 +1144,7 @@ export default function AdjustmentPanel({
                 className="text-[#555555] hover:text-[#888888] transition-colors p-1 disabled:opacity-40"
                 aria-label="Close"
               >
-                <X size={16} strokeWidth={2} />
+                <Icon name="XClose" size={16} aria-hidden />
               </button>
             </div>
 

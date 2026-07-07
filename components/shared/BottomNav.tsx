@@ -2,13 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
-import {
-  LayoutGrid,
-  SlidersHorizontal,
-  Settings,
-  CreditCard,
-  LogOut,
-} from "lucide-react";
+import { Icon, type IconName } from "@/components/shared/Icon";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -17,9 +11,9 @@ import CreditShopModal from "@/components/shared/CreditShopModal";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { useEditorPreview } from "@/components/editor/EditorPreviewContext";
 
-const TABS = [
-  { label: "Library", icon: LayoutGrid, href: "/library" },
-  { label: "Editor", icon: SlidersHorizontal, href: "/editor" },
+const TABS: { label: string; iconName: IconName; href: string }[] = [
+  { label: "Library", iconName: "Image01", href: "/library" },
+  { label: "Editor", iconName: "Sliders01", href: "/editor" },
 ] as const;
 
 const EDITOR_HINT_TOAST_ID = "editor-hint";
@@ -125,7 +119,7 @@ export default function BottomNav() {
                     }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
                   >
-                    <Settings size={15} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
+                    <Icon name="Settings01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
                     Settings
                   </button>
 
@@ -133,7 +127,7 @@ export default function BottomNav() {
                     onClick={openCreditShop}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
                   >
-                    <CreditCard size={15} strokeWidth={1.5} className="shrink-0 text-[#888888]" />
+                    <Icon name="Coins01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
                     Purchase Credits
                   </button>
 
@@ -143,7 +137,7 @@ export default function BottomNav() {
                     onClick={() => void handleSignOut()}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#ef4444] hover:bg-white/[0.07] transition-colors cursor-pointer rounded-lg"
                   >
-                    <LogOut size={15} strokeWidth={1.5} className="shrink-0" />
+                    <Icon name="LogOut01" size={16} className="shrink-0" aria-hidden />
                     Log Out
                   </button>
                 </div>
@@ -181,7 +175,7 @@ export default function BottomNav() {
         {/* Tabs — centered in the bar (symmetric left/right columns) */}
         <div className="flex justify-center items-center">
           <div className="flex items-center justify-center gap-[3px]">
-            {TABS.map(({ label, icon: Icon, href }) => {
+            {TABS.map(({ label, iconName, href }) => {
               const isActive =
                 pathname === href || pathname.startsWith(href + "/");
               const isLibraryLoading =
@@ -203,7 +197,7 @@ export default function BottomNav() {
                   {isLibraryLoading ? (
                     <LoadingSpinner size="xs" variant="brand" label="Saving preview" />
                   ) : (
-                    <Icon size={20} strokeWidth={1.5} />
+                    <Icon name={iconName} size={20} aria-hidden />
                   )}
                   <span className="text-[12px] leading-none tracking-tight">
                     {isLibraryLoading ? "Saving" : label}

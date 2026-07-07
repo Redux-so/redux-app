@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 interface SemanticSearchBarProps {
@@ -31,10 +31,11 @@ export default function SemanticSearchBar({
       }}
     >
       <div className="relative flex-1 min-w-0">
-        <Search
-          size={12}
-          strokeWidth={1.5}
+        <Icon
+          name="SearchMd"
+          size={16}
           className="absolute left-[10px] top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none"
+          aria-hidden
         />
         <input
           type="text"

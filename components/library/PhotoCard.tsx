@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2 } from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import type { ImageRecord } from "@/types/image";
 import { cloudinaryThumbnailUrl } from "@/lib/cloudinary-url";
 
@@ -67,7 +67,7 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
           aria-label="Edit photo"
           className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-white/[0.15] bg-white/[0.12] hover:bg-white/[0.2] @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-2 @[11rem]:px-4`}
         >
-          <Pencil size={14} strokeWidth={2} />
+          <Icon name="Edit01" size={16} aria-hidden />
           <span className="hidden text-[13px] font-medium text-white @[11rem]:inline">
             Edit
           </span>
@@ -80,7 +80,7 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
           aria-label={isDeleting ? "Deleting photo" : "Delete photo"}
           className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-red-500/20 bg-black/40 text-[#ef4444] hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-2 @[11rem]:px-4`}
         >
-          <Trash2 size={14} strokeWidth={2} />
+          <Icon name="Trash01" size={16} aria-hidden />
           <span className="hidden text-[13px] font-medium @[11rem]:inline">
             {isDeleting ? "Deleting..." : "Delete"}
           </span>

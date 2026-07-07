@@ -3,15 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
-import {
-  ArrowUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Paperclip,
-  Square,
-  X,
-} from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
@@ -36,9 +28,6 @@ const CHAT_SURFACE_SHADOW =
 const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
   "rounded-md border border-white/[0.08] bg-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
-const ICON_STROKE = 2;
-const ICON_STROKE_BOLD = 2.25;
-
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -597,7 +586,7 @@ export default function ChatPanel({
             onClick={() => setPanelCollapsed(false)}
             className="shrink-0 text-[#888888] hover:text-white transition-colors cursor-pointer"
           >
-            <ChevronLeft size={14} strokeWidth={ICON_STROKE} />
+            <Icon name="ChevronLeft" size={16} aria-hidden={false} aria-label="Collapse chat panel" />
           </button>
         ) : (
           <div className="flex min-w-0 items-center gap-2">
@@ -608,7 +597,7 @@ export default function ChatPanel({
               onClick={() => setPanelCollapsed(true)}
               className="shrink-0 text-[#888888] hover:text-white transition-colors cursor-pointer"
             >
-              <ChevronRight size={14} strokeWidth={ICON_STROKE} />
+              <Icon name="ChevronRight" size={16} aria-hidden={false} aria-label="Collapse chat panel" />
             </button>
             <span className="text-[13px] font-semibold text-white/70 select-none">
               Chat
@@ -685,13 +674,14 @@ export default function ChatPanel({
                   onClick={() => setChangesExpanded((prev) => !prev)}
                   className="shrink-0 text-[#888888] hover:text-white transition-colors cursor-pointer"
                 >
-                  <ChevronRight
-                    size={14}
-                    strokeWidth={ICON_STROKE_BOLD}
+                  <Icon
+                    name="ChevronRight"
+                    size={16}
                     className={[
                       "transition-transform duration-150",
                       changesExpanded ? "rotate-90" : "",
                     ].join(" ")}
+                    aria-hidden
                   />
                 </button>
 
@@ -744,7 +734,7 @@ export default function ChatPanel({
                     onClick={clearAttachment}
                     className="absolute -top-[6px] -right-[6px] w-[16px] h-[16px] rounded-full bg-white/[0.12] border border-white/[0.2] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.2] transition-colors"
                   >
-                    <X size={14} strokeWidth={1.5} />
+                    <Icon name="XClose" size={16} aria-hidden />
                   </button>
                 </div>
                 {attachedFile && (
@@ -809,7 +799,7 @@ export default function ChatPanel({
                       disabled={chatBlocked}
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      <Paperclip size={15} strokeWidth={ICON_STROKE_BOLD} />
+                      <Icon name="Paperclip" size={16} aria-hidden />
                     </ToolbarIconBtn>
                     <input
                       ref={fileInputRef}
@@ -828,7 +818,7 @@ export default function ChatPanel({
                     <span className="whitespace-nowrap font-semibold text-[#888888]">
                       {CHAT_MODEL_LABEL}
                     </span>
-                    <ChevronDown size={12} strokeWidth={ICON_STROKE_BOLD} className="shrink-0 text-[#888888]" />
+                    <Icon name="ChevronDown" size={16} className="shrink-0 text-[#888888]" aria-hidden />
                   </button>
 
                   <UsageRingWithTooltip active={sending} freeRemaining={lifetimeFreeRemaining} />
@@ -843,7 +833,7 @@ export default function ChatPanel({
                         title="Stop generation"
                         className="inline-flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
                       >
-                        <Square size={11} strokeWidth={0} fill="currentColor" />
+                        <Icon name="Stop" size={16} aria-hidden />
                       </button>
                     </div>
                   ) : (
@@ -858,7 +848,7 @@ export default function ChatPanel({
                           : "shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
                       ].join(" ")}
                     >
-                      <ArrowUp size={12} strokeWidth={ICON_STROKE_BOLD} />
+                      <Icon name="Send01" size={16} aria-hidden />
                     </button>
                   )}
                 </div>

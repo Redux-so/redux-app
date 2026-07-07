@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Upload, X, ImageIcon } from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import { useUploadThing } from "@/lib/uploadthing";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 
@@ -81,7 +81,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
         onClick={() => setOpen(true)}
         className={BTN_PRIMARY_SOLID}
       >
-        <Upload size={14} strokeWidth={2} />
+        <Icon name="UploadCloud01" size={16} aria-hidden />
         Upload Photos
       </button>
 
@@ -103,7 +103,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                 disabled={isUploading || isProcessing}
                 className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
               >
-                <X size={16} strokeWidth={1.5} />
+                <Icon name="XClose" size={16} aria-hidden />
               </button>
             </div>
 
@@ -115,7 +115,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                 onClick={() => inputRef.current?.click()}
                 className="flex h-[180px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.12] transition-all duration-200 hover:border-[#682FBF]/50 hover:bg-[#682FBF]/[0.04]"
               >
-                <ImageIcon size={28} strokeWidth={1} className="text-[#682FBF]/50" />
+                <Icon name="Image05" size={24} className="text-[#682FBF]/50" aria-hidden />
                 <p className="text-[13px] text-[#888888]">
                   Drop a photo here or click to browse
                 </p>
@@ -129,7 +129,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
             {file && (
               <div className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] p-4">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.06]">
-                  <ImageIcon size={16} strokeWidth={1.5} className="text-[#555555]" />
+                  <Icon name="Image01" size={16} className="text-[#555555]" aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] text-white">{file.name}</p>
@@ -142,7 +142,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                     onClick={() => setFile(null)}
                     className="shrink-0 text-[#555555] hover:text-white transition-colors cursor-pointer"
                   >
-                    <X size={15} strokeWidth={1.5} />
+                    <Icon name="XClose" size={16} aria-hidden />
                   </button>
                 )}
               </div>
@@ -183,7 +183,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
                   onClick={handleUpload}
                   className={BTN_PRIMARY_SOLID}
                 >
-                  <Upload size={14} strokeWidth={2} />
+                  <Icon name="UploadCloud01" size={16} aria-hidden />
                   Upload
                 </button>
               )}

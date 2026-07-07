@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RotateCcw, Clock } from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import type { Adjustments } from "@/hooks/useEditor";
 
@@ -71,7 +71,7 @@ export function HistoryVersionList({
 
       {!loading && versions.length === 0 && (
         <div className="flex h-32 flex-col items-center justify-center gap-2 px-6 text-center">
-          <Clock size={24} strokeWidth={1.25} className="text-[#333333]" />
+          <Icon name="ClockRewind" size={24} className="text-[#333333]" aria-hidden />
           <p className="text-[13px] leading-relaxed text-[#555555]">
             No saved versions yet
           </p>
@@ -101,7 +101,7 @@ export function HistoryVersionList({
               disabled={restoringId === version.id}
               className="ml-3 flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.05] px-4 text-[13px] text-white hover:bg-white/[0.09] transition-colors disabled:opacity-50"
             >
-              <RotateCcw size={14} strokeWidth={2} />
+              <Icon name="FlipBackward" size={16} aria-hidden />
               {restoringId === version.id ? "…" : "Restore"}
             </button>
           </div>

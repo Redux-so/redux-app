@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Coins } from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { AnimatePresence, motion } from "framer-motion";
@@ -104,7 +104,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                   onClick={onClose}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer"
                 >
-                  <X size={16} strokeWidth={1.5} />
+                  <Icon name="XClose" size={16} aria-hidden />
                 </button>
               </div>
 
@@ -133,7 +133,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
                             bundle.popular ? "border-[#794ADE]/40 bg-[#794ADE]/[0.12]" : "border-white/[0.08] bg-white/[0.05]"
                           }`}>
-                            <Coins size={16} strokeWidth={1.5} className={bundle.popular ? "text-[#B07EF0]" : "text-white"} />
+                            <Icon name="Coins01" size={16} className={bundle.popular ? "text-[#B07EF0]" : "text-white"} aria-hidden />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">

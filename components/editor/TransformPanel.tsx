@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  CropIcon,
-  RotateCw,
-  RotateCcw,
-  FlipHorizontal2,
-  FlipVertical2,
-  Maximize2,
-  Lock,
-  Unlock,
-} from "lucide-react";
+import { Icon } from "@/components/shared/Icon";
 import AdjustmentSlider from "./AdjustmentSlider";
 
 interface ResizeState {
@@ -125,18 +116,18 @@ export default function TransformPanel({
       <div className="flex flex-col gap-[7px] px-4 pt-4 pb-4">
         {/* Crop */}
         <TransformBtn onClick={() => onCrop?.()} title="Activate crop tool">
-          <CropIcon size={13} strokeWidth={1.75} />
+          <Icon name="Crop01" size={16} aria-hidden />
           Crop
         </TransformBtn>
 
         {/* Rotate row */}
         <div className="grid grid-cols-2 gap-[7px]">
           <TransformBtn onClick={() => onRotateCCW?.()} title="Rotate 90° counter-clockwise">
-            <RotateCcw size={13} strokeWidth={1.75} />
+            <Icon name="RefreshCcw01" size={16} aria-hidden />
             Rotate CCW
           </TransformBtn>
           <TransformBtn onClick={() => onRotateCW?.()} title="Rotate 90° clockwise">
-            <RotateCw size={13} strokeWidth={1.75} />
+            <Icon name="RefreshCw01" size={16} aria-hidden />
             Rotate CW
           </TransformBtn>
         </div>
@@ -144,11 +135,11 @@ export default function TransformPanel({
         {/* Flip row */}
         <div className="grid grid-cols-2 gap-[7px]">
           <TransformBtn onClick={() => onFlipH?.()} title="Flip horizontal">
-            <FlipHorizontal2 size={13} strokeWidth={1.75} />
+            <Icon name="Reflect01" size={16} aria-hidden />
             Flip H
           </TransformBtn>
           <TransformBtn onClick={() => onFlipV?.()} title="Flip vertical">
-            <FlipVertical2 size={13} strokeWidth={1.75} />
+            <Icon name="Reflect02" size={16} aria-hidden />
             Flip V
           </TransformBtn>
         </div>
@@ -158,7 +149,7 @@ export default function TransformPanel({
           onClick={() => setShowResize((v) => !v)}
           title="Resize image"
         >
-          <Maximize2 size={13} strokeWidth={1.75} />
+          <Icon name="Expand01" size={16} aria-hidden />
           Resize
         </TransformBtn>
 
@@ -186,9 +177,9 @@ export default function TransformPanel({
                 title={resize.locked ? "Unlock aspect ratio" : "Lock aspect ratio"}
               >
                 {resize.locked ? (
-                  <Lock size={13} strokeWidth={1.75} />
+                  <Icon name="Lock01" size={16} aria-hidden />
                 ) : (
-                  <Unlock size={13} strokeWidth={1.75} />
+                  <Icon name="LockUnlocked01" size={16} aria-hidden />
                 )}
               </button>
 
