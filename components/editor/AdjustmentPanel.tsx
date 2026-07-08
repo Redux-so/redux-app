@@ -59,8 +59,21 @@ const TOOL_SECTIONS: {
   { id: "transform", label: "Transform", title: "Crop and geometry", iconName: "Crop01" },
 ];
 
+const RAIL_ICON_STROKE = 1.25;
+/** Sun's radiating lines read lighter at the default rail stroke — nudge slightly. */
+const RAIL_ICON_STROKE_OVERRIDES: Partial<Record<IconName, number>> = {
+  Sun: 1.75,
+};
+
 function RailIcon({ iconName }: { iconName: IconName }) {
-  return <Icon name={iconName} size={24} strokeWidth={1.25} aria-hidden />;
+  return (
+    <Icon
+      name={iconName}
+      size={26}
+      strokeWidth={RAIL_ICON_STROKE_OVERRIDES[iconName] ?? RAIL_ICON_STROKE}
+      aria-hidden
+    />
+  );
 }
 
 function applyAiAdjustments(
