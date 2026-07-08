@@ -370,7 +370,7 @@ export default function SignInForm() {
                 id="forgot-email"
                 type="email"
                 autoComplete="email"
-                placeholder="m@example.com"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className={`${AUTH_INPUT} mt-1.5`}
@@ -455,36 +455,21 @@ export default function SignInForm() {
 
       <form onSubmit={handleEmailPasswordSubmit} className="flex flex-col gap-5">
         <div>
-          <label htmlFor="email" className={AUTH_LABEL}>
-            Email
-          </label>
           <input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
-            placeholder="m@example.com"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`${AUTH_INPUT} mt-1.5`}
+            className={AUTH_INPUT}
             disabled={!isClerkReady}
           />
           <FieldError message={errors.fields?.identifier?.message} />
         </div>
 
         <div>
-          <div className="flex items-center justify-between gap-3">
-            <label htmlFor="password" className={AUTH_LABEL}>
-              Password
-            </label>
-            <button
-              type="button"
-              onClick={() => setView("forgot-password")}
-              className={AUTH_SECONDARY_LINK}
-            >
-              Forgot password?
-            </button>
-          </div>
           <input
             id="password"
             name="password"
@@ -493,10 +478,19 @@ export default function SignInForm() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={`${AUTH_INPUT} mt-1.5`}
+            className={AUTH_INPUT}
             disabled={!isClerkReady}
           />
           <FieldError message={errors.fields?.password?.message} />
+          <div className="mt-1.5 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setView("forgot-password")}
+              className={AUTH_SECONDARY_LINK}
+            >
+              Forgot password?
+            </button>
+          </div>
         </div>
 
         <button
