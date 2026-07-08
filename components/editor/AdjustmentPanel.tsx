@@ -54,13 +54,13 @@ const TOOL_SECTIONS: {
 }[] = [
   { id: "light", label: "Light", title: "Light adjustments", iconName: "Sun" },
   { id: "color", label: "Color", title: "Color adjustments", iconName: "Palette" },
-  { id: "effects", label: "Effects", title: "Effects adjustments", iconName: "Stars03" },
+  { id: "effects", label: "Effects", title: "Effects adjustments", iconName: "Zap" },
   { id: "retouch", label: "Retouch", title: "Retouch tools", iconName: "Brush03" },
   { id: "transform", label: "Transform", title: "Crop and geometry", iconName: "Crop01" },
 ];
 
 function RailIcon({ iconName }: { iconName: IconName }) {
-  return <Icon name={iconName} size={24} aria-hidden />;
+  return <Icon name={iconName} size={24} strokeWidth={1.25} aria-hidden />;
 }
 
 function applyAiAdjustments(

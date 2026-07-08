@@ -483,7 +483,7 @@ export default function SettingsPage() {
                   onClick={() => setShowClearLibrary(true)}
                   className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
                 >
-                  <Icon name="Trash01" size={16} aria-hidden />
+                  <Icon name="Trash04" size={16} aria-hidden />
                   Clear Library
                 </button>
               </div>

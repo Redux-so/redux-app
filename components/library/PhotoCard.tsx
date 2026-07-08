@@ -80,7 +80,7 @@ export default function PhotoCard({ image, onDelete }: PhotoCardProps) {
           aria-label={isDeleting ? "Deleting photo" : "Delete photo"}
           className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-red-500/20 bg-black/40 text-[#ef4444] hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-2 @[11rem]:px-4`}
         >
-          <Icon name="Trash01" size={16} aria-hidden />
+          <Icon name="Trash04" size={16} aria-hidden />
           <span className="hidden text-[13px] font-medium @[11rem]:inline">
             {isDeleting ? "Deleting..." : "Delete"}
           </span>
