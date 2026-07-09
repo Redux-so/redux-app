@@ -116,12 +116,121 @@ async function fileToBase64(
 // Component
 // ---------------------------------------------------------------------------
 
-function UsageRingWithTooltip({
-  active,
-  freeRemaining,
+// ---------------------------------------------------------------------------
+// Free-chat usage ring
+// ---------------------------------------------------------------------------
+
+const RING_RADIUS = 7.5;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+const RING_TRANSITION_MS = 500;
+
+function ringOffsetForRemaining(remaining: number, total: number): number {
+  const progress = Math.max(0, Math.min(1, remaining / total));
+  return RING_CIRCUMFERENCE * (1 - progress);
+}
+
+function FreeChatUsageRing({
+  remainingFreeChats,
+  totalFreeChats,
+  reduceMotion,
 }: {
-  active: boolean;
-  freeRemaining: number | null;
+  remainingFreeChats: number;
+  totalFreeChats: number;
+  reduceMotion: boolean;
+}) {
+  const targetOffset = ringOffsetForRemaining(remainingFreeChats, totalFreeChats);
+  const isEmpty = remainingFreeChats === 0;
+  const [displayOffset, setDisplayOffset] = useState<number | null>(null);
+  const [transitionEnabled, setTransitionEnabled] = useState(false);
+  const hasInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      setDisplayOffset(RING_CIRCUMFERENCE);
+      if (reduceMotion) {
+        setTransitionEnabled(true);
+        setDisplayOffset(targetOffset);
+        return;
+      }
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTransitionEnabled(true);
+          setDisplayOffset(targetOffset);
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+
+    setDisplayOffset(targetOffset);
+  }, [remainingFreeChats, totalFreeChats, targetOffset, reduceMotion]);
+
+  const strokeTransition = transitionEnabled && !reduceMotion
+    ? `stroke-dashoffset ${RING_TRANSITION_MS}ms ease-out`
+    : "none";
+
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className="h-5 w-5 shrink-0"
+      aria-hidden
+    >
+      <g transform="rotate(-90 10 10)">
+        <circle
+          cx="10"
+          cy="10"
+          r={RING_RADIUS}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className={
+            isEmpty
+              ? "text-[#666666] animate-pulse"
+              : "text-[#444444]"
+          }
+        />
+        <circle
+          cx="10"
+          cy="10"
+          r={RING_RADIUS}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={RING_CIRCUMFERENCE}
+          strokeDashoffset={displayOffset ?? RING_CIRCUMFERENCE}
+          style={{ transition: strokeTransition }}
+          className="text-[#888888]"
+        />
+      </g>
+    </svg>
+  );
+}
+
+function UsageRingLoading() {
+  return (
+    <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0" aria-hidden>
+      <circle
+        cx="10"
+        cy="10"
+        r={RING_RADIUS}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="text-[#444444]"
+      />
+    </svg>
+  );
+}
+
+function UsageRingWithTooltip({
+  remainingFreeChats,
+  totalFreeChats,
+  reduceMotion,
+}: {
+  remainingFreeChats: number | null;
+  totalFreeChats: number;
+  reduceMotion: boolean;
 }) {
   const [visible, setVisible] = useState(false);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
@@ -160,16 +269,32 @@ function UsageRingWithTooltip({
     }
   }
 
-  function handleMouseEnter() {
-    if (isCoarsePointer) return;
+  function showTooltip() {
     clearHoverTimer();
     hoverTimerRef.current = setTimeout(() => setVisible(true), USAGE_TOOLTIP_DELAY_MS);
   }
 
-  function handleMouseLeave() {
-    if (isCoarsePointer) return;
+  function hideTooltip() {
     clearHoverTimer();
     setVisible(false);
+  }
+
+  function handleMouseEnter() {
+    if (isCoarsePointer) return;
+    showTooltip();
+  }
+
+  function handleMouseLeave() {
+    if (isCoarsePointer) return;
+    hideTooltip();
+  }
+
+  function handleFocus() {
+    showTooltip();
+  }
+
+  function handleBlur() {
+    hideTooltip();
   }
 
   function handleClick() {
@@ -177,17 +302,27 @@ function UsageRingWithTooltip({
     setVisible((prev) => !prev);
   }
 
+  const ariaLabel =
+    remainingFreeChats === null
+      ? "Loading free chat allowance"
+      : `${remainingFreeChats} of ${totalFreeChats} free chats left`;
+
   const tooltipText =
-    freeRemaining === null
+    remainingFreeChats === null
       ? "Loading…"
-      : `${freeRemaining} free message${freeRemaining !== 1 ? "s" : ""} left`;
+      : `${remainingFreeChats} of ${totalFreeChats} free chats left`;
 
   return (
     <div
       ref={wrapperRef}
       className="relative shrink-0"
+      tabIndex={0}
+      role="img"
+      aria-label={ariaLabel}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       onClick={handleClick}
     >
       {visible && (
@@ -206,34 +341,16 @@ function UsageRingWithTooltip({
           />
         </div>
       )}
-      <UsageRing active={active} />
+      {remainingFreeChats === null ? (
+        <UsageRingLoading />
+      ) : (
+        <FreeChatUsageRing
+          remainingFreeChats={remainingFreeChats}
+          totalFreeChats={totalFreeChats}
+          reduceMotion={reduceMotion}
+        />
+      )}
     </div>
-  );
-}
-
-function UsageRing({ active }: { active: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className={[
-        "h-5 w-5 shrink-0 text-[#666666]",
-        active ? "animate-spin" : "",
-      ].join(" ")}
-      aria-hidden
-    >
-      <circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" strokeWidth="2.25" />
-      <circle
-        cx="10"
-        cy="10"
-        r="7.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.25"
-        strokeLinecap="round"
-        strokeDasharray="13 34"
-        className="text-[#999999]"
-      />
-    </svg>
   );
 }
 
@@ -821,7 +938,11 @@ export default function ChatPanel({
                     <Icon name="ChevronDown" size={16} className="shrink-0 text-[#888888]" aria-hidden />
                   </button>
 
-                  <UsageRingWithTooltip active={sending} freeRemaining={lifetimeFreeRemaining} />
+                  <UsageRingWithTooltip
+                    remainingFreeChats={lifetimeFreeRemaining}
+                    totalFreeChats={FREE_MESSAGE_ALLOWANCE}
+                    reduceMotion={!!prefersReducedMotion}
+                  />
                 </div>
 
                 <div className="flex shrink-0 items-center">
