@@ -62,7 +62,7 @@ const TOOL_SECTIONS: {
 const RAIL_ICON_STROKE = 1.25;
 /** Sun's radiating lines read lighter at the default rail stroke — nudge slightly. */
 const RAIL_ICON_STROKE_OVERRIDES: Partial<Record<IconName, number>> = {
-  Sun: 1.75,
+  Sun: 1.7,
 };
 
 function RailIcon({ iconName }: { iconName: IconName }) {
