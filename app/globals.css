@@ -145,3 +145,44 @@ body {
 .auth-clerk-root--sign-in .cl-formFieldRow__password .cl-formFieldLabel {
   margin-bottom: 0 !important;
 }
+
+/* Clerk UserProfile modal — portaled to body; reinforce dark Redux palette */
+.cl-modalBackdrop {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.cl-modalContent,
+.cl-userProfile-root .cl-card,
+.cl-userProfile-root .cl-navbar,
+.cl-userProfile-root .cl-pageScrollBox,
+.cl-userProfile-root .cl-scrollBox {
+  background: #111111 !important;
+  color: #ededed !important;
+}
+
+.cl-modalContent,
+.cl-userProfile-root .cl-card {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.cl-userProfile-root .cl-navbar {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.cl-userProfile-root .cl-formFieldInput,
+.cl-userProfile-root .cl-otpCodeFieldInput {
+  background: #1a1a1a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.cl-userProfile-root .cl-formButtonPrimary {
+  background: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #0a0a0a !important;
+  border-radius: 6px !important;
+}
+
+.cl-userProfile-root .cl-formButtonPrimary:hover {
+  background: #e5e5e5 !important;
+}

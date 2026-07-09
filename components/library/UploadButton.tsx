@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/shared/Icon";
 import { useUploadThing } from "@/lib/uploadthing";
-import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_MODAL_SOLID, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 
 interface UploadButtonProps {
   onUploadComplete?: () => void;
@@ -181,7 +181,7 @@ export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
               {file && !isUploading && !isProcessing && (
                 <button
                   onClick={handleUpload}
-                  className={BTN_PRIMARY_SOLID}
+                  className={BTN_MODAL_SOLID}
                 >
                   <Icon name="UploadCloud01" size={16} aria-hidden />
                   Upload

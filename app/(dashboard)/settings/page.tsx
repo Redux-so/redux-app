@@ -12,6 +12,7 @@ import BottomNav from "@/components/shared/BottomNav";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import CreditShopModal from "@/components/shared/CreditShopModal";
+import { reduxUserProfileAppearance } from "@/lib/redux-clerk-appearance";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -292,7 +293,7 @@ export default function SettingsPage() {
               <div className={SETTING_ROW}>
                 <span className="text-[14px] text-white">Profile</span>
                 <button
-                  onClick={() => openUserProfile()}
+                  onClick={() => openUserProfile({ appearance: reduxUserProfileAppearance })}
                   className={BTN_GHOST}
                 >
                   Edit Profile
@@ -301,7 +302,7 @@ export default function SettingsPage() {
               <div className={SETTING_ROW}>
                 <span className="text-[14px] text-white">Password</span>
                 <button
-                  onClick={() => openUserProfile({ appearance: { variables: { colorPrimary: "#ffffff" } } })}
+                  onClick={() => openUserProfile({ appearance: reduxUserProfileAppearance })}
                   className={BTN_GHOST}
                 >
                   Change Password

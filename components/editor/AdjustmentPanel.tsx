@@ -9,7 +9,7 @@ import { HistoryVersionList } from "./HistoryPanel";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
-import { BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 
 interface AdjustmentPanelProps {
   adjustments: Adjustments;
@@ -1246,10 +1246,10 @@ export default function AdjustmentPanel({
                 type="button"
                 disabled={loadingGenFill || !canvasImageUrl}
                 onClick={() => void applyGenerativeFill()}
-                className={BTN_PRIMARY_PANEL}
+                className={BTN_MODAL_PANEL}
               >
                 {loadingGenFill ? (
-                  <LoadingSpinner size="sm" variant="brand" label="Applying generative fill" />
+                  <LoadingSpinner size="sm" variant="default" label="Applying generative fill" />
                 ) : (
                   "Apply"
                 )}
