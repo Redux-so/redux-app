@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
@@ -18,7 +19,16 @@ const USER_CHAT_BUBBLE_CLASS =
 const BTN_SECONDARY =
   "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-white/[0.08] bg-white/[0.05] text-[12px] font-semibold text-white/90 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
 
-const CHAT_MODEL_LABEL = "Claude Sonnet 4.5";
+const AVAILABLE_MODELS = [
+  { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
+] as const;
+
+const COMING_SOON_MODEL_ROW = {
+  id: "coming-soon",
+  badge: "Coming soon",
+} as const;
+
+const MODEL_MENU_ESTIMATED_HEIGHT = 72;
 const FREE_MESSAGE_ALLOWANCE = 20;
 const USAGE_TOOLTIP_DELAY_MS = 125;
 
@@ -350,6 +360,194 @@ function UsageRingWithTooltip({
           reduceMotion={reduceMotion}
         />
       )}
+    </div>
+  );
+}
+
+function ChatModelSelector({ disabled }: { disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<string>(AVAILABLE_MODELS[0].id);
+  const [placement, setPlacement] = useState<"above" | "below">("above");
+  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  const selectedModel =
+    AVAILABLE_MODELS.find((model) => model.id === selectedModelId) ?? AVAILABLE_MODELS[0];
+
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const menuHeight = menuRef.current?.offsetHeight ?? MODEL_MENU_ESTIMATED_HEIGHT;
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openBelow = spaceBelow >= menuHeight && spaceBelow > spaceAbove;
+
+    setPlacement(openBelow ? "below" : "above");
+    setMenuCoords({
+      left: rect.left,
+      top: openBelow ? rect.bottom + 6 : rect.top - menuHeight - 6,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateMenuPosition();
+  }, [open, updateMenuPosition, selectedModelId]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+
+    function onReposition() {
+      updateMenuPosition();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
+    };
+  }, [open, updateMenuPosition]);
+
+  function handleToggle() {
+    if (disabled) return;
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openBelow = spaceBelow >= MODEL_MENU_ESTIMATED_HEIGHT && spaceBelow > spaceAbove;
+      setPlacement(openBelow ? "below" : "above");
+      setMenuCoords({
+        left: rect.left,
+        top: openBelow
+          ? rect.bottom + 6
+          : rect.top - MODEL_MENU_ESTIMATED_HEIGHT - 6,
+      });
+    }
+    setOpen((prev) => !prev);
+  }
+
+  function handleSelectModel(modelId: string) {
+    setSelectedModelId(modelId);
+    setOpen(false);
+  }
+
+  const menuOffsetY = placement === "above" ? 4 : -4;
+
+  const menu =
+    typeof document !== "undefined"
+      ? createPortal(
+          <AnimatePresence>
+            {open && menuCoords && (
+              <motion.div
+                ref={menuRef}
+                key="model-menu"
+                role="menu"
+                aria-label="Chat models"
+                initial={{ opacity: 0, y: menuOffsetY }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: menuOffsetY }}
+                transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                style={{ top: menuCoords.top, left: menuCoords.left }}
+                className={[
+                  "fixed z-[100] w-max max-w-[196px] rounded-md border border-white/[0.08] bg-[#111111] py-1",
+                  CHAT_SURFACE_SHADOW,
+                ].join(" ")}
+              >
+                {AVAILABLE_MODELS.map((model) => {
+                  const isSelected = model.id === selectedModelId;
+                  return (
+                    <button
+                      key={model.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={isSelected}
+                      onClick={() => handleSelectModel(model.id)}
+                      className={[
+                        "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors cursor-pointer",
+                        isSelected
+                          ? "text-[#cccccc]"
+                          : "text-[#888888] hover:bg-white/[0.05] hover:text-[#cccccc]",
+                      ].join(" ")}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{model.label}</span>
+                      {isSelected && (
+                        <Icon name="Check" size={16} className="shrink-0 text-[#888888]" aria-hidden />
+                      )}
+                    </button>
+                  );
+                })}
+
+                <div
+                  role="menuitem"
+                  aria-disabled="true"
+                  className="flex items-center justify-between gap-2 px-3 py-1.5 text-[12px] text-[#555555] opacity-60 cursor-default select-none"
+                >
+                  <span className="min-w-0 flex-1" aria-hidden />
+                  <span className="shrink-0 rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-[#555555]">
+                    {COMING_SOON_MODEL_ROW.badge}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Select model"
+        disabled={disabled}
+        onClick={handleToggle}
+        className={[
+          TOOLBAR_CHIP,
+          "inline-flex",
+          TOOLBAR_CHIP_H,
+          "shrink-0 items-center gap-0.5 px-1.5 text-[12px] transition-colors",
+          disabled
+            ? "cursor-not-allowed opacity-50"
+            : "cursor-pointer hover:bg-white/[0.09]",
+        ].join(" ")}
+      >
+        <span className="whitespace-nowrap font-semibold text-[#888888]">
+          {selectedModel.label}
+        </span>
+        <Icon
+          name="ChevronDown"
+          size={16}
+          className={[
+            "shrink-0 text-[#888888] transition-transform duration-150",
+            open ? "rotate-180" : "",
+          ].join(" ")}
+          aria-hidden
+        />
+      </button>
+      {menu}
     </div>
   );
 }
@@ -927,16 +1125,7 @@ export default function ChatPanel({
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    title="Select model"
-                    className={`${TOOLBAR_CHIP} inline-flex ${TOOLBAR_CHIP_H} shrink-0 items-center gap-0.5 px-1.5 text-[12px] hover:bg-white/[0.09] transition-colors cursor-pointer`}
-                  >
-                    <span className="whitespace-nowrap font-semibold text-[#888888]">
-                      {CHAT_MODEL_LABEL}
-                    </span>
-                    <Icon name="ChevronDown" size={16} className="shrink-0 text-[#888888]" aria-hidden />
-                  </button>
+                  <ChatModelSelector disabled={chatBlocked} />
 
                   <UsageRingWithTooltip
                     remainingFreeChats={lifetimeFreeRemaining}
