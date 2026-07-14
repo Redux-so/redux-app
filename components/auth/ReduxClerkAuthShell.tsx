@@ -24,9 +24,9 @@ export default function ReduxClerkAuthShell({
   const isLarge = panelSize === "large";
 
   return (
-    <div className="flex min-h-dvh bg-[#0a0a0a] [font-family:-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">
-      {/* Left — sign-in form panel */}
-      <div className="flex min-h-dvh w-full flex-1 items-center justify-center px-5 py-10 sm:px-10 sm:py-16 lg:max-w-[55%] lg:flex-[1.1] lg:px-16">
+    <div className="grid h-screen w-screen grid-cols-1 overflow-hidden bg-[#0a0a0a] [font-family:-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] lg:grid-cols-2">
+      {/* Left — sign-in form panel (exactly 50% on lg+) */}
+      <div className="flex h-full w-full min-w-0 items-center justify-center px-5 py-10 sm:px-10 sm:py-16 lg:px-16">
         <div
           className={[
             "w-full",
@@ -115,14 +115,14 @@ export default function ReduxClerkAuthShell({
         </div>
       </div>
 
-      {/* Right — full-bleed photo (desktop only) */}
-      <div className="relative hidden min-h-dvh lg:block lg:max-w-[45%] lg:flex-1">
+      {/* Right — full-bleed photo (exactly 50% on lg+) */}
+      <div className="relative hidden h-full w-full min-w-0 lg:block">
         <Image
           src="/mount-fuji.jpg"
           alt=""
           fill
           priority
-          sizes="45vw"
+          sizes="50vw"
           className="object-cover"
         />
       </div>
