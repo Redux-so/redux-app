@@ -30,14 +30,14 @@ export default function ReduxClerkAuthShell({
         <div
           className={[
             "w-full",
-            isLarge ? "max-w-[29rem]" : "max-w-[25rem]",
+            isLarge ? "max-w-[24rem]" : "max-w-[22rem]",
           ].join(" ")}
         >
           <div
             className={
               isLarge
-                ? "mb-4 mt-10 flex justify-center sm:mt-12"
-                : "mb-6 flex justify-center"
+                ? "mb-3 mt-6 flex justify-center sm:mt-8"
+                : "mb-5 flex justify-center"
             }
           >
             <Image
@@ -47,29 +47,19 @@ export default function ReduxClerkAuthShell({
               height={85}
               className={
                 isLarge
-                  ? "h-[96px] w-auto object-contain sm:h-[104px]"
-                  : "h-16 w-auto object-contain sm:h-[72px]"
+                  ? "h-[76px] w-auto object-contain sm:h-[84px]"
+                  : "h-14 w-auto object-contain sm:h-16"
               }
               priority
             />
           </div>
 
-          <header className={isLarge ? "mb-7 text-center" : "mb-6 text-center"}>
-            <h1
-              className={[
-                "font-semibold leading-tight text-white",
-                isLarge ? "text-[24px]" : "text-[22px]",
-              ].join(" ")}
-            >
+          <header className={isLarge ? "mb-5 text-center" : "mb-5 text-center"}>
+            <h1 className="text-[20px] font-semibold leading-tight text-white">
               {title}
             </h1>
             {signUpLink && (
-              <p
-                className={[
-                  "mt-2.5 leading-snug text-white",
-                  isLarge ? "text-[15px]" : "text-[14px]",
-                ].join(" ")}
-              >
+              <p className="mt-2 text-[13px] leading-snug text-white">
                 Don&apos;t have an account?{" "}
                 <Link
                   href="/sign-up"
@@ -80,7 +70,7 @@ export default function ReduxClerkAuthShell({
               </p>
             )}
             {subtitle && !signUpLink && (
-              <p className="mt-2 text-[14px] leading-snug text-[#888888]">
+              <p className="mt-1.5 text-[13px] leading-snug text-[#888888]">
                 {subtitle}
               </p>
             )}
@@ -91,8 +81,8 @@ export default function ReduxClerkAuthShell({
           {legalFooter && (
             <p
               className={[
-                "mt-6 text-center leading-relaxed text-[#555555]",
-                isLarge ? "text-[13px]" : "text-[12px]",
+                "mt-5 text-center leading-relaxed text-[#555555]",
+                isLarge ? "text-[12px]" : "text-[11px]",
               ].join(" ")}
             >
               By clicking continue, you agree to our{" "}
