@@ -1,23 +1,15 @@
-import { SignUp } from "@clerk/nextjs";
-
 import ReduxClerkAuthShell from "@/components/auth/ReduxClerkAuthShell";
-import { reduxAuthAppearance } from "@/lib/redux-clerk-appearance";
-
-const AFTER_AUTH = "/library";
+import SignUpForm from "@/components/auth/SignUpForm";
 
 export default function Page() {
   return (
     <ReduxClerkAuthShell
       title="Create your account"
-      subtitle="Enter your details to get started with Redux"
+      signInLink
+      legalFooter
+      panelSize="large"
     >
-      <SignUp
-        appearance={reduxAuthAppearance}
-        forceRedirectUrl={AFTER_AUTH}
-        fallbackRedirectUrl={AFTER_AUTH}
-        signInForceRedirectUrl={AFTER_AUTH}
-        signInFallbackRedirectUrl={AFTER_AUTH}
-      />
+      <SignUpForm />
     </ReduxClerkAuthShell>
   );
 }
