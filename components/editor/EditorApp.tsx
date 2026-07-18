@@ -18,7 +18,6 @@ import AdjustmentPanel from "@/components/editor/AdjustmentPanel";
 import Canvas from "@/components/editor/Canvas";
 import ChatPanel from "@/components/editor/ChatPanel";
 import ExportModal from "@/components/editor/ExportModal";
-import BottomNav from "@/components/shared/BottomNav";
 import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
 import EditorErrorBoundary from "@/components/shared/EditorErrorBoundary";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
@@ -351,8 +350,6 @@ export default function EditorApp() {
             />
           </EditorErrorBoundary>
         </div>
-
-        <BottomNav />
 
         <ExportModal
           open={showExport}

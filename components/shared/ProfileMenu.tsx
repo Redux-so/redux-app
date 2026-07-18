@@ -15,8 +15,7 @@ interface ProfileMenuProps {
 
 /**
  * Avatar + name + credits trigger that opens the Settings / Purchase Credits / Log Out
- * popover. Extracted from BottomNav so the exact same, unmodified UI can be reused
- * elsewhere (e.g. LibrarySidebar) without duplicating state/logic.
+ * popover. Reusable profile trigger for sidebar and other shell surfaces.
  */
 export default function ProfileMenu({ className }: ProfileMenuProps) {
   const router = useRouter();

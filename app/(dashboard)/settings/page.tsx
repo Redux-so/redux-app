@@ -8,7 +8,6 @@ import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import BottomNav from "@/components/shared/BottomNav";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import CreditShopModal from "@/components/shared/CreditShopModal";
@@ -529,13 +528,8 @@ export default function SettingsPage() {
                 </div>
               </div>
             </Section>
-
-            {/* Bottom padding for BottomNav clearance */}
-            <div className="h-2" />
           </div>
         </main>
-
-        <BottomNav />
       </div>
 
       {/* Modals */}
