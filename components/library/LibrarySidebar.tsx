@@ -4,6 +4,10 @@ import Link from "next/link";
 
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import ProfileMenu from "@/components/shared/ProfileMenu";
+import {
+  LIBRARY_SIDEBAR_FOOTER_PADDING_X_PX,
+  LIBRARY_SIDEBAR_WIDTH_PX,
+} from "@/constants/library-sidebar";
 
 /**
  * Left-side panel for the Library page. Logo lives at the top (unchanged from its
@@ -12,7 +16,10 @@ import ProfileMenu from "@/components/shared/ProfileMenu";
  */
 export default function LibrarySidebar() {
   return (
-    <aside className="flex flex-col shrink-0 w-[260px] h-full bg-[#040404] rounded-r-2xl border-r border-white/[0.06] overflow-hidden">
+    <aside
+      className="flex flex-col shrink-0 h-full bg-[#040404] rounded-r-2xl border-r border-white/[0.06] overflow-hidden"
+      style={{ width: LIBRARY_SIDEBAR_WIDTH_PX }}
+    >
       <div className="flex shrink-0 items-center px-5 py-4">
         <Link
           href="/library"
@@ -25,7 +32,11 @@ export default function LibrarySidebar() {
       <div className="flex-1 min-h-0" />
 
       <div className="shrink-0 px-4 py-4 border-t border-white/[0.06]">
-        <ProfileMenu className="w-full" />
+        <ProfileMenu
+          className="w-full"
+          popoverPanelWidthPx={LIBRARY_SIDEBAR_WIDTH_PX}
+          popoverInsetLeftPx={-LIBRARY_SIDEBAR_FOOTER_PADDING_X_PX}
+        />
       </div>
     </aside>
   );

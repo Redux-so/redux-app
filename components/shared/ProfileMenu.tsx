@@ -11,13 +11,21 @@ import CreditShopModal from "@/components/shared/CreditShopModal";
 interface ProfileMenuProps {
   /** Extra classes for the relative positioning wrapper — lets each usage site control width/alignment. */
   className?: string;
+  /** When set, popover spans this width (e.g. full library sidebar). */
+  popoverPanelWidthPx?: number;
+  /** Negative inset aligns popover left edge with a parent panel edge (e.g. sidebar footer padding). */
+  popoverInsetLeftPx?: number;
 }
 
 /**
  * Avatar + name + credits trigger that opens the Settings / Purchase Credits / Log Out
  * popover. Reusable profile trigger for sidebar and other shell surfaces.
  */
-export default function ProfileMenu({ className }: ProfileMenuProps) {
+export default function ProfileMenu({
+  className,
+  popoverPanelWidthPx,
+  popoverInsetLeftPx = 0,
+}: ProfileMenuProps) {
   const router = useRouter();
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -75,7 +83,11 @@ export default function ProfileMenu({ className }: ProfileMenuProps) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 4 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute bottom-full mb-2 left-0 z-50 w-[208px] bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+              className="absolute bottom-full mb-2 z-50 bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+              style={{
+                width: popoverPanelWidthPx ?? 208,
+                left: popoverInsetLeftPx,
+              }}
             >
               <div className="py-1.5">
                 <button
