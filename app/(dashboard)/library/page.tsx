@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Header from "@/components/shared/Header";
 import BottomNav from "@/components/shared/BottomNav";
+import LibrarySidebar from "@/components/library/LibrarySidebar";
 import PhotoGrid from "@/components/library/PhotoGrid";
 import type { ImageRecord, ImageGroup } from "@/types/image";
 
@@ -114,22 +115,27 @@ export default function LibraryPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
-      <Header
-        onUploadComplete={fetchImages}
-        isSearching={isSearching}
-        onSearchStart={handleSearchStart}
-        onSearchSuccess={handleSearchSuccess}
-        onSearchAbort={handleSearchAbort}
-        onSearchClear={handleSearchClear}
-      />
-      <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
-        <PhotoGrid
-          groups={groups}
-          libraryLoading={libraryLoading}
-          search={searchForGrid}
-          onDeleteImage={handleDeleteImage}
-        />
-      </main>
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <LibrarySidebar />
+        <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
+          <Header
+            onUploadComplete={fetchImages}
+            isSearching={isSearching}
+            onSearchStart={handleSearchStart}
+            onSearchSuccess={handleSearchSuccess}
+            onSearchAbort={handleSearchAbort}
+            onSearchClear={handleSearchClear}
+          />
+          <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+            <PhotoGrid
+              groups={groups}
+              libraryLoading={libraryLoading}
+              search={searchForGrid}
+              onDeleteImage={handleDeleteImage}
+            />
+          </main>
+        </div>
+      </div>
       <BottomNav />
     </div>
   );
