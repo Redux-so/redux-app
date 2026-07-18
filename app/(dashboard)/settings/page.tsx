@@ -7,9 +7,8 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
-import Link from "next/link";
+import BackToLibraryButton from "@/components/shared/BackToLibraryButton";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
-import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import { reduxUserProfileAppearance } from "@/lib/redux-clerk-appearance";
 
@@ -241,12 +240,7 @@ export default function SettingsPage() {
       <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
         {/* Header */}
         <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-[#2a2a2a] bg-[#0a0a0a] pl-3 pr-3">
-          <Link
-            href="/library"
-            className="inline-flex shrink-0 items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
-          >
-            <AppChromeLogo />
-          </Link>
+          <BackToLibraryButton />
         </header>
 
         {/* Scrollable content */}

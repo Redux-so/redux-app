@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
-
-import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import BackToLibraryButton from "@/components/shared/BackToLibraryButton";
 import { Icon } from "@/components/shared/Icon";
 
 interface ToolbarProps {
@@ -79,14 +77,9 @@ export default function Toolbar({
 
   return (
     <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl pl-3 pr-3">
-      {/* Left — logo aligned with library Header (same pl-3 + AppChromeLogo) */}
+      {/* Left — back to library */}
       <div className="flex min-w-0 shrink-0 items-center justify-self-start gap-3">
-        <Link
-          href="/library"
-          className="inline-flex shrink-0 items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
-        >
-          <AppChromeLogo />
-        </Link>
+        <BackToLibraryButton />
       </div>
 
       {/* Center — canvas controls (true viewport center via symmetric 1fr columns) */}
