@@ -125,39 +125,41 @@ export default function LibrarySidebar({
           </nav>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto mt-4 pb-4">
-          <div className="px-5 mb-3 flex items-center justify-between gap-2">
-            <p className={SECTION_LABEL}>Albums</p>
-            <button
-              type="button"
-              aria-label="Create album"
-              onClick={() => setCreateModalOpen(true)}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#888888] transition-colors hover:bg-white/[0.06] hover:text-white cursor-pointer outline-none focus:outline-none"
-            >
-              <Icon name="Plus" size={16} aria-hidden />
-            </button>
+        <div className="flex flex-col flex-1 min-h-0 mt-4">
+          <div className="flex-1 min-h-0 overflow-y-auto pb-2">
+            <div className="px-5 mb-3 flex items-center justify-between gap-2">
+              <p className={SECTION_LABEL}>Albums</p>
+              <button
+                type="button"
+                aria-label="Create album"
+                onClick={() => setCreateModalOpen(true)}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#888888] transition-colors hover:bg-white/[0.06] hover:text-white cursor-pointer outline-none focus:outline-none"
+              >
+                <Icon name="Plus" size={16} aria-hidden />
+              </button>
+            </div>
+
+            {albums.length === 0 ? (
+              <p className="px-5 text-[12px] text-[#555555]">No albums yet</p>
+            ) : (
+              <nav aria-label="Albums" className="flex flex-col gap-0.5 px-3">
+                {albums.map((album) => (
+                  <AlbumSidebarRow
+                    key={album.id}
+                    album={album}
+                    isActive={
+                      sidebarView.kind === "album" &&
+                      sidebarView.albumId === album.id
+                    }
+                    onSelect={() => handleAlbumClick(album.id)}
+                    onRequestDelete={setAlbumToDelete}
+                  />
+                ))}
+              </nav>
+            )}
           </div>
 
-          {albums.length === 0 ? (
-            <p className="px-5 text-[12px] text-[#555555]">No albums yet</p>
-          ) : (
-            <nav aria-label="Albums" className="flex flex-col gap-0.5 px-3">
-              {albums.map((album) => (
-                <AlbumSidebarRow
-                  key={album.id}
-                  album={album}
-                  isActive={
-                    sidebarView.kind === "album" &&
-                    sidebarView.albumId === album.id
-                  }
-                  onSelect={() => handleAlbumClick(album.id)}
-                  onRequestDelete={setAlbumToDelete}
-                />
-              ))}
-            </nav>
-          )}
-
-          <nav aria-label="Trash" className="mt-4 px-3">
+          <nav aria-label="Trash" className="shrink-0 px-3 pb-2">
             <button
               type="button"
               aria-current={sidebarView.kind === "trash" ? "page" : undefined}
