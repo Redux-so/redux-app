@@ -14,6 +14,7 @@ interface PhotoGridProps {
     images: ImageRecord[];
   } | null;
   onDeleteImage?: (id: string) => void;
+  onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
   libraryEmptyMessage?: string;
   searchEmptyMessage?: string;
 }
@@ -21,9 +22,11 @@ interface PhotoGridProps {
 function AnimatedPhotoGrid({
   images,
   onDeleteImage,
+  onFavoriteToggle,
 }: {
   images: ImageRecord[];
   onDeleteImage?: (id: string) => void;
+  onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
   const duration = prefersReducedMotion ? 0 : 0.25;
@@ -54,7 +57,11 @@ function AnimatedPhotoGrid({
             },
           }}
         >
-          <PhotoCard image={image} onDelete={onDeleteImage} />
+          <PhotoCard
+            image={image}
+            onDelete={onDeleteImage}
+            onFavoriteToggle={onFavoriteToggle}
+          />
         </motion.div>
       ))}
     </motion.div>
@@ -66,6 +73,7 @@ export default function PhotoGrid({
   libraryLoading,
   search,
   onDeleteImage,
+  onFavoriteToggle,
   libraryEmptyMessage = "Upload your first photo",
   searchEmptyMessage = "No photos found matching your search",
 }: PhotoGridProps) {
@@ -90,7 +98,11 @@ export default function PhotoGrid({
     }
     return (
       <div className="px-6 py-5 flex flex-col gap-5">
-        <AnimatedPhotoGrid images={search.images} onDeleteImage={onDeleteImage} />
+        <AnimatedPhotoGrid
+          images={search.images}
+          onDeleteImage={onDeleteImage}
+          onFavoriteToggle={onFavoriteToggle}
+        />
       </div>
     );
   }
@@ -123,7 +135,11 @@ export default function PhotoGrid({
             <p className="text-[12px] font-semibold text-[#888888] mb-3">
               {group.label}
             </p>
-            <AnimatedPhotoGrid images={group.images} onDeleteImage={onDeleteImage} />
+            <AnimatedPhotoGrid
+              images={group.images}
+              onDeleteImage={onDeleteImage}
+              onFavoriteToggle={onFavoriteToggle}
+            />
           </div>
         ),
       )}

@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 import { hasNonDefaultAdjustments } from "@/lib/library-filters";
+import { isImageFavorite } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
 
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
         format: true,
         createdAt: true,
         userId: true,
+        metadata: true,
         versions: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -52,11 +54,12 @@ export async function GET(request: NextRequest) {
     prisma.image.count({ where: { userId: user.id } }),
   ]);
 
-  const images = imagesRaw.map(({ versions, ...image }) => ({
+  const images = imagesRaw.map(({ versions, metadata, ...image }) => ({
     ...image,
     isEdited: versions[0]
       ? hasNonDefaultAdjustments(versions[0].adjustments)
       : false,
+    isFavorite: isImageFavorite(metadata),
   }));
 
   return NextResponse.json({ images, total, page, limit });

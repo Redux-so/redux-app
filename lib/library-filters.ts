@@ -165,3 +165,31 @@ export function applyLibraryFilters(
       matchesOrientation(image, filters.orientations),
   );
 }
+
+export type LibraryQuickFilter = "all" | "recent" | "favorites";
+
+/** Reuses the same date window as the filter popover's "Last 7 days" preset. */
+export function isImageWithinDatePreset(
+  image: ImageRecord,
+  preset: DateFilterPreset,
+): boolean {
+  if (preset === "anytime") return true;
+  return matchesDate(image, {
+    ...DEFAULT_LIBRARY_FILTERS,
+    datePreset: preset,
+  });
+}
+
+export function applyLibraryQuickFilter(
+  images: ImageRecord[],
+  quickFilter: LibraryQuickFilter,
+): ImageRecord[] {
+  switch (quickFilter) {
+    case "recent":
+      return images.filter((image) => isImageWithinDatePreset(image, "last7"));
+    case "favorites":
+      return images.filter((image) => image.isFavorite === true);
+    default:
+      return images;
+  }
+}

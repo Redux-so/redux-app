@@ -7,10 +7,13 @@ import LibrarySidebar from "@/components/library/LibrarySidebar";
 import PhotoGrid from "@/components/library/PhotoGrid";
 import {
   applyLibraryFilters,
+  applyLibraryQuickFilter,
   countActiveLibraryFilters,
   DEFAULT_LIBRARY_FILTERS,
   type LibraryFilters,
+  type LibraryQuickFilter,
 } from "@/lib/library-filters";
+import { DEFAULT_LIBRARY_QUICK_FILTER } from "@/constants/library-quick-filters";
 import type { ImageRecord, ImageGroup } from "@/types/image";
 
 function groupImagesByMonth(images: ImageRecord[]): ImageGroup[] {
@@ -47,6 +50,21 @@ type LibrarySearchOverlay =
   | { kind: "loading" }
   | { kind: "results"; images: ImageRecord[] };
 
+/** Semantic search rows omit metadata — merge favorite flags from the library cache. */
+function enrichSearchResultsWithFavorites(
+  results: ImageRecord[],
+  libraryImages: ImageRecord[],
+): ImageRecord[] {
+  const favoriteById = new Map(
+    libraryImages.map((image) => [image.id, image.isFavorite === true]),
+  );
+
+  return results.map((image) => ({
+    ...image,
+    isFavorite: favoriteById.get(image.id) ?? image.isFavorite ?? false,
+  }));
+}
+
 export default function LibraryPage() {
   const pathname = usePathname();
   const [images, setImages] = useState<ImageRecord[]>([]);
@@ -55,6 +73,9 @@ export default function LibraryPage() {
     kind: "none",
   });
   const [filters, setFilters] = useState<LibraryFilters>(DEFAULT_LIBRARY_FILTERS);
+  const [quickFilter, setQuickFilter] = useState<LibraryQuickFilter>(
+    DEFAULT_LIBRARY_QUICK_FILTER,
+  );
 
   const fetchImages = useCallback(async () => {
     setLibraryLoading(true);
@@ -106,10 +127,26 @@ export default function LibraryPage() {
     setSearchOverlay({ kind: "none" });
   }, []);
 
-  const filteredImages = useMemo(
-    () => applyLibraryFilters(images, filters),
-    [images, filters],
-  );
+  const handleFavoriteToggle = useCallback((id: string, isFavorite: boolean) => {
+    setImages((prev) =>
+      prev.map((img) => (img.id === id ? { ...img, isFavorite } : img)),
+    );
+    setSearchOverlay((prev) =>
+      prev.kind === "results"
+        ? {
+            ...prev,
+            images: prev.images.map((img) =>
+              img.id === id ? { ...img, isFavorite } : img,
+            ),
+          }
+        : prev,
+    );
+  }, []);
+
+  const filteredImages = useMemo(() => {
+    const afterQuickFilter = applyLibraryQuickFilter(images, quickFilter);
+    return applyLibraryFilters(afterQuickFilter, filters);
+  }, [images, quickFilter, filters]);
 
   const groups = groupImagesByMonth(filteredImages);
 
@@ -120,16 +157,61 @@ export default function LibraryPage() {
           loading: searchOverlay.kind === "loading",
           images:
             searchOverlay.kind === "results"
-              ? applyLibraryFilters(searchOverlay.images, filters)
+              ? applyLibraryFilters(
+                  applyLibraryQuickFilter(
+                    enrichSearchResultsWithFavorites(
+                      searchOverlay.images,
+                      images,
+                    ),
+                    quickFilter,
+                  ),
+                  filters,
+                )
               : [],
         };
 
   const isSearching = searchOverlay.kind === "loading";
   const filtersActive = countActiveLibraryFilters(filters) > 0;
 
+  function getLibraryEmptyMessage(): string {
+    if (quickFilter === "favorites") {
+      return filtersActive
+        ? "No favorite photos match your filters"
+        : "No favorite photos yet";
+    }
+    if (quickFilter === "recent") {
+      return filtersActive
+        ? "No photos from the last 7 days match your filters"
+        : "No photos added in the last 7 days";
+    }
+    if (filtersActive && images.length > 0) {
+      return "No photos match your filters";
+    }
+    return "Upload your first photo";
+  }
+
+  function getSearchEmptyMessage(): string {
+    if (quickFilter === "favorites") {
+      return filtersActive
+        ? "No favorite photos found matching your search and filters"
+        : "No favorite photos found matching your search";
+    }
+    if (quickFilter === "recent") {
+      return filtersActive
+        ? "No recent photos found matching your search and filters"
+        : "No recent photos found matching your search";
+    }
+    return filtersActive
+      ? "No photos found matching your search and filters"
+      : "No photos found matching your search";
+  }
+
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
-      <LibrarySidebar />
+      <LibrarySidebar
+        quickFilter={quickFilter}
+        onQuickFilterChange={setQuickFilter}
+      />
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
         <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
           <LibraryHeader
@@ -147,16 +229,9 @@ export default function LibraryPage() {
             libraryLoading={libraryLoading}
             search={searchForGrid}
             onDeleteImage={handleDeleteImage}
-            libraryEmptyMessage={
-              filtersActive && images.length > 0
-                ? "No photos match your filters"
-                : "Upload your first photo"
-            }
-            searchEmptyMessage={
-              filtersActive
-                ? "No photos found matching your search and filters"
-                : "No photos found matching your search"
-            }
+            onFavoriteToggle={handleFavoriteToggle}
+            libraryEmptyMessage={getLibraryEmptyMessage()}
+            searchEmptyMessage={getSearchEmptyMessage()}
           />
         </main>
       </div>

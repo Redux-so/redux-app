@@ -13,6 +13,8 @@ export interface ImageRecord {
   userId: string;
   /** True when the latest saved version has non-default adjustments. */
   isEdited?: boolean;
+  /** Persisted in Image.metadata.favorite. */
+  isFavorite?: boolean;
 }
 
 export interface ImageGroup {

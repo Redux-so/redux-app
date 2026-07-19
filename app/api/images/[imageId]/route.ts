@@ -1,5 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
+import { isImageFavorite, mergeImageMetadata } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -33,6 +35,7 @@ export async function GET(
       format: true,
       createdAt: true,
       userId: true,
+      metadata: true,
     },
   });
 
@@ -40,7 +43,12 @@ export async function GET(
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ image });
+  return NextResponse.json({
+    image: {
+      ...image,
+      isFavorite: isImageFavorite(image.metadata),
+    },
+  });
 }
 
 export async function PATCH(
@@ -59,25 +67,50 @@ export async function PATCH(
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const body = (await request.json()) as { previewUrl?: string };
-  const { previewUrl } = body;
+  const body = (await request.json()) as {
+    previewUrl?: string;
+    isFavorite?: boolean;
+  };
+  const { previewUrl, isFavorite } = body;
 
-  if (!previewUrl) {
-    return NextResponse.json({ error: "previewUrl is required" }, { status: 400 });
+  if (previewUrl === undefined && isFavorite === undefined) {
+    return NextResponse.json(
+      { error: "previewUrl or isFavorite is required" },
+      { status: 400 },
+    );
   }
 
   const image = await prisma.image.findFirst({
     where: { id: imageId, userId: user.id },
-    select: { id: true },
+    select: { id: true, metadata: true },
   });
   if (!image) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
+  const data: {
+    previewUrl?: string;
+    metadata?: Prisma.InputJsonValue;
+  } = {};
+
+  if (previewUrl !== undefined) {
+    data.previewUrl = previewUrl;
+  }
+
+  if (isFavorite !== undefined) {
+    data.metadata = mergeImageMetadata(image.metadata, {
+      favorite: isFavorite,
+    }) as Prisma.InputJsonValue;
+  }
+
   await prisma.image.update({
     where: { id: imageId },
-    data: { previewUrl },
+    data,
   });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    ...(previewUrl !== undefined ? { previewUrl } : {}),
+    ...(isFavorite !== undefined ? { isFavorite } : {}),
+  });
 }
