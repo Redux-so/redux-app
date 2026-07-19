@@ -17,11 +17,15 @@ import {
   LIBRARY_SIDEBAR_FOOTER_PADDING_X_PX,
   LIBRARY_SIDEBAR_WIDTH_PX,
 } from "@/constants/library-sidebar";
+import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
 import type { LibrarySidebarView } from "@/lib/library-filters";
 import type { AlbumRecord } from "@/types/album";
 
 const SECTION_LABEL =
   "text-xs font-semibold uppercase tracking-wide text-[#888888]";
+
+const SIDEBAR_LINK_ROW =
+  "group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors cursor-pointer outline-none focus:outline-none text-[#888888] hover:bg-white/[0.06] hover:text-white";
 
 interface LibrarySidebarProps {
   sidebarView: LibrarySidebarView;
@@ -178,6 +182,37 @@ export default function LibrarySidebar({
             </button>
           </nav>
         </div>
+
+        <nav
+          aria-label="Resources"
+          className="shrink-0 px-3 py-3 flex flex-col gap-0.5"
+        >
+          {/* TODO: Point REDUX_DOCS_URL to production docs when available. */}
+          <a
+            href={REDUX_DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={SIDEBAR_LINK_ROW}
+          >
+            <Icon
+              name="BookOpen01"
+              size={16}
+              className="shrink-0 text-[#888888] group-hover:text-white"
+              aria-hidden
+            />
+            <span className="min-w-0 truncate">Docs</span>
+          </a>
+          {/* TODO: Point REDUX_HELP_FEEDBACK_URL to help/feedback destination when available. */}
+          <a href={REDUX_HELP_FEEDBACK_URL} className={SIDEBAR_LINK_ROW}>
+            <Icon
+              name="HelpCircle"
+              size={16}
+              className="shrink-0 text-[#888888] group-hover:text-white"
+              aria-hidden
+            />
+            <span className="min-w-0 truncate">Help & Feedback</span>
+          </a>
+        </nav>
 
         <div className="shrink-0 px-4 py-4 border-t border-white/[0.06]">
           <ProfileMenu

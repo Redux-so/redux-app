@@ -8,6 +8,7 @@ import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import {
   countActiveLibraryFilters,
   DEFAULT_LIBRARY_FILTERS,
+  LIBRARY_RECENTLY_ADDED_DATE_PRESET,
   type DateFilterPreset,
   type EditStatusFilter,
   type LibraryFilters,
@@ -154,7 +155,7 @@ export default function LibraryFiltersPopover({
         )}
       </div>
 
-      {/* Date */}
+      {/* Date presets are granular popover filters only — Recently Added and Favorites live in the sidebar. */}
       <div>
         <p className={SECTION_LABEL}>Date</p>
         <div className="mt-2 flex flex-col">
@@ -172,9 +173,9 @@ export default function LibraryFiltersPopover({
           />
           <RadioOption
             name="date-filter"
-            checked={draft.datePreset === "last7"}
+            checked={draft.datePreset === LIBRARY_RECENTLY_ADDED_DATE_PRESET}
             label="Last 7 days"
-            onChange={() => setDatePreset("last7")}
+            onChange={() => setDatePreset(LIBRARY_RECENTLY_ADDED_DATE_PRESET)}
           />
           <RadioOption
             name="date-filter"

@@ -39,6 +39,65 @@ export const DEFAULT_LIBRARY_FILTERS: LibraryFilters = {
   orientations: [],
 };
 
+/**
+ * Date preset for sidebar "Recently Added".
+ * Uses the same rolling window as the filter dropdown's "Last 7 days" option.
+ */
+export const LIBRARY_RECENTLY_ADDED_DATE_PRESET: DateFilterPreset = "last7";
+
+export function resolveDateRangeForPreset(
+  preset: DateFilterPreset,
+  custom: Pick<LibraryFilters, "customStartDate" | "customEndDate"> = {
+    customStartDate: "",
+    customEndDate: "",
+  },
+): { start: Date | null; end: Date | null } {
+  const now = new Date();
+
+  switch (preset) {
+    case "today": {
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      return { start, end: now };
+    }
+    case "last7": {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 7);
+      return { start, end: now };
+    }
+    case "last30": {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 30);
+      return { start, end: now };
+    }
+    case "custom": {
+      if (!custom.customStartDate && !custom.customEndDate) {
+        return { start: null, end: null };
+      }
+      const start = custom.customStartDate
+        ? new Date(`${custom.customStartDate}T00:00:00`)
+        : null;
+      const end = custom.customEndDate
+        ? new Date(`${custom.customEndDate}T23:59:59.999`)
+        : now;
+      return { start, end };
+    }
+    default:
+      return { start: null, end: null };
+  }
+}
+
+function imageCreatedAtWithinRange(
+  createdAt: string,
+  start: Date | null,
+  end: Date | null,
+): boolean {
+  const created = new Date(createdAt);
+  if (start && created < start) return false;
+  if (end && created > end) return false;
+  return true;
+}
+
 export function hasNonDefaultAdjustments(adjustments: unknown): boolean {
   if (!adjustments || typeof adjustments !== "object") return false;
   const normalized = normalizeAdjustments(
@@ -58,50 +117,19 @@ export function countActiveLibraryFilters(filters: LibraryFilters): number {
   return count;
 }
 
-function resolveDateRange(filters: LibraryFilters): {
-  start: Date | null;
-  end: Date | null;
-} {
-  const now = new Date();
-
-  switch (filters.datePreset) {
-    case "today": {
-      const start = new Date(now);
-      start.setHours(0, 0, 0, 0);
-      return { start, end: now };
-    }
-    case "last7": {
-      const start = new Date(now);
-      start.setDate(start.getDate() - 7);
-      return { start, end: now };
-    }
-    case "last30": {
-      const start = new Date(now);
-      start.setDate(start.getDate() - 30);
-      return { start, end: now };
-    }
-    case "custom": {
-      if (!filters.customStartDate && !filters.customEndDate) {
-        return { start: null, end: null };
-      }
-      const start = filters.customStartDate
-        ? new Date(`${filters.customStartDate}T00:00:00`)
-        : null;
-      const end = filters.customEndDate
-        ? new Date(`${filters.customEndDate}T23:59:59.999`)
-        : now;
-      return { start, end };
-    }
-    default:
-      return { start: null, end: null };
-  }
+function matchesDate(image: ImageRecord, filters: LibraryFilters): boolean {
+  if (filters.datePreset === "anytime") return true;
+  const { start, end } = resolveDateRangeForPreset(filters.datePreset, filters);
+  if (!start && !end) return true;
+  return imageCreatedAtWithinRange(image.createdAt, start, end);
 }
 
 function getImageExtension(image: ImageRecord): string {
   const fromFormat = image.format?.toLowerCase().replace(/^\./, "");
   if (fromFormat) return fromFormat;
   const match = image.filename.match(/\.([^.]+)$/i);
-  return match?.[1]?.toLowerCase() ?? "";
+  if (!match?.[1]) return "";
+  return match[1].toLowerCase();
 }
 
 function matchesFileType(
@@ -143,17 +171,6 @@ function matchesEditStatus(
   return editStatus === "edited" ? edited : !edited;
 }
 
-function matchesDate(image: ImageRecord, filters: LibraryFilters): boolean {
-  if (filters.datePreset === "anytime") return true;
-  const { start, end } = resolveDateRange(filters);
-  if (!start && !end) return true;
-
-  const created = new Date(image.createdAt);
-  if (start && created < start) return false;
-  if (end && created > end) return false;
-  return true;
-}
-
 export function applyLibraryFilters(
   images: ImageRecord[],
   filters: LibraryFilters,
@@ -175,16 +192,14 @@ export type LibrarySidebarView =
   | { kind: "album"; albumId: string }
   | { kind: "trash" };
 
-/** Reuses the same date window as the filter popover's "Last 7 days" preset. */
+/** Shared date-window check used by sidebar Recently Added and dropdown date presets. */
 export function isImageWithinDatePreset(
   image: ImageRecord,
   preset: DateFilterPreset,
 ): boolean {
   if (preset === "anytime") return true;
-  return matchesDate(image, {
-    ...DEFAULT_LIBRARY_FILTERS,
-    datePreset: preset,
-  });
+  const { start, end } = resolveDateRangeForPreset(preset);
+  return imageCreatedAtWithinRange(image.createdAt, start, end);
 }
 
 export function applyLibraryQuickFilter(
@@ -193,7 +208,9 @@ export function applyLibraryQuickFilter(
 ): ImageRecord[] {
   switch (quickFilter) {
     case "recent":
-      return images.filter((image) => isImageWithinDatePreset(image, "last7"));
+      return images.filter((image) =>
+        isImageWithinDatePreset(image, LIBRARY_RECENTLY_ADDED_DATE_PRESET),
+      );
     case "favorites":
       return images.filter((image) => image.isFavorite === true);
     default:
@@ -219,4 +236,17 @@ export function applyLibrarySidebarView(
   }
 
   return applyLibraryQuickFilter(images, view.filter);
+}
+
+/** Sidebar view AND filter popover constraints — both must match. */
+export function applyLibraryViewAndFilters(
+  images: ImageRecord[],
+  sidebarView: LibrarySidebarView,
+  albums: AlbumRecord[],
+  filters: LibraryFilters,
+): ImageRecord[] {
+  return applyLibraryFilters(
+    applyLibrarySidebarView(images, sidebarView, albums),
+    filters,
+  );
 }

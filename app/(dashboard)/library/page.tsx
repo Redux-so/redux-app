@@ -8,7 +8,7 @@ import PhotoGrid from "@/components/library/PhotoGrid";
 import TrashViewToolbar from "@/components/library/TrashViewToolbar";
 import {
   applyLibraryFilters,
-  applyLibrarySidebarView,
+  applyLibraryViewAndFilters,
   countActiveLibraryFilters,
   DEFAULT_LIBRARY_FILTERS,
   type LibraryFilters,
@@ -360,8 +360,7 @@ export default function LibraryPage() {
     if (isTrashView) {
       return applyLibraryFilters(trashedImages, filters);
     }
-    const afterSidebarView = applyLibrarySidebarView(images, sidebarView, albums);
-    return applyLibraryFilters(afterSidebarView, filters);
+    return applyLibraryViewAndFilters(images, sidebarView, albums, filters);
   }, [isTrashView, trashedImages, images, sidebarView, albums, filters]);
 
   const groups = isTrashView
@@ -375,15 +374,13 @@ export default function LibraryPage() {
           loading: searchOverlay.kind === "loading",
           images:
             searchOverlay.kind === "results"
-              ? applyLibraryFilters(
-                  applyLibrarySidebarView(
-                    enrichSearchResultsWithFavorites(
-                      searchOverlay.images,
-                      images,
-                    ),
-                    sidebarView,
-                    albums,
+              ? applyLibraryViewAndFilters(
+                  enrichSearchResultsWithFavorites(
+                    searchOverlay.images,
+                    images,
                   ),
+                  sidebarView,
+                  albums,
                   filters,
                 )
               : [],
