@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
+import PhotoCardAlbumMenu from "@/components/library/PhotoCardAlbumMenu";
+import type { AlbumRecord } from "@/types/album";
 import type { ImageRecord } from "@/types/image";
 import { cloudinaryThumbnailUrl } from "@/lib/cloudinary-url";
 
@@ -12,14 +14,20 @@ const OVERLAY_ACTION =
 
 interface PhotoCardProps {
   image: ImageRecord;
+  albums: AlbumRecord[];
+  memberAlbumIds: Set<string>;
   onDelete?: (id: string) => void;
   onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
+  onAddedToAlbum?: (albumId: string, imageId: string) => void;
 }
 
 export default function PhotoCard({
   image,
+  albums,
+  memberAlbumIds,
   onDelete,
   onFavoriteToggle,
+  onAddedToAlbum,
 }: PhotoCardProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -97,6 +105,13 @@ export default function PhotoCard({
         sizes="(max-width: 768px) 50vw, 20vw"
         className="object-cover"
         loading="lazy"
+      />
+
+      <PhotoCardAlbumMenu
+        imageId={image.id}
+        albums={albums}
+        memberAlbumIds={memberAlbumIds}
+        onAddedToAlbum={(albumId, imageId) => onAddedToAlbum?.(albumId, imageId)}
       />
 
       <button

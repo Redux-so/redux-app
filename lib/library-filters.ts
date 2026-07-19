@@ -193,3 +193,11 @@ export function applyLibraryQuickFilter(
       return images;
   }
 }
+
+export function applyAlbumFilter(
+  images: ImageRecord[],
+  albumImageIds: Set<string> | null,
+): ImageRecord[] {
+  if (!albumImageIds) return images;
+  return images.filter((image) => albumImageIds.has(image.id));
+}

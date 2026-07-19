@@ -1,7 +1,23 @@
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+function createPrismaClient() {
+  return new PrismaClient();
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+/** Dev HMR keeps globalThis.prisma across reloads — drop stale clients after schema changes. */
+function getPrismaClient() {
+  const cached = globalForPrisma.prisma;
+  if (cached && typeof cached.album !== "undefined") {
+    return cached;
+  }
+
+  const client = createPrismaClient();
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client;
+  }
+  return client;
+}
+
+export const prisma = getPrismaClient();

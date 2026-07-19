@@ -16,6 +16,7 @@ model User {
   creditBalance   Int                @default(0)
   lifetimeFreeAI  Int                @default(0)
   images          Image[]
+  albums          Album[]
   transactions    CreditTransaction[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
@@ -38,8 +39,32 @@ model Image {
   embedding   Unsupported("vector(768)")?
   metadata    Json?
   versions    ImageVersion[]
+  albumMembers AlbumImage[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+}
+
+model Album {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  members   AlbumImage[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model AlbumImage {
+  albumId   String
+  imageId   String
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([albumId, imageId])
+  @@index([imageId])
 }
 
 model ImageVersion {

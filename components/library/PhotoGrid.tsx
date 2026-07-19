@@ -1,5 +1,6 @@
 "use client";
 
+import type { AlbumRecord } from "@/types/album";
 import type { ImageGroup, ImageRecord } from "@/types/image";
 import PhotoCard from "./PhotoCard";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
@@ -15,18 +16,27 @@ interface PhotoGridProps {
   } | null;
   onDeleteImage?: (id: string) => void;
   onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
+  onAddedToAlbum?: (albumId: string, imageId: string) => void;
+  albums?: AlbumRecord[];
+  albumMembershipByImageId?: Map<string, Set<string>>;
   libraryEmptyMessage?: string;
   searchEmptyMessage?: string;
 }
 
 function AnimatedPhotoGrid({
   images,
+  albums,
+  albumMembershipByImageId,
   onDeleteImage,
   onFavoriteToggle,
+  onAddedToAlbum,
 }: {
   images: ImageRecord[];
+  albums: AlbumRecord[];
+  albumMembershipByImageId: Map<string, Set<string>>;
   onDeleteImage?: (id: string) => void;
   onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
+  onAddedToAlbum?: (albumId: string, imageId: string) => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
   const duration = prefersReducedMotion ? 0 : 0.25;
@@ -59,8 +69,13 @@ function AnimatedPhotoGrid({
         >
           <PhotoCard
             image={image}
+            albums={albums}
+            memberAlbumIds={
+              albumMembershipByImageId.get(image.id) ?? new Set<string>()
+            }
             onDelete={onDeleteImage}
             onFavoriteToggle={onFavoriteToggle}
+            onAddedToAlbum={onAddedToAlbum}
           />
         </motion.div>
       ))}
@@ -74,6 +89,9 @@ export default function PhotoGrid({
   search,
   onDeleteImage,
   onFavoriteToggle,
+  onAddedToAlbum,
+  albums = [],
+  albumMembershipByImageId = new Map(),
   libraryEmptyMessage = "Upload your first photo",
   searchEmptyMessage = "No photos found matching your search",
 }: PhotoGridProps) {
@@ -100,8 +118,11 @@ export default function PhotoGrid({
       <div className="px-6 py-5 flex flex-col gap-5">
         <AnimatedPhotoGrid
           images={search.images}
+          albums={albums}
+          albumMembershipByImageId={albumMembershipByImageId}
           onDeleteImage={onDeleteImage}
           onFavoriteToggle={onFavoriteToggle}
+          onAddedToAlbum={onAddedToAlbum}
         />
       </div>
     );
@@ -137,8 +158,11 @@ export default function PhotoGrid({
             </p>
             <AnimatedPhotoGrid
               images={group.images}
+              albums={albums}
+              albumMembershipByImageId={albumMembershipByImageId}
               onDeleteImage={onDeleteImage}
               onFavoriteToggle={onFavoriteToggle}
+              onAddedToAlbum={onAddedToAlbum}
             />
           </div>
         ),
