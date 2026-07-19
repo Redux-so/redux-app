@@ -11,6 +11,8 @@ export interface ImageRecord {
   format: string;
   createdAt: string;
   userId: string;
+  /** True when the latest saved version has non-default adjustments. */
+  isEdited?: boolean;
 }
 
 export interface ImageGroup {

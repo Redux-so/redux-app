@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import LibraryHeader from "@/components/library/LibraryHeader";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
 import PhotoGrid from "@/components/library/PhotoGrid";
+import {
+  applyLibraryFilters,
+  countActiveLibraryFilters,
+  DEFAULT_LIBRARY_FILTERS,
+  type LibraryFilters,
+} from "@/lib/library-filters";
 import type { ImageRecord, ImageGroup } from "@/types/image";
 
 function groupImagesByMonth(images: ImageRecord[]): ImageGroup[] {
@@ -48,6 +54,7 @@ export default function LibraryPage() {
   const [searchOverlay, setSearchOverlay] = useState<LibrarySearchOverlay>({
     kind: "none",
   });
+  const [filters, setFilters] = useState<LibraryFilters>(DEFAULT_LIBRARY_FILTERS);
 
   const fetchImages = useCallback(async () => {
     setLibraryLoading(true);
@@ -99,7 +106,12 @@ export default function LibraryPage() {
     setSearchOverlay({ kind: "none" });
   }, []);
 
-  const groups = groupImagesByMonth(images);
+  const filteredImages = useMemo(
+    () => applyLibraryFilters(images, filters),
+    [images, filters],
+  );
+
+  const groups = groupImagesByMonth(filteredImages);
 
   const searchForGrid =
     searchOverlay.kind === "none"
@@ -107,10 +119,13 @@ export default function LibraryPage() {
       : {
           loading: searchOverlay.kind === "loading",
           images:
-            searchOverlay.kind === "results" ? searchOverlay.images : [],
+            searchOverlay.kind === "results"
+              ? applyLibraryFilters(searchOverlay.images, filters)
+              : [],
         };
 
   const isSearching = searchOverlay.kind === "loading";
+  const filtersActive = countActiveLibraryFilters(filters) > 0;
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
@@ -124,12 +139,24 @@ export default function LibraryPage() {
             onSearchSuccess={handleSearchSuccess}
             onSearchAbort={handleSearchAbort}
             onSearchClear={handleSearchClear}
+            filters={filters}
+            onFiltersChange={setFilters}
           />
           <PhotoGrid
             groups={groups}
             libraryLoading={libraryLoading}
             search={searchForGrid}
             onDeleteImage={handleDeleteImage}
+            libraryEmptyMessage={
+              filtersActive && images.length > 0
+                ? "No photos match your filters"
+                : "Upload your first photo"
+            }
+            searchEmptyMessage={
+              filtersActive
+                ? "No photos found matching your search and filters"
+                : "No photos found matching your search"
+            }
           />
         </main>
       </div>

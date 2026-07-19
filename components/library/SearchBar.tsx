@@ -1,8 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import LibraryFiltersPopover from "@/components/library/LibraryFiltersPopover";
+import {
+  countActiveLibraryFilters,
+  DEFAULT_LIBRARY_FILTERS,
+  type LibraryFilters,
+} from "@/lib/library-filters";
 import toast from "react-hot-toast";
 import type { ImageRecord } from "@/types/image";
 
@@ -14,6 +20,8 @@ interface SearchBarProps {
   onSearchAbort: () => void;
   onSearchClear: () => void;
   variant?: "default" | "large";
+  filters: LibraryFilters;
+  onFiltersChange: (filters: LibraryFilters) => void;
 }
 
 export default function SearchBar({
@@ -23,8 +31,19 @@ export default function SearchBar({
   onSearchAbort,
   onSearchClear,
   variant = "default",
+  filters,
+  onFiltersChange,
 }: SearchBarProps) {
   const [value, setValue] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState<LibraryFilters>(filters);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (filtersOpen) {
+      setDraftFilters(filters);
+    }
+  }, [filtersOpen, filters]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -77,46 +96,97 @@ export default function SearchBar({
     }
   }
 
+  function handleCloseFilters() {
+    setDraftFilters(filters);
+    setFiltersOpen(false);
+  }
+
+  function handleApplyFilters() {
+    onFiltersChange(draftFilters);
+    setFiltersOpen(false);
+  }
+
+  function handleClearAllFilters() {
+    onFiltersChange(DEFAULT_LIBRARY_FILTERS);
+    setDraftFilters(DEFAULT_LIBRARY_FILTERS);
+    setFiltersOpen(false);
+  }
+
   const isLarge = variant === "large";
+  const activeFilterCount = countActiveLibraryFilters(filters);
+  const hasActiveFilters = activeFilterCount > 0;
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="relative w-full min-w-0"
-    >
-      <Icon
-        name="SearchMd"
-        size={isLarge ? 20 : 16}
+    <div ref={containerRef} className="relative w-full min-w-0">
+      <form
+        onSubmit={handleSubmit}
         className={[
-          "absolute top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none",
-          isLarge ? "left-4" : "left-3",
-        ].join(" ")}
-        aria-hidden
-      />
-      {isSearching ? (
-        <LoadingSpinner
-          size="xs"
-          className={[
-            "absolute top-1/2 -translate-y-1/2 pointer-events-none",
-            isLarge ? "right-4" : "right-3",
-          ].join(" ")}
-          label="Searching"
-        />
-      ) : null}
-      <input
-        type="search"
-        name="library-search"
-        value={value}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="Search by keyword, color, scene, mood..."
-        disabled={isSearching}
-        className={[
-          "w-full bg-[#111111] border border-[#2a2a2a] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-60",
+          "relative flex w-full items-center border bg-[#111111] transition-colors focus-within:border-[#3a3a3a]",
           isLarge
-            ? "h-[52px] rounded-xl pl-12 pr-12 text-[16px]"
-            : "h-[38px] rounded-lg pl-9 pr-10 text-[14px]",
+            ? "h-[52px] rounded-xl border-[#2a2a2a] pl-12 pr-2"
+            : "h-[38px] rounded-lg border-[#2a2a2a] pl-9 pr-1.5",
         ].join(" ")}
+      >
+        <Icon
+          name="SearchMd"
+          size={isLarge ? 20 : 16}
+          className={[
+            "absolute top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none",
+            isLarge ? "left-4" : "left-3",
+          ].join(" ")}
+          aria-hidden
+        />
+        {isSearching ? (
+          <LoadingSpinner
+            size="xs"
+            className="absolute top-1/2 -translate-y-1/2 pointer-events-none right-14"
+            label="Searching"
+          />
+        ) : null}
+        <input
+          type="search"
+          name="library-search"
+          value={value}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Search by keyword, color, scene, mood..."
+          disabled={isSearching}
+          className={[
+            "min-w-0 flex-1 bg-transparent text-white placeholder:text-[#888888] outline-none disabled:opacity-60",
+            isLarge ? "pr-2 text-[16px]" : "pr-1 text-[14px]",
+          ].join(" ")}
+        />
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((prev) => !prev)}
+          aria-label="Filter photos"
+          aria-expanded={filtersOpen}
+          className={[
+            "relative flex shrink-0 items-center justify-center transition-colors cursor-pointer",
+            isLarge ? "h-10 w-10" : "h-9 w-9",
+            hasActiveFilters
+              ? "text-[#B07EF0]"
+              : "text-[#888888] hover:text-white",
+          ].join(" ")}
+        >
+          <Icon name="FilterFunnel02" size={isLarge ? 24 : 20} aria-hidden />
+          {hasActiveFilters && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#8758ed] px-1 text-[10px] font-semibold leading-none text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </form>
+
+      <LibraryFiltersPopover
+        open={filtersOpen}
+        containerRef={containerRef}
+        draft={draftFilters}
+        applied={filters}
+        onDraftChange={setDraftFilters}
+        onApply={handleApplyFilters}
+        onClearAll={handleClearAllFilters}
+        onClose={handleCloseFilters}
       />
-    </form>
+    </div>
   );
 }

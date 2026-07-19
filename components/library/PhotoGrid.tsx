@@ -14,6 +14,8 @@ interface PhotoGridProps {
     images: ImageRecord[];
   } | null;
   onDeleteImage?: (id: string) => void;
+  libraryEmptyMessage?: string;
+  searchEmptyMessage?: string;
 }
 
 function AnimatedPhotoGrid({
@@ -64,6 +66,8 @@ export default function PhotoGrid({
   libraryLoading,
   search,
   onDeleteImage,
+  libraryEmptyMessage = "Upload your first photo",
+  searchEmptyMessage = "No photos found matching your search",
 }: PhotoGridProps) {
   if (search) {
     if (search.loading) {
@@ -79,7 +83,7 @@ export default function PhotoGrid({
       return (
         <div className="flex items-center justify-center h-full w-full px-5">
           <p className="text-[#555555] text-[13px] text-center">
-            No photos found matching your search
+            {searchEmptyMessage}
           </p>
         </div>
       );
@@ -106,7 +110,7 @@ export default function PhotoGrid({
   if (!hasImages) {
     return (
       <div className="flex items-center justify-center h-full w-full">
-        <p className="text-[#555555] text-[13px]">Upload your first photo</p>
+        <p className="text-[#555555] text-[13px]">{libraryEmptyMessage}</p>
       </div>
     );
   }

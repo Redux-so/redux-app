@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
+import { hasNonDefaultAdjustments } from "@/lib/library-filters";
 import { prisma } from "@/lib/prisma";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
 
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50")));
   const skip = (page - 1) * limit;
 
-  const [images, total] = await Promise.all([
+  const [imagesRaw, total] = await Promise.all([
     prisma.image.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -41,10 +42,22 @@ export async function GET(request: NextRequest) {
         format: true,
         createdAt: true,
         userId: true,
+        versions: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { adjustments: true },
+        },
       },
     }),
     prisma.image.count({ where: { userId: user.id } }),
   ]);
+
+  const images = imagesRaw.map(({ versions, ...image }) => ({
+    ...image,
+    isEdited: versions[0]
+      ? hasNonDefaultAdjustments(versions[0].adjustments)
+      : false,
+  }));
 
   return NextResponse.json({ images, total, page, limit });
 }

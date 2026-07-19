@@ -4,6 +4,7 @@ import { useUser } from "@clerk/nextjs";
 
 import SearchBar from "@/components/library/SearchBar";
 import UploadDropzone from "@/components/library/UploadDropzone";
+import type { LibraryFilters } from "@/lib/library-filters";
 import type { ImageRecord } from "@/types/image";
 
 interface LibraryHeaderProps {
@@ -13,6 +14,8 @@ interface LibraryHeaderProps {
   onSearchSuccess: (images: ImageRecord[]) => void;
   onSearchAbort: () => void;
   onSearchClear: () => void;
+  filters: LibraryFilters;
+  onFiltersChange: (filters: LibraryFilters) => void;
 }
 
 function getTimeGreeting(hour: number): string {
@@ -28,6 +31,8 @@ export default function LibraryHeader({
   onSearchSuccess,
   onSearchAbort,
   onSearchClear,
+  filters,
+  onFiltersChange,
 }: LibraryHeaderProps) {
   const { user } = useUser();
   const firstName = user?.firstName?.trim() || "there";
@@ -46,6 +51,8 @@ export default function LibraryHeader({
         onSearchSuccess={onSearchSuccess}
         onSearchAbort={onSearchAbort}
         onSearchClear={onSearchClear}
+        filters={filters}
+        onFiltersChange={onFiltersChange}
       />
 
       <UploadDropzone onUploadComplete={onUploadComplete} />
