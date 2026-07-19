@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import toast from "react-hot-toast";
 import BackToLibraryButton from "@/components/shared/BackToLibraryButton";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
@@ -69,62 +70,6 @@ const TRANSACTION_HISTORY_VISIBLE_ROWS = 10;
 function Skeleton({ className }: { className?: string }) {
   return (
     <div className={`bg-[#1a1a1a] rounded animate-pulse ${className ?? ""}`} />
-  );
-}
-
-// ─── Confirmation Dialog ───────────────────────────────────────────────────────
-
-function ConfirmDialog({
-  open,
-  title,
-  body,
-  confirmLabel,
-  onConfirm,
-  onCancel,
-  loading,
-  destructive,
-}: {
-  open: boolean;
-  title: string;
-  body: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  loading?: boolean;
-  destructive?: boolean;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-[360px] bg-[#111111] border border-[#2a2a2a] rounded-xl shadow-2xl p-6 flex flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <div className="shrink-0 w-[30px] h-[30px] rounded-md bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
-            <Icon name="AlertTriangle" size={16} className="text-[#ef4444]" aria-hidden />
-          </div>
-          <div>
-            <p className="text-white text-[14px] font-medium">{title}</p>
-            <p className="text-[#888888] text-[14px] mt-1 leading-relaxed">{body}</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-end gap-2">
-          <button onClick={onCancel} disabled={loading} className={BTN_GHOST}>
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className={`flex items-center gap-[6px] h-9 px-4 text-[14px] font-medium rounded-md transition-colors cursor-pointer disabled:opacity-50 ${
-              destructive
-                ? "bg-[#ef4444] text-white hover:bg-[#dc2626]"
-                : "bg-white text-black hover:bg-[#e8e8e8]"
-            }`}
-          >
-            {loading && <LoadingSpinner size="xs" label="Processing" />}
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

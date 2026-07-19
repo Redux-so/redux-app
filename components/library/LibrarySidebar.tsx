@@ -6,6 +6,8 @@ import { useState } from "react";
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import { Icon } from "@/components/shared/Icon";
 import ProfileMenu from "@/components/shared/ProfileMenu";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import AlbumSidebarRow from "@/components/library/AlbumSidebarRow";
 import CreateAlbumModal from "@/components/library/CreateAlbumModal";
 import {
   DEFAULT_LIBRARY_SIDEBAR_VIEW,
@@ -26,6 +28,7 @@ interface LibrarySidebarProps {
   onSidebarViewChange: (view: LibrarySidebarView) => void;
   albums: AlbumRecord[];
   onCreateAlbum: (name: string) => Promise<boolean>;
+  onDeleteAlbum: (albumId: string) => Promise<boolean>;
 }
 
 /**
@@ -37,8 +40,11 @@ export default function LibrarySidebar({
   onSidebarViewChange,
   albums,
   onCreateAlbum,
+  onDeleteAlbum,
 }: LibrarySidebarProps) {
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [albumToDelete, setAlbumToDelete] = useState<AlbumRecord | null>(null);
+  const [deletingAlbum, setDeletingAlbum] = useState(false);
 
   function handleAlbumClick(albumId: string) {
     if (sidebarView.kind === "album" && sidebarView.albumId === albumId) {
@@ -46,6 +52,18 @@ export default function LibrarySidebar({
       return;
     }
     onSidebarViewChange({ kind: "album", albumId });
+  }
+
+  async function handleConfirmDeleteAlbum() {
+    if (!albumToDelete || deletingAlbum) return;
+
+    setDeletingAlbum(true);
+    try {
+      const ok = await onDeleteAlbum(albumToDelete.id);
+      if (ok) setAlbumToDelete(null);
+    } finally {
+      setDeletingAlbum(false);
+    }
   }
 
   return (
@@ -120,35 +138,18 @@ export default function LibrarySidebar({
             <p className="px-5 text-[12px] text-[#555555]">No albums yet</p>
           ) : (
             <nav aria-label="Albums" className="flex flex-col gap-0.5 px-3">
-              {albums.map((album) => {
-                const isActive =
-                  sidebarView.kind === "album" && sidebarView.albumId === album.id;
-                return (
-                  <button
-                    key={album.id}
-                    type="button"
-                    aria-current={isActive ? "page" : undefined}
-                    onClick={() => handleAlbumClick(album.id)}
-                    className={[
-                      "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors cursor-pointer outline-none focus:outline-none",
-                      isActive
-                        ? "bg-white/[0.08] text-white"
-                        : "text-[#888888] hover:bg-white/[0.06] hover:text-white",
-                    ].join(" ")}
-                  >
-                    <Icon
-                      name="Folder"
-                      size={16}
-                      className={[
-                        "shrink-0",
-                        isActive ? "text-white" : "text-[#888888]",
-                      ].join(" ")}
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1 truncate">{album.name}</span>
-                  </button>
-                );
-              })}
+              {albums.map((album) => (
+                <AlbumSidebarRow
+                  key={album.id}
+                  album={album}
+                  isActive={
+                    sidebarView.kind === "album" &&
+                    sidebarView.albumId === album.id
+                  }
+                  onSelect={() => handleAlbumClick(album.id)}
+                  onRequestDelete={setAlbumToDelete}
+                />
+              ))}
             </nav>
           )}
         </div>
@@ -166,6 +167,21 @@ export default function LibrarySidebar({
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onCreate={onCreateAlbum}
+      />
+
+      <ConfirmDialog
+        open={albumToDelete !== null}
+        title={
+          albumToDelete ? `Delete "${albumToDelete.name}"?` : "Delete album?"
+        }
+        body="This removes the album only. Photos in this album will stay in your library."
+        confirmLabel="Delete Album"
+        destructive
+        loading={deletingAlbum}
+        onConfirm={() => void handleConfirmDeleteAlbum()}
+        onCancel={() => {
+          if (!deletingAlbum) setAlbumToDelete(null);
+        }}
       />
     </>
   );

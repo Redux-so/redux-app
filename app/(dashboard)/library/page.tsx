@@ -208,6 +208,32 @@ export default function LibraryPage() {
     }
   }, []);
 
+  const handleDeleteAlbum = useCallback(
+    async (albumId: string) => {
+      try {
+        const res = await fetch(`/api/albums/${albumId}`, { method: "DELETE" });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          toast.error(data.error ?? "Could not delete album.");
+          return false;
+        }
+
+        setAlbums((prev) => prev.filter((album) => album.id !== albumId));
+        setSidebarView((prev) =>
+          prev.kind === "album" && prev.albumId === albumId
+            ? DEFAULT_LIBRARY_SIDEBAR_VIEW
+            : prev,
+        );
+        toast.success("Album deleted");
+        return true;
+      } catch {
+        toast.error("Could not delete album.");
+        return false;
+      }
+    },
+    [],
+  );
+
   const albumMembershipByImageId = useMemo(() => {
     const map = new Map<string, Set<string>>();
     for (const album of albums) {
@@ -308,6 +334,7 @@ export default function LibraryPage() {
         onSidebarViewChange={setSidebarView}
         albums={albums}
         onCreateAlbum={handleCreateAlbum}
+        onDeleteAlbum={handleDeleteAlbum}
       />
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
         <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
