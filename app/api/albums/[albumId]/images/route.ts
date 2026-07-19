@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { ACTIVE_IMAGE_WHERE } from "@/lib/image-query";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
@@ -33,7 +34,7 @@ export async function POST(
   }
 
   const image = await prisma.image.findFirst({
-    where: { id: imageId, userId: user.id },
+    where: { id: imageId, userId: user.id, ...ACTIVE_IMAGE_WHERE },
     select: { id: true },
   });
   if (!image) {

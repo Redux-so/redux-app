@@ -3,12 +3,14 @@
 import type { AlbumRecord } from "@/types/album";
 import type { ImageGroup, ImageRecord } from "@/types/image";
 import PhotoCard from "./PhotoCard";
+import TrashPhotoCard from "./TrashPhotoCard";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
 import { motion, useReducedMotion } from "framer-motion";
 
 interface PhotoGridProps {
   groups: ImageGroup[];
   libraryLoading?: boolean;
+  viewMode?: "library" | "trash";
   /** When set, show semantic search results instead of date groups. */
   search?: {
     loading: boolean;
@@ -21,6 +23,8 @@ interface PhotoGridProps {
     imageId: string,
     isMember: boolean,
   ) => void;
+  onRestoreImage?: (id: string) => void;
+  onPermanentDeleteImage?: (id: string) => void;
   albums?: AlbumRecord[];
   albumMembershipByImageId?: Map<string, Set<string>>;
   libraryEmptyMessage?: string;
@@ -29,13 +33,17 @@ interface PhotoGridProps {
 
 function AnimatedPhotoGrid({
   images,
+  viewMode,
   albums,
   albumMembershipByImageId,
   onDeleteImage,
   onFavoriteToggle,
   onAlbumMembershipChange,
+  onRestoreImage,
+  onPermanentDeleteImage,
 }: {
   images: ImageRecord[];
+  viewMode: "library" | "trash";
   albums: AlbumRecord[];
   albumMembershipByImageId: Map<string, Set<string>>;
   onDeleteImage?: (id: string) => void;
@@ -45,6 +53,8 @@ function AnimatedPhotoGrid({
     imageId: string,
     isMember: boolean,
   ) => void;
+  onRestoreImage?: (id: string) => void;
+  onPermanentDeleteImage?: (id: string) => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
   const duration = prefersReducedMotion ? 0 : 0.25;
@@ -75,16 +85,24 @@ function AnimatedPhotoGrid({
             },
           }}
         >
-          <PhotoCard
-            image={image}
-            albums={albums}
-            memberAlbumIds={
-              albumMembershipByImageId.get(image.id) ?? new Set<string>()
-            }
-            onDelete={onDeleteImage}
-            onFavoriteToggle={onFavoriteToggle}
-            onAlbumMembershipChange={onAlbumMembershipChange}
-          />
+          {viewMode === "trash" ? (
+            <TrashPhotoCard
+              image={image}
+              onRestore={onRestoreImage}
+              onPermanentDelete={onPermanentDeleteImage}
+            />
+          ) : (
+            <PhotoCard
+              image={image}
+              albums={albums}
+              memberAlbumIds={
+                albumMembershipByImageId.get(image.id) ?? new Set<string>()
+              }
+              onDelete={onDeleteImage}
+              onFavoriteToggle={onFavoriteToggle}
+              onAlbumMembershipChange={onAlbumMembershipChange}
+            />
+          )}
         </motion.div>
       ))}
     </motion.div>
@@ -94,10 +112,13 @@ function AnimatedPhotoGrid({
 export default function PhotoGrid({
   groups,
   libraryLoading,
+  viewMode = "library",
   search,
   onDeleteImage,
   onFavoriteToggle,
   onAlbumMembershipChange,
+  onRestoreImage,
+  onPermanentDeleteImage,
   albums = [],
   albumMembershipByImageId = new Map(),
   libraryEmptyMessage = "Upload your first photo",
@@ -126,11 +147,14 @@ export default function PhotoGrid({
       <div className="px-6 py-5 flex flex-col gap-5">
         <AnimatedPhotoGrid
           images={search.images}
+          viewMode={viewMode}
           albums={albums}
           albumMembershipByImageId={albumMembershipByImageId}
           onDeleteImage={onDeleteImage}
           onFavoriteToggle={onFavoriteToggle}
           onAlbumMembershipChange={onAlbumMembershipChange}
+          onRestoreImage={onRestoreImage}
+          onPermanentDeleteImage={onPermanentDeleteImage}
         />
       </div>
     );
@@ -140,7 +164,7 @@ export default function PhotoGrid({
     return (
       <LoadingOverlay
         className="h-full min-h-[240px] w-full"
-        message="Loading library"
+        message={viewMode === "trash" ? "Loading trash" : "Loading library"}
         size="md"
       />
     );
@@ -166,11 +190,14 @@ export default function PhotoGrid({
             </p>
             <AnimatedPhotoGrid
               images={group.images}
+              viewMode={viewMode}
               albums={albums}
               albumMembershipByImageId={albumMembershipByImageId}
               onDeleteImage={onDeleteImage}
               onFavoriteToggle={onFavoriteToggle}
               onAlbumMembershipChange={onAlbumMembershipChange}
+              onRestoreImage={onRestoreImage}
+              onPermanentDeleteImage={onPermanentDeleteImage}
             />
           </div>
         ),

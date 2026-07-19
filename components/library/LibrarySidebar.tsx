@@ -152,6 +152,31 @@ export default function LibrarySidebar({
               ))}
             </nav>
           )}
+
+          <nav aria-label="Trash" className="mt-4 px-3">
+            <button
+              type="button"
+              aria-current={sidebarView.kind === "trash" ? "page" : undefined}
+              onClick={() => onSidebarViewChange({ kind: "trash" })}
+              className={[
+                "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors cursor-pointer outline-none focus:outline-none",
+                sidebarView.kind === "trash"
+                  ? "bg-white/[0.08] text-white"
+                  : "text-[#888888] hover:bg-white/[0.06] hover:text-white",
+              ].join(" ")}
+            >
+              <Icon
+                name="Trash04"
+                size={16}
+                className={[
+                  "shrink-0",
+                  sidebarView.kind === "trash" ? "text-white" : "text-[#888888]",
+                ].join(" ")}
+                aria-hidden
+              />
+              <span className="min-w-0 truncate">Trash</span>
+            </button>
+          </nav>
         </div>
 
         <div className="shrink-0 px-4 py-4 border-t border-white/[0.06]">

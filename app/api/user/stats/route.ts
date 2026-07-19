@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { ACTIVE_IMAGE_WHERE } from "@/lib/image-query";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -29,13 +30,14 @@ export async function GET() {
       take: 20,
     }),
     prisma.image.aggregate({
-      where: { userId: user.id },
+      where: { userId: user.id, ...ACTIVE_IMAGE_WHERE },
       _count: { id: true },
       _sum: { size: true },
     }),
     prisma.image.count({
       where: {
         userId: user.id,
+        ...ACTIVE_IMAGE_WHERE,
         createdAt: { gte: todayStart },
       },
     }),

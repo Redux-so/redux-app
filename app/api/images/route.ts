@@ -1,12 +1,60 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
-import { UTApi } from "uploadthing/server";
 import { hasNonDefaultAdjustments } from "@/lib/library-filters";
+import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
 import { isImageFavorite } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
 
-const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
+const IMAGE_SELECT = {
+  id: true,
+  filename: true,
+  originalUrl: true,
+  previewUrl: true,
+  publicId: true,
+  utKey: true,
+  width: true,
+  height: true,
+  size: true,
+  format: true,
+  createdAt: true,
+  deletedAt: true,
+  userId: true,
+  metadata: true,
+  versions: {
+    orderBy: { createdAt: "desc" as const },
+    take: 1,
+    select: { adjustments: true },
+  },
+};
+
+type ImageListRow = {
+  id: string;
+  filename: string;
+  originalUrl: string;
+  previewUrl: string | null;
+  publicId: string;
+  utKey: string | null;
+  width: number;
+  height: number;
+  size: number;
+  format: string;
+  createdAt: Date;
+  deletedAt: Date | null;
+  userId: string;
+  metadata: unknown;
+  versions: { adjustments: unknown }[];
+};
+
+function mapImageRow({ versions, metadata, ...image }: ImageListRow) {
+  return {
+    ...image,
+    isEdited: versions[0]
+      ? hasNonDefaultAdjustments(versions[0].adjustments)
+      : false,
+    isFavorite: isImageFavorite(metadata),
+  };
+}
 
 export async function GET(request: NextRequest) {
   const { userId: clerkId } = await auth();
@@ -20,47 +68,28 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
+  const trash = searchParams.get("trash") === "1";
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50")));
   const skip = (page - 1) * limit;
 
+  const where = {
+    userId: user.id,
+    ...(trash ? TRASHED_IMAGE_WHERE : ACTIVE_IMAGE_WHERE),
+  };
+
   const [imagesRaw, total] = await Promise.all([
     prisma.image.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
+      where,
+      orderBy: trash ? { deletedAt: "desc" } : { createdAt: "desc" },
       skip,
       take: limit,
-      select: {
-        id: true,
-        filename: true,
-        originalUrl: true,
-        previewUrl: true,
-        publicId: true,
-        utKey: true,
-        width: true,
-        height: true,
-        size: true,
-        format: true,
-        createdAt: true,
-        userId: true,
-        metadata: true,
-        versions: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { adjustments: true },
-        },
-      },
+      select: IMAGE_SELECT,
     }),
-    prisma.image.count({ where: { userId: user.id } }),
+    prisma.image.count({ where }),
   ]);
 
-  const images = imagesRaw.map(({ versions, metadata, ...image }) => ({
-    ...image,
-    isEdited: versions[0]
-      ? hasNonDefaultAdjustments(versions[0].adjustments)
-      : false,
-    isFavorite: isImageFavorite(metadata),
-  }));
+  const images = imagesRaw.map(mapImageRow);
 
   return NextResponse.json({ images, total, page, limit });
 }
@@ -110,6 +139,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ image });
 }
 
+/** Soft-delete: move photo to trash without removing storage. */
 export async function DELETE(request: NextRequest) {
   const { userId: clerkId } = await auth();
   if (!clerkId) {
@@ -128,25 +158,18 @@ export async function DELETE(request: NextRequest) {
   }
 
   const image = await prisma.image.findFirst({
-    where: { id: imageId, userId: user.id },
+    where: { id: imageId, userId: user.id, ...ACTIVE_IMAGE_WHERE },
+    select: { id: true },
   });
   if (!image) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  if (image.utKey) {
-    await utapi.deleteFiles(image.utKey);
-  }
-
-  const { deleteFromCloudinary } = await import("@/lib/cloudinary");
-  await deleteFromCloudinary(image.publicId);
-
-  // Remove dependent ImageVersion rows before deleting the parent Image record.
-  // Without this, Prisma throws a foreign-key RESTRICT violation.
-  await prisma.imageVersion.deleteMany({
-    where: { imageId, image: { userId: user.id } },
+  const updated = await prisma.image.update({
+    where: { id: imageId },
+    data: { deletedAt: new Date() },
+    select: { id: true, deletedAt: true },
   });
-  await prisma.image.delete({ where: { id: imageId } });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, deletedAt: updated.deletedAt });
 }

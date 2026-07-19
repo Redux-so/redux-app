@@ -7,6 +7,7 @@ import { Icon } from "@/components/shared/Icon";
 import PhotoCardAlbumMenu from "@/components/library/PhotoCardAlbumMenu";
 import type { AlbumRecord } from "@/types/album";
 import type { ImageRecord } from "@/types/image";
+import toast from "react-hot-toast";
 import { cloudinaryThumbnailUrl } from "@/lib/cloudinary-url";
 
 const OVERLAY_ACTION =
@@ -54,7 +55,12 @@ export default function PhotoCard({
       });
       if (res.ok) {
         onDelete?.(image.id);
+        toast.success("Moved to trash");
+      } else {
+        toast.error("Could not delete photo.");
       }
+    } catch {
+      toast.error("Could not delete photo.");
     } finally {
       setIsDeleting(false);
     }

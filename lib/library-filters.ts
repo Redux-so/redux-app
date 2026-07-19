@@ -172,7 +172,8 @@ export type LibraryQuickFilter = "all" | "recent" | "favorites";
 /** Mutually exclusive sidebar destinations — never combine with each other. */
 export type LibrarySidebarView =
   | { kind: "quick"; filter: LibraryQuickFilter }
-  | { kind: "album"; albumId: string };
+  | { kind: "album"; albumId: string }
+  | { kind: "trash" };
 
 /** Reuses the same date window as the filter popover's "Last 7 days" preset. */
 export function isImageWithinDatePreset(
@@ -206,6 +207,10 @@ export function applyLibrarySidebarView(
   view: LibrarySidebarView,
   albums: AlbumRecord[],
 ): ImageRecord[] {
+  if (view.kind === "trash") {
+    return [];
+  }
+
   if (view.kind === "album") {
     const album = albums.find((entry) => entry.id === view.albumId);
     if (!album) return [];

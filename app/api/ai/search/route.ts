@@ -202,6 +202,7 @@ export async function GET(request: Request) {
          FROM "Image" i
          WHERE i."userId" = $1
            AND i.embedding IS NOT NULL
+           AND i."deletedAt" IS NULL
          ORDER BY similarity DESC
          LIMIT ${SEARCH_LIMIT}`;
 

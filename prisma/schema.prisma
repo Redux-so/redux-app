@@ -38,10 +38,13 @@ model Image {
   /// pgvector column (768 = CLIP ViT-L/14). Managed via $executeRaw / $queryRaw.
   embedding   Unsupported("vector(768)")?
   metadata    Json?
+  deletedAt   DateTime?
   versions    ImageVersion[]
   albumMembers AlbumImage[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+
+  @@index([userId, deletedAt])
 }
 
 model Album {

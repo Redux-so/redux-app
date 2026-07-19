@@ -14,6 +14,7 @@ export async function assertUserOwnsImageUrl(
   return prisma.image.findFirst({
     where: {
       userId,
+      deletedAt: null,
       OR: [
         { originalUrl: imageUrl },
         { originalUrl: base },

@@ -15,6 +15,8 @@ export interface ImageRecord {
   isEdited?: boolean;
   /** Persisted in Image.metadata.favorite. */
   isFavorite?: boolean;
+  /** Set when the photo is in trash. */
+  deletedAt?: string | null;
 }
 
 export interface ImageGroup {

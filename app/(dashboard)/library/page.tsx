@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import LibraryHeader from "@/components/library/LibraryHeader";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
 import PhotoGrid from "@/components/library/PhotoGrid";
+import TrashViewToolbar from "@/components/library/TrashViewToolbar";
 import {
   applyLibraryFilters,
   applyLibrarySidebarView,
@@ -17,6 +18,28 @@ import { DEFAULT_LIBRARY_SIDEBAR_VIEW } from "@/constants/library-quick-filters"
 import type { AlbumRecord } from "@/types/album";
 import type { ImageRecord, ImageGroup } from "@/types/image";
 import toast from "react-hot-toast";
+
+function groupImagesByDeletedMonth(images: ImageRecord[]): ImageGroup[] {
+  if (!images.length) return [];
+
+  const groupMap = new Map<string, ImageRecord[]>();
+
+  for (const image of images) {
+    const deletedAt = image.deletedAt ?? image.createdAt;
+    const date = new Date(deletedAt);
+    const label = date
+      .toLocaleDateString("en-US", { month: "long", year: "numeric" })
+      .toUpperCase();
+
+    if (!groupMap.has(label)) groupMap.set(label, []);
+    groupMap.get(label)!.push(image);
+  }
+
+  return Array.from(groupMap.entries()).map(([label, imgs]) => ({
+    label,
+    images: imgs,
+  }));
+}
 
 function groupImagesByMonth(images: ImageRecord[]): ImageGroup[] {
   if (!images.length) return [];
@@ -70,7 +93,9 @@ function enrichSearchResultsWithFavorites(
 export default function LibraryPage() {
   const pathname = usePathname();
   const [images, setImages] = useState<ImageRecord[]>([]);
+  const [trashedImages, setTrashedImages] = useState<ImageRecord[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
+  const [trashLoading, setTrashLoading] = useState(true);
   const [searchOverlay, setSearchOverlay] = useState<LibrarySearchOverlay>({
     kind: "none",
   });
@@ -91,13 +116,30 @@ export default function LibraryPage() {
     }
   }, []);
 
+  const fetchTrashedImages = useCallback(async () => {
+    setTrashLoading(true);
+    try {
+      const res = await fetch("/api/images?trash=1", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { images: ImageRecord[] };
+      setTrashedImages(data.images);
+    } finally {
+      setTrashLoading(false);
+    }
+  }, []);
+
   const fetchImages = useCallback(async () => {
     setLibraryLoading(true);
     try {
       const res = await fetch("/api/images", { cache: "no-store" });
-      if (!res.ok) return;
+      if (!res.ok) {
+        toast.error("Could not load your library.");
+        return;
+      }
       const data = (await res.json()) as { images: ImageRecord[] };
       setImages(data.images);
+    } catch {
+      toast.error("Could not load your library.");
     } finally {
       setLibraryLoading(false);
     }
@@ -106,33 +148,96 @@ export default function LibraryPage() {
   useEffect(() => {
     if (pathname === "/library") {
       void fetchImages();
+      void fetchTrashedImages();
       void fetchAlbums();
     }
-  }, [pathname, fetchImages, fetchAlbums]);
+  }, [pathname, fetchImages, fetchTrashedImages, fetchAlbums]);
+
+  useEffect(() => {
+    if (sidebarView.kind === "trash") {
+      setSearchOverlay({ kind: "none" });
+    }
+  }, [sidebarView]);
 
   // Backup refetch — catches previews that finish shortly after navigation.
   useEffect(() => {
     if (pathname !== "/library") return;
     const timer = setTimeout(() => {
       void fetchImages();
+      void fetchTrashedImages();
     }, 500);
     return () => clearTimeout(timer);
-  }, [pathname, fetchImages]);
+  }, [pathname, fetchImages, fetchTrashedImages]);
 
   const handleDeleteImage = useCallback((id: string) => {
-    setImages((prev) => prev.filter((img) => img.id !== id));
-    setAlbums((prev) =>
-      prev.map((album) => ({
-        ...album,
-        imageIds: album.imageIds.filter((imageId) => imageId !== id),
-      })),
-    );
+    setImages((prev) => {
+      const removed = prev.find((img) => img.id === id);
+      if (removed) {
+        setTrashedImages((trash) => [
+          { ...removed, deletedAt: new Date().toISOString() },
+          ...trash.filter((img) => img.id !== id),
+        ]);
+      }
+      return prev.filter((img) => img.id !== id);
+    });
     setSearchOverlay((prev) =>
       prev.kind === "results"
         ? { ...prev, images: prev.images.filter((img) => img.id !== id) }
         : prev,
     );
   }, []);
+
+  const handleRestoreImage = useCallback((id: string) => {
+    setTrashedImages((prev) => {
+      const restored = prev.find((img) => img.id === id);
+      if (restored) {
+        const { deletedAt, ...image } = restored;
+        void deletedAt;
+        setImages((library) => [
+          image,
+          ...library.filter((img) => img.id !== id),
+        ]);
+      }
+      return prev.filter((img) => img.id !== id);
+    });
+  }, []);
+
+  const handlePermanentDeleteImage = useCallback((id: string) => {
+    setTrashedImages((prev) => prev.filter((img) => img.id !== id));
+    setAlbums((prev) =>
+      prev.map((album) => ({
+        ...album,
+        imageIds: album.imageIds.filter((imageId) => imageId !== id),
+      })),
+    );
+  }, []);
+
+  const handleEmptyTrash = useCallback(async () => {
+    try {
+      const res = await fetch("/api/trash", { method: "DELETE" });
+      const data = (await res.json()) as { deleted?: number; error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not empty trash.");
+        return false;
+      }
+
+      const trashedIds = new Set(trashedImages.map((image) => image.id));
+      setTrashedImages([]);
+      setAlbums((prev) =>
+        prev.map((album) => ({
+          ...album,
+          imageIds: album.imageIds.filter((imageId) => !trashedIds.has(imageId)),
+        })),
+      );
+      toast.success(
+        `Deleted ${data.deleted ?? 0} photo${data.deleted === 1 ? "" : "s"} permanently`,
+      );
+      return true;
+    } catch {
+      toast.error("Could not empty trash.");
+      return false;
+    }
+  }, [trashedImages]);
 
   const handleSearchStart = useCallback(() => {
     setSearchOverlay({ kind: "loading" });
@@ -249,15 +354,22 @@ export default function LibraryPage() {
     return map;
   }, [albums]);
 
+  const isTrashView = sidebarView.kind === "trash";
+
   const filteredImages = useMemo(() => {
+    if (isTrashView) {
+      return applyLibraryFilters(trashedImages, filters);
+    }
     const afterSidebarView = applyLibrarySidebarView(images, sidebarView, albums);
     return applyLibraryFilters(afterSidebarView, filters);
-  }, [images, sidebarView, albums, filters]);
+  }, [isTrashView, trashedImages, images, sidebarView, albums, filters]);
 
-  const groups = groupImagesByMonth(filteredImages);
+  const groups = isTrashView
+    ? groupImagesByDeletedMonth(filteredImages)
+    : groupImagesByMonth(filteredImages);
 
   const searchForGrid =
-    searchOverlay.kind === "none"
+    isTrashView || searchOverlay.kind === "none"
       ? null
       : {
           loading: searchOverlay.kind === "loading",
@@ -285,6 +397,11 @@ export default function LibraryPage() {
       : null;
 
   function getLibraryEmptyMessage(): string {
+    if (isTrashView) {
+      return filtersActive
+        ? "No trashed photos match your filters"
+        : "Trash is empty";
+    }
     if (sidebarView.kind === "album" && selectedAlbum) {
       return filtersActive
         ? `No photos in "${selectedAlbum.name}" match your filters`
@@ -338,25 +455,39 @@ export default function LibraryPage() {
       />
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
         <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
-          <LibraryHeader
-            onUploadComplete={fetchImages}
-            isSearching={isSearching}
-            onSearchStart={handleSearchStart}
-            onSearchSuccess={handleSearchSuccess}
-            onSearchAbort={handleSearchAbort}
-            onSearchClear={handleSearchClear}
-            filters={filters}
-            onFiltersChange={setFilters}
-          />
+          {!isTrashView && (
+            <LibraryHeader
+              onUploadComplete={() => {
+                void fetchImages();
+                void fetchTrashedImages();
+              }}
+              isSearching={isSearching}
+              onSearchStart={handleSearchStart}
+              onSearchSuccess={handleSearchSuccess}
+              onSearchAbort={handleSearchAbort}
+              onSearchClear={handleSearchClear}
+              filters={filters}
+              onFiltersChange={setFilters}
+            />
+          )}
+          {isTrashView && (
+            <TrashViewToolbar
+              count={trashedImages.length}
+              onEmptyTrash={handleEmptyTrash}
+            />
+          )}
           <PhotoGrid
             groups={groups}
-            libraryLoading={libraryLoading}
+            libraryLoading={isTrashView ? trashLoading : libraryLoading}
+            viewMode={isTrashView ? "trash" : "library"}
             search={searchForGrid}
             albums={albums}
             albumMembershipByImageId={albumMembershipByImageId}
             onDeleteImage={handleDeleteImage}
             onFavoriteToggle={handleFavoriteToggle}
             onAlbumMembershipChange={handleAlbumMembershipChange}
+            onRestoreImage={handleRestoreImage}
+            onPermanentDeleteImage={handlePermanentDeleteImage}
             libraryEmptyMessage={getLibraryEmptyMessage()}
             searchEmptyMessage={getSearchEmptyMessage()}
           />
