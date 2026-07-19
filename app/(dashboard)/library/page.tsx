@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import Header from "@/components/shared/Header";
+import LibraryHeader from "@/components/library/LibraryHeader";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
 import PhotoGrid from "@/components/library/PhotoGrid";
 import type { ImageRecord, ImageGroup } from "@/types/image";
@@ -116,15 +116,15 @@ export default function LibraryPage() {
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
       <LibrarySidebar />
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
-        <Header
-          onUploadComplete={fetchImages}
-          isSearching={isSearching}
-          onSearchStart={handleSearchStart}
-          onSearchSuccess={handleSearchSuccess}
-          onSearchAbort={handleSearchAbort}
-          onSearchClear={handleSearchClear}
-        />
         <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+          <LibraryHeader
+            onUploadComplete={fetchImages}
+            isSearching={isSearching}
+            onSearchStart={handleSearchStart}
+            onSearchSuccess={handleSearchSuccess}
+            onSearchAbort={handleSearchAbort}
+            onSearchClear={handleSearchClear}
+          />
           <PhotoGrid
             groups={groups}
             libraryLoading={libraryLoading}

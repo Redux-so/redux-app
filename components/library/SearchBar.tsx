@@ -13,6 +13,7 @@ interface SearchBarProps {
   /** End loading / exit search overlay on error, 402, or network failure (not on success). */
   onSearchAbort: () => void;
   onSearchClear: () => void;
+  variant?: "default" | "large";
 }
 
 export default function SearchBar({
@@ -21,6 +22,7 @@ export default function SearchBar({
   onSearchSuccess,
   onSearchAbort,
   onSearchClear,
+  variant = "default",
 }: SearchBarProps) {
   const [value, setValue] = useState("");
 
@@ -75,21 +77,29 @@ export default function SearchBar({
     }
   }
 
+  const isLarge = variant === "large";
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex-1 relative min-w-0"
+      className="relative w-full min-w-0"
     >
       <Icon
         name="SearchMd"
-        size={16}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none"
+        size={isLarge ? 20 : 16}
+        className={[
+          "absolute top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none",
+          isLarge ? "left-4" : "left-3",
+        ].join(" ")}
         aria-hidden
       />
       {isSearching ? (
         <LoadingSpinner
           size="xs"
-          className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          className={[
+            "absolute top-1/2 -translate-y-1/2 pointer-events-none",
+            isLarge ? "right-4" : "right-3",
+          ].join(" ")}
           label="Searching"
         />
       ) : null}
@@ -100,7 +110,12 @@ export default function SearchBar({
         onChange={(e) => handleChange(e.target.value)}
         placeholder="Search by keyword, color, scene, mood..."
         disabled={isSearching}
-        className="w-full h-[38px] bg-[#111111] border border-[#2a2a2a] rounded-lg pl-9 pr-10 text-[14px] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-60"
+        className={[
+          "w-full bg-[#111111] border border-[#2a2a2a] text-white placeholder:text-[#888888] outline-none focus:border-[#3a3a3a] transition-colors disabled:opacity-60",
+          isLarge
+            ? "h-[52px] rounded-xl pl-12 pr-12 text-[16px]"
+            : "h-[38px] rounded-lg pl-9 pr-10 text-[14px]",
+        ].join(" ")}
       />
     </form>
   );
