@@ -16,7 +16,11 @@ interface PhotoGridProps {
   } | null;
   onDeleteImage?: (id: string) => void;
   onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
-  onAddedToAlbum?: (albumId: string, imageId: string) => void;
+  onAlbumMembershipChange?: (
+    albumId: string,
+    imageId: string,
+    isMember: boolean,
+  ) => void;
   albums?: AlbumRecord[];
   albumMembershipByImageId?: Map<string, Set<string>>;
   libraryEmptyMessage?: string;
@@ -29,14 +33,18 @@ function AnimatedPhotoGrid({
   albumMembershipByImageId,
   onDeleteImage,
   onFavoriteToggle,
-  onAddedToAlbum,
+  onAlbumMembershipChange,
 }: {
   images: ImageRecord[];
   albums: AlbumRecord[];
   albumMembershipByImageId: Map<string, Set<string>>;
   onDeleteImage?: (id: string) => void;
   onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
-  onAddedToAlbum?: (albumId: string, imageId: string) => void;
+  onAlbumMembershipChange?: (
+    albumId: string,
+    imageId: string,
+    isMember: boolean,
+  ) => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
   const duration = prefersReducedMotion ? 0 : 0.25;
@@ -75,7 +83,7 @@ function AnimatedPhotoGrid({
             }
             onDelete={onDeleteImage}
             onFavoriteToggle={onFavoriteToggle}
-            onAddedToAlbum={onAddedToAlbum}
+            onAlbumMembershipChange={onAlbumMembershipChange}
           />
         </motion.div>
       ))}
@@ -89,7 +97,7 @@ export default function PhotoGrid({
   search,
   onDeleteImage,
   onFavoriteToggle,
-  onAddedToAlbum,
+  onAlbumMembershipChange,
   albums = [],
   albumMembershipByImageId = new Map(),
   libraryEmptyMessage = "Upload your first photo",
@@ -122,7 +130,7 @@ export default function PhotoGrid({
           albumMembershipByImageId={albumMembershipByImageId}
           onDeleteImage={onDeleteImage}
           onFavoriteToggle={onFavoriteToggle}
-          onAddedToAlbum={onAddedToAlbum}
+          onAlbumMembershipChange={onAlbumMembershipChange}
         />
       </div>
     );
@@ -162,7 +170,7 @@ export default function PhotoGrid({
               albumMembershipByImageId={albumMembershipByImageId}
               onDeleteImage={onDeleteImage}
               onFavoriteToggle={onFavoriteToggle}
-              onAddedToAlbum={onAddedToAlbum}
+              onAlbumMembershipChange={onAlbumMembershipChange}
             />
           </div>
         ),

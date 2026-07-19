@@ -10,17 +10,21 @@ interface PhotoCardAlbumMenuProps {
   imageId: string;
   albums: AlbumRecord[];
   memberAlbumIds: Set<string>;
-  onAddedToAlbum: (albumId: string, imageId: string) => void;
+  onAlbumMembershipChange: (
+    albumId: string,
+    imageId: string,
+    isMember: boolean,
+  ) => void;
 }
 
 export default function PhotoCardAlbumMenu({
   imageId,
   albums,
   memberAlbumIds,
-  onAddedToAlbum,
+  onAlbumMembershipChange,
 }: PhotoCardAlbumMenuProps) {
   const [open, setOpen] = useState(false);
-  const [addingAlbumId, setAddingAlbumId] = useState<string | null>(null);
+  const [pendingAlbumId, setPendingAlbumId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,29 +48,34 @@ export default function PhotoCardAlbumMenu({
     };
   }, [open]);
 
-  async function handleAddToAlbum(albumId: string) {
-    if (memberAlbumIds.has(albumId) || addingAlbumId) return;
+  async function handleToggleAlbumMembership(albumId: string) {
+    if (pendingAlbumId) return;
 
-    setAddingAlbumId(albumId);
+    const isMember = memberAlbumIds.has(albumId);
+    setPendingAlbumId(albumId);
+
     try {
       const res = await fetch(`/api/albums/${albumId}/images`, {
-        method: "POST",
+        method: isMember ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageId }),
       });
 
       if (!res.ok) {
-        toast.error("Could not add photo to album.");
+        toast.error(
+          isMember ? "Could not remove photo from album." : "Could not add photo to album.",
+        );
         return;
       }
 
-      onAddedToAlbum(albumId, imageId);
-      toast.success("Added to album");
-      setOpen(false);
+      onAlbumMembershipChange(albumId, imageId, !isMember);
+      toast.success(isMember ? "Removed from album" : "Added to album");
     } catch {
-      toast.error("Could not add photo to album.");
+      toast.error(
+        isMember ? "Could not remove photo from album." : "Could not add photo to album.",
+      );
     } finally {
-      setAddingAlbumId(null);
+      setPendingAlbumId(null);
     }
   }
 
@@ -110,20 +119,35 @@ export default function PhotoCardAlbumMenu({
               <ul className="max-h-[180px] overflow-y-auto">
                 {albums.map((album) => {
                   const isMember = memberAlbumIds.has(album.id);
-                  const isAdding = addingAlbumId === album.id;
+                  const isPending = pendingAlbumId === album.id;
                   return (
                     <li key={album.id}>
                       <button
                         type="button"
-                        disabled={isMember || isAdding}
-                        onClick={() => void handleAddToAlbum(album.id)}
+                        role="checkbox"
+                        aria-checked={isMember}
+                        disabled={isPending}
+                        onClick={() => void handleToggleAlbumMembership(album.id)}
                         className={[
-                          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+                          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors cursor-pointer disabled:cursor-wait disabled:opacity-60",
                           isMember
-                            ? "cursor-default text-[#555555]"
-                            : "cursor-pointer text-[#cccccc] hover:bg-white/[0.06] hover:text-white disabled:opacity-50",
+                            ? "text-white hover:bg-white/[0.06]"
+                            : "text-[#cccccc] hover:bg-white/[0.06] hover:text-white",
                         ].join(" ")}
                       >
+                        <span
+                          className={[
+                            "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                            isMember
+                              ? "border-white/30 bg-white/[0.12]"
+                              : "border-white/[0.15] bg-transparent",
+                          ].join(" ")}
+                          aria-hidden
+                        >
+                          {isMember && (
+                            <Icon name="Check" size={16} className="text-white" aria-hidden />
+                          )}
+                        </span>
                         <Icon
                           name="Folder"
                           size={16}
@@ -131,16 +155,8 @@ export default function PhotoCardAlbumMenu({
                           aria-hidden
                         />
                         <span className="min-w-0 flex-1 truncate">{album.name}</span>
-                        {isMember && (
-                          <Icon
-                            name="Check"
-                            size={16}
-                            className="shrink-0 text-[#888888]"
-                            aria-hidden
-                          />
-                        )}
-                        {isAdding && (
-                          <span className="text-[11px] text-[#888888]">Adding...</span>
+                        {isPending && (
+                          <span className="text-[11px] text-[#888888]">Saving...</span>
                         )}
                       </button>
                     </li>

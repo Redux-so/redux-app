@@ -1,5 +1,5 @@
 import type { IconName } from "@/components/shared/Icon";
-import type { LibraryQuickFilter } from "@/lib/library-filters";
+import type { LibraryQuickFilter, LibrarySidebarView } from "@/lib/library-filters";
 
 export interface LibraryQuickFilterOption {
   id: LibraryQuickFilter;
@@ -13,4 +13,7 @@ export const LIBRARY_QUICK_FILTER_OPTIONS: LibraryQuickFilterOption[] = [
   { id: "favorites", label: "Favorites", icon: "Heart" },
 ];
 
-export const DEFAULT_LIBRARY_QUICK_FILTER: LibraryQuickFilter = "all";
+export const DEFAULT_LIBRARY_SIDEBAR_VIEW: LibrarySidebarView = {
+  kind: "quick",
+  filter: "all",
+};

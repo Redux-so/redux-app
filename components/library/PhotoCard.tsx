@@ -18,7 +18,11 @@ interface PhotoCardProps {
   memberAlbumIds: Set<string>;
   onDelete?: (id: string) => void;
   onFavoriteToggle?: (id: string, isFavorite: boolean) => void;
-  onAddedToAlbum?: (albumId: string, imageId: string) => void;
+  onAlbumMembershipChange?: (
+    albumId: string,
+    imageId: string,
+    isMember: boolean,
+  ) => void;
 }
 
 export default function PhotoCard({
@@ -27,7 +31,7 @@ export default function PhotoCard({
   memberAlbumIds,
   onDelete,
   onFavoriteToggle,
-  onAddedToAlbum,
+  onAlbumMembershipChange,
 }: PhotoCardProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -111,7 +115,9 @@ export default function PhotoCard({
         imageId={image.id}
         albums={albums}
         memberAlbumIds={memberAlbumIds}
-        onAddedToAlbum={(albumId, imageId) => onAddedToAlbum?.(albumId, imageId)}
+        onAlbumMembershipChange={(albumId, imageId, isMember) =>
+          onAlbumMembershipChange?.(albumId, imageId, isMember)
+        }
       />
 
       <button

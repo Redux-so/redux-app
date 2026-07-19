@@ -8,6 +8,7 @@ import {
   type AdjustmentKey,
 } from "@/constants/adjustments";
 import type { ImageRecord } from "@/types/image";
+import type { AlbumRecord } from "@/types/album";
 
 export type DateFilterPreset =
   | "anytime"
@@ -168,6 +169,11 @@ export function applyLibraryFilters(
 
 export type LibraryQuickFilter = "all" | "recent" | "favorites";
 
+/** Mutually exclusive sidebar destinations — never combine with each other. */
+export type LibrarySidebarView =
+  | { kind: "quick"; filter: LibraryQuickFilter }
+  | { kind: "album"; albumId: string };
+
 /** Reuses the same date window as the filter popover's "Last 7 days" preset. */
 export function isImageWithinDatePreset(
   image: ImageRecord,
@@ -194,10 +200,18 @@ export function applyLibraryQuickFilter(
   }
 }
 
-export function applyAlbumFilter(
+/** Applies exactly one sidebar view — quick filter OR album, never both. */
+export function applyLibrarySidebarView(
   images: ImageRecord[],
-  albumImageIds: Set<string> | null,
+  view: LibrarySidebarView,
+  albums: AlbumRecord[],
 ): ImageRecord[] {
-  if (!albumImageIds) return images;
-  return images.filter((image) => albumImageIds.has(image.id));
+  if (view.kind === "album") {
+    const album = albums.find((entry) => entry.id === view.albumId);
+    if (!album) return [];
+    const memberIds = new Set(album.imageIds);
+    return images.filter((image) => memberIds.has(image.id));
+  }
+
+  return applyLibraryQuickFilter(images, view.filter);
 }

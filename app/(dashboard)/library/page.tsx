@@ -6,15 +6,14 @@ import LibraryHeader from "@/components/library/LibraryHeader";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
 import PhotoGrid from "@/components/library/PhotoGrid";
 import {
-  applyAlbumFilter,
   applyLibraryFilters,
-  applyLibraryQuickFilter,
+  applyLibrarySidebarView,
   countActiveLibraryFilters,
   DEFAULT_LIBRARY_FILTERS,
   type LibraryFilters,
-  type LibraryQuickFilter,
+  type LibrarySidebarView,
 } from "@/lib/library-filters";
-import { DEFAULT_LIBRARY_QUICK_FILTER } from "@/constants/library-quick-filters";
+import { DEFAULT_LIBRARY_SIDEBAR_VIEW } from "@/constants/library-quick-filters";
 import type { AlbumRecord } from "@/types/album";
 import type { ImageRecord, ImageGroup } from "@/types/image";
 import toast from "react-hot-toast";
@@ -76,11 +75,10 @@ export default function LibraryPage() {
     kind: "none",
   });
   const [filters, setFilters] = useState<LibraryFilters>(DEFAULT_LIBRARY_FILTERS);
-  const [quickFilter, setQuickFilter] = useState<LibraryQuickFilter>(
-    DEFAULT_LIBRARY_QUICK_FILTER,
+  const [sidebarView, setSidebarView] = useState<LibrarySidebarView>(
+    DEFAULT_LIBRARY_SIDEBAR_VIEW,
   );
   const [albums, setAlbums] = useState<AlbumRecord[]>([]);
-  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
 
   const fetchAlbums = useCallback(async () => {
     try {
@@ -168,15 +166,25 @@ export default function LibraryPage() {
     );
   }, []);
 
-  const handleAddedToAlbum = useCallback((albumId: string, imageId: string) => {
-    setAlbums((prev) =>
-      prev.map((album) =>
-        album.id === albumId && !album.imageIds.includes(imageId)
-          ? { ...album, imageIds: [imageId, ...album.imageIds] }
-          : album,
-      ),
-    );
-  }, []);
+  const handleAlbumMembershipChange = useCallback(
+    (albumId: string, imageId: string, isMember: boolean) => {
+      setAlbums((prev) =>
+        prev.map((album) => {
+          if (album.id !== albumId) return album;
+          if (isMember) {
+            return album.imageIds.includes(imageId)
+              ? album
+              : { ...album, imageIds: [imageId, ...album.imageIds] };
+          }
+          return {
+            ...album,
+            imageIds: album.imageIds.filter((id) => id !== imageId),
+          };
+        }),
+      );
+    },
+    [],
+  );
 
   const handleCreateAlbum = useCallback(async (name: string) => {
     try {
@@ -191,7 +199,7 @@ export default function LibraryPage() {
         return false;
       }
       setAlbums((prev) => [data.album!, ...prev]);
-      setSelectedAlbumId(data.album.id);
+      setSidebarView({ kind: "album", albumId: data.album.id });
       toast.success("Album created");
       return true;
     } catch {
@@ -199,13 +207,6 @@ export default function LibraryPage() {
       return false;
     }
   }, []);
-
-  const selectedAlbumImageIds = useMemo(() => {
-    if (!selectedAlbumId) return null;
-    const album = albums.find((entry) => entry.id === selectedAlbumId);
-    if (!album) return null;
-    return new Set(album.imageIds);
-  }, [albums, selectedAlbumId]);
 
   const albumMembershipByImageId = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -223,13 +224,9 @@ export default function LibraryPage() {
   }, [albums]);
 
   const filteredImages = useMemo(() => {
-    const afterQuickFilter = applyLibraryQuickFilter(images, quickFilter);
-    const afterAlbumFilter = applyAlbumFilter(
-      afterQuickFilter,
-      selectedAlbumImageIds,
-    );
-    return applyLibraryFilters(afterAlbumFilter, filters);
-  }, [images, quickFilter, selectedAlbumImageIds, filters]);
+    const afterSidebarView = applyLibrarySidebarView(images, sidebarView, albums);
+    return applyLibraryFilters(afterSidebarView, filters);
+  }, [images, sidebarView, albums, filters]);
 
   const groups = groupImagesByMonth(filteredImages);
 
@@ -241,15 +238,13 @@ export default function LibraryPage() {
           images:
             searchOverlay.kind === "results"
               ? applyLibraryFilters(
-                  applyAlbumFilter(
-                    applyLibraryQuickFilter(
-                      enrichSearchResultsWithFavorites(
-                        searchOverlay.images,
-                        images,
-                      ),
-                      quickFilter,
+                  applyLibrarySidebarView(
+                    enrichSearchResultsWithFavorites(
+                      searchOverlay.images,
+                      images,
                     ),
-                    selectedAlbumImageIds,
+                    sidebarView,
+                    albums,
                   ),
                   filters,
                 )
@@ -258,22 +253,23 @@ export default function LibraryPage() {
 
   const isSearching = searchOverlay.kind === "loading";
   const filtersActive = countActiveLibraryFilters(filters) > 0;
-  const selectedAlbum = selectedAlbumId
-    ? albums.find((album) => album.id === selectedAlbumId)
-    : null;
+  const selectedAlbum =
+    sidebarView.kind === "album"
+      ? albums.find((album) => album.id === sidebarView.albumId)
+      : null;
 
   function getLibraryEmptyMessage(): string {
-    if (selectedAlbum) {
+    if (sidebarView.kind === "album" && selectedAlbum) {
       return filtersActive
         ? `No photos in "${selectedAlbum.name}" match your filters`
         : `No photos in "${selectedAlbum.name}" yet`;
     }
-    if (quickFilter === "favorites") {
+    if (sidebarView.kind === "quick" && sidebarView.filter === "favorites") {
       return filtersActive
         ? "No favorite photos match your filters"
         : "No favorite photos yet";
     }
-    if (quickFilter === "recent") {
+    if (sidebarView.kind === "quick" && sidebarView.filter === "recent") {
       return filtersActive
         ? "No photos from the last 7 days match your filters"
         : "No photos added in the last 7 days";
@@ -285,17 +281,17 @@ export default function LibraryPage() {
   }
 
   function getSearchEmptyMessage(): string {
-    if (selectedAlbum) {
+    if (sidebarView.kind === "album" && selectedAlbum) {
       return filtersActive
         ? `No photos in "${selectedAlbum.name}" match your search and filters`
         : `No photos in "${selectedAlbum.name}" match your search`;
     }
-    if (quickFilter === "favorites") {
+    if (sidebarView.kind === "quick" && sidebarView.filter === "favorites") {
       return filtersActive
         ? "No favorite photos found matching your search and filters"
         : "No favorite photos found matching your search";
     }
-    if (quickFilter === "recent") {
+    if (sidebarView.kind === "quick" && sidebarView.filter === "recent") {
       return filtersActive
         ? "No recent photos found matching your search and filters"
         : "No recent photos found matching your search";
@@ -308,11 +304,9 @@ export default function LibraryPage() {
   return (
     <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
       <LibrarySidebar
-        quickFilter={quickFilter}
-        onQuickFilterChange={setQuickFilter}
+        sidebarView={sidebarView}
+        onSidebarViewChange={setSidebarView}
         albums={albums}
-        selectedAlbumId={selectedAlbumId}
-        onSelectedAlbumChange={setSelectedAlbumId}
         onCreateAlbum={handleCreateAlbum}
       />
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
@@ -335,7 +329,7 @@ export default function LibraryPage() {
             albumMembershipByImageId={albumMembershipByImageId}
             onDeleteImage={handleDeleteImage}
             onFavoriteToggle={handleFavoriteToggle}
-            onAddedToAlbum={handleAddedToAlbum}
+            onAlbumMembershipChange={handleAlbumMembershipChange}
             libraryEmptyMessage={getLibraryEmptyMessage()}
             searchEmptyMessage={getSearchEmptyMessage()}
           />

@@ -7,23 +7,24 @@ import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import { Icon } from "@/components/shared/Icon";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import CreateAlbumModal from "@/components/library/CreateAlbumModal";
-import { LIBRARY_QUICK_FILTER_OPTIONS } from "@/constants/library-quick-filters";
+import {
+  DEFAULT_LIBRARY_SIDEBAR_VIEW,
+  LIBRARY_QUICK_FILTER_OPTIONS,
+} from "@/constants/library-quick-filters";
 import {
   LIBRARY_SIDEBAR_FOOTER_PADDING_X_PX,
   LIBRARY_SIDEBAR_WIDTH_PX,
 } from "@/constants/library-sidebar";
-import type { LibraryQuickFilter } from "@/lib/library-filters";
+import type { LibrarySidebarView } from "@/lib/library-filters";
 import type { AlbumRecord } from "@/types/album";
 
 const SECTION_LABEL =
   "text-xs font-semibold uppercase tracking-wide text-[#888888]";
 
 interface LibrarySidebarProps {
-  quickFilter: LibraryQuickFilter;
-  onQuickFilterChange: (filter: LibraryQuickFilter) => void;
+  sidebarView: LibrarySidebarView;
+  onSidebarViewChange: (view: LibrarySidebarView) => void;
   albums: AlbumRecord[];
-  selectedAlbumId: string | null;
-  onSelectedAlbumChange: (albumId: string | null) => void;
   onCreateAlbum: (name: string) => Promise<boolean>;
 }
 
@@ -32,17 +33,19 @@ interface LibrarySidebarProps {
  * previous header placement) and the profile menu is pinned to the bottom.
  */
 export default function LibrarySidebar({
-  quickFilter,
-  onQuickFilterChange,
+  sidebarView,
+  onSidebarViewChange,
   albums,
-  selectedAlbumId,
-  onSelectedAlbumChange,
   onCreateAlbum,
 }: LibrarySidebarProps) {
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   function handleAlbumClick(albumId: string) {
-    onSelectedAlbumChange(selectedAlbumId === albumId ? null : albumId);
+    if (sidebarView.kind === "album" && sidebarView.albumId === albumId) {
+      onSidebarViewChange(DEFAULT_LIBRARY_SIDEBAR_VIEW);
+      return;
+    }
+    onSidebarViewChange({ kind: "album", albumId });
   }
 
   return (
@@ -67,16 +70,16 @@ export default function LibrarySidebar({
             className="flex flex-col gap-0.5 px-3"
           >
             {LIBRARY_QUICK_FILTER_OPTIONS.map((option) => {
-              const isActive = quickFilter === option.id && !selectedAlbumId;
+              const isActive =
+                sidebarView.kind === "quick" && sidebarView.filter === option.id;
               return (
                 <button
                   key={option.id}
                   type="button"
                   aria-current={isActive ? "page" : undefined}
-                  onClick={() => {
-                    onSelectedAlbumChange(null);
-                    onQuickFilterChange(option.id);
-                  }}
+                  onClick={() =>
+                    onSidebarViewChange({ kind: "quick", filter: option.id })
+                  }
                   className={[
                     "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition-colors cursor-pointer outline-none focus:outline-none",
                     isActive
@@ -116,12 +119,10 @@ export default function LibrarySidebar({
           {albums.length === 0 ? (
             <p className="px-5 text-[12px] text-[#555555]">No albums yet</p>
           ) : (
-            <nav
-              aria-label="Albums"
-              className="flex flex-col gap-0.5 px-3"
-            >
+            <nav aria-label="Albums" className="flex flex-col gap-0.5 px-3">
               {albums.map((album) => {
-                const isActive = selectedAlbumId === album.id;
+                const isActive =
+                  sidebarView.kind === "album" && sidebarView.albumId === album.id;
                 return (
                   <button
                     key={album.id}
