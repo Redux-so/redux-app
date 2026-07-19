@@ -25,7 +25,7 @@ const AVAILABLE_MODELS = [
 
 const COMING_SOON_MODEL_ROW = {
   id: "coming-soon",
-  badge: "Coming soon",
+  badge: "More coming soon",
 } as const;
 
 const MODEL_MENU_ESTIMATED_HEIGHT = 72;
@@ -368,7 +368,11 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>(AVAILABLE_MODELS[0].id);
   const [placement, setPlacement] = useState<"above" | "below">("above");
-  const [menuCoords, setMenuCoords] = useState<{ top: number; left: number } | null>(null);
+  const [menuCoords, setMenuCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -390,6 +394,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
     setMenuCoords({
       left: rect.left,
       top: openBelow ? rect.bottom + 6 : rect.top - menuHeight - 6,
+      width: rect.width,
     });
   }, []);
 
@@ -441,6 +446,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
         top: openBelow
           ? rect.bottom + 6
           : rect.top - MODEL_MENU_ESTIMATED_HEIGHT - 6,
+        width: rect.width,
       });
     }
     setOpen((prev) => !prev);
@@ -467,9 +473,13 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: menuOffsetY }}
                 transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeOut" }}
-                style={{ top: menuCoords.top, left: menuCoords.left }}
+                style={{
+                  top: menuCoords.top,
+                  left: menuCoords.left,
+                  width: menuCoords.width,
+                }}
                 className={[
-                  "fixed z-[100] w-max max-w-[196px] rounded-md border border-white/[0.08] bg-[#111111] py-1",
+                  "fixed z-[100] rounded-md border border-white/[0.08] bg-[#111111] py-1",
                   CHAT_SURFACE_SHADOW,
                 ].join(" ")}
               >
@@ -483,15 +493,22 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                       aria-checked={isSelected}
                       onClick={() => handleSelectModel(model.id)}
                       className={[
-                        "flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors cursor-pointer",
+                        "flex w-full min-w-0 items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors cursor-pointer",
                         isSelected
                           ? "text-[#cccccc]"
                           : "text-[#888888] hover:bg-white/[0.05] hover:text-[#cccccc]",
                       ].join(" ")}
                     >
-                      <span className="min-w-0 flex-1 truncate">{model.label}</span>
+                      <span className="min-w-0 flex-1 truncate text-[10px] leading-snug">
+                        {model.label}
+                      </span>
                       {isSelected && (
-                        <Icon name="Check" size={16} className="shrink-0 text-[#888888]" aria-hidden />
+                        <Icon
+                          name="Check"
+                          size={16}
+                          className="shrink-0 text-[#888888]"
+                          aria-hidden
+                        />
                       )}
                     </button>
                   );
@@ -500,9 +517,8 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                 <div
                   role="menuitem"
                   aria-disabled="true"
-                  className="flex items-center justify-between gap-2 px-3 py-1.5 text-[12px] text-[#555555] opacity-60 cursor-default select-none"
+                  className="flex items-center justify-end gap-2 px-3 py-1.5 text-[12px] text-[#555555] opacity-60 cursor-default select-none"
                 >
-                  <span className="min-w-0 flex-1" aria-hidden />
                   <span className="shrink-0 rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-[#555555]">
                     {COMING_SOON_MODEL_ROW.badge}
                   </span>
