@@ -152,7 +152,7 @@ export default function SearchBar({
           disabled={isSearching}
           className={[
             "min-w-0 flex-1 bg-transparent text-white placeholder:text-[#888888] outline-none disabled:opacity-60",
-            isLarge ? "pr-2 text-[16px]" : "pr-1 text-[14px]",
+            isLarge ? "pr-2 text-[16px] placeholder:text-[14px]" : "pr-1 text-[14px] placeholder:text-[13px]",
           ].join(" ")}
         />
         <button
