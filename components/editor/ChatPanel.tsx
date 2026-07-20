@@ -714,7 +714,7 @@ export default function ChatPanel({
             >
               <Icon name="ChevronRight" size={16} aria-hidden={false} aria-label="Collapse chat panel" />
             </button>
-            <span className="text-[13px] font-semibold text-white/70 select-none">
+            <span className="text-[14px] font-semibold text-white select-none">
               Chat
             </span>
           </div>
