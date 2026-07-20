@@ -12,6 +12,14 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { BTN_PRIMARY_ICON, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
+import CreditShopModal from "@/components/shared/CreditShopModal";
+import UsageRing from "@/components/shared/UsageRing";
+import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
+import {
+  isChatQuotaBlocked,
+  quotaFromApi,
+  type UsageQuotaSnapshot,
+} from "@/lib/usage-ring-state";
 
 const USER_CHAT_BUBBLE_CLASS =
   "rounded-xl border border-white/[0.08] bg-[#1e0d3a] text-[13px] font-medium text-white py-2.5 px-4";
@@ -29,8 +37,6 @@ const COMING_SOON_MODEL_ROW = {
 } as const;
 
 const MODEL_MENU_ESTIMATED_HEIGHT = 72;
-const FREE_MESSAGE_ALLOWANCE = 20;
-const USAGE_TOOLTIP_DELAY_MS = 125;
 
 /** Reference-matched surfaces — Redux dark palette, Adam proportions/weight. */
 const CHAT_SURFACE_SHADOW =
@@ -78,7 +84,12 @@ interface PendingChange {
 }
 
 type SseEvent =
-  | { type: "meta"; lifetimeFreeRemaining: number; creditBalanceAfter: number }
+  | {
+      type: "meta";
+      lifetimeFreeRemaining: number;
+      lifetimeFreeUsed: number;
+      creditBalanceAfter: number;
+    }
   | { type: "text"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
   | { type: "done" };
@@ -125,244 +136,6 @@ async function fileToBase64(
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Free-chat usage ring
-// ---------------------------------------------------------------------------
-
-const RING_RADIUS = 7.5;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-const RING_TRANSITION_MS = 500;
-
-function ringOffsetForRemaining(remaining: number, total: number): number {
-  const progress = Math.max(0, Math.min(1, remaining / total));
-  return RING_CIRCUMFERENCE * (1 - progress);
-}
-
-function FreeChatUsageRing({
-  remainingFreeChats,
-  totalFreeChats,
-  reduceMotion,
-}: {
-  remainingFreeChats: number;
-  totalFreeChats: number;
-  reduceMotion: boolean;
-}) {
-  const targetOffset = ringOffsetForRemaining(remainingFreeChats, totalFreeChats);
-  const isEmpty = remainingFreeChats === 0;
-  const [displayOffset, setDisplayOffset] = useState<number | null>(null);
-  const [transitionEnabled, setTransitionEnabled] = useState(false);
-  const hasInitializedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      setDisplayOffset(RING_CIRCUMFERENCE);
-      if (reduceMotion) {
-        setTransitionEnabled(true);
-        setDisplayOffset(targetOffset);
-        return;
-      }
-      const frame = requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setTransitionEnabled(true);
-          setDisplayOffset(targetOffset);
-        });
-      });
-      return () => cancelAnimationFrame(frame);
-    }
-
-    setDisplayOffset(targetOffset);
-  }, [remainingFreeChats, totalFreeChats, targetOffset, reduceMotion]);
-
-  const strokeTransition = transitionEnabled && !reduceMotion
-    ? `stroke-dashoffset ${RING_TRANSITION_MS}ms ease-out`
-    : "none";
-
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      className="h-5 w-5 shrink-0"
-      aria-hidden
-    >
-      <g transform="rotate(-90 10 10)">
-        <circle
-          cx="10"
-          cy="10"
-          r={RING_RADIUS}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className={
-            isEmpty
-              ? "text-[#666666] animate-pulse"
-              : "text-[#444444]"
-          }
-        />
-        <circle
-          cx="10"
-          cy="10"
-          r={RING_RADIUS}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray={RING_CIRCUMFERENCE}
-          strokeDashoffset={displayOffset ?? RING_CIRCUMFERENCE}
-          style={{ transition: strokeTransition }}
-          className="text-[#888888]"
-        />
-      </g>
-    </svg>
-  );
-}
-
-function UsageRingLoading() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0" aria-hidden>
-      <circle
-        cx="10"
-        cy="10"
-        r={RING_RADIUS}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className="text-[#444444]"
-      />
-    </svg>
-  );
-}
-
-function UsageRingWithTooltip({
-  remainingFreeChats,
-  totalFreeChats,
-  reduceMotion,
-}: {
-  remainingFreeChats: number | null;
-  totalFreeChats: number;
-  reduceMotion: boolean;
-}) {
-  const [visible, setVisible] = useState(false);
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(pointer: coarse)");
-    setIsCoarsePointer(mq.matches);
-    const onChange = () => setIsCoarsePointer(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
-    if (!visible || !isCoarsePointer) return;
-    function onDocumentPointerDown(e: PointerEvent) {
-      if (!wrapperRef.current?.contains(e.target as Node)) {
-        setVisible(false);
-      }
-    }
-    document.addEventListener("pointerdown", onDocumentPointerDown);
-    return () => document.removeEventListener("pointerdown", onDocumentPointerDown);
-  }, [visible, isCoarsePointer]);
-
-  function clearHoverTimer() {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-  }
-
-  function showTooltip() {
-    clearHoverTimer();
-    hoverTimerRef.current = setTimeout(() => setVisible(true), USAGE_TOOLTIP_DELAY_MS);
-  }
-
-  function hideTooltip() {
-    clearHoverTimer();
-    setVisible(false);
-  }
-
-  function handleMouseEnter() {
-    if (isCoarsePointer) return;
-    showTooltip();
-  }
-
-  function handleMouseLeave() {
-    if (isCoarsePointer) return;
-    hideTooltip();
-  }
-
-  function handleFocus() {
-    showTooltip();
-  }
-
-  function handleBlur() {
-    hideTooltip();
-  }
-
-  function handleClick() {
-    if (!isCoarsePointer) return;
-    setVisible((prev) => !prev);
-  }
-
-  const ariaLabel =
-    remainingFreeChats === null
-      ? "Loading free chat allowance"
-      : `${remainingFreeChats} of ${totalFreeChats} free chats left`;
-
-  const tooltipText =
-    remainingFreeChats === null
-      ? "Loading…"
-      : `${remainingFreeChats} of ${totalFreeChats} free chats left`;
-
-  return (
-    <div
-      ref={wrapperRef}
-      className="relative shrink-0"
-      tabIndex={0}
-      role="img"
-      aria-label={ariaLabel}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onClick={handleClick}
-    >
-      {visible && (
-        <div
-          role="tooltip"
-          className={[
-            "absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap",
-            "rounded-md border border-white/[0.08] bg-[#111111] px-3 py-2",
-            CHAT_SURFACE_SHADOW,
-          ].join(" ")}
-        >
-          <p className="text-[12px] text-[#888888] leading-snug">{tooltipText}</p>
-          <div
-            aria-hidden
-            className="absolute left-1/2 top-full -translate-x-1/2 -mt-px border-[5px] border-transparent border-t-[#111111]"
-          />
-        </div>
-      )}
-      {remainingFreeChats === null ? (
-        <UsageRingLoading />
-      ) : (
-        <FreeChatUsageRing
-          remainingFreeChats={remainingFreeChats}
-          totalFreeChats={totalFreeChats}
-          reduceMotion={reduceMotion}
-        />
-      )}
-    </div>
-  );
-}
 
 function ChatModelSelector({ disabled }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -621,26 +394,25 @@ export default function ChatPanel({
   const [attachedBase64, setAttachedBase64] = useState<string | null>(null);
   const [attachedMediaType, setAttachedMediaType] = useState<string | null>(null);
 
-  /** Lifetime free messages left (0–20) and credits after last server sync. */
-  const [lifetimeFreeRemaining, setLifetimeFreeRemaining] = useState<number | null>(null);
-  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  /** Chat quota synced from GET /api/credits and live SSE meta events. */
+  const [chatQuota, setChatQuota] = useState<UsageQuotaSnapshot | null>(null);
+  const [creditShopOpen, setCreditShopOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const openCreditShop = useCallback(() => {
+    setCreditShopOpen(true);
+  }, []);
+
   const refreshChatQuota = useCallback(() => {
     void fetch("/api/credits")
       .then((r) => r.json())
-      .then(
-        (data: { creditBalance?: number; lifetimeFreeAI?: number }) => {
-          if (typeof data.creditBalance !== "number" || typeof data.lifetimeFreeAI !== "number") {
-            return;
-          }
-          setCreditBalance(data.creditBalance);
-          setLifetimeFreeRemaining(Math.max(0, FREE_MESSAGE_ALLOWANCE - data.lifetimeFreeAI));
-        },
-      )
+      .then((data) => {
+        const next = quotaFromApi(data);
+        if (next) setChatQuota(next);
+      })
       .catch(() => {});
   }, []);
 
@@ -654,11 +426,7 @@ export default function ChatPanel({
   }, [refreshChatQuota]);
 
   /** Hard block only when lifetime free is exhausted and balance is exactly zero. */
-  const chatBlocked =
-    lifetimeFreeRemaining !== null &&
-    creditBalance !== null &&
-    lifetimeFreeRemaining === 0 &&
-    creditBalance === 0;
+  const chatBlocked = isChatQuotaBlocked(chatQuota);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -738,10 +506,38 @@ export default function ChatPanel({
     abortRef.current?.abort();
   }
 
+  function promptPurchaseCredits() {
+    openCreditShop();
+    toast.custom(
+      (t) => (
+        <div
+          className={`flex items-center gap-3 transition-opacity ${TOAST_SHELL_CLASS} ${t.visible ? "opacity-100" : "opacity-0"}`}
+        >
+          <span>Purchase credits to continue chatting.</span>
+          <button
+            type="button"
+            className="underline underline-offset-2 font-medium whitespace-nowrap cursor-pointer"
+            onClick={() => {
+              toast.dismiss(t.id);
+              openCreditShop();
+            }}
+          >
+            Purchase credits →
+          </button>
+        </div>
+      ),
+      { duration: 5000 },
+    );
+  }
+
   // ── Send message ────────────────────────────────────────────────────────
   async function handleSend() {
     const text = input.trim();
-    if (!text || sending || chatBlocked) return;
+    if (!text || sending) return;
+    if (chatBlocked) {
+      promptPurchaseCredits();
+      return;
+    }
 
     const imagePreview = attachedPreview ?? undefined;
     const imageBase64 = attachedBase64 ?? undefined;
@@ -792,23 +588,7 @@ export default function ChatPanel({
       }
 
       if (res.status === 402) {
-        toast.custom(
-          (t) => (
-            <div
-              className={`flex items-center gap-3 transition-opacity ${TOAST_SHELL_CLASS} ${t.visible ? "opacity-100" : "opacity-0"}`}
-            >
-              <span>Insufficient credits.</span>
-              <a
-                href="/settings"
-                className="underline underline-offset-2 font-medium whitespace-nowrap"
-                onClick={() => toast.dismiss(t.id)}
-              >
-                Purchase credits →
-              </a>
-            </div>
-          ),
-          { duration: 5000 },
-        );
+        promptPurchaseCredits();
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
         return;
       }
@@ -842,8 +622,12 @@ export default function ChatPanel({
             }
 
             if (event.type === "meta") {
-              setLifetimeFreeRemaining(event.lifetimeFreeRemaining);
-              setCreditBalance(event.creditBalanceAfter);
+              setChatQuota((prev) => ({
+                lifetimeFreeUsed: event.lifetimeFreeUsed,
+                creditBalance: event.creditBalanceAfter,
+                totalPurchasedCredits: prev?.totalPurchasedCredits ?? 0,
+                hasPurchasedCredits: prev?.hasPurchasedCredits ?? false,
+              }));
             } else if (event.type === "text") {
               setMessages((prev) =>
                 prev.map((m) =>
@@ -1078,13 +862,18 @@ export default function ChatPanel({
 
             {chatBlocked && (
               <p className="pb-2 text-[12px] text-[#666666] leading-snug">
-                Free messages used.{" "}
-                <a
-                  href="/settings"
-                  className="text-[#a3a3a3] underline underline-offset-2 hover:text-white"
+                {chatQuota?.hasPurchasedCredits
+                  ? "You're out of credits. "
+                  : "Free messages used. "}
+                <button
+                  type="button"
+                  onClick={openCreditShop}
+                  className="text-[#a3a3a3] underline underline-offset-2 hover:text-white cursor-pointer"
                 >
-                  Purchase credits
-                </a>{" "}
+                  {chatQuota?.hasPurchasedCredits
+                    ? "Purchase more credits"
+                    : "Purchase credits"}
+                </button>{" "}
                 to continue chatting.
               </p>
             )}
@@ -1110,7 +899,9 @@ export default function ChatPanel({
                     onKeyDown={handleKeyDown}
                     placeholder={
                       chatBlocked
-                        ? "Purchase credits to continue chatting…"
+                        ? chatQuota?.hasPurchasedCredits
+                          ? "Purchase more credits to continue chatting…"
+                          : "Purchase credits to continue chatting…"
                         : "Describe the edit you want..."
                     }
                     rows={1}
@@ -1143,9 +934,9 @@ export default function ChatPanel({
 
                   <ChatModelSelector disabled={chatBlocked} />
 
-                  <UsageRingWithTooltip
-                    remainingFreeChats={lifetimeFreeRemaining}
-                    totalFreeChats={FREE_MESSAGE_ALLOWANCE}
+                  <UsageRing
+                    quota={chatQuota}
+                    onPurchaseClick={openCreditShop}
                     reduceMotion={!!prefersReducedMotion}
                   />
                 </div>
@@ -1183,6 +974,14 @@ export default function ChatPanel({
           </div>
         </div>
       )}
+
+      <CreditShopModal
+        open={creditShopOpen}
+        onClose={() => {
+          setCreditShopOpen(false);
+          refreshChatQuota();
+        }}
+      />
     </div>
   );
 }

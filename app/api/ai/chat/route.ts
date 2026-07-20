@@ -10,6 +10,7 @@ import {
 } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
+import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
 
 // ---------------------------------------------------------------------------
 // System prompt
@@ -38,7 +39,12 @@ Rules:
 // SSE helpers
 // ---------------------------------------------------------------------------
 type SseEvent =
-  | { type: "meta"; lifetimeFreeRemaining: number; creditBalanceAfter: number }
+  | {
+      type: "meta";
+      lifetimeFreeRemaining: number;
+      lifetimeFreeUsed: number;
+      creditBalanceAfter: number;
+    }
   | { type: "text"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
   | { type: "done" };
@@ -82,12 +88,12 @@ export async function POST(request: Request) {
   // ── Block only when lifetime free is used up AND there are no credits left.
   // While lifetimeFreeAI < 20, messages are free (lifetime counter increments).
   // Once lifetimeFreeAI reaches 20, each message deducts 1 credit with no extra step.
-  if (user.lifetimeFreeAI >= 20 && user.creditBalance === 0) {
+  if (user.lifetimeFreeAI >= USAGE_RING_CONFIG.freeChatAllowance && user.creditBalance === 0) {
     return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
   }
 
   /** True while the user still has lifetime free messages (before the 21st send). */
-  const onFreeTier = user.lifetimeFreeAI < 20;
+  const onFreeTier = user.lifetimeFreeAI < USAGE_RING_CONFIG.freeChatAllowance;
 
   // ── Rate limiting (per-minute burst, then hourly) ───────────────────────
   if (onFreeTier) {
@@ -134,6 +140,7 @@ export async function POST(request: Request) {
 
   // ── Consume free message or credit ───────────────────────────────────────
   let lifetimeFreeRemaining: number;
+  let lifetimeFreeUsed: number;
   let creditBalanceAfter: number;
 
   if (onFreeTier) {
@@ -141,7 +148,11 @@ export async function POST(request: Request) {
       where: { id: user.id },
       data: { lifetimeFreeAI: { increment: 1 } },
     });
-    lifetimeFreeRemaining = Math.max(0, 20 - (user.lifetimeFreeAI + 1));
+    lifetimeFreeUsed = user.lifetimeFreeAI + 1;
+    lifetimeFreeRemaining = Math.max(
+      0,
+      USAGE_RING_CONFIG.freeChatAllowance - lifetimeFreeUsed,
+    );
     creditBalanceAfter = user.creditBalance;
   } else {
     // Paid path: lifetime free already exhausted — charge 1 credit per message.
@@ -161,6 +172,7 @@ export async function POST(request: Request) {
       },
     });
     lifetimeFreeRemaining = 0;
+    lifetimeFreeUsed = user.lifetimeFreeAI;
     creditBalanceAfter = user.creditBalance - 1;
   }
 
@@ -193,7 +205,12 @@ export async function POST(request: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       controller.enqueue(
-        encodeEvent({ type: "meta", lifetimeFreeRemaining, creditBalanceAfter }),
+        encodeEvent({
+          type: "meta",
+          lifetimeFreeRemaining,
+          lifetimeFreeUsed,
+          creditBalanceAfter,
+        }),
       );
 
       let fullText = "";
