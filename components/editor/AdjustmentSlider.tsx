@@ -78,6 +78,13 @@ function getSliderAccentColor(
   }
 }
 
+function formatSignedAdjustmentValue(value: number): string {
+  const formatted = Number.isInteger(value) ? String(Math.abs(value)) : Math.abs(value).toFixed(1);
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `-${formatted}`;
+  return "0";
+}
+
 export default function AdjustmentSlider({
   label,
   value,
@@ -108,7 +115,7 @@ export default function AdjustmentSlider({
           className="text-[15px] text-[#888888] leading-none tabular-nums cursor-default select-none"
           onDoubleClick={resetToDefault}
         >
-          {Number.isInteger(value) ? value : value.toFixed(1)}
+          {formatSignedAdjustmentValue(value)}
         </span>
       </div>
 
