@@ -11,6 +11,7 @@ import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustmen
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
 import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import ProfileMenu from "@/components/shared/ProfileMenu";
+import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
 
 interface AdjustmentPanelProps {
   adjustments: Adjustments;
@@ -143,6 +144,32 @@ function RailBtn({
     >
       {children}
     </button>
+  );
+}
+
+function RailLink({
+  href,
+  title,
+  external,
+  children,
+}: {
+  href: string;
+  title: string;
+  external?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={href}
+      title={title}
+      aria-label={title}
+      {...(external
+        ? { target: "_blank", rel: "noopener noreferrer" }
+        : {})}
+      className="flex shrink-0 items-center justify-center h-12 w-12 rounded-xl text-[#888888] transition-colors hover:bg-white/[0.06] hover:text-white"
+    >
+      {children}
+    </a>
   );
 }
 
@@ -781,7 +808,23 @@ export default function AdjustmentPanel({
             </RailBtn>
           </div>
 
-          <div className="mt-auto shrink-0 pb-4 w-full flex justify-center">
+          <div className="mt-auto shrink-0 pb-4 w-full flex flex-col items-center gap-4">
+            <RailLink href={REDUX_DOCS_URL} title="Docs" external>
+              <Icon
+                name="BookOpen01"
+                size={24}
+                strokeWidth={RAIL_ICON_STROKE}
+                aria-hidden
+              />
+            </RailLink>
+            <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback">
+              <Icon
+                name="HelpCircle"
+                size={24}
+                strokeWidth={RAIL_ICON_STROKE}
+                aria-hidden
+              />
+            </RailLink>
             <ProfileMenu
               variant="compact"
               settingsReturnPath={
