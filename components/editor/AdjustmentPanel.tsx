@@ -796,17 +796,17 @@ export default function AdjustmentPanel({
         {/* Section panel */}
         <div
           className={[
-            "flex flex-col shrink-0 h-full min-w-0 bg-black/50 backdrop-blur-xl border-r border-white/[0.07] overflow-hidden transition-[width] duration-200 ease-out",
-            activeSection ? "w-[400px]" : "w-0",
+            "flex flex-col shrink-0 h-full min-w-0 bg-[#0f0f0f] rounded-r-2xl border-r border-white/[0.07] overflow-hidden transition-[width] duration-200 ease-out",
+            activeSection ? "w-[360px]" : "w-0",
           ].join(" ")}
         >
           {activeSection && (
             <div
               ref={panelInnerRef}
-              className="flex flex-col h-full w-[400px] min-w-[400px]"
+              className="flex flex-col h-full w-[360px] min-w-[360px]"
             >
               <div className="flex items-center shrink-0 min-h-[60px] py-4 border-b border-white/[0.07] px-8">
-                <span className="text-[13px] font-semibold text-white/70 select-none">
+                <span className="text-[14px] font-semibold text-white select-none">
                   {activeSectionLabel}
                 </span>
               </div>

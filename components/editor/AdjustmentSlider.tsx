@@ -101,7 +101,7 @@ export default function AdjustmentSlider({
   return (
     <div className="flex flex-col gap-3 px-8 py-3.5">
       <div className="flex items-center justify-between">
-        <span className="text-[15px] text-[#e5e5e5] leading-none select-none">
+        <span className="text-[15px] font-semibold text-[#e5e5e5] leading-none select-none">
           {label}
         </span>
         <span

@@ -682,8 +682,8 @@ export default function ChatPanel({
     <div
       className={[
         "flex flex-col shrink-0 h-full min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
-        "bg-black/50 backdrop-blur-xl border-l border-white/[0.07]",
-        panelCollapsed ? "w-[44px]" : "w-[400px]",
+        "bg-[#060606] border-l border-white/[0.07] rounded-l-2xl",
+        panelCollapsed ? "w-[44px]" : "w-[360px]",
       ].join(" ")}
     >
       {/* Panel header */}
