@@ -137,8 +137,8 @@ function RailBtn({
       className={[
         "flex shrink-0 items-center justify-center h-12 w-12 rounded-xl transition-colors cursor-pointer",
         active
-          ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
-          : "text-white/40 hover:bg-white/[0.07] hover:text-white",
+          ? "bg-white/[0.08] text-white"
+          : "text-[#888888] hover:bg-white/[0.06] hover:text-white",
       ].join(" ")}
     >
       {children}
