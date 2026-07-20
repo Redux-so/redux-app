@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { BTN_MODAL_SOLID } from "@/lib/button-styles";
@@ -26,9 +27,14 @@ function formatPrice(cents: number): string {
 }
 
 export default function CreditShopModal({ open, onClose }: CreditShopModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -43,6 +49,15 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
       })
       .finally(() => setLoading(false));
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape" && !purchasing) onClose();
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, onClose, purchasing]);
 
   async function handlePurchase(bundleId: string) {
     setPurchasing(bundleId);
@@ -67,7 +82,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
     }
   }
 
-  return (
+  const modal = (
     <AnimatePresence>
       {open && (
         <>
@@ -78,7 +93,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-40 bg-black/60"
+            className="fixed inset-0 z-[80] bg-black/60"
             onClick={onClose}
           />
 
@@ -89,7 +104,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="fixed z-50 inset-0 flex items-center justify-center pointer-events-none"
+            className="fixed inset-0 z-[90] flex items-center justify-center pointer-events-none"
           >
             <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#111111]/95 backdrop-blur-xl border border-white/[0.1] rounded-xl shadow-2xl">
               {/* Header */}
@@ -177,4 +192,8 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
       )}
     </AnimatePresence>
   );
+
+  if (!mounted) return null;
+
+  return createPortal(modal, document.body);
 }

@@ -10,6 +10,7 @@ import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
 import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import ProfileMenu from "@/components/shared/ProfileMenu";
 
 interface AdjustmentPanelProps {
   adjustments: Adjustments;
@@ -778,6 +779,17 @@ export default function AdjustmentPanel({
             >
               <RailIcon iconName="ClockRewind" />
             </RailBtn>
+          </div>
+
+          <div className="mt-auto shrink-0 pb-4 w-full flex justify-center">
+            <ProfileMenu
+              variant="compact"
+              settingsReturnPath={
+                imageId
+                  ? `/editor?imageId=${encodeURIComponent(imageId)}`
+                  : "/editor"
+              }
+            />
           </div>
         </div>
 

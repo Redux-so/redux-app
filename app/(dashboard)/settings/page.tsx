@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -8,7 +8,7 @@ import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import toast from "react-hot-toast";
-import BackToLibraryButton from "@/components/shared/BackToLibraryButton";
+import SettingsBackButton from "@/components/shared/SettingsBackButton";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import { reduxUserProfileAppearance } from "@/lib/redux-clerk-appearance";
@@ -185,7 +185,16 @@ export default function SettingsPage() {
       <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
         {/* Header */}
         <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-[#2a2a2a] bg-[#0a0a0a] pl-3 pr-3">
-          <BackToLibraryButton />
+          <Suspense
+            fallback={
+              <span className="inline-flex shrink-0 items-center gap-2 px-2 py-1.5 text-[13px] font-medium text-[#888888]">
+                <Icon name="ChevronLeft" size={20} aria-hidden />
+                Back
+              </span>
+            }
+          >
+            <SettingsBackButton />
+          </Suspense>
         </header>
 
         {/* Scrollable content */}

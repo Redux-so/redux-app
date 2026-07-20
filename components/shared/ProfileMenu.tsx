@@ -1,38 +1,110 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/shared/Icon";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import ProfileMenuTrigger, {
+  type ProfileMenuVariant,
+} from "@/components/shared/ProfileMenuTrigger";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import CreditShopModal from "@/components/shared/CreditShopModal";
+import {
+  buildSettingsHref,
+} from "@/lib/settings-navigation";
+
+const POPOVER_ESTIMATED_HEIGHT = 168;
 
 interface ProfileMenuProps {
+  variant?: ProfileMenuVariant;
   /** Extra classes for the relative positioning wrapper — lets each usage site control width/alignment. */
   className?: string;
   /** When set, popover spans this width (e.g. full library sidebar). */
   popoverPanelWidthPx?: number;
   /** Negative inset aligns popover left edge with a parent panel edge (e.g. sidebar footer padding). */
   popoverInsetLeftPx?: number;
+  /** Where Settings should return after back navigation. Defaults from current route. */
+  settingsReturnPath?: string;
+}
+
+function ProfileMenuPopoverContent({
+  onSettings,
+  onPurchaseCredits,
+  onSignOut,
+}: {
+  onSettings: () => void;
+  onPurchaseCredits: () => void;
+  onSignOut: () => void;
+}) {
+  return (
+    <div className="py-1.5">
+      <button
+        type="button"
+        onClick={onSettings}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
+      >
+        <Icon name="Settings01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
+        Settings
+      </button>
+
+      <button
+        type="button"
+        onClick={onPurchaseCredits}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
+      >
+        <Icon name="Coins01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
+        Purchase Credits
+      </button>
+
+      <div className="my-1.5 border-t border-white/[0.08]" />
+
+      <button
+        type="button"
+        onClick={onSignOut}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#ef4444] hover:bg-white/[0.07] transition-colors cursor-pointer rounded-lg"
+      >
+        <Icon name="LogOut01" size={16} className="shrink-0" aria-hidden />
+        Log Out
+      </button>
+    </div>
+  );
 }
 
 /**
- * Avatar + name + credits trigger that opens the Settings / Purchase Credits / Log Out
- * popover. Reusable profile trigger for sidebar and other shell surfaces.
+ * Avatar trigger + Settings / Purchase Credits / Log Out popover.
+ * `full` — library sidebar (avatar, name, credits). `compact` — editor tool rail (avatar only).
  */
 export default function ProfileMenu({
+  variant = "full",
   className,
   popoverPanelWidthPx,
   popoverInsetLeftPx = 0,
+  settingsReturnPath,
 }: ProfileMenuProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useUser();
   const { signOut } = useClerk();
   const [credits, setCredits] = useState<number | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [creditShopOpen, setCreditShopOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuCoords, setMenuCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
+  const resolvedPopoverWidth = popoverPanelWidthPx ?? 208;
+  const usePortaledPopover = variant === "compact";
 
   useEffect(() => {
     fetch("/api/credits")
@@ -45,17 +117,66 @@ export default function ProfileMenu({
       .catch(() => {});
   }, []);
 
-  // Close popover on outside click
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const menuHeight = menuRef.current?.offsetHeight ?? POPOVER_ESTIMATED_HEIGHT;
+    const gap = 8;
+
+    let left = rect.right + gap;
+    let top = rect.bottom - menuHeight;
+
+    if (left + resolvedPopoverWidth > window.innerWidth - gap) {
+      left = Math.max(gap, rect.left - resolvedPopoverWidth - gap);
+    }
+
+    if (top < gap) {
+      top = gap;
+    }
+
+    if (top + menuHeight > window.innerHeight - gap) {
+      top = Math.max(gap, window.innerHeight - menuHeight - gap);
+    }
+
+    setMenuCoords({ left, top });
+  }, [resolvedPopoverWidth]);
+
+  useLayoutEffect(() => {
+    if (!popoverOpen || !usePortaledPopover) return;
+    updateMenuPosition();
+  }, [popoverOpen, usePortaledPopover, updateMenuPosition]);
+
   useEffect(() => {
     if (!popoverOpen) return;
+
     function handleOutside(e: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setPopoverOpen(false);
-      }
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setPopoverOpen(false);
     }
+
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setPopoverOpen(false);
+    }
+
+    function handleReposition() {
+      if (usePortaledPopover) updateMenuPosition();
+    }
+
     document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [popoverOpen]);
+    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [popoverOpen, usePortaledPopover, updateMenuPosition]);
 
   function openCreditShop() {
     setPopoverOpen(false);
@@ -68,87 +189,106 @@ export default function ProfileMenu({
     router.push("/sign-in");
   }
 
+  const userName = user?.fullName ?? user?.firstName ?? "";
+  const resolvedSettingsReturnPath =
+    settingsReturnPath ??
+    (pathname === "/editor" ? "/editor" : "/library");
+
+  const popoverContent = (
+    <ProfileMenuPopoverContent
+      onSettings={() => {
+        setPopoverOpen(false);
+        router.push(buildSettingsHref(resolvedSettingsReturnPath));
+      }}
+      onPurchaseCredits={openCreditShop}
+      onSignOut={() => void handleSignOut()}
+    />
+  );
+
+  const portaledPopover =
+    usePortaledPopover && typeof document !== "undefined"
+      ? createPortal(
+          <AnimatePresence>
+            {popoverOpen && menuCoords && (
+              <motion.div
+                ref={menuRef}
+                key="profile-menu-portal"
+                initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{
+                  position: "fixed",
+                  top: menuCoords.top,
+                  left: menuCoords.left,
+                  width: resolvedPopoverWidth,
+                  zIndex: 80,
+                }}
+                className="bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+              >
+                {popoverContent}
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+
   return (
     <>
       <div
-        ref={popoverRef}
-        className={["relative flex min-w-0 items-center", className ?? ""].join(" ")}
+        ref={rootRef}
+        className={[
+          "relative flex min-w-0 items-center",
+          variant === "compact" ? "justify-center" : "",
+          className ?? "",
+        ].join(" ")}
       >
-        {/* Popover */}
-        <AnimatePresence>
-          {popoverOpen && (
-            <motion.div
-              key="popover"
-              initial={{ opacity: 0, scale: 0.95, y: 4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 4 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute bottom-full mb-2 z-50 bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
-              style={{
-                width: popoverPanelWidthPx ?? 208,
-                left: popoverInsetLeftPx,
-              }}
-            >
-              <div className="py-1.5">
-                <button
-                  onClick={() => {
-                    setPopoverOpen(false);
-                    router.push("/settings");
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
-                >
-                  <Icon name="Settings01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
-                  Settings
-                </button>
+        {!usePortaledPopover && (
+          <AnimatePresence>
+            {popoverOpen && (
+              <motion.div
+                key="popover"
+                initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute bottom-full mb-2 z-50 bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+                style={{
+                  width: resolvedPopoverWidth,
+                  left: popoverInsetLeftPx,
+                }}
+              >
+                {popoverContent}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
 
-                <button
-                  onClick={openCreditShop}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
-                >
-                  <Icon name="Coins01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
-                  Purchase Credits
-                </button>
-
-                <div className="my-1.5 border-t border-white/[0.08]" />
-
-                <button
-                  onClick={() => void handleSignOut()}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#ef4444] hover:bg-white/[0.07] transition-colors cursor-pointer rounded-lg"
-                >
-                  <Icon name="LogOut01" size={16} className="shrink-0" aria-hidden />
-                  Log Out
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Profile trigger */}
-        <button
-          onClick={() => setPopoverOpen((prev) => !prev)}
-          className="flex min-w-0 items-center gap-2.5 w-full rounded-lg px-1.5 py-1.5 -mx-1 hover:bg-white/[0.06] transition-colors cursor-pointer"
-        >
-          {user?.imageUrl ? (
-            <Image
-              src={user.imageUrl}
-              alt="avatar"
-              width={36}
-              height={36}
-              className="h-[36px] w-[36px] rounded-lg object-cover shrink-0"
-            />
-          ) : (
-            <div className="w-[36px] h-[36px] rounded-lg bg-white/[0.06] border border-white/[0.08] shrink-0" />
-          )}
-          <div className="flex min-w-0 flex-col text-left">
-            <span className="text-white text-[14px] leading-[1.3] font-medium truncate">
-              {user?.fullName ?? user?.firstName ?? ""}
-            </span>
-            <span className="text-[#888888] text-[12px] leading-[1.3] whitespace-nowrap truncate">
-              {credits !== null ? credits.toLocaleString() : "—"} Credits
-            </span>
-          </div>
-        </button>
+        <ProfileMenuTrigger
+          ref={triggerRef}
+          variant={variant}
+          open={popoverOpen}
+          onClick={() => {
+            if (!popoverOpen && usePortaledPopover && triggerRef.current) {
+              const rect = triggerRef.current.getBoundingClientRect();
+              setMenuCoords({
+                left: rect.right + 8,
+                top: Math.max(
+                  8,
+                  rect.bottom - POPOVER_ESTIMATED_HEIGHT,
+                ),
+              });
+            }
+            setPopoverOpen((prev) => !prev);
+          }}
+          imageUrl={user?.imageUrl}
+          userName={userName}
+          credits={credits}
+        />
       </div>
+
+      {portaledPopover}
 
       <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />
     </>

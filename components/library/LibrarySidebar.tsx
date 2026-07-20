@@ -218,9 +218,11 @@ export default function LibrarySidebar({
 
         <div className="shrink-0 px-4 py-4 border-t border-white/[0.06]">
           <ProfileMenu
+            variant="full"
             className="w-full"
             popoverPanelWidthPx={LIBRARY_SIDEBAR_WIDTH_PX}
             popoverInsetLeftPx={-LIBRARY_SIDEBAR_FOOTER_PADDING_X_PX}
+            settingsReturnPath="/library"
           />
         </div>
       </aside>
