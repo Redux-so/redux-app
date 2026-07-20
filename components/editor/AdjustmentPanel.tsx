@@ -796,8 +796,10 @@ export default function AdjustmentPanel({
         {/* Section panel */}
         <div
           className={[
-            "flex flex-col shrink-0 h-full min-w-0 bg-[#0f0f0f] rounded-r-2xl border-r border-white/[0.07] overflow-hidden transition-[width] duration-200 ease-out",
-            activeSection ? "w-[360px]" : "w-0",
+            "flex flex-col shrink-0 h-full min-w-0 bg-[#0f0f0f] overflow-hidden transition-[width] duration-200 ease-out",
+            activeSection
+              ? "w-[360px] rounded-r-2xl border-r border-white/[0.07]"
+              : "w-0 border-r-0",
           ].join(" ")}
         >
           {activeSection && (
