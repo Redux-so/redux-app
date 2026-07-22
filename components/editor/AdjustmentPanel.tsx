@@ -221,10 +221,10 @@ function ToolBtn({
       disabled={disabled}
       className={
         disabled
-          ? "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-md border border-white/[0.05] bg-white/[0.03] text-white/20 opacity-40 cursor-not-allowed"
+          ? "flex w-full items-center justify-center h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-white/[0.05] bg-white/[0.03] text-white/20 opacity-40 cursor-not-allowed"
           : active
-            ? `${BTN_PRIMARY_SOLID} w-full capitalize my-1`
-            : "flex w-full items-center justify-center h-11 px-3 my-1 text-[14px] font-medium capitalize rounded-md border border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer"
+            ? `${BTN_PRIMARY_SOLID} w-full capitalize`
+            : "flex w-full items-center justify-center h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-white/[0.08] bg-white/[0.05] text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer"
       }
     >
       {label}
@@ -956,7 +956,7 @@ export default function AdjustmentPanel({
 
                   {activeSection === "retouch" && (
                     <div className="px-8 pt-4 pb-5 flex flex-col gap-3">
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3 items-center">
                         <AIButton
                           label="Heal"
                           loading={loadingHeal}
