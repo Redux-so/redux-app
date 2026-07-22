@@ -173,7 +173,7 @@ function RailLink({
   );
 }
 
-// Full-width AI button (star icon + label)
+// Credit-backed AI action — matches toolbar Export (`BTN_PRIMARY_SOLID`)
 function AIButton({
   label,
   loading,
@@ -187,14 +187,15 @@ function AIButton({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={loading || disabled}
-      className="flex items-center justify-center gap-[7px] w-full h-11 my-1.5 bg-[#682FBF]/[0.1] border border-[#682FBF]/30 rounded-md text-[14px] text-[#C4A0F5] hover:bg-[#682FBF]/[0.18] hover:border-[#682FBF]/50 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+      className={`${BTN_PRIMARY_SOLID} w-full`}
     >
       {loading ? (
         <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
       ) : (
-        <Icon name="MagicWand01" size={16} className="text-[#9B6EE8]" aria-hidden />
+        <Icon name="MagicWand01" size={16} aria-hidden />
       )}
       {label}
     </button>
