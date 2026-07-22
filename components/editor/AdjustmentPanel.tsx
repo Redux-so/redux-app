@@ -10,6 +10,7 @@ import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
 import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
 
@@ -851,10 +852,8 @@ export default function AdjustmentPanel({
               ref={panelInnerRef}
               className="flex flex-col h-full w-[360px] min-w-[360px]"
             >
-              <div className="flex items-center shrink-0 min-h-[60px] py-4 border-b border-white/[0.07] px-8">
-                <span className="text-[14px] font-semibold text-white select-none">
-                  {activeSectionLabel}
-                </span>
+              <div className={`${PANEL_HEADER} px-8`}>
+                <span className={PANEL_TITLE}>{activeSectionLabel}</span>
               </div>
 
               {activeSection === "history" ? (

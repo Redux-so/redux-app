@@ -11,6 +11,7 @@ import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { BTN_PRIMARY_ICON, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import UsageRing from "@/components/shared/UsageRing";
@@ -689,7 +690,7 @@ export default function ChatPanel({
       {/* Panel header */}
       <div
         className={[
-          "flex items-center shrink-0 h-12 border-b border-white/[0.07]",
+          PANEL_HEADER,
           panelCollapsed ? "justify-center px-0" : "px-4",
         ].join(" ")}
       >
@@ -714,9 +715,7 @@ export default function ChatPanel({
             >
               <Icon name="ChevronRight" size={16} aria-hidden={false} aria-label="Collapse chat panel" />
             </button>
-            <span className="text-[14px] font-semibold text-white select-none">
-              Chat
-            </span>
+            <span className={PANEL_TITLE}>Chat</span>
           </div>
         )}
       </div>
