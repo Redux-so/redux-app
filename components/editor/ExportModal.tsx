@@ -8,7 +8,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import {
   BTN_FORMAT_IDLE,
   BTN_MODAL_FORMAT_SELECTED,
-  BTN_MODAL_SOLID,
+  BTN_PRIMARY_SOLID,
 } from "@/lib/button-styles";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
@@ -158,7 +158,7 @@ export default function ExportModal({
                     format === f ? BTN_MODAL_FORMAT_SELECTED : BTN_FORMAT_IDLE
                   }
                 >
-                  {f}
+                  {f.toUpperCase()}
                 </button>
               ))}
             </div>
@@ -210,10 +210,10 @@ export default function ExportModal({
             type="button"
             onClick={() => void triggerExport()}
             disabled={loading || !imageId}
-            className={BTN_MODAL_SOLID}
+            className={BTN_PRIMARY_SOLID}
           >
             {pendingAction === "download" ? (
-              <LoadingSpinner size="sm" variant="default" label="Exporting" />
+              <LoadingSpinner size="sm" variant="brand" label="Exporting" />
             ) : (
               <Icon name="Download01" size={16} aria-hidden />
             )}
