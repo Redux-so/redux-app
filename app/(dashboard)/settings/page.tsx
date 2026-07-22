@@ -12,6 +12,11 @@ import SettingsBackButton from "@/components/shared/SettingsBackButton";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import { reduxUserProfileAppearance } from "@/lib/redux-clerk-appearance";
+import {
+  SETTINGS_NAV_ITEMS,
+  TRANSACTION_HISTORY_PREVIEW_ROWS,
+  type SettingsSectionId,
+} from "@/components/settings/settings-nav";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,15 +60,14 @@ function formatFeature(feature: string | null): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-const SECTION_LABEL =
-  "text-[12px] font-semibold text-[#888888]";
+const SECTION_LABEL = "text-[12px] font-semibold text-[#888888]";
 const SETTING_ROW =
   "flex items-center justify-between py-3.5 border-b border-[#2a2a2a] last:border-0";
 const BTN_GHOST =
   "h-9 px-4 text-[14px] text-[#888888] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
 
-/** Transaction list scrolls after this many rows (~40px per row → max-h-[400px]) */
-const TRANSACTION_HISTORY_VISIBLE_ROWS = 10;
+const NAV_ITEM_BASE =
+  "shrink-0 rounded-lg px-3 py-2 text-left text-[14px] font-medium transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/20";
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
@@ -72,8 +76,6 @@ function Skeleton({ className }: { className?: string }) {
     <div className={`bg-[#1a1a1a] rounded animate-pulse ${className ?? ""}`} />
   );
 }
-
-// ─── Section wrapper ───────────────────────────────────────────────────────────
 
 function Section({
   label,
@@ -92,6 +94,81 @@ function Section({
   );
 }
 
+function SettingsNavItem({
+  label,
+  active,
+  onClick,
+  layout,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  layout: "vertical" | "horizontal";
+}) {
+  return (
+    <button
+      type="button"
+      aria-current={active ? "page" : undefined}
+      onClick={onClick}
+      className={[
+        NAV_ITEM_BASE,
+        layout === "horizontal" ? "rounded-md whitespace-nowrap" : "w-full",
+        active
+          ? "bg-white/[0.08] text-white"
+          : "text-[#888888] hover:bg-white/[0.06] hover:text-white",
+      ].join(" ")}
+    >
+      {label}
+    </button>
+  );
+}
+
+function TransactionTable({ transactions }: { transactions: Transaction[] }) {
+  return (
+    <div className="border border-[#2a2a2a] rounded-xl overflow-hidden">
+      <div className="grid grid-cols-4 px-3 py-2 bg-[#161616] border-b border-[#2a2a2a]">
+        {["Date", "Feature", "Type", "Amount"].map((h) => (
+          <span key={h} className="text-[11px] font-medium text-[#555555]">
+            {h}
+          </span>
+        ))}
+      </div>
+      {transactions.map((tx) => (
+        <div
+          key={tx.id}
+          className="grid grid-cols-4 px-3 py-[10px] border-b border-[#2a2a2a] last:border-0 hover:bg-[#161616] transition-colors"
+        >
+          <span className="text-[14px] text-[#888888]">
+            {formatDate(tx.createdAt)}
+          </span>
+          <span className="text-[14px] text-[#888888] truncate">
+            {formatFeature(tx.feature)}
+          </span>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+              tx.type === "PURCHASE" || tx.type === "BONUS"
+                ? "bg-[#22c55e]/10 text-[#22c55e]"
+                : tx.type === "REFUND"
+                  ? "bg-[#f59e0b]/10 text-[#f59e0b]"
+                  : "bg-white/[0.06] text-[#888888]"
+            }`}
+          >
+            {tx.type.charAt(0) + tx.type.slice(1).toLowerCase()}
+          </span>
+          <span
+            className={`text-[14px] font-medium ${
+              tx.amount > 0 ? "text-[#22c55e]" : "text-white"
+            }`}
+          >
+            {tx.amount > 0 ? "+" : ""}
+            {tx.amount}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -99,11 +176,12 @@ export default function SettingsPage() {
   const { user, isLoaded: userLoaded } = useUser();
   const { openUserProfile, signOut } = useClerk();
 
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>("profile");
   const [stats, setStats] = useState<Stats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [creditShopOpen, setCreditShopOpen] = useState(false);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
 
-  // Dialog states
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showClearLibrary, setShowClearLibrary] = useState(false);
@@ -127,6 +205,10 @@ export default function SettingsPage() {
   useEffect(() => {
     void fetchStats();
   }, [fetchStats]);
+
+  useEffect(() => {
+    setShowAllTransactions(false);
+  }, [activeSection]);
 
   async function handleDeleteAccount() {
     setDeletingAccount(true);
@@ -180,10 +262,277 @@ export default function SettingsPage() {
     }
   }
 
+  const transactions = stats?.transactionHistory ?? [];
+  const hasMoreTransactions =
+    transactions.length > TRANSACTION_HISTORY_PREVIEW_ROWS;
+  const visibleTransactions = showAllTransactions
+    ? transactions
+    : transactions.slice(0, TRANSACTION_HISTORY_PREVIEW_ROWS);
+
+  function renderSectionContent() {
+    switch (activeSection) {
+      case "profile":
+        return (
+          <Section label="Account & Profile">
+            <div className="flex items-center gap-4 py-5 border-b border-[#2a2a2a]">
+              {!userLoaded ? (
+                <Skeleton className="w-[56px] h-[56px] rounded-full shrink-0" />
+              ) : user?.imageUrl ? (
+                <Image
+                  src={user.imageUrl}
+                  alt="avatar"
+                  width={56}
+                  height={56}
+                  className="rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-[56px] h-[56px] rounded-full bg-[#1f1f1f] border border-[#2a2a2a] shrink-0" />
+              )}
+              <div className="flex flex-col gap-[2px] min-w-0">
+                {!userLoaded ? (
+                  <>
+                    <Skeleton className="w-[140px] h-[14px]" />
+                    <Skeleton className="w-[180px] h-[11px] mt-1" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-white text-[14px] font-medium truncate">
+                      {user?.fullName ?? user?.firstName ?? "—"}
+                    </span>
+                    <span className="text-[#888888] text-[14px] truncate">
+                      {user?.emailAddresses?.[0]?.emailAddress ?? "—"}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className={SETTING_ROW}>
+              <span className="text-[14px] text-white">Profile</span>
+              <button
+                type="button"
+                onClick={() => openUserProfile({ appearance: reduxUserProfileAppearance })}
+                className={BTN_GHOST}
+              >
+                Edit Profile
+              </button>
+            </div>
+            <div className={SETTING_ROW}>
+              <span className="text-[14px] text-white">Password</span>
+              <button
+                type="button"
+                onClick={() => openUserProfile({ appearance: reduxUserProfileAppearance })}
+                className={BTN_GHOST}
+              >
+                Change Password
+              </button>
+            </div>
+            <div className={SETTING_ROW}>
+              <div>
+                <span className="text-[14px] text-[#ef4444]">Delete Account</span>
+                <p className="text-[12px] text-[#555555] mt-[2px]">
+                  Permanently delete your account and all data
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteAccount(true)}
+                className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer whitespace-nowrap"
+              >
+                Delete Account
+              </button>
+            </div>
+          </Section>
+        );
+
+      case "billing":
+        return (
+          <Section label="Credits & Billing">
+            <div className="py-5 border-b border-[#2a2a2a]">
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-[#161616] border border-[#2a2a2a] rounded-xl px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-[32px] h-[32px] rounded-md bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
+                    <Icon name="Coins01" size={16} className="text-white" aria-hidden />
+                  </div>
+                  <div>
+                    <p className="text-[#888888] text-[12px]">Credit Balance</p>
+                    {loadingStats ? (
+                      <Skeleton className="w-[60px] h-[20px] mt-1" />
+                    ) : (
+                      <p className="text-white text-[28px] font-bold leading-none mt-[2px]">
+                        {(stats?.creditBalance ?? 0).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreditShopOpen(true)}
+                  className={BTN_PRIMARY_SOLID}
+                >
+                  Purchase Credits
+                </button>
+              </div>
+            </div>
+
+            <div className="py-5 border-b border-[#2a2a2a]">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className={SECTION_LABEL}>Transaction History</p>
+                {hasMoreTransactions && !showAllTransactions && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTransactions(true)}
+                    className="text-[12px] font-medium text-[#B07EF0] hover:text-[#c9a0f5] transition-colors cursor-pointer"
+                  >
+                    View all
+                  </button>
+                )}
+              </div>
+              {loadingStats ? (
+                <div className="flex flex-col gap-2">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-[36px] w-full" />
+                  ))}
+                </div>
+              ) : !transactions.length ? (
+                <p className="text-[#555555] text-[14px] py-4 text-center">
+                  No transactions yet
+                </p>
+              ) : (
+                <div
+                  className={
+                    showAllTransactions && transactions.length > 10
+                      ? "max-h-[400px] overflow-y-auto"
+                      : undefined
+                  }
+                >
+                  <TransactionTable transactions={visibleTransactions} />
+                </div>
+              )}
+            </div>
+
+            <div className={SETTING_ROW}>
+              <div>
+                <span className="text-[14px] text-white">Billing History</span>
+                <p className="text-[12px] text-[#555555] mt-[2px]">
+                  View invoices and manage payment methods
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleBillingPortal()}
+                disabled={portalLoading}
+                className={`${BTN_GHOST} flex items-center gap-[6px]`}
+              >
+                {portalLoading ? (
+                  <LoadingSpinner size="xs" label="Opening billing portal" />
+                ) : (
+                  <Icon name="LinkExternal01" size={16} aria-hidden />
+                )}
+                Billing Portal
+              </button>
+            </div>
+          </Section>
+        );
+
+      case "storage":
+        return (
+          <Section label="Storage">
+            <div className={SETTING_ROW}>
+              <div className="flex items-center gap-3">
+                <Icon name="Image01" size={16} className="text-[#555555] shrink-0" aria-hidden />
+                <span className="text-[14px] text-white">Photos</span>
+              </div>
+              {loadingStats ? (
+                <Skeleton className="w-[40px] h-[14px]" />
+              ) : (
+                <span className="text-[14px] text-[#888888]">
+                  {(stats?.imageCount ?? 0).toLocaleString()} photo
+                  {stats?.imageCount !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+
+            <div className={SETTING_ROW}>
+              <div className="flex items-center gap-3">
+                <Icon name="Database01" size={16} className="text-[#555555] shrink-0" aria-hidden />
+                <span className="text-[14px] text-white">Storage Used</span>
+              </div>
+              {loadingStats ? (
+                <Skeleton className="w-[60px] h-[14px]" />
+              ) : (
+                <span className="text-[14px] text-[#888888]">
+                  {formatBytes(stats?.totalStorageBytes ?? 0)}
+                </span>
+              )}
+            </div>
+
+            <div className={SETTING_ROW}>
+              <div>
+                <span className="text-[14px] text-[#ef4444]">Clear Library</span>
+                <p className="text-[12px] text-[#555555] mt-[2px]">
+                  Permanently delete all your photos
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowClearLibrary(true)}
+                className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
+              >
+                <Icon name="Trash04" size={16} aria-hidden />
+                Clear Library
+              </button>
+            </div>
+          </Section>
+        );
+
+      case "about":
+        return (
+          <Section label="About">
+            <div className="py-5 border-b border-[#2a2a2a]">
+              <p className="text-white text-[14px] font-medium">Redux</p>
+              <p className="text-[#888888] text-[14px] mt-[2px]">Version 1.0.0</p>
+              <p className="text-[#888888] text-[14px] mt-2 leading-relaxed">
+                Your AI agent for professional photo editing
+              </p>
+            </div>
+
+            <div className={SETTING_ROW}>
+              <span className="text-[14px] text-white">Support</span>
+              <a
+                href="mailto:admin@redux.so?subject=Redux%20Support%20Request"
+                className={`${BTN_GHOST} flex items-center gap-[6px]`}
+              >
+                <Icon name="Mail01" size={16} aria-hidden />
+                Contact Support
+              </a>
+            </div>
+
+            <div className={SETTING_ROW}>
+              <span className="text-[14px] text-white">Legal</span>
+              <div className="flex items-center gap-3">
+                <a
+                  href="#"
+                  className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
+                >
+                  Terms of Service
+                </a>
+                <a
+                  href="#"
+                  className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
+                >
+                  Privacy Policy
+                </a>
+              </div>
+            </div>
+          </Section>
+        );
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
-        {/* Header */}
         <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-[#2a2a2a] bg-[#0a0a0a] pl-3 pr-3">
           <Suspense
             fallback={
@@ -197,290 +546,54 @@ export default function SettingsPage() {
           </Suspense>
         </header>
 
-        {/* Scrollable content */}
         <main className="flex-1 min-h-0 overflow-y-auto px-5 py-6">
-          <div className="max-w-[640px] mx-auto flex flex-col gap-4">
-            {/* ── ACCOUNT & PROFILE ── */}
-            <Section label="Account & Profile">
-              {/* Avatar + name */}
-              <div className="flex items-center gap-4 py-5 border-b border-[#2a2a2a]">
-                {!userLoaded ? (
-                  <Skeleton className="w-[56px] h-[56px] rounded-full shrink-0" />
-                ) : user?.imageUrl ? (
-                  <Image
-                    src={user.imageUrl}
-                    alt="avatar"
-                    width={56}
-                    height={56}
-                    className="rounded-full object-cover shrink-0"
+          <div className="mx-auto w-full max-w-[880px]">
+            <h1 className="text-[20px] font-semibold text-white">Settings</h1>
+
+            {/* Mobile: horizontal scroll tab bar */}
+            <div className="mt-4 md:hidden -mx-1 overflow-x-auto">
+              <div
+                className="flex gap-1 px-1 pb-1"
+                role="tablist"
+                aria-label="Settings sections"
+              >
+                {SETTINGS_NAV_ITEMS.map((item) => (
+                  <SettingsNavItem
+                    key={item.id}
+                    label={item.label}
+                    active={activeSection === item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    layout="horizontal"
                   />
-                ) : (
-                  <div className="w-[56px] h-[56px] rounded-full bg-[#1f1f1f] border border-[#2a2a2a] shrink-0" />
-                )}
-                <div className="flex flex-col gap-[2px] min-w-0">
-                  {!userLoaded ? (
-                    <>
-                      <Skeleton className="w-[140px] h-[14px]" />
-                      <Skeleton className="w-[180px] h-[11px] mt-1" />
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-white text-[14px] font-medium truncate">
-                        {user?.fullName ?? user?.firstName ?? "—"}
-                      </span>
-                      <span className="text-[#888888] text-[14px] truncate">
-                        {user?.emailAddresses?.[0]?.emailAddress ?? "—"}
-                      </span>
-                    </>
-                  )}
-                </div>
+                ))}
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className={SETTING_ROW}>
-                <span className="text-[14px] text-white">Profile</span>
-                <button
-                  onClick={() => openUserProfile({ appearance: reduxUserProfileAppearance })}
-                  className={BTN_GHOST}
-                >
-                  Edit Profile
-                </button>
-              </div>
-              <div className={SETTING_ROW}>
-                <span className="text-[14px] text-white">Password</span>
-                <button
-                  onClick={() => openUserProfile({ appearance: reduxUserProfileAppearance })}
-                  className={BTN_GHOST}
-                >
-                  Change Password
-                </button>
-              </div>
-              <div className={SETTING_ROW}>
-                <div>
-                  <span className="text-[14px] text-[#ef4444]">Delete Account</span>
-                  <p className="text-[12px] text-[#555555] mt-[2px]">
-                    Permanently delete your account and all data
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowDeleteAccount(true)}
-                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer whitespace-nowrap"
-                >
-                  Delete Account
-                </button>
-              </div>
-            </Section>
+            {/* Compact nav + content block */}
+            <div className="mt-6 flex flex-col md:mt-8 md:flex-row md:items-start md:gap-0">
+              {/* Desktop compact nav */}
+              <nav
+                aria-label="Settings sections"
+                className="hidden md:flex w-[172px] shrink-0 flex-col gap-0.5 pr-6"
+              >
+                {SETTINGS_NAV_ITEMS.map((item) => (
+                  <SettingsNavItem
+                    key={item.id}
+                    label={item.label}
+                    active={activeSection === item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    layout="vertical"
+                  />
+                ))}
+              </nav>
 
-            {/* ── CREDITS & BILLING ── */}
-            <Section label="Credits & Billing">
-              {/* Credit balance card */}
-              <div className="py-5 border-b border-[#2a2a2a]">
-                <div className="flex items-center justify-between bg-[#161616] border border-[#2a2a2a] rounded-xl px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-[32px] h-[32px] rounded-md bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center shrink-0">
-                      <Icon name="Coins01" size={16} className="text-white" aria-hidden />
-                    </div>
-                    <div>
-                      <p className="text-[#888888] text-[12px]">Credit Balance</p>
-                      {loadingStats ? (
-                        <Skeleton className="w-[60px] h-[20px] mt-1" />
-                      ) : (
-                        <p className="text-white text-[28px] font-bold leading-none mt-[2px]">
-                          {(stats?.creditBalance ?? 0).toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setCreditShopOpen(true)}
-                    className={BTN_PRIMARY_SOLID}
-                  >
-                    Purchase Credits
-                  </button>
-                </div>
-              </div>
-
-              {/* Transaction history */}
-              <div className="py-5 border-b border-[#2a2a2a]">
-                <p className={`${SECTION_LABEL} mb-3`}>Transaction History</p>
-                {loadingStats ? (
-                  <div className="flex flex-col gap-2">
-                    {[1, 2, 3].map((i) => (
-                      <Skeleton key={i} className="h-[36px] w-full" />
-                    ))}
-                  </div>
-                ) : !stats?.transactionHistory?.length ? (
-                  <p className="text-[#555555] text-[14px] py-4 text-center">
-                    No transactions yet
-                  </p>
-                ) : (
-                  <div className="border border-[#2a2a2a] rounded-xl overflow-hidden">
-                    {/* Table header */}
-                    <div className="grid grid-cols-4 px-3 py-2 bg-[#161616] border-b border-[#2a2a2a]">
-                      {["Date", "Feature", "Type", "Amount"].map((h) => (
-                        <span key={h} className="text-[11px] font-medium text-[#555555]">
-                          {h}
-                        </span>
-                      ))}
-                    </div>
-                    <div
-                      className={
-                        stats.transactionHistory.length > TRANSACTION_HISTORY_VISIBLE_ROWS
-                          ? "max-h-[400px] overflow-y-auto"
-                          : undefined
-                      }
-                    >
-                      {stats.transactionHistory.map((tx) => (
-                        <div
-                          key={tx.id}
-                          className="grid grid-cols-4 px-3 py-[10px] border-b border-[#2a2a2a] last:border-0 hover:bg-[#161616] transition-colors"
-                        >
-                          <span className="text-[14px] text-[#888888]">
-                            {formatDate(tx.createdAt)}
-                          </span>
-                          <span className="text-[14px] text-[#888888] truncate">
-                            {formatFeature(tx.feature)}
-                          </span>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                              tx.type === "PURCHASE" || tx.type === "BONUS"
-                                ? "bg-[#22c55e]/10 text-[#22c55e]"
-                                : tx.type === "REFUND"
-                                ? "bg-[#f59e0b]/10 text-[#f59e0b]"
-                                : "bg-white/[0.06] text-[#888888]"
-                            }`}
-                          >
-                            {tx.type.charAt(0) + tx.type.slice(1).toLowerCase()}
-                          </span>
-                          <span
-                            className={`text-[14px] font-medium ${
-                              tx.amount > 0 ? "text-[#22c55e]" : "text-white"
-                            }`}
-                          >
-                            {tx.amount > 0 ? "+" : ""}
-                            {tx.amount}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Billing portal */}
-              <div className={SETTING_ROW}>
-                <div>
-                  <span className="text-[14px] text-white">Billing History</span>
-                  <p className="text-[12px] text-[#555555] mt-[2px]">
-                    View invoices and manage payment methods
-                  </p>
-                </div>
-                <button
-                  onClick={() => void handleBillingPortal()}
-                  disabled={portalLoading}
-                  className={`${BTN_GHOST} flex items-center gap-[6px]`}
-                >
-                  {portalLoading ? (
-                    <LoadingSpinner size="xs" label="Opening billing portal" />
-                  ) : (
-                    <Icon name="LinkExternal01" size={16} aria-hidden />
-                  )}
-                  Billing Portal
-                </button>
-              </div>
-            </Section>
-
-            {/* ── STORAGE ── */}
-            <Section label="Storage">
-              <div className={SETTING_ROW}>
-                <div className="flex items-center gap-3">
-                  <Icon name="Image01" size={16} className="text-[#555555] shrink-0" aria-hidden />
-                  <span className="text-[14px] text-white">Photos</span>
-                </div>
-                {loadingStats ? (
-                  <Skeleton className="w-[40px] h-[14px]" />
-                ) : (
-                  <span className="text-[14px] text-[#888888]">
-                    {(stats?.imageCount ?? 0).toLocaleString()} photo{stats?.imageCount !== 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-
-              <div className={SETTING_ROW}>
-                <div className="flex items-center gap-3">
-                  <Icon name="Database01" size={16} className="text-[#555555] shrink-0" aria-hidden />
-                  <span className="text-[14px] text-white">Storage Used</span>
-                </div>
-                {loadingStats ? (
-                  <Skeleton className="w-[60px] h-[14px]" />
-                ) : (
-                  <span className="text-[14px] text-[#888888]">
-                    {formatBytes(stats?.totalStorageBytes ?? 0)}
-                  </span>
-                )}
-              </div>
-
-              <div className={SETTING_ROW}>
-                <div>
-                  <span className="text-[14px] text-[#ef4444]">Clear Library</span>
-                  <p className="text-[12px] text-[#555555] mt-[2px]">
-                    Permanently delete all your photos
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowClearLibrary(true)}
-                  className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#2a2a2a] rounded-md hover:bg-[#1a1a1a] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
-                >
-                  <Icon name="Trash04" size={16} aria-hidden />
-                  Clear Library
-                </button>
-              </div>
-            </Section>
-
-            {/* ── ABOUT ── */}
-            <Section label="About">
-              <div className="py-5 border-b border-[#2a2a2a]">
-                <p className="text-white text-[14px] font-medium">Redux</p>
-                <p className="text-[#888888] text-[14px] mt-[2px]">Version 1.0.0</p>
-                <p className="text-[#888888] text-[14px] mt-2 leading-relaxed">
-                  Your AI agent for professional photo editing
-                </p>
-              </div>
-
-              <div className={SETTING_ROW}>
-                <span className="text-[14px] text-white">Support</span>
-                <a
-                  href="mailto:admin@redux.so?subject=Redux%20Support%20Request"
-                  className={`${BTN_GHOST} flex items-center gap-[6px]`}
-                >
-                  <Icon name="Mail01" size={16} aria-hidden />
-                  Contact Support
-                </a>
-              </div>
-
-              <div className={SETTING_ROW}>
-                <span className="text-[14px] text-white">Legal</span>
-                <div className="flex items-center gap-3">
-                  <a
-                    href="#"
-                    className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
-                  >
-                    Terms of Service
-                  </a>
-                  <a
-                    href="#"
-                    className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
-                  >
-                    Privacy Policy
-                  </a>
-                </div>
-              </div>
-            </Section>
+              {/* Content panel */}
+              <div className="min-w-0 flex-1">{renderSectionContent()}</div>
+            </div>
           </div>
         </main>
       </div>
 
-      {/* Modals */}
       <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />
 
       <ConfirmDialog
