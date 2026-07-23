@@ -26,6 +26,11 @@ function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(0)}`;
 }
 
+/** Advanced tier — 1,600 credits / $50 */
+function isBestValueBundle(bundle: Bundle): boolean {
+  return bundle.name === "Advanced";
+}
+
 export default function CreditShopModal({ open, onClose }: CreditShopModalProps) {
   const [mounted, setMounted] = useState(false);
   const [bundles, setBundles] = useState<Bundle[]>([]);
@@ -135,11 +140,15 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                   </p>
                 ) : (
                   <div className="flex flex-col gap-2.5">
-                    {bundles.map((bundle) => (
+                    {bundles.map((bundle) => {
+                      const bestValue = isBestValueBundle(bundle);
+                      return (
                       <div
                         key={bundle.id}
                         className={`flex items-center justify-between rounded-xl px-4 py-3.5 border ${
-                          bundle.popular
+                          bestValue
+                            ? "border-accent bg-white/[0.03]"
+                            : bundle.popular
                             ? "border-[#794ADE]/40 bg-[#794ADE]/[0.06]"
                             : "border-white/[0.08] bg-white/[0.03]"
                         }`}
@@ -164,18 +173,26 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => void handlePurchase(bundle.id)}
-                          disabled={purchasing === bundle.id}
-                          className={`${BTN_MODAL_SOLID} shrink-0`}
-                        >
-                          {purchasing === bundle.id ? (
-                            <LoadingSpinner size="xs" variant="default" label="Processing purchase" />
-                          ) : null}
-                          {formatPrice(bundle.price)}
-                        </button>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {bestValue && (
+                            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
+                              Best Value
+                            </span>
+                          )}
+                          <button
+                            onClick={() => void handlePurchase(bundle.id)}
+                            disabled={purchasing === bundle.id}
+                            className={`${BTN_MODAL_SOLID} shrink-0`}
+                          >
+                            {purchasing === bundle.id ? (
+                              <LoadingSpinner size="xs" variant="default" label="Processing purchase" />
+                            ) : null}
+                            {formatPrice(bundle.price)}
+                          </button>
+                        </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 )}
               </div>
