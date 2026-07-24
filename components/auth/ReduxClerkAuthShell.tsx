@@ -27,7 +27,7 @@ export default function ReduxClerkAuthShell({
   const isLarge = panelSize === "large";
 
   return (
-    <div className="grid h-screen w-screen grid-cols-1 overflow-hidden bg-[#0a0a0a] [font-family:-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif] lg:grid-cols-2">
+    <div className="grid h-screen w-screen grid-cols-1 overflow-hidden bg-[#0a0a0a] lg:grid-cols-2">
       {/* Left — sign-in form panel (exactly 50% on lg+) */}
       <div className="flex h-full w-full min-w-0 items-center justify-center px-5 py-10 sm:px-10 sm:py-16 lg:px-16">
         <div

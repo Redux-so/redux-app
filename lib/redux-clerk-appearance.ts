@@ -1,5 +1,7 @@
 import { dark } from "@clerk/themes";
 
+import { INTER_FONT_FAMILY } from "@/lib/fonts";
+
 /** Shared Clerk variables — aligned with Redux dark UI and lib/button-styles CTAs. */
 export const reduxClerkVariables = {
   colorPrimary: "#8758ed",
@@ -15,8 +17,7 @@ export const reduxClerkVariables = {
   colorTextSecondary: "#888888",
   colorBorder: "rgba(255, 255, 255, 0.1)",
   borderRadius: "6px",
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  fontFamily: INTER_FONT_FAMILY,
 } as const;
 
 const reduxModalButtonPrimary =
