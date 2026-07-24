@@ -14,7 +14,7 @@ import {
   LIBRARY_QUICK_FILTER_OPTIONS,
 } from "@/constants/library-quick-filters";
 import {
-  LIBRARY_SIDEBAR_FOOTER_PADDING_X_PX,
+  LIBRARY_PROFILE_POPOVER_WIDTH_PX,
   LIBRARY_SIDEBAR_WIDTH_PX,
 } from "@/constants/library-sidebar";
 import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
@@ -220,8 +220,8 @@ export default function LibrarySidebar({
           <ProfileMenu
             variant="full"
             className="w-full"
-            popoverPanelWidthPx={LIBRARY_SIDEBAR_WIDTH_PX}
-            popoverInsetLeftPx={-LIBRARY_SIDEBAR_FOOTER_PADDING_X_PX}
+            popoverPanelWidthPx={LIBRARY_PROFILE_POPOVER_WIDTH_PX}
+            popoverCentered
             settingsReturnPath="/library"
           />
         </div>

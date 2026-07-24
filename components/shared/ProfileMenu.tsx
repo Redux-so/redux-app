@@ -30,6 +30,8 @@ interface ProfileMenuProps {
   popoverPanelWidthPx?: number;
   /** Negative inset aligns popover left edge with a parent panel edge (e.g. sidebar footer padding). */
   popoverInsetLeftPx?: number;
+  /** Horizontally center the popover over the trigger wrapper (library footer). */
+  popoverCentered?: boolean;
   /** Where Settings should return after back navigation. Defaults from current route. */
   settingsReturnPath?: string;
 }
@@ -86,6 +88,7 @@ export default function ProfileMenu({
   className,
   popoverPanelWidthPx,
   popoverInsetLeftPx = 0,
+  popoverCentered = false,
   settingsReturnPath,
 }: ProfileMenuProps) {
   const router = useRouter();
@@ -253,10 +256,15 @@ export default function ProfileMenu({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 4 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute bottom-full mb-2 z-50 bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+                className={[
+                  "absolute bottom-full mb-2 z-50 bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl",
+                  popoverCentered
+                    ? "left-1/2 -translate-x-1/2 origin-bottom"
+                    : "origin-bottom-left",
+                ].join(" ")}
                 style={{
                   width: resolvedPopoverWidth,
-                  left: popoverInsetLeftPx,
+                  ...(popoverCentered ? {} : { left: popoverInsetLeftPx }),
                 }}
               >
                 {popoverContent}
