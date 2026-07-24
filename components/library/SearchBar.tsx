@@ -115,6 +115,8 @@ export default function SearchBar({
   const isLarge = variant === "large";
   const activeFilterCount = countActiveLibraryFilters(filters);
   const hasActiveFilters = activeFilterCount > 0;
+  const iconSize = isLarge ? 20 : 16;
+  const iconStrokeWidth = 1.5;
 
   return (
     <div ref={containerRef} className="relative w-full min-w-0">
@@ -129,7 +131,8 @@ export default function SearchBar({
       >
         <Icon
           name="SearchMd"
-          size={isLarge ? 20 : 16}
+          size={iconSize}
+          strokeWidth={iconStrokeWidth}
           className={[
             "absolute top-1/2 -translate-y-1/2 text-[#888888] pointer-events-none",
             isLarge ? "left-4" : "left-3",
@@ -168,7 +171,12 @@ export default function SearchBar({
               : "text-[#888888] hover:text-white",
           ].join(" ")}
         >
-          <Icon name="FilterFunnel02" size={isLarge ? 24 : 20} aria-hidden />
+          <Icon
+            name="FilterFunnel02"
+            size={iconSize}
+            strokeWidth={iconStrokeWidth}
+            aria-hidden
+          />
           {hasActiveFilters && (
             <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#8758ed] px-1 text-[10px] font-semibold leading-none text-white">
               {activeFilterCount}
