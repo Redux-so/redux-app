@@ -9,8 +9,12 @@ import {
   DEFAULT_LIBRARY_FILTERS,
   type LibraryFilters,
 } from "@/lib/library-filters";
+import { useTypewriterPlaceholder } from "@/hooks/useTypewriterPlaceholder";
 import toast from "react-hot-toast";
 import type { ImageRecord } from "@/types/image";
+
+const LIBRARY_SEARCH_TYPEWRITER_TEXT =
+  "Search by keyword, color, scene, mood...";
 
 interface SearchBarProps {
   isSearching: boolean;
@@ -35,6 +39,7 @@ export default function SearchBar({
   onFiltersChange,
 }: SearchBarProps) {
   const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState<LibraryFilters>(filters);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,6 +123,13 @@ export default function SearchBar({
   const iconSize = isLarge ? 20 : 16;
   const iconStrokeWidth = 1.5;
 
+  const showTypewriter = value === "" && !focused && !isSearching;
+  const { displayText, cursorVisible } = useTypewriterPlaceholder(
+    LIBRARY_SEARCH_TYPEWRITER_TEXT,
+    showTypewriter,
+    { pauseFullMs: 10_000 },
+  );
+
   return (
     <div ref={containerRef} className="relative w-full min-w-0">
       <form
@@ -147,16 +159,31 @@ export default function SearchBar({
             label="Searching"
           />
         ) : null}
+        {showTypewriter ? (
+          <span
+            className={[
+              "pointer-events-none absolute top-1/2 z-[1] min-w-0 -translate-y-1/2 truncate text-[#888888]",
+              isLarge ? "left-12 pr-14 text-[14px]" : "left-9 pr-12 text-[13px]",
+            ].join(" ")}
+            aria-hidden
+          >
+            {displayText}
+            <span className={cursorVisible ? "opacity-100" : "opacity-0"}>|</span>
+          </span>
+        ) : null}
         <input
           type="search"
           name="library-search"
           value={value}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="Search by keyword, color, scene, mood..."
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder=""
+          aria-label="Search photos by keyword, color, scene, or mood"
           disabled={isSearching}
           className={[
-            "min-w-0 flex-1 bg-transparent text-white placeholder:text-[#888888] outline-none disabled:opacity-60",
-            isLarge ? "pr-2 text-[16px] placeholder:text-[14px]" : "pr-1 text-[14px] placeholder:text-[13px]",
+            "relative z-[2] min-w-0 flex-1 bg-transparent text-white outline-none disabled:opacity-60",
+            isLarge ? "pr-2 text-[14px]" : "pr-1 text-[13px]",
           ].join(" ")}
         />
         <button
