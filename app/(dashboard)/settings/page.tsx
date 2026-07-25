@@ -134,47 +134,70 @@ function SettingsNavItem({
 }
 
 function TransactionTable({ transactions }: { transactions: Transaction[] }) {
+  const headCell =
+    "px-4 py-2.5 text-left text-[11px] font-medium text-[#555555] align-middle";
+  const bodyCell = "px-4 py-3 align-middle";
+
   return (
     <div className="border border-[#2e2e2e] rounded-xl overflow-hidden">
-      <div className="grid grid-cols-4 px-3 py-2 bg-[#161616] border-b border-[#2e2e2e]">
-        {["Date", "Feature", "Type", "Amount"].map((h) => (
-          <span key={h} className="text-[11px] font-medium text-[#555555]">
-            {h}
-          </span>
-        ))}
-      </div>
-      {transactions.map((tx) => (
-        <div
-          key={tx.id}
-          className="grid grid-cols-4 px-3 py-[10px] border-b border-[#2e2e2e] last:border-0 hover:bg-[#161616] transition-colors"
-        >
-          <span className="text-[14px] text-[#888888]">
-            {formatDate(tx.createdAt)}
-          </span>
-          <span className="text-[14px] text-[#888888] truncate">
-            {formatFeature(tx.feature)}
-          </span>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-              tx.type === "PURCHASE" || tx.type === "BONUS"
-                ? "bg-[#22c55e]/10 text-[#22c55e]"
-                : tx.type === "REFUND"
-                  ? "bg-[#f59e0b]/10 text-[#f59e0b]"
-                  : "bg-[#1d1d1d] text-[#888888]"
-            }`}
-          >
-            {tx.type.charAt(0) + tx.type.slice(1).toLowerCase()}
-          </span>
-          <span
-            className={`text-[14px] font-medium ${
-              tx.amount > 0 ? "text-[#22c55e]" : "text-white"
-            }`}
-          >
-            {tx.amount > 0 ? "+" : ""}
-            {tx.amount}
-          </span>
-        </div>
-      ))}
+      <table className="w-full table-fixed border-collapse">
+        <thead>
+          <tr className="bg-[#161616] border-b border-[#2e2e2e]">
+            <th scope="col" className={`${headCell} w-[24%]`}>
+              Date
+            </th>
+            <th scope="col" className={`${headCell} w-[34%]`}>
+              Feature
+            </th>
+            <th scope="col" className={`${headCell} w-[22%]`}>
+              Type
+            </th>
+            <th scope="col" className={`${headCell} w-[20%]`}>
+              Amount
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {transactions.map((tx) => (
+            <tr
+              key={tx.id}
+              className="border-b border-[#2e2e2e] last:border-0 hover:bg-[#161616] transition-colors"
+            >
+              <td
+                className={`${bodyCell} text-[14px] text-[#888888] whitespace-nowrap`}
+              >
+                {formatDate(tx.createdAt)}
+              </td>
+              <td className={`${bodyCell} max-w-0`}>
+                <span className="block truncate text-[14px] text-[#888888]">
+                  {formatFeature(tx.feature)}
+                </span>
+              </td>
+              <td className={bodyCell}>
+                <span
+                  className={`inline-flex w-fit max-w-full items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    tx.type === "PURCHASE" || tx.type === "BONUS"
+                      ? "bg-[#22c55e]/10 text-[#22c55e]"
+                      : tx.type === "REFUND"
+                        ? "bg-[#f59e0b]/10 text-[#f59e0b]"
+                        : "bg-[#1d1d1d] text-[#888888]"
+                  }`}
+                >
+                  {tx.type.charAt(0) + tx.type.slice(1).toLowerCase()}
+                </span>
+              </td>
+              <td
+                className={`${bodyCell} text-[14px] font-medium whitespace-nowrap ${
+                  tx.amount > 0 ? "text-[#22c55e]" : "text-white"
+                }`}
+              >
+                {tx.amount > 0 ? "+" : ""}
+                {tx.amount}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
