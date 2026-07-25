@@ -70,6 +70,11 @@ body {
   background: var(--scrollbar-thumb-hover);
 }
 
+/* Reserve gutter space so scrollbars don't shift layout when they appear */
+.scroll-stable {
+  scrollbar-gutter: stable;
+}
+
 /* Clerk auth — full-width pill CTAs; avoid clipping button shadows */
 .auth-clerk-root,
 .auth-clerk-root :is(

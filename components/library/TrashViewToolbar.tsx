@@ -29,7 +29,7 @@ export default function TrashViewToolbar({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4 px-6 pt-8 pb-2">
+      <div className="flex shrink-0 items-center justify-between gap-4 px-6 pt-8 pb-2">
         <div>
           <h2 className="text-[15px] font-semibold text-white">Trash</h2>
           <p className="text-[13px] text-[#888888] mt-0.5">

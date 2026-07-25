@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -117,6 +117,10 @@ function SettingsNavItem({
       type="button"
       aria-current={active ? "page" : undefined}
       onClick={onClick}
+      onMouseDown={(event) => {
+        // Keep tab clicks from scrolling the page to bring the button into view.
+        event.preventDefault();
+      }}
       className={[
         NAV_ITEM_BASE,
         active
@@ -193,6 +197,7 @@ export default function SettingsPage() {
   const [showClearLibrary, setShowClearLibrary] = useState(false);
   const [clearingLibrary, setClearingLibrary] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
@@ -214,6 +219,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setShowAllTransactions(false);
+  }, [activeSection]);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }, [activeSection]);
 
   async function handleDeleteAccount() {
@@ -408,7 +417,7 @@ export default function SettingsPage() {
                 <div
                   className={
                     showAllTransactions && transactions.length > 10
-                      ? "max-h-[400px] overflow-y-auto"
+                      ? "scroll-stable max-h-[400px] overflow-y-auto overscroll-y-contain"
                       : undefined
                   }
                 >
@@ -552,7 +561,10 @@ export default function SettingsPage() {
           </Suspense>
         </header>
 
-        <main className="flex-1 min-h-0 overflow-y-auto px-5 py-6">
+        <main
+          ref={mainRef}
+          className="scroll-stable flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-5 py-6"
+        >
           <div className="mx-auto w-full max-w-[880px]">
             <h1 className="text-[20px] font-semibold text-white">Settings</h1>
 

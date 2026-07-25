@@ -451,7 +451,7 @@ export default function LibraryPage() {
         onDeleteAlbum={handleDeleteAlbum}
       />
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden bg-[#161616]">
-        <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+        <main className="scroll-stable flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-y-contain">
           {!isTrashView && (
             <LibraryHeader
               onUploadComplete={() => {
