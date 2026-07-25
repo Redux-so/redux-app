@@ -77,7 +77,7 @@ export default function CreateAlbumModal({
           >
             <form
               onSubmit={handleSubmit}
-              className="pointer-events-auto w-full max-w-[300px] rounded-lg border border-white/[0.1] bg-[#141414] p-4 shadow-2xl"
+              className="pointer-events-auto w-full max-w-[300px] rounded-lg border border-[#2e2e2e] bg-[#121212] p-4 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-[14px] font-medium text-white">New album</h2>
@@ -93,7 +93,7 @@ export default function CreateAlbumModal({
                 placeholder="Album name"
                 maxLength={80}
                 disabled={submitting}
-                className="mt-4 h-9 w-full rounded-lg border border-[#2a2a2a] bg-[#111111] px-3 text-[13px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-[#3a3a3a] disabled:opacity-50"
+                className="mt-4 h-9 w-full rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-3 text-[13px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-[#3a3a3a] disabled:opacity-50"
               />
 
               <div className="mt-4 flex items-center justify-end gap-2">
@@ -101,7 +101,7 @@ export default function CreateAlbumModal({
                   type="button"
                   onClick={onClose}
                   disabled={submitting}
-                  className="h-8 rounded-md px-3 text-[13px] font-medium text-[#888888] transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-50 cursor-pointer"
+                  className="h-8 rounded-md px-3 text-[13px] font-medium text-[#888888] transition-colors hover:bg-[#1d1d1d] hover:text-white disabled:opacity-50 cursor-pointer"
                 >
                   Cancel
                 </button>

@@ -2,6 +2,10 @@
 
 import Image from "next/image";
 import { forwardRef } from "react";
+import {
+  LIBRARY_SIDEBAR_PROFILE_BTN,
+  LIBRARY_SIDEBAR_PROFILE_BTN_OPEN,
+} from "@/constants/library-sidebar";
 
 export type ProfileMenuVariant = "full" | "compact";
 
@@ -31,7 +35,7 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
         className="h-[36px] w-[36px] shrink-0 rounded-lg object-cover"
       />
     ) : (
-      <div className="h-[36px] w-[36px] shrink-0 rounded-lg bg-white/[0.06] border border-white/[0.08]" />
+      <div className="h-[36px] w-[36px] shrink-0 rounded-lg bg-[#1d1d1d] border border-[#2e2e2e]" />
     );
 
     if (variant === "compact") {
@@ -44,10 +48,10 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
           aria-haspopup="menu"
           onClick={onClick}
           className={[
-            "flex shrink-0 items-center justify-center h-12 w-12 rounded-xl transition-colors cursor-pointer",
+            "flex shrink-0 items-center justify-center h-12 w-12 rounded-xl border transition-colors cursor-pointer",
             open
-              ? "bg-white/[0.07] text-white"
-              : "text-white/40 hover:bg-white/[0.07] hover:text-white",
+              ? "bg-[#1d1d1d] !border-[#2e2e2e] text-white"
+              : "text-white/40 border-[#121212] hover:bg-[#1d1d1d] hover:text-white",
           ].join(" ")}
         >
           {avatar}
@@ -63,7 +67,10 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={onClick}
-        className="flex min-w-0 items-center gap-2.5 w-full rounded-lg px-1.5 py-1.5 -mx-1 hover:bg-white/[0.06] transition-colors cursor-pointer"
+        className={[
+          LIBRARY_SIDEBAR_PROFILE_BTN,
+          open ? LIBRARY_SIDEBAR_PROFILE_BTN_OPEN : "",
+        ].join(" ")}
       >
         {avatar}
         <div className="flex min-w-0 flex-col text-left">

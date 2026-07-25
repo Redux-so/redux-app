@@ -85,7 +85,7 @@ export function HistoryVersionList({
         versions.map((version, idx) => (
           <div
             key={version.id}
-            className="group flex items-center justify-between border-b border-white/[0.06] px-6 py-3.5 transition-colors hover:bg-white/[0.04]"
+            className="group flex items-center justify-between border-b border-[#2e2e2e] px-6 py-3.5 transition-colors hover:bg-[#1d1d1d]"
           >
             <div className="flex min-w-0 flex-col gap-[2px]">
               <span className="text-[14px] text-[#e5e5e5]">
@@ -99,7 +99,7 @@ export function HistoryVersionList({
               type="button"
               onClick={() => handleRestore(version)}
               disabled={restoringId === version.id}
-              className="ml-3 flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.05] px-4 text-[13px] text-white hover:bg-white/[0.09] transition-colors disabled:opacity-50"
+              className="ml-3 flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 text-[13px] text-white hover:border-[#3a3a3a] transition-colors disabled:opacity-50"
             >
               <Icon name="FlipBackward" size={16} aria-hidden />
               {restoringId === version.id ? "…" : "Restore"}

@@ -123,10 +123,10 @@ export default function SearchBar({
       <form
         onSubmit={handleSubmit}
         className={[
-          "relative flex w-full items-center border bg-[#111111] transition-colors focus-within:border-[#3a3a3a]",
+          "relative flex w-full items-center border bg-[#1d1d1d] transition-colors focus-within:border-[#3a3a3a]",
           isLarge
-            ? "h-[52px] rounded-xl border-[#2a2a2a] pl-12 pr-2"
-            : "h-[38px] rounded-lg border-[#2a2a2a] pl-9 pr-1.5",
+            ? "h-[52px] rounded-xl border-[#2e2e2e] pl-12 pr-2"
+            : "h-[38px] rounded-lg border-[#2e2e2e] pl-9 pr-1.5",
         ].join(" ")}
       >
         <Icon

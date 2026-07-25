@@ -56,7 +56,7 @@ export default function Canvas({
     // and the canvas never initializes.
     <div
       ref={containerRef}
-      className="relative flex-1 bg-[#0a0a0a] overflow-hidden flex items-center justify-center p-8"
+      className="relative flex-1 bg-[#161616] overflow-hidden flex items-center justify-center p-8"
     >
       {/* Canvas wrapper — positioned parent for the overlay divs */}
       <div className="relative inline-block">
@@ -154,7 +154,7 @@ export default function Canvas({
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-10">
           <button
             onClick={onCancelCrop}
-            className="h-[34px] px-5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-sm text-[13px] text-white hover:bg-[#222222] transition-colors cursor-pointer"
+            className="h-[34px] px-5 bg-[#1d1d1d] border border-[#2e2e2e] rounded-sm text-[13px] text-white hover:border-[#3a3a3a] transition-colors cursor-pointer"
           >
             Cancel
           </button>

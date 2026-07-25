@@ -273,7 +273,7 @@ export default function EditorApp() {
       getPayload={getPreviewPayload}
       savePreviewRef={savePreviewRef}
     >
-      <div className="flex flex-col h-screen bg-[#0a0a0a] overflow-hidden">
+      <div className="flex flex-col h-screen bg-[#161616] overflow-hidden">
         <Toolbar
           filename={image?.filename}
           zoom={zoom}
@@ -334,7 +334,7 @@ export default function EditorApp() {
               />
               {loadingImage && (
                 <LoadingOverlay
-                  className="absolute inset-0 z-10 bg-[#0a0a0a]/80 pointer-events-none"
+                  className="absolute inset-0 z-10 bg-[#161616]/80 pointer-events-none"
                   message="Loading image"
                   srOnlyMessage
                 />

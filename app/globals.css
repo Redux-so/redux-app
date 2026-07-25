@@ -1,10 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
+  --background: #161616;
   --foreground: #ededed;
-  /* Opaque match for bg-black/50 on --background (editor side panels) */
-  --surface-chrome: color-mix(in srgb, black 50%, #0a0a0a);
+  --surface-chrome: #121212;
   --accent: #682FBF;
   --scrollbar-thumb: rgba(255, 255, 255, 0.12);
   --scrollbar-thumb-hover: rgba(104, 47, 191, 0.38);
@@ -163,30 +162,30 @@ body {
 .cl-userProfile-root .cl-navbar,
 .cl-userProfile-root .cl-pageScrollBox,
 .cl-userProfile-root .cl-scrollBox {
-  background: #111111 !important;
+  background: #121212 !important;
   color: #ededed !important;
 }
 
 .cl-modalContent,
 .cl-userProfile-root .cl-card {
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: #2e2e2e !important;
 }
 
 .cl-userProfile-root .cl-navbar {
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: #2e2e2e !important;
 }
 
 .cl-userProfile-root .cl-formFieldInput,
 .cl-userProfile-root .cl-otpCodeFieldInput {
-  background: #1a1a1a !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: #1d1d1d !important;
+  border-color: #2e2e2e !important;
   color: #ffffff !important;
 }
 
 .cl-userProfile-root .cl-formButtonPrimary {
   background: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
-  color: #0a0a0a !important;
+  color: #161616 !important;
   border-radius: 6px !important;
 }
 

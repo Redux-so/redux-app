@@ -35,10 +35,10 @@ export default function UploadDropzone({ onUploadComplete }: UploadDropzoneProps
           if (!isBusy) inputRef.current?.click();
         }}
         className={[
-          "flex min-h-[200px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border border-dashed border-white/[0.12] bg-[#111111] transition-all duration-200",
+          "flex min-h-[200px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border border-dashed border-[#2e2e2e] bg-[#1d1d1d] transition-all duration-200",
           isBusy
             ? "pointer-events-none opacity-80"
-            : "hover:border-[#682FBF]/50 hover:bg-[#682FBF]/[0.04]",
+            : "hover:border-[#3a3a3a] hover:bg-white/[0.05]",
         ].join(" ")}
       >
         {isBusy ? (

@@ -90,7 +90,7 @@ export default function FilterDateField({
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="group flex h-9 w-full items-center gap-2 rounded-lg border border-[#2a2a2a] bg-[#111111] px-3 text-left transition-colors hover:border-[#3a3a3a] focus:border-[#3a3a3a] focus:outline-none"
+        className="group flex h-9 w-full items-center gap-2 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-3 text-left transition-colors hover:border-[#3a3a3a] focus:border-[#3a3a3a] focus:outline-none"
       >
         <span
           className={[
@@ -112,7 +112,7 @@ export default function FilterDateField({
         <div
           role="dialog"
           aria-label={`${label} calendar`}
-          className="absolute left-0 top-[calc(100%+6px)] z-[60] w-[260px] rounded-lg border border-white/[0.1] bg-[#141414] p-3 shadow-2xl"
+          className="absolute left-0 top-[calc(100%+6px)] z-[60] w-[260px] rounded-lg border border-[#2e2e2e] bg-[#121212] p-3 shadow-2xl"
         >
           <div className="mb-3 flex items-center justify-between">
             <button
@@ -163,8 +163,8 @@ export default function FilterDateField({
                     selectedDay
                       ? "bg-[#682FBF]/25 font-medium text-[#B07EF0]"
                       : inMonth
-                        ? "text-white hover:bg-white/[0.06]"
-                        : "text-[#555555] hover:bg-white/[0.06] hover:text-[#888888]",
+                        ? "text-white hover:bg-[#1d1d1d]"
+                        : "text-[#555555] hover:bg-[#1d1d1d] hover:text-[#888888]",
                     today && !selectedDay
                       ? "ring-1 ring-inset ring-white/[0.12]"
                       : "",

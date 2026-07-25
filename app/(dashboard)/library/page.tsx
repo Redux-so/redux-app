@@ -442,7 +442,7 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] overflow-hidden">
+    <div className="flex h-screen bg-[#161616] overflow-hidden">
       <LibrarySidebar
         sidebarView={sidebarView}
         onSidebarViewChange={setSidebarView}
@@ -450,7 +450,7 @@ export default function LibraryPage() {
         onCreateAlbum={handleCreateAlbum}
         onDeleteAlbum={handleDeleteAlbum}
       />
-      <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden bg-[#161616]">
         <main className="flex flex-col flex-1 min-h-0 overflow-y-auto">
           {!isTrashView && (
             <LibraryHeader

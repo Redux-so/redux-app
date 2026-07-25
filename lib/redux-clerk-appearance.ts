@@ -1,32 +1,37 @@
 import { dark } from "@clerk/themes";
 
 import { INTER_FONT_FAMILY } from "@/lib/fonts";
+import {
+  SURFACE_BORDER_HEX,
+  SURFACE_PANEL_HEX,
+  SURFACE_RAISED_HEX,
+} from "@/lib/surface-colors";
 
 /** Shared Clerk variables — aligned with Redux dark UI and lib/button-styles CTAs. */
 export const reduxClerkVariables = {
   colorPrimary: "#8758ed",
   colorPrimaryForeground: "#ffffff",
-  colorBackground: "#111111",
+  colorBackground: SURFACE_PANEL_HEX,
   colorForeground: "#ffffff",
   colorMutedForeground: "#888888",
-  colorMuted: "#1a1a1a",
-  colorInput: "#1a1a1a",
+  colorMuted: SURFACE_RAISED_HEX,
+  colorInput: SURFACE_RAISED_HEX,
   colorInputForeground: "#ffffff",
   colorNeutral: "#888888",
   colorText: "#ededed",
   colorTextSecondary: "#888888",
-  colorBorder: "rgba(255, 255, 255, 0.1)",
+  colorBorder: SURFACE_BORDER_HEX,
   borderRadius: "6px",
   fontFamily: INTER_FONT_FAMILY,
 } as const;
 
 const reduxModalButtonPrimary =
-  "!box-border !flex !h-10 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/15 !bg-white !px-5 !text-[13px] !font-medium !leading-none !text-[#0a0a0a] !shadow-none transition-colors duration-200 hover:!bg-[#e5e5e5] active:!bg-[#d4d4d4]";
+  "!box-border !flex !h-10 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/15 !bg-white !px-5 !text-[13px] !font-medium !leading-none !text-[#161616] !shadow-none transition-colors duration-200 hover:!bg-[#e5e5e5] active:!bg-[#d4d4d4]";
 
 const reduxFormElements = {
   formFieldLabel: "!text-[13px] !font-medium !text-[#888888]",
   formFieldInput:
-    "!h-11 !rounded-lg !border !border-solid !border-white/10 !bg-[#1a1a1a] !text-[14px] !text-white placeholder:!text-[#555555] focus:!border-white/20",
+    "!h-11 !rounded-lg !border !border-solid !border-[#2e2e2e] !bg-[#1d1d1d] !text-[14px] !text-white placeholder:!text-[#555555] focus:!border-[#3a3a3a]",
   formFieldInputShowPasswordButton: "!text-[#888888] hover:!text-white",
   formButtonPrimary:
     "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
@@ -34,36 +39,36 @@ const reduxFormElements = {
   formFieldErrorText: "!text-red-400",
   formResendCodeLink: "!text-[#8758ed] hover:!text-[#9a6ff2]",
   otpCodeFieldInput:
-    "!rounded-lg !border-white/10 !bg-[#1a1a1a] !text-white",
+    "!rounded-lg !border-[#2e2e2e] !bg-[#1d1d1d] !text-white",
 } as const;
 
 /** UserProfile modal (Edit Profile / Security) — rendered in a body portal by openUserProfile(). */
 const reduxUserProfileElements = {
   modalBackdrop: "!bg-black/70",
   modalContent:
-    "!rounded-xl !border !border-white/10 !bg-[#111111] !shadow-2xl",
-  rootBox: "!bg-[#111111]",
+    "!rounded-xl !border !border-[#2e2e2e] !bg-[#121212] !shadow-2xl",
+  rootBox: "!bg-[#121212]",
   cardBox: "!shadow-none",
-  card: "!rounded-xl !border !border-white/10 !bg-[#111111] !shadow-none",
-  navbar: "!border-r !border-white/10 !bg-[#111111]",
-  navbarButtons: "!bg-[#111111]",
+  card: "!rounded-xl !border !border-[#2e2e2e] !bg-[#121212] !shadow-none",
+  navbar: "!border-r !border-[#2e2e2e] !bg-[#121212]",
+  navbarButtons: "!bg-[#121212]",
   navbarButton:
-    "!text-[#888888] hover:!bg-white/[0.07] hover:!text-white data-[active=true]:!bg-white/[0.06] data-[active=true]:!text-white",
+    "!text-[#888888] hover:!bg-[#1d1d1d] hover:!text-white data-[active=true]:!bg-[#1d1d1d] data-[active=true]:!border-[#2e2e2e] data-[active=true]:!text-white",
   navbarButtonIcon: "!text-[#888888]",
-  pageScrollBox: "!bg-[#111111]",
-  page: "!bg-[#111111]",
-  scrollBox: "!bg-[#111111]",
+  pageScrollBox: "!bg-[#121212]",
+  page: "!bg-[#121212]",
+  scrollBox: "!bg-[#121212]",
   headerTitle: "!text-[16px] !font-medium !text-white",
   headerSubtitle: "!text-[#888888]",
   profileSectionTitle: "!text-[12px] !font-semibold !text-[#888888]",
   profileSectionTitleText: "!text-[#888888]",
   profileSectionContent: "!text-white",
   profileSectionPrimaryButton: "!text-white hover:!text-[#cccccc]",
-  badge: "!border !border-white/10 !bg-white/[0.06] !text-[#888888]",
-  accordionTriggerButton: "!text-white hover:!bg-white/[0.05]",
-  menuButton: "!text-[#888888] hover:!bg-white/[0.07] hover:!text-white",
-  menuList: "!rounded-md !border !border-white/10 !bg-[#111111]",
-  menuItem: "!text-[#cccccc] hover:!bg-white/[0.07]",
+  badge: "!border !border-[#2e2e2e] !bg-[#1d1d1d] !text-[#888888]",
+  accordionTriggerButton: "!text-white hover:!bg-[#1d1d1d]",
+  menuButton: "!text-[#888888] hover:!bg-[#1d1d1d] hover:!text-white",
+  menuList: "!rounded-md !border !border-[#2e2e2e] !bg-[#121212]",
+  menuItem: "!text-[#cccccc] hover:!bg-[#1d1d1d]",
   alertText: "!text-[#888888]",
   footer: "!bg-transparent",
   identityPreviewText: "!text-[#888888]",
@@ -86,7 +91,7 @@ export const reduxClerkProviderAppearance = {
   variables: {
     ...reduxClerkVariables,
     colorPrimary: "#ffffff",
-    colorPrimaryForeground: "#0a0a0a",
+    colorPrimaryForeground: "#161616",
   },
   elements: reduxUserProfileElements,
 };
@@ -159,7 +164,7 @@ export const reduxSignInAppearance = {
     dividerText:
       "!text-[13px] !font-normal !normal-case !tracking-normal !text-[#555555]",
     socialButtonsBlockButton:
-      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-md !border !border-solid !border-white/10 !bg-[#1a1a1a] !px-5 !text-white !shadow-none hover:!bg-white/[0.05]",
+      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-md !border !border-solid !border-[#2e2e2e] !bg-[#1d1d1d] !px-5 !text-white !shadow-none hover:!border-[#3a3a3a]",
     formButtonPrimary:
       "!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
   },

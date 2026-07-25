@@ -34,7 +34,7 @@ export default function BackToLibraryButton() {
       type="button"
       onClick={() => void handleClick()}
       disabled={navigating}
-      className="inline-flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium text-[#888888] transition-colors hover:bg-white/[0.06] hover:text-white disabled:cursor-wait disabled:opacity-60 cursor-pointer"
+      className="inline-flex shrink-0 items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium text-[#888888] transition-colors hover:bg-[#1d1d1d] hover:text-white disabled:cursor-wait disabled:opacity-60 cursor-pointer"
     >
       {navigating ? (
         <LoadingSpinner size="xs" label="Returning to library" />

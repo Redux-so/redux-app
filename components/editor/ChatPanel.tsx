@@ -26,7 +26,7 @@ const USER_CHAT_BUBBLE_CLASS =
   "rounded-xl border border-white/[0.08] bg-[#1e0d3a] text-[13px] font-medium text-white py-2.5 px-4";
 
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-white/[0.08] bg-white/[0.05] text-[12px] font-semibold text-white/90 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#2e2e2e] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#3a3a3a] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
 
 const AVAILABLE_MODELS = [
   { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
@@ -44,7 +44,7 @@ const CHAT_SURFACE_SHADOW =
   "shadow-[0_1px_3px_rgba(0,0,0,0.32),0_2px_8px_rgba(0,0,0,0.14)]";
 const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
-  "rounded-md border border-white/[0.08] bg-white/[0.05] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
+  "rounded-md border border-[#2e2e2e] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -253,7 +253,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                   width: menuCoords.width,
                 }}
                 className={[
-                  "fixed z-[100] rounded-md border border-white/[0.08] bg-[#111111] py-1",
+                  "fixed z-[100] rounded-md border border-white/[0.08] bg-[#121212] py-1",
                   CHAT_SURFACE_SHADOW,
                 ].join(" ")}
               >
@@ -321,7 +321,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
           "shrink-0 items-center gap-0.5 px-1.5 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
-            : "cursor-pointer hover:bg-white/[0.09]",
+            : "cursor-pointer hover:border-[#3a3a3a]",
         ].join(" ")}
       >
         <span className="whitespace-nowrap font-semibold text-[#888888]">
@@ -683,7 +683,7 @@ export default function ChatPanel({
     <div
       className={[
         "flex flex-col shrink-0 h-full min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
-        "bg-[#060606] border-l border-white/[0.07] rounded-l-2xl",
+        "bg-[#121212] border-l border-[#2e2e2e] rounded-l-2xl",
         panelCollapsed ? "w-[44px]" : "w-[360px]",
       ].join(" ")}
     >
@@ -758,7 +758,7 @@ export default function ChatPanel({
                   className={`max-w-[320px] leading-relaxed whitespace-pre-wrap break-words ${
                     msg.role === "user"
                       ? USER_CHAT_BUBBLE_CLASS
-                      : "rounded-lg px-3 py-2.5 text-[14px] bg-white/[0.05] border border-white/[0.08] text-[#e5e5e5]"
+                      : "rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] border border-[#2e2e2e] text-[#e5e5e5]"
                   }`}
                 >
                   {msg.content === "" && msg.role === "assistant" ? (
@@ -878,7 +878,7 @@ export default function ChatPanel({
             )}
 
             <div
-              className={`overflow-hidden rounded-xl border border-white/[0.08] bg-[#111111] ${CHAT_SURFACE_SHADOW}`}
+              className={`overflow-hidden rounded-xl border border-[#2e2e2e] bg-[#1d1d1d] transition-colors focus-within:border-[#3a3a3a] ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
@@ -912,7 +912,7 @@ export default function ChatPanel({
               </div>
 
               {/* Lower toolbar row */}
-              <div className="flex items-center justify-between gap-2 border-t border-white/[0.06] px-4 pb-3 pt-3">
+              <div className="flex items-center justify-between gap-2 border-t border-[#2e2e2e] px-4 pb-3 pt-3">
                 <div className="flex min-w-0 items-center gap-1.5 shrink-0">
                   <div className={`${TOOLBAR_CHIP} flex ${TOOLBAR_CHIP_H} w-8 items-center justify-center`}>
                     <ToolbarIconBtn

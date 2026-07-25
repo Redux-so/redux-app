@@ -9,7 +9,7 @@ const EditorApp = dynamic(() => import("@/components/editor/EditorApp"), {
   ssr: false,
   loading: () => (
     <LoadingOverlay
-      className="h-screen bg-[#0a0a0a]"
+      className="h-screen bg-[#161616]"
       message="Loading editor"
       size="lg"
     />
@@ -18,7 +18,7 @@ const EditorApp = dynamic(() => import("@/components/editor/EditorApp"), {
 
 const editorFallback = (
   <LoadingOverlay
-    className="h-screen bg-[#0a0a0a]"
+    className="h-screen bg-[#161616]"
     message="Loading editor"
     size="lg"
   />

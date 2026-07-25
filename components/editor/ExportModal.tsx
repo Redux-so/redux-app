@@ -125,7 +125,7 @@ export default function ExportModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="mx-4 w-full max-w-[480px] rounded-xl border border-white/[0.1] bg-[#111111] p-6 shadow-2xl"
+        className="mx-4 w-full max-w-[480px] rounded-xl border border-[#2e2e2e] bg-[#121212] p-6 shadow-2xl"
       >
         {/* Header — same typography as Upload modal */}
         <div className="mb-5 flex items-center justify-between">
@@ -135,7 +135,7 @@ export default function ExportModal({
           <button
             type="button"
             disabled={loading}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
             onClick={onClose}
           >
             <Icon name="XClose" size={16} aria-hidden />
@@ -143,7 +143,7 @@ export default function ExportModal({
         </div>
 
         {/* Body inset — echoes upload “card” zones */}
-        <div className="flex flex-col gap-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+        <div className="flex flex-col gap-4 rounded-xl border border-[#2e2e2e] bg-[#1d1d1d] p-4">
           <div className="flex flex-col gap-2">
             <span className="text-[12px] font-semibold text-[#888888]">
               Format

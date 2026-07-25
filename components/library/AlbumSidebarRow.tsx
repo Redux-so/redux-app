@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/shared/Icon";
+import {
+  LIBRARY_SIDEBAR_BTN_ACTIVE,
+  LIBRARY_SIDEBAR_BTN_IDLE,
+  LIBRARY_SIDEBAR_BTN_ROW,
+} from "@/constants/library-sidebar";
 import type { AlbumRecord } from "@/types/album";
 
 interface AlbumSidebarRowProps {
@@ -46,10 +51,9 @@ export default function AlbumSidebarRow({
     <div
       ref={rootRef}
       className={[
-        "group relative flex w-full items-center rounded-lg transition-colors",
-        isActive
-          ? "bg-white/[0.08] text-white"
-          : "text-[#888888] hover:bg-white/[0.06] hover:text-white",
+        "group relative",
+        LIBRARY_SIDEBAR_BTN_ROW,
+        isActive ? LIBRARY_SIDEBAR_BTN_ACTIVE : LIBRARY_SIDEBAR_BTN_IDLE,
       ].join(" ")}
     >
       <button
@@ -94,7 +98,7 @@ export default function AlbumSidebarRow({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute right-0 top-[calc(100%+4px)] z-30 min-w-[160px] rounded-lg border border-white/[0.1] bg-[#141414] p-1 shadow-2xl"
+            className="absolute right-0 top-[calc(100%+4px)] z-30 min-w-[160px] rounded-lg border border-[#2e2e2e] bg-[#121212] p-1 shadow-2xl"
           >
             <button
               type="button"
@@ -102,7 +106,7 @@ export default function AlbumSidebarRow({
                 setMenuOpen(false);
                 onRequestDelete(album);
               }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-[#ef4444] transition-colors cursor-pointer hover:bg-white/[0.06]"
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-[#ef4444] transition-colors cursor-pointer hover:bg-[#1d1d1d]"
             >
               <Icon name="Trash04" size={16} className="shrink-0" aria-hidden />
               Delete album

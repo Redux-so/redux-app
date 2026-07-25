@@ -50,7 +50,7 @@ function ProfileMenuPopoverContent({
       <button
         type="button"
         onClick={onSettings}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer rounded-lg"
       >
         <Icon name="Settings01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
         Settings
@@ -59,7 +59,7 @@ function ProfileMenuPopoverContent({
       <button
         type="button"
         onClick={onPurchaseCredits}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer rounded-lg"
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer rounded-lg"
       >
         <Icon name="Coins01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
         Purchase Credits
@@ -70,7 +70,7 @@ function ProfileMenuPopoverContent({
       <button
         type="button"
         onClick={onSignOut}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#ef4444] hover:bg-white/[0.07] transition-colors cursor-pointer rounded-lg"
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#ef4444] hover:bg-[#1d1d1d] transition-colors cursor-pointer rounded-lg"
       >
         <Icon name="LogOut01" size={16} className="shrink-0" aria-hidden />
         Log Out
@@ -227,7 +227,7 @@ export default function ProfileMenu({
                   width: resolvedPopoverWidth,
                   zIndex: 80,
                 }}
-                className="bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl origin-bottom-left"
+                className="bg-[#121212] border border-[#2e2e2e] rounded-xl shadow-2xl origin-bottom-left"
               >
                 {popoverContent}
               </motion.div>
@@ -257,7 +257,7 @@ export default function ProfileMenu({
                 exit={{ opacity: 0, scale: 0.95, y: 4 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className={[
-                  "absolute bottom-full mb-2 z-50 bg-[#111111] border border-white/[0.1] rounded-xl shadow-2xl",
+                  "absolute bottom-full mb-2 z-50 bg-[#121212] border border-[#2e2e2e] rounded-xl shadow-2xl",
                   popoverCentered
                     ? "left-1/2 -translate-x-1/2 origin-bottom"
                     : "origin-bottom-left",

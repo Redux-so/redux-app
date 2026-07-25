@@ -1,4 +1,4 @@
-/** Primary label — app button scale (.context: #ffffff on controls, 13px medium) */
+import { SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
 export const BTN_PRIMARY_TYPE =
   "text-[13px] font-medium text-white leading-none";
 
@@ -22,7 +22,7 @@ export const BTN_PRIMARY_PANEL = [
 
 /** Modal primary label — dark text on white CTA */
 export const BTN_MODAL_TYPE =
-  "text-[13px] font-medium text-[#0a0a0a] leading-none";
+  "text-[13px] font-medium text-[#161616] leading-none";
 
 /** White modal CTA shell — no purple glow */
 const BTN_MODAL_VISUAL =
@@ -71,4 +71,4 @@ export const BTN_FORMAT_SELECTED = [
 ].join(" ");
 
 export const BTN_FORMAT_IDLE =
-  "flex flex-1 items-center justify-center h-9 px-3 rounded-md border border-white/[0.08] bg-white/[0.05] text-[13px] font-medium text-white/80 hover:bg-white/[0.09] hover:border-white/[0.15] transition-colors cursor-pointer select-none";
+  `flex flex-1 items-center justify-center h-9 px-3 rounded-md text-[13px] font-medium text-white/80 ${SURFACE_SECONDARY_BTN} select-none`;

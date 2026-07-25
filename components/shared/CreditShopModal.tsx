@@ -111,7 +111,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed inset-0 z-[90] flex items-center justify-center pointer-events-none"
           >
-            <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#111111]/95 backdrop-blur-xl border border-white/[0.1] rounded-xl shadow-2xl">
+            <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#121212] border border-[#2e2e2e] rounded-xl shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4">
                 <div>
@@ -122,7 +122,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                 </div>
                 <button
                   onClick={onClose}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-white/[0.07] hover:text-white transition-colors cursor-pointer"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer"
                 >
                   <Icon name="XClose" size={16} aria-hidden />
                 </button>
@@ -145,17 +145,17 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                       return (
                       <div
                         key={bundle.id}
-                        className={`flex items-center justify-between rounded-xl px-4 py-3.5 border ${
+                        className={`flex items-center justify-between rounded-xl px-4 py-3.5 border bg-[#161616] ${
                           bestValue
-                            ? "border-accent bg-white/[0.03]"
+                            ? "border-accent"
                             : bundle.popular
-                            ? "border-[#794ADE]/40 bg-[#794ADE]/[0.06]"
-                            : "border-white/[0.08] bg-white/[0.03]"
+                            ? "border-[#794ADE]/40"
+                            : "border-[#2e2e2e]"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
-                            bundle.popular ? "border-[#794ADE]/40 bg-[#794ADE]/[0.12]" : "border-white/[0.08] bg-white/[0.05]"
+                            bundle.popular ? "border-[#794ADE]/40 bg-[#794ADE]/[0.12]" : "border-[#2e2e2e] bg-[#1d1d1d]"
                           }`}>
                             <Icon name="Coins01" size={16} className={bundle.popular ? "text-[#B07EF0]" : "text-white"} aria-hidden />
                           </div>

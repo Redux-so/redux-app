@@ -13,9 +13,9 @@ const LABEL_COPY: Record<EditorBoundaryLabel, string> = {
 
 const FALLBACK_SHELL: Record<EditorBoundaryLabel, string> = {
   canvas:
-    "flex flex-1 min-h-0 min-w-0 items-center justify-center border border-white/10 bg-[#0a0a0a] p-6",
+    "flex flex-1 min-h-0 min-w-0 items-center justify-center border border-white/10 bg-[#161616] p-6",
   chat:
-    "flex shrink-0 h-full w-[360px] min-w-0 items-center justify-center border-l border-white/10 bg-[#0a0a0a] p-6",
+    "flex shrink-0 h-full w-[360px] min-w-0 items-center justify-center border-l border-white/10 bg-[#161616] p-6",
 };
 
 interface EditorErrorBoundaryProps {

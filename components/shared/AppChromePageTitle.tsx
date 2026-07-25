@@ -9,7 +9,7 @@ export default function AppChromePageTitle({
 }: AppChromePageTitleProps) {
   const dividerClass =
     variant === "solid"
-      ? "bg-[#2a2a2a]"
+      ? "bg-[#2e2e2e]"
       : "bg-white/[0.08]";
 
   return (

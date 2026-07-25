@@ -35,7 +35,7 @@ function TransformBtn({
     <button
       onClick={onClick}
       title={title}
-      className="flex items-center justify-center gap-[7px] w-full h-[34px] bg-[#1a1a1a] border border-[#2a2a2a] rounded-sm text-[13px] text-white hover:bg-[#222222] transition-colors cursor-pointer"
+      className="flex items-center justify-center gap-[7px] w-full h-[34px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-sm text-[13px] text-white hover:border-[#3a3a3a] transition-colors cursor-pointer"
     >
       {children}
     </button>
@@ -105,9 +105,9 @@ export default function TransformPanel({
   }
 
   return (
-    <div className="w-[280px] shrink-0 bg-[#111111] border-r border-[#2a2a2a] overflow-y-auto">
+    <div className="w-[280px] shrink-0 bg-[#121212] border-r border-[#2e2e2e] overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center px-4 h-[44px] border-b border-[#2a2a2a]">
+      <div className="flex items-center px-4 h-[44px] border-b border-[#2e2e2e]">
         <span className="text-[12px] font-medium uppercase tracking-widest text-[#888888] select-none">
           Transform
         </span>
@@ -155,7 +155,7 @@ export default function TransformPanel({
 
         {/* Resize modal-inlined */}
         {showResize && (
-          <div className="bg-[#161616] border border-[#2a2a2a] rounded-sm p-3 flex flex-col gap-3">
+          <div className="bg-[#161616] border border-[#2e2e2e] rounded-sm p-3 flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <div className="flex flex-col gap-1 flex-1">
                 <label className="text-[10px] text-[#555555] uppercase tracking-wider">
@@ -165,7 +165,7 @@ export default function TransformPanel({
                   type="number"
                   value={resize.width}
                   onChange={(e) => handleWidthChange(e.target.value)}
-                  className="w-full h-[30px] bg-[#111111] border border-[#2a2a2a] rounded-sm px-2 text-[12px] text-white outline-none focus:border-[#444444]"
+                  className="w-full h-[30px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-sm px-2 text-[12px] text-white outline-none focus:border-[#3a3a3a]"
                 />
               </div>
 
@@ -191,7 +191,7 @@ export default function TransformPanel({
                   type="number"
                   value={resize.height}
                   onChange={(e) => handleHeightChange(e.target.value)}
-                  className="w-full h-[30px] bg-[#111111] border border-[#2a2a2a] rounded-sm px-2 text-[12px] text-white outline-none focus:border-[#444444]"
+                  className="w-full h-[30px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-sm px-2 text-[12px] text-white outline-none focus:border-[#3a3a3a]"
                 />
               </div>
             </div>

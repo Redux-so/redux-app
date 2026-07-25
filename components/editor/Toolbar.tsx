@@ -45,7 +45,7 @@ function ToolbarBtn({
         "disabled:opacity-30 disabled:cursor-not-allowed",
         active
           ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
-          : "text-white/40 hover:bg-white/[0.07] hover:text-white",
+          : "text-white/40 hover:bg-[#1d1d1d] hover:text-white",
       ].join(" ")}
     >
       {children}
@@ -76,7 +76,7 @@ export default function Toolbar({
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
   return (
-    <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-white/[0.08] bg-black/40 backdrop-blur-2xl pl-3 pr-3">
+    <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-[#2e2e2e] bg-[#121212] pl-3 pr-3">
       {/* Left — back to library */}
       <div className="flex min-w-0 shrink-0 items-center justify-self-start gap-3">
         <BackToLibraryButton />
@@ -92,7 +92,7 @@ export default function Toolbar({
         <button
           onClick={resetZoom}
           title="Reset zoom"
-          className="flex shrink-0 items-center justify-center h-9 px-3 rounded-md text-[14px] text-white tabular-nums hover:bg-white/[0.07] transition-colors cursor-pointer"
+          className="flex shrink-0 items-center justify-center h-9 px-3 rounded-md text-[14px] text-white tabular-nums hover:bg-[#1d1d1d] transition-colors cursor-pointer"
         >
           {zoomPercent}
         </button>
