@@ -172,7 +172,8 @@ export default function SearchBar({
           </span>
         ) : null}
         <input
-          type="search"
+          type="text"
+          role="searchbox"
           name="library-search"
           value={value}
           onChange={(e) => handleChange(e.target.value)}
@@ -180,6 +181,8 @@ export default function SearchBar({
           onBlur={() => setFocused(false)}
           placeholder=""
           aria-label="Search photos by keyword, color, scene, or mood"
+          autoComplete="off"
+          enterKeyHint="search"
           disabled={isSearching}
           className={[
             "relative z-[2] min-w-0 flex-1 bg-transparent text-white outline-none disabled:opacity-60",
