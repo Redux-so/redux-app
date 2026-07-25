@@ -5,6 +5,8 @@
   --foreground: #ededed;
   --surface-chrome: #121212;
   --accent: #682FBF;
+  --accent-glow: #794ade;
+  --accent-glow-rgb: 121, 74, 222;
   --scrollbar-thumb: rgba(255, 255, 255, 0.12);
   --scrollbar-thumb-hover: rgba(104, 47, 191, 0.38);
 }
@@ -191,4 +193,45 @@ body {
 
 .cl-userProfile-root .cl-formButtonPrimary:hover {
   background: #e5e5e5 !important;
+}
+
+/* Library dashboard — soft ambient accent glow (#794ADE) */
+.accent-glow-heading {
+  position: relative;
+  isolation: isolate;
+}
+
+.accent-glow-heading::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: min(110%, 52rem);
+  height: 9rem;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse 120% 80% at center,
+    rgba(var(--accent-glow-rgb), 0.22) 0%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.accent-glow-surface {
+  box-shadow:
+    inset 0 0 40px rgba(var(--accent-glow-rgb), 0.15),
+    0 0 20px rgba(var(--accent-glow-rgb), 0.1);
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.accent-glow-surface:hover,
+.accent-glow-surface:focus-within {
+  box-shadow:
+    inset 0 0 48px rgba(var(--accent-glow-rgb), 0.3),
+    0 0 28px rgba(var(--accent-glow-rgb), 0.18);
 }
