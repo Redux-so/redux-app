@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/shared/Icon";
+import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import toast from "react-hot-toast";
@@ -433,9 +434,11 @@ export default function SettingsPage() {
                   ))}
                 </div>
               ) : !transactions.length ? (
-                <p className="text-[#555555] text-[14px] py-4 text-center">
-                  No transactions yet
-                </p>
+                <EmptyState
+                  className="py-4"
+                  icon="Coins01"
+                  message="No transactions yet"
+                />
               ) : (
                 <div
                   className={

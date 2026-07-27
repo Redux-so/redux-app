@@ -4,7 +4,9 @@ import type { AlbumRecord } from "@/types/album";
 import type { ImageGroup, ImageRecord } from "@/types/image";
 import PhotoCard from "./PhotoCard";
 import TrashPhotoCard from "./TrashPhotoCard";
+import EmptyState from "@/components/shared/EmptyState";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
+import { resolveLibraryEmptyIcon } from "@/lib/resolve-empty-state-icon";
 import { motion, useReducedMotion } from "framer-motion";
 
 interface PhotoGridProps {
@@ -136,10 +138,11 @@ export default function PhotoGrid({
     }
     if (search.images.length === 0) {
       return (
-        <div className="flex items-center justify-center h-full w-full px-5">
-          <p className="text-[#555555] text-[13px] text-center">
-            {searchEmptyMessage}
-          </p>
+        <div className="flex h-full min-h-[240px] w-full items-center justify-center px-5">
+          <EmptyState
+            icon={resolveLibraryEmptyIcon(searchEmptyMessage, viewMode)}
+            message={searchEmptyMessage}
+          />
         </div>
       );
     }
@@ -174,8 +177,11 @@ export default function PhotoGrid({
 
   if (!hasImages) {
     return (
-      <div className="flex items-center justify-center h-full w-full">
-        <p className="text-[#555555] text-[13px]">{libraryEmptyMessage}</p>
+      <div className="flex h-full min-h-[240px] w-full items-center justify-center">
+        <EmptyState
+          icon={resolveLibraryEmptyIcon(libraryEmptyMessage, viewMode)}
+          message={libraryEmptyMessage}
+        />
       </div>
     );
   }

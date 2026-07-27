@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { Icon } from "@/components/shared/Icon";
+import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
@@ -728,10 +729,12 @@ export default function ChatPanel({
             className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
           >
             {messages.length === 0 && (
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-[14px] text-[#444444] text-center select-none leading-relaxed px-2">
-                  Describe the edits you want or ask a question about your photo.
-                </p>
+              <div className="flex flex-1 items-center justify-center">
+                <EmptyState
+                  className="px-2"
+                  icon="MessageChatCircle"
+                  message="Describe the edits you want or ask a question about your photo."
+                />
               </div>
             )}
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/shared/Icon";
+import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import type { Adjustments } from "@/hooks/useEditor";
 
@@ -70,15 +71,12 @@ export function HistoryVersionList({
       )}
 
       {!loading && versions.length === 0 && (
-        <div className="flex h-32 flex-col items-center justify-center gap-2 px-6 text-center">
-          <Icon name="ClockRewind" size={24} className="text-[#333333]" aria-hidden />
-          <p className="text-[13px] leading-relaxed text-[#555555]">
-            No saved versions yet
-          </p>
-          <p className="text-[12px] leading-relaxed text-[#444444]">
-            Versions are saved automatically every 30 seconds when changes are made.
-          </p>
-        </div>
+        <EmptyState
+          className="h-32 px-6"
+          icon="ClockRewind"
+          message="No saved versions yet"
+          description="Versions are saved automatically every 30 seconds when changes are made."
+        />
       )}
 
       {!loading &&

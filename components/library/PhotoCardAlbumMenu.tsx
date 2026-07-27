@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/shared/Icon";
+import EmptyState from "@/components/shared/EmptyState";
 import type { AlbumRecord } from "@/types/album";
 import toast from "react-hot-toast";
 
@@ -114,7 +115,13 @@ export default function PhotoCardAlbumMenu({
               Add to album
             </p>
             {albums.length === 0 ? (
-              <p className="px-2 py-2 text-[12px] text-[#555555]">No albums yet</p>
+              <EmptyState
+                align="start"
+                className="px-2 py-2"
+                icon="Folder"
+                message="No albums yet"
+                variant="compact"
+              />
             ) : (
               <ul className="max-h-[180px] overflow-y-auto">
                 {albums.map((album) => {

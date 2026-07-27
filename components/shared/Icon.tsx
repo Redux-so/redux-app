@@ -19,8 +19,8 @@ type UntitledIconComponent = FC<
 
 interface IconProps {
   name: IconName;
-  /** 16 = dense/inline, 20 = standard (default), 24 = standalone/callout */
-  size?: 16 | 20 | 24;
+  /** 16 = dense/inline, 20 = standard (default), 24 = standalone/callout, 48 = empty state */
+  size?: 16 | 20 | 24 | 48;
   strokeWidth?: number;
   className?: string;
   "aria-hidden"?: boolean;

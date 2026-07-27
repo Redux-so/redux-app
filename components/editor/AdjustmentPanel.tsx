@@ -12,6 +12,7 @@ import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
 import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import ProfileMenu from "@/components/shared/ProfileMenu";
+import EmptyState from "@/components/shared/EmptyState";
 import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
 import { SURFACE_BTN_ACTIVE, SURFACE_BTN_IDLE, SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
 
@@ -1283,9 +1284,11 @@ export default function AdjustmentPanel({
                   ) : canvasImageUrl ? (
                     <LoadingSpinner size="xs" label="Loading preview" />
                   ) : (
-                    <span className="text-[11px] text-[#555555] px-4 py-6 text-center">
-                      No image
-                    </span>
+                    <EmptyState
+                      icon="Image01"
+                      message="No image"
+                      variant="compact"
+                    />
                   )}
                 </div>
               </div>

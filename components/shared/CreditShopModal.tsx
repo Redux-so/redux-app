@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/shared/Icon";
+import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { BTN_MODAL_SOLID } from "@/lib/button-styles";
 import { AnimatePresence, motion } from "framer-motion";
@@ -135,9 +136,11 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                     <LoadingSpinner size="md" label="Loading credit bundles" />
                   </div>
                 ) : bundles.length === 0 ? (
-                  <p className="text-[#888888] text-[13px] text-center py-8">
-                    No credit packages available right now.
-                  </p>
+                  <EmptyState
+                    className="py-8"
+                    icon="Coins01"
+                    message="No credit packages available right now."
+                  />
                 ) : (
                   <div className="flex flex-col gap-2.5">
                     {bundles.map((bundle) => {

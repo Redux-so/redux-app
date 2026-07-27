@@ -4,6 +4,7 @@ import { useRef } from "react";
 
 import { Icon } from "@/components/shared/Icon";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { EMPTY_STATE_ICON_CLASS } from "@/lib/surface-colors";
 
 interface UploadDropzoneProps {
   onUploadComplete?: () => void;
@@ -43,7 +44,7 @@ export default function UploadDropzone({ onUploadComplete }: UploadDropzoneProps
       >
         {isBusy ? (
           <>
-            <Icon name="Image05" size={24} className="text-[#682FBF]/50" aria-hidden />
+            <Icon name="Image05" size={24} className={EMPTY_STATE_ICON_CLASS} aria-hidden />
             <p className="text-[14px] text-[#888888]">
               {isProcessing ? "Saving to library..." : "Uploading..."}
             </p>
@@ -59,7 +60,7 @@ export default function UploadDropzone({ onUploadComplete }: UploadDropzoneProps
           </>
         ) : (
           <>
-            <Icon name="Image05" size={24} className="text-[#682FBF]/50" aria-hidden />
+            <Icon name="Image05" size={24} className={EMPTY_STATE_ICON_CLASS} aria-hidden />
             <p className="text-[14px] text-[#888888]">
               Drop a photo here or click to browse
             </p>
