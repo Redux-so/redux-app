@@ -146,7 +146,7 @@ export default function Toolbar({
               justSaved ? "animate-pulse" : "",
             ].join(" ")}
           />
-          <span className="text-[12px] text-[#888888] whitespace-nowrap">
+          <span className="text-[13px] text-[#888888] whitespace-nowrap">
             {isDirty ? "Unsaved" : justSaved ? "Saving…" : "Auto-saved"}
           </span>
         </div>
