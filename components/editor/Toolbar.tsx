@@ -3,6 +3,7 @@
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import BackToLibraryButton from "@/components/shared/BackToLibraryButton";
 import { Icon } from "@/components/shared/Icon";
+import { SURFACE_BTN_ACTIVE, SURFACE_BTN_IDLE } from "@/lib/surface-colors";
 
 interface ToolbarProps {
   filename?: string;
@@ -25,13 +26,11 @@ interface ToolbarProps {
 function ToolbarBtn({
   onClick,
   disabled,
-  active,
   title,
   children,
 }: {
   onClick: () => void;
   disabled?: boolean;
-  active?: boolean;
   title?: string;
   children: React.ReactNode;
 }) {
@@ -43,9 +42,7 @@ function ToolbarBtn({
       className={[
         "flex shrink-0 items-center justify-center h-9 w-9 rounded-md transition-colors cursor-pointer",
         "disabled:opacity-30 disabled:cursor-not-allowed",
-        active
-          ? "bg-[#682FBF]/25 text-[#B07EF0] border border-[#682FBF]/40"
-          : "text-white/40 hover:bg-[#1d1d1d] hover:text-white",
+        "text-white/40 hover:bg-[#1d1d1d] hover:text-white",
       ].join(" ")}
     >
       {children}
@@ -103,14 +100,21 @@ export default function Toolbar({
 
         <Divider />
 
-        {/* Before / After */}
-        <ToolbarBtn
+        {/* Before / After — matches tool rail icon hover/active */}
+        <button
+          type="button"
           onClick={toggleBefore}
-          active={showBefore}
           title={showBefore ? "Show after" : "Show before"}
+          aria-pressed={showBefore}
+          className={[
+            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors",
+            showBefore
+              ? `${SURFACE_BTN_ACTIVE} !text-white`
+              : SURFACE_BTN_IDLE,
+          ].join(" ")}
         >
           <Icon name="Columns02" size={20} aria-hidden />
-        </ToolbarBtn>
+        </button>
 
         <Divider />
 
