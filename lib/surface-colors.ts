@@ -47,5 +47,5 @@ export const SURFACE_GHOST_BTN =
 export const SURFACE_SECONDARY_BTN =
   "border border-[#2e2e2e] bg-[#1d1d1d] text-white hover:bg-[#1d1d1d] hover:border-[#3a3a3a] transition-colors cursor-pointer";
 
-/** Decorative empty-state icons — matches UploadDropzone accent icon at 50% opacity. */
-export const EMPTY_STATE_ICON_CLASS = "text-accent/50";
+/** Decorative empty-state icons — primary CTA purple (matches `BTN_PRIMARY_*`). */
+export const EMPTY_STATE_ICON_CLASS = "text-[#8758ed]";
