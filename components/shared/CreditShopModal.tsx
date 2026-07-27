@@ -150,7 +150,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         key={bundle.id}
                         className={`flex items-center justify-between rounded-xl px-4 py-3.5 border bg-[#161616] ${
                           bestValue
-                            ? "border-accent"
+                            ? "border-[#8758ed]"
                             : bundle.popular
                             ? "border-[#794ADE]/40"
                             : "border-[#2e2e2e]"
@@ -178,7 +178,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           {bestValue && (
-                            <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
+                            <span className="rounded-full bg-[#8758ed] px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
                               Best Value
                             </span>
                           )}
