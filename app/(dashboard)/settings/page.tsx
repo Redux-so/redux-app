@@ -574,11 +574,11 @@ export default function SettingsPage() {
   return (
     <>
       <div className="flex flex-col h-screen bg-[#161616] overflow-hidden">
-        <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-[#2e2e2e] bg-[#161616] pl-3 pr-3">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-[#2e2e2e] bg-[#121212] pl-3 pr-3">
           <Suspense
             fallback={
-              <span className="inline-flex shrink-0 items-center gap-2 px-2 py-1.5 text-[13px] font-medium text-[#888888]">
-                <Icon name="ChevronLeft" size={20} aria-hidden />
+              <span className="inline-flex shrink-0 items-center gap-1.5 px-2 py-1.5 text-[13px] text-[#888888]">
+                <Icon name="ChevronLeft" size={16} aria-hidden />
                 Back
               </span>
             }
