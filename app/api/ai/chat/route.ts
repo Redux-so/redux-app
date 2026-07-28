@@ -11,29 +11,13 @@ import {
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
-
-// ---------------------------------------------------------------------------
-// System prompt
-// ---------------------------------------------------------------------------
-const SYSTEM_PROMPT = `You are an expert photo editing assistant for Redux Studio. \
-When the user asks for edits, respond with a helpful, concise message AND — \
-whenever you recommend any adjustments — include a JSON object of the changes \
-wrapped in adjustment tags exactly like this:
-
-[adjustments]{"exposure": 20, "contrast": 10}[/adjustments]
-
-If the user attaches a reference image, analyze its color grading, tone, \
-contrast, and mood, then translate those characteristics into adjustment values.
-
-Rules:
-- Only include adjustments that should change from their current value.
-- Keep explanations brief and practical.
-- Available adjustments (all range from -100 to 100):
-  exposure, contrast, blacks, whites, highlights, shadows,
-  vibrance, saturation, temperature, tint, hue, sharpen, noiseReduction,
-  vignette, grain, clarity
-- Put the [adjustments] block at the very end of your response.
-- If no adjustments are needed, omit the block entirely.`;
+import { CHAT_SYSTEM_PROMPT } from "@/lib/chat-system-prompt";
+import {
+  fetchChatImageBase64,
+  isChatImageMediaType,
+  type ChatImageMediaType,
+} from "@/lib/chat-image-context";
+import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 
 // ---------------------------------------------------------------------------
 // SSE helpers
@@ -62,8 +46,44 @@ const CREDIT_HOURLY_LIMIT = 60;
 interface ChatRequestBody {
   userMessage: string;
   adjustments?: Record<AdjustmentKey, number>;
+  imageId?: string;
+  workspaceImageUrl?: string;
   imageBase64?: string;
   imageMediaType?: string;
+}
+
+async function resolveWorkspaceImage(
+  userId: string,
+  workspaceImageUrl: string,
+  imageId?: string,
+): Promise<{ base64: string; mediaType: ChatImageMediaType } | null> {
+  if (workspaceImageUrl.startsWith("data:")) {
+    if (!imageId) return null;
+    const owned = await prisma.image.findFirst({
+      where: { id: imageId, userId, deletedAt: null },
+    });
+    if (!owned) return null;
+    return fetchChatImageBase64(workspaceImageUrl);
+  }
+
+  const owned = await assertUserOwnsImageUrl(userId, workspaceImageUrl);
+  if (!owned) return null;
+  return fetchChatImageBase64(workspaceImageUrl);
+}
+
+function pushImageBlock(
+  blocks: (ImageBlockParam | TextBlockParam)[],
+  base64: string,
+  mediaType: string,
+) {
+  const media: ChatImageMediaType = isChatImageMediaType(mediaType)
+    ? mediaType
+    : "image/jpeg";
+
+  blocks.push({
+    type: "image",
+    source: { type: "base64", media_type: media, data: base64 },
+  });
 }
 
 export async function POST(request: Request) {
@@ -73,7 +93,14 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as ChatRequestBody;
-  const { userMessage, adjustments = {}, imageBase64, imageMediaType } = body;
+  const {
+    userMessage,
+    adjustments = {},
+    imageId,
+    workspaceImageUrl,
+    imageBase64,
+    imageMediaType,
+  } = body;
 
   if (!userMessage?.trim()) {
     return NextResponse.json({ error: "userMessage is required" }, { status: 400 });
@@ -183,17 +210,23 @@ export async function POST(request: Request) {
 
   const userContent: (ImageBlockParam | TextBlockParam)[] = [];
 
-  if (imageBase64 && imageMediaType) {
-    const validMediaTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
-    type ValidMediaType = (typeof validMediaTypes)[number];
-    const media = validMediaTypes.includes(imageMediaType as ValidMediaType)
-      ? (imageMediaType as ValidMediaType)
-      : "image/jpeg";
+  if (workspaceImageUrl?.trim()) {
+    try {
+      const workspaceImage = await resolveWorkspaceImage(
+        user.id,
+        workspaceImageUrl.trim(),
+        imageId,
+      );
+      if (workspaceImage) {
+        pushImageBlock(userContent, workspaceImage.base64, workspaceImage.mediaType);
+      }
+    } catch (err) {
+      console.error("[/api/ai/chat] Failed to load workspace image:", err);
+    }
+  }
 
-    userContent.push({
-      type: "image",
-      source: { type: "base64", media_type: media, data: imageBase64 },
-    });
+  if (imageBase64 && imageMediaType) {
+    pushImageBlock(userContent, imageBase64, imageMediaType);
   }
 
   userContent.push({
@@ -219,7 +252,7 @@ export async function POST(request: Request) {
         const claudeStream = anthropic.messages.stream({
           model: "claude-sonnet-4-5",
           max_tokens: 1024,
-          system: SYSTEM_PROMPT,
+          system: CHAT_SYSTEM_PROMPT,
           messages: [{ role: "user", content: userContent }],
         });
 

@@ -14,6 +14,7 @@ import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { BTN_PRIMARY_ICON, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
+import { ChatMarkdown } from "@/lib/chat-markdown";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import UsageRing from "@/components/shared/UsageRing";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
@@ -100,6 +101,8 @@ interface ChatPanelProps {
   adjustments: Adjustments;
   onPatch: (patch: Partial<Record<string, number>>) => void;
   imageId?: string;
+  /** Current canvas photo — sent to the model as already-available context. */
+  canvasImageUrl?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -371,6 +374,7 @@ export default function ChatPanel({
   adjustments,
   onPatch,
   imageId,
+  canvasImageUrl,
 }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -577,6 +581,7 @@ export default function ChatPanel({
           userMessage: text,
           adjustments,
           imageId,
+          workspaceImageUrl: canvasImageUrl ?? undefined,
           imageBase64,
           imageMediaType,
         }),
@@ -766,6 +771,8 @@ export default function ChatPanel({
                 >
                   {msg.content === "" && msg.role === "assistant" ? (
                     <LoadingSpinner size="xs" variant="muted" label="Assistant is typing" />
+                  ) : msg.role === "assistant" ? (
+                    <ChatMarkdown content={msg.content} />
                   ) : (
                     msg.content
                   )}

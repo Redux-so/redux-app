@@ -347,6 +347,7 @@ export default function EditorApp() {
               adjustments={adjustments}
               onPatch={patchAdjustments}
               imageId={imageId}
+              canvasImageUrl={activeImageUrl ?? baseImageUrl ?? image?.originalUrl ?? null}
             />
           </EditorErrorBoundary>
         </div>
