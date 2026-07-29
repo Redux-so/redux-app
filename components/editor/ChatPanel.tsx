@@ -25,7 +25,7 @@ import {
 } from "@/lib/usage-ring-state";
 
 const USER_CHAT_BUBBLE_CLASS =
-  "rounded-xl border border-white/[0.08] bg-[#1e0d3a] text-[13px] font-medium text-white py-2.5 px-4";
+  "rounded-xl border border-[#8758ed]/20 bg-[#382074] text-[13px] font-medium text-white py-2.5 px-4";
 
 const BTN_SECONDARY =
   "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#2e2e2e] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#3a3a3a] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
