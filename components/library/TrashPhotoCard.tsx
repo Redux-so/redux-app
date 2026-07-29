@@ -115,7 +115,7 @@ export default function TrashPhotoCard({
       <ConfirmDialog
         open={confirmOpen}
         title="Delete photo permanently?"
-        body="This removes the photo from Cloudinary and Redux. This action cannot be undone."
+        body="This removes the photo from Redux. This action cannot be undone."
         confirmLabel="Delete Permanently"
         destructive
         loading={isDeleting}

@@ -654,7 +654,7 @@ export default function SettingsPage() {
       <ConfirmDialog
         open={showClearLibrary}
         title="Clear your library?"
-        body="This will permanently delete all your photos from Cloudinary, UploadThing, and Redux. This cannot be undone."
+        body="This will permanently delete all your photos from Redux. This cannot be undone."
         confirmLabel="Clear Library"
         destructive
         loading={clearingLibrary}

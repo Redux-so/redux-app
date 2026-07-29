@@ -52,7 +52,7 @@ export default function TrashViewToolbar({
       <ConfirmDialog
         open={confirmOpen}
         title="Empty trash?"
-        body={`This permanently deletes all ${count} photo${count === 1 ? "" : "s"} in trash from Cloudinary and Redux. This action cannot be undone.`}
+        body={`This permanently deletes all ${count} photo${count === 1 ? "" : "s"} in trash from Redux. This action cannot be undone.`}
         confirmLabel="Empty Trash"
         destructive
         loading={emptying}
