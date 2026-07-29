@@ -65,6 +65,7 @@ const TOOL_SECTIONS: {
 ];
 
 const RAIL_ICON_STROKE = 1.25;
+const RAIL_ICON_SIZE = 24;
 /** Sun's radiating lines read lighter at the default rail stroke — nudge slightly. */
 const RAIL_ICON_STROKE_OVERRIDES: Partial<Record<IconName, number>> = {
   Sun: 1.7,
@@ -74,7 +75,7 @@ function RailIcon({ iconName }: { iconName: IconName }) {
   return (
     <Icon
       name={iconName}
-      size={26}
+      size={RAIL_ICON_SIZE}
       strokeWidth={RAIL_ICON_STROKE_OVERRIDES[iconName] ?? RAIL_ICON_STROKE}
       aria-hidden
     />
@@ -816,7 +817,7 @@ export default function AdjustmentPanel({
             <RailLink href={REDUX_DOCS_URL} title="Docs" external>
               <Icon
                 name="BookOpen01"
-                size={24}
+                size={RAIL_ICON_SIZE}
                 strokeWidth={RAIL_ICON_STROKE}
                 aria-hidden
               />
@@ -824,7 +825,7 @@ export default function AdjustmentPanel({
             <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback">
               <Icon
                 name="HelpCircle"
-                size={24}
+                size={RAIL_ICON_SIZE}
                 strokeWidth={RAIL_ICON_STROKE}
                 aria-hidden
               />
