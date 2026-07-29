@@ -822,7 +822,7 @@ export default function AdjustmentPanel({
             <RailLink href={REDUX_DOCS_URL} title="Docs" external>
               <RailIcon iconName="BookOpen01" />
             </RailLink>
-            <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback">
+            <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback" external>
               <RailDiscordIcon />
             </RailLink>
             <ProfileMenu

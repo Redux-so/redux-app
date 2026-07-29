@@ -206,8 +206,12 @@ export default function LibrarySidebar({
             />
             <span className="min-w-0 truncate">Docs</span>
           </a>
-          {/* TODO: Point REDUX_HELP_FEEDBACK_URL to help/feedback destination when available. */}
-          <a href={REDUX_HELP_FEEDBACK_URL} className={LIBRARY_SIDEBAR_LINK_ROW}>
+          <a
+            href={REDUX_HELP_FEEDBACK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={LIBRARY_SIDEBAR_LINK_ROW}
+          >
             <DiscordIcon
               size={16}
               className="text-[#888888] group-hover:text-white"
