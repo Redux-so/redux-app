@@ -21,6 +21,7 @@ import {
   LIBRARY_SIDEBAR_ICON_BTN,
   LIBRARY_SIDEBAR_LINK_ROW,
   LIBRARY_SIDEBAR_WIDTH_PX,
+  LIBRARY_PANEL_SURFACE,
 } from "@/constants/library-sidebar";
 import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
 import type { LibrarySidebarView } from "@/lib/library-filters";
@@ -75,7 +76,7 @@ export default function LibrarySidebar({
   return (
     <>
       <aside
-        className="flex flex-col shrink-0 h-full bg-[#121212] rounded-r-2xl border-r border-[#2e2e2e] overflow-hidden"
+        className={`flex flex-col shrink-0 h-full rounded-r-2xl border-r overflow-hidden ${LIBRARY_PANEL_SURFACE}`}
         style={{ width: LIBRARY_SIDEBAR_WIDTH_PX }}
       >
         <div className="shrink-0">

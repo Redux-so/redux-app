@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import FilterDateField from "@/components/library/FilterDateField";
 import type { LibraryFileTypeKey } from "@/constants/image-formats";
+import { LIBRARY_PANEL_SURFACE } from "@/constants/library-sidebar";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import {
   countActiveLibraryFilters,
@@ -144,7 +145,7 @@ export default function LibraryFiltersPopover({
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-[calc(100%+8px)] z-50 w-[300px] rounded-lg border border-[#2e2e2e] bg-[#121212] p-4 shadow-2xl"
+      className={`absolute right-0 top-[calc(100%+8px)] z-50 w-[300px] rounded-lg p-4 ${LIBRARY_PANEL_SURFACE}`}
     >
       <div className="mb-3 flex items-center justify-between">
         <span className="text-[14px] font-medium text-white">Filters</span>

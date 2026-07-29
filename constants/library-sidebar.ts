@@ -1,9 +1,14 @@
 import {
+  SURFACE_BG_PANEL,
+  SURFACE_BORDER,
   SURFACE_BTN_ACTIVE,
   SURFACE_BTN_IDLE,
   SURFACE_BTN_ROW as SURFACE_NAV_ROW,
   SURFACE_ICON_BTN,
 } from "@/lib/surface-colors";
+
+/** Library left panel + filter popover — same flat panel surface (no shadow). */
+export const LIBRARY_PANEL_SURFACE = `${SURFACE_BG_PANEL} ${SURFACE_BORDER}`;
 
 /** Library left panel width — keep sidebar shell and profile popover in sync. */
 export const LIBRARY_SIDEBAR_WIDTH_PX = 260;

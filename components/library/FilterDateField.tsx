@@ -17,6 +17,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/shared/Icon";
+import { LIBRARY_PANEL_SURFACE } from "@/constants/library-sidebar";
 
 interface FilterDateFieldProps {
   label: string;
@@ -112,7 +113,7 @@ export default function FilterDateField({
         <div
           role="dialog"
           aria-label={`${label} calendar`}
-          className="absolute left-0 top-[calc(100%+6px)] z-[60] w-[260px] rounded-lg border border-[#2e2e2e] bg-[#121212] p-3 shadow-2xl"
+          className={`absolute left-0 top-[calc(100%+6px)] z-[60] w-[260px] rounded-lg p-3 ${LIBRARY_PANEL_SURFACE}`}
         >
           <div className="mb-3 flex items-center justify-between">
             <button
