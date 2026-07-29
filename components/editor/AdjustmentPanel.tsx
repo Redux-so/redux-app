@@ -83,6 +83,10 @@ function RailIcon({ iconName }: { iconName: IconName }) {
   );
 }
 
+function RailDiscordIcon() {
+  return <DiscordIcon size={RAIL_ICON_SIZE} />;
+}
+
 function applyAiAdjustments(
   patch: Partial<Record<string, number>>,
   onPatch: (p: Partial<Record<string, number>>) => void,
@@ -816,15 +820,10 @@ export default function AdjustmentPanel({
 
           <div className="mt-auto shrink-0 pb-4 w-full flex flex-col items-center gap-4">
             <RailLink href={REDUX_DOCS_URL} title="Docs" external>
-              <Icon
-                name="BookOpen01"
-                size={RAIL_ICON_SIZE}
-                strokeWidth={RAIL_ICON_STROKE}
-                aria-hidden
-              />
+              <RailIcon iconName="BookOpen01" />
             </RailLink>
             <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback">
-              <DiscordIcon size={RAIL_ICON_SIZE} />
+              <RailDiscordIcon />
             </RailLink>
             <ProfileMenu
               variant="compact"

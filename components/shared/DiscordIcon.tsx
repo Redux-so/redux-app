@@ -3,19 +3,14 @@ interface DiscordIconProps {
   className?: string;
 }
 
-const SIZE_CLASS: Record<NonNullable<DiscordIconProps["size"]>, string> = {
-  16: "h-4 w-4",
-  20: "h-5 w-5",
-  24: "h-6 w-6",
-  48: "h-12 w-12",
-};
-
 /** Monochrome Discord mark — inherits color via currentColor like other rail/sidebar icons. */
 export default function DiscordIcon({ size = 20, className }: DiscordIconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className={[SIZE_CLASS[size], "shrink-0", className].filter(Boolean).join(" ")}
+      width={size}
+      height={size}
+      className={["shrink-0 block", className].filter(Boolean).join(" ")}
       fill="currentColor"
       aria-hidden
     >
