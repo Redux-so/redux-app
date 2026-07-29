@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
+import type { ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic, formatAdjustmentsForPrompt } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
 import {
@@ -12,6 +12,10 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
 import { CHAT_SYSTEM_PROMPT } from "@/lib/chat-system-prompt";
+import {
+  shouldApplyChatAdjustments,
+  type ChatHistoryMessage,
+} from "@/lib/chat-edit-intent";
 import {
   fetchChatImageBase64,
   isChatImageMediaType,
@@ -46,10 +50,29 @@ const CREDIT_HOURLY_LIMIT = 60;
 interface ChatRequestBody {
   userMessage: string;
   adjustments?: Record<AdjustmentKey, number>;
+  conversationHistory?: ChatHistoryMessage[];
   imageId?: string;
   workspaceImageUrl?: string;
   imageBase64?: string;
   imageMediaType?: string;
+}
+
+const MAX_CONVERSATION_HISTORY = 20;
+
+function buildAnthropicMessages(
+  history: ChatHistoryMessage[],
+  userContent: (ImageBlockParam | TextBlockParam)[],
+): MessageParam[] {
+  const messages: MessageParam[] = [];
+
+  for (const entry of history.slice(-MAX_CONVERSATION_HISTORY)) {
+    const content = entry.content.trim();
+    if (!content) continue;
+    messages.push({ role: entry.role, content });
+  }
+
+  messages.push({ role: "user", content: userContent });
+  return messages;
 }
 
 async function resolveWorkspaceImage(
@@ -96,6 +119,7 @@ export async function POST(request: Request) {
   const {
     userMessage,
     adjustments = {},
+    conversationHistory = [],
     imageId,
     workspaceImageUrl,
     imageBase64,
@@ -234,6 +258,12 @@ export async function POST(request: Request) {
     text: `${userMessage.trim()}\n\n${adjustmentsContext}`,
   });
 
+  const anthropicMessages = buildAnthropicMessages(conversationHistory, userContent);
+  const allowAdjustments = shouldApplyChatAdjustments(
+    userMessage,
+    conversationHistory,
+  );
+
   // ── Stream response ───────────────────────────────────────────────────────
   const stream = new ReadableStream({
     async start(controller) {
@@ -253,7 +283,7 @@ export async function POST(request: Request) {
           model: "claude-sonnet-4-5",
           max_tokens: 1024,
           system: CHAT_SYSTEM_PROMPT,
-          messages: [{ role: "user", content: userContent }],
+          messages: anthropicMessages,
         });
 
         for await (const event of claudeStream) {
@@ -269,7 +299,7 @@ export async function POST(request: Request) {
 
         // Extract [adjustments] block and emit as a separate event
         const adjMatch = fullText.match(/\[adjustments\]([\s\S]*?)\[\/adjustments\]/);
-        if (adjMatch) {
+        if (adjMatch && allowAdjustments) {
           try {
             const parsed = normalizeAdjustmentPatch(
               JSON.parse(adjMatch[1]) as Partial<Record<string, number>>,
@@ -278,6 +308,11 @@ export async function POST(request: Request) {
           } catch {
             console.error("[/api/ai/chat] Failed to parse [adjustments] JSON:", adjMatch[1]);
           }
+        } else if (adjMatch && !allowAdjustments) {
+          console.warn(
+            "[/api/ai/chat] Ignored [adjustments] block for non-edit intent:",
+            userMessage.slice(0, 80),
+          );
         }
       } catch (err) {
         console.error("[/api/ai/chat] Anthropic stream error:", err);

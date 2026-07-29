@@ -23,6 +23,10 @@ import {
   quotaFromApi,
   type UsageQuotaSnapshot,
 } from "@/lib/usage-ring-state";
+import {
+  shouldApplyChatAdjustments,
+  type ChatHistoryMessage,
+} from "@/lib/chat-edit-intent";
 
 const USER_CHAT_BUBBLE_CLASS =
   "rounded-xl border border-[#8758ed]/20 bg-[#382074] text-[13px] font-medium text-white py-2.5 px-4";
@@ -549,6 +553,11 @@ export default function ChatPanel({
     const imageBase64 = attachedBase64 ?? undefined;
     const imageMediaType = attachedMediaType ?? undefined;
 
+    const conversationHistory: ChatHistoryMessage[] = messages
+      .filter((m) => m.content.trim())
+      .map((m) => ({ role: m.role, content: m.content }));
+    const allowAdjustments = shouldApplyChatAdjustments(text, conversationHistory);
+
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -580,6 +589,7 @@ export default function ChatPanel({
         body: JSON.stringify({
           userMessage: text,
           adjustments,
+          conversationHistory,
           imageId,
           workspaceImageUrl: canvasImageUrl ?? undefined,
           imageBase64,
@@ -644,7 +654,9 @@ export default function ChatPanel({
                 ),
               );
             } else if (event.type === "adjustments") {
-              applyAiAdjustments(event.adjustments);
+              if (allowAdjustments) {
+                applyAiAdjustments(event.adjustments);
+              }
             }
           }
         }
