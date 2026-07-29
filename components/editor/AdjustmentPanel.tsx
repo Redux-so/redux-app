@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/shared/Icon";
+import DiscordIcon from "@/components/shared/DiscordIcon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
@@ -823,12 +824,7 @@ export default function AdjustmentPanel({
               />
             </RailLink>
             <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback">
-              <Icon
-                name="HelpCircle"
-                size={RAIL_ICON_SIZE}
-                strokeWidth={RAIL_ICON_STROKE}
-                aria-hidden
-              />
+              <DiscordIcon size={RAIL_ICON_SIZE} />
             </RailLink>
             <ProfileMenu
               variant="compact"

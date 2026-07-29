@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import { Icon } from "@/components/shared/Icon";
+import DiscordIcon from "@/components/shared/DiscordIcon";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import AlbumSidebarRow from "@/components/library/AlbumSidebarRow";
@@ -207,11 +208,9 @@ export default function LibrarySidebar({
           </a>
           {/* TODO: Point REDUX_HELP_FEEDBACK_URL to help/feedback destination when available. */}
           <a href={REDUX_HELP_FEEDBACK_URL} className={LIBRARY_SIDEBAR_LINK_ROW}>
-            <Icon
-              name="HelpCircle"
+            <DiscordIcon
               size={16}
-              className="shrink-0 text-[#888888] group-hover:text-white"
-              aria-hidden
+              className="text-[#888888] group-hover:text-white"
             />
             <span className="min-w-0 truncate">Help & Feedback</span>
           </a>
