@@ -179,6 +179,14 @@ export default function EditorApp() {
     ],
   );
 
+  const handleToggleCrop = useCallback(() => {
+    if (isCropping) {
+      cancelCrop();
+      return;
+    }
+    void startCrop();
+  }, [isCropping, cancelCrop, startCrop]);
+
   const handleConfirmCrop = useCallback(async () => {
     undoRedoOrderRef.current = [];
     const dataUrl = await confirmCrop();
@@ -352,7 +360,8 @@ export default function EditorApp() {
             imageUrl={image?.originalUrl ?? null}
             imageWidth={image?.width ?? undefined}
             imageHeight={image?.height ?? undefined}
-            onCrop={startCrop}
+            isCropping={isCropping}
+            onToggleCrop={handleToggleCrop}
             onRotateCW={handleRotateCW}
             onStraighten={handleStraighten}
             onResize={handleResize}

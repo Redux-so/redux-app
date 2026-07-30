@@ -29,7 +29,8 @@ interface AdjustmentPanelProps {
   imageWidth?: number;
   imageHeight?: number;
   // Canvas transform callbacks
-  onCrop?: () => void;
+  isCropping?: boolean;
+  onToggleCrop?: () => void;
   onRotateCW?: () => void;
   onStraighten?: (degrees: number) => void;
   onResize?: (width: number, height: number) => void | Promise<void>;
@@ -51,7 +52,7 @@ interface AdjustmentPanelProps {
 
 type ToolSection = "light" | "color" | "effects" | "retouch" | "transform" | "history";
 
-type ActiveTool = "heal" | "blur" | "eraser" | "crop" | "straighten" | null;
+type ActiveTool = "heal" | "blur" | "eraser" | "straighten" | null;
 
 const TOOL_SECTIONS: {
   id: ToolSection;
@@ -275,7 +276,8 @@ export default function AdjustmentPanel({
   imageUrl,
   imageWidth,
   imageHeight,
-  onCrop,
+  onToggleCrop,
+  isCropping = false,
   onRotateCW,
   onStraighten,
   onResize,
@@ -378,6 +380,13 @@ export default function AdjustmentPanel({
     }
     prevActiveToolRef.current = activeTool;
   }, [activeTool, enableHealBrush, disableHealBrush, enableEraserBrush, disableEraserBrush, enableBlurBrush, disableBlurBrush]);
+
+  // Entering crop mode disables retouch brushes.
+  useEffect(() => {
+    if (isCropping && activeTool !== null) {
+      setActiveTool(null);
+    }
+  }, [isCropping, activeTool]);
 
   function toggleActiveSection(section: ToolSection) {
     setActiveSection((prev) => (prev === section ? null : section));
@@ -965,7 +974,10 @@ export default function AdjustmentPanel({
                           label="Heal"
                           loading={loadingHeal}
                           disabled={!canvasImageUrl || loadingHeal}
-                          onClick={() => toggleTool("heal")}
+                          onClick={() => {
+                            if (isCropping) onToggleCrop?.();
+                            toggleTool("heal");
+                          }}
                         />
                         <ToolBtn
                           label={
@@ -977,7 +989,10 @@ export default function AdjustmentPanel({
                           }
                           active={activeTool === "blur"}
                           disabled={loadingBlur}
-                          onClick={() => toggleTool("blur")}
+                          onClick={() => {
+                            if (isCropping) onToggleCrop?.();
+                            toggleTool("blur");
+                          }}
                         />
                       </div>
                       {activeTool === "blur" && (
@@ -1054,7 +1069,10 @@ export default function AdjustmentPanel({
                         <ToolBtn
                           label="Eraser"
                           active={activeTool === "eraser"}
-                          onClick={() => toggleTool("eraser")}
+                          onClick={() => {
+                            if (isCropping) onToggleCrop?.();
+                            toggleTool("eraser");
+                          }}
                         />
                       </div>
                       {activeTool === "eraser" && (
@@ -1093,11 +1111,8 @@ export default function AdjustmentPanel({
                       <div className="grid grid-cols-2 gap-3">
                         <ToolBtn
                           label="Crop"
-                          active={activeTool === "crop"}
-                          onClick={() => {
-                            toggleTool("crop");
-                            onCrop?.();
-                          }}
+                          active={isCropping}
+                          onClick={() => onToggleCrop?.()}
                         />
                         <ToolBtn
                           label="Rotate"
@@ -1109,12 +1124,18 @@ export default function AdjustmentPanel({
                         <ToolBtn
                           label="Straighten"
                           active={showStraighten}
-                          onClick={() => setShowStraighten((v) => !v)}
+                          onClick={() => {
+                            if (!showStraighten && isCropping) onToggleCrop?.();
+                            setShowStraighten((v) => !v);
+                          }}
                         />
                         <ToolBtn
                           label="Resize"
                           active={showResize}
-                          onClick={() => setShowResize((v) => !v)}
+                          onClick={() => {
+                            if (!showResize && isCropping) onToggleCrop?.();
+                            setShowResize((v) => !v);
+                          }}
                         />
                       </div>
                       {showStraighten && (
