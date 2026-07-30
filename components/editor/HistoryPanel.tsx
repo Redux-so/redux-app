@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/shared/Icon";
 import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
 
 interface ImageVersion {
   id: string;
@@ -97,10 +98,20 @@ export function HistoryVersionList({
               type="button"
               onClick={() => handleRestore(version)}
               disabled={restoringId === version.id}
-              className="ml-3 flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 text-[13px] text-white hover:border-[#3a3a3a] transition-colors disabled:opacity-50"
+              className={
+                restoringId === version.id
+                  ? "ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-white/[0.05] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
+                  : `ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md text-white/80 ${SURFACE_SECONDARY_BTN}`
+              }
             >
-              <Icon name="FlipBackward" size={16} aria-hidden />
-              {restoringId === version.id ? "…" : "Restore"}
+              {restoringId === version.id ? (
+                <LoadingSpinner size="sm" variant="brand" label="Restoring version" />
+              ) : (
+                <>
+                  <Icon name="FlipBackward" size={16} aria-hidden />
+                  Restore
+                </>
+              )}
             </button>
           </div>
         ))}
