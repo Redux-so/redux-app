@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { Icon } from "@/components/shared/Icon";
-import EmptyState from "@/components/shared/EmptyState";
+import ChatEmptyState from "@/components/editor/ChatEmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
@@ -542,8 +542,8 @@ export default function ChatPanel({
   }
 
   // ── Send message ────────────────────────────────────────────────────────
-  async function handleSend() {
-    const text = input.trim();
+  async function handleSend(overrideText?: string) {
+    const text = (overrideText ?? input).trim();
     if (!text || sending) return;
     if (chatBlocked) {
       promptPurchaseCredits();
@@ -747,13 +747,12 @@ export default function ChatPanel({
             className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
           >
             {messages.length === 0 && (
-              <div className="flex flex-1 items-center justify-center">
-                <EmptyState
-                  className="px-2"
-                  icon="MessageChatCircle"
-                  message="Describe the edits you want or ask a question about your photo."
-                />
-              </div>
+              <ChatEmptyState
+                disabled={sending || chatBlocked}
+                onSelectSuggestion={(message) => {
+                  void handleSend(message);
+                }}
+              />
             )}
 
             {messages.map((msg) => (
