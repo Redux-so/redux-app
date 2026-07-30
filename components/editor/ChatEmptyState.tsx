@@ -23,10 +23,11 @@ export default function ChatEmptyState({
           className="mb-4 shrink-0 rounded"
           aria-hidden
         />
-        <p className="mb-7 text-center text-[18px] font-normal text-[#888888]">
-          How may I help you?
-        </p>
-        <div className="flex w-full flex-col gap-2">
+        <div className="flex w-full flex-col items-center -translate-y-4">
+          <p className="mb-7 text-center text-[18px] font-normal text-[#888888]">
+            How may I help you?
+          </p>
+          <div className="flex w-full flex-col gap-2">
           {CHAT_SUGGESTIONS.map((suggestion) => (
             <button
               key={suggestion.id}
@@ -49,6 +50,7 @@ export default function ChatEmptyState({
               <span className="min-w-0 truncate">{suggestion.label}</span>
             </button>
           ))}
+          </div>
         </div>
       </div>
     </div>
