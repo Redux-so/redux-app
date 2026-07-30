@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useReducedMotion } from "framer-motion";
+import { CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
 import {
   deriveUsageRingState,
@@ -259,7 +260,8 @@ export default function UsageRing({
               zIndex: 90,
             }}
             className={[
-              "pointer-events-auto whitespace-nowrap rounded-md border border-[#2e2e2e] bg-[#121212] px-3 py-2",
+              "pointer-events-auto whitespace-nowrap rounded-md px-3 py-2",
+              CHAT_POPOVER_CHROME,
               CHAT_SURFACE_SHADOW,
             ].join(" ")}
           >
@@ -277,7 +279,7 @@ export default function UsageRing({
             )}
             <div
               aria-hidden
-              className="absolute left-1/2 top-full -mt-px -translate-x-1/2 border-[5px] border-transparent border-t-[#121212]"
+              className="absolute left-1/2 top-full -mt-px -translate-x-1/2 border-[5px] border-transparent border-t-[#1d1d1d]"
             />
           </div>,
           document.body,

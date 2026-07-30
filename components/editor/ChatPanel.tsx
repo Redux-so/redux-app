@@ -12,7 +12,7 @@ import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { BTN_PRIMARY_ICON, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
-import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
+import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 import { ChatMarkdown } from "@/lib/chat-markdown";
 import CreditShopModal from "@/components/shared/CreditShopModal";
@@ -261,7 +261,8 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                   width: menuCoords.width,
                 }}
                 className={[
-                  "fixed z-[100] rounded-md border border-white/[0.08] bg-[#121212] py-1",
+                  "fixed z-[100] rounded-md py-1",
+                  CHAT_POPOVER_CHROME,
                   CHAT_SURFACE_SHADOW,
                 ].join(" ")}
               >
@@ -278,7 +279,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                         "flex w-full min-w-0 items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors cursor-pointer",
                         isSelected
                           ? "text-[#cccccc]"
-                          : "text-[#888888] hover:bg-white/[0.05] hover:text-[#cccccc]",
+                          : "text-[#888888] hover:bg-[#252525] hover:text-[#cccccc]",
                       ].join(" ")}
                     >
                       <span className="min-w-0 flex-1 truncate text-[10px] leading-snug">

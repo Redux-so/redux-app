@@ -7,3 +7,6 @@ export const PANEL_HEADER =
 /** Section title label (Chat, Light, Color, …). */
 export const PANEL_TITLE =
   "text-[14px] font-semibold text-white select-none";
+
+/** Portaled popovers from the chat footer — matches input/toolbar surfaces. */
+export const CHAT_POPOVER_CHROME = "border border-[#2e2e2e] bg-[#1d1d1d]";
