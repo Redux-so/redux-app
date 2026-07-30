@@ -35,7 +35,7 @@ export default function ChatEmptyState({
               disabled={disabled}
               onClick={() => onSelectSuggestion(suggestion.message)}
               className={[
-                "group flex w-full items-center gap-2.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 py-3.5 text-left text-[15px] font-medium text-[#cccccc] transition-colors",
+                "group flex h-11 w-full items-center gap-2.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 text-left text-[14px] font-medium text-[#cccccc] transition-colors",
                 disabled
                   ? "cursor-not-allowed opacity-40 pointer-events-none"
                   : "cursor-pointer hover:border-[#3a3a3a] hover:text-white",
