@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/shared/Icon";
 import DiscordIcon from "@/components/shared/DiscordIcon";
+import GitHubIcon from "@/components/shared/GitHubIcon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
@@ -85,6 +86,10 @@ function RailIcon({ iconName }: { iconName: IconName }) {
 
 function RailDiscordIcon() {
   return <DiscordIcon size={RAIL_ICON_SIZE} />;
+}
+
+function RailGitHubIcon() {
+  return <GitHubIcon size={RAIL_ICON_SIZE} />;
 }
 
 function applyAiAdjustments(
@@ -819,8 +824,8 @@ export default function AdjustmentPanel({
           </div>
 
           <div className="mt-auto shrink-0 pb-4 w-full flex flex-col items-center gap-4">
-            <RailLink href={REDUX_DOCS_URL} title="Docs" external>
-              <RailIcon iconName="BookOpen01" />
+            <RailLink href={REDUX_DOCS_URL} title="GitHub" external>
+              <RailGitHubIcon />
             </RailLink>
             <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback" external>
               <RailDiscordIcon />

@@ -6,6 +6,7 @@ import { useState } from "react";
 import AppChromeLogo from "@/components/shared/AppChromeLogo";
 import { Icon } from "@/components/shared/Icon";
 import DiscordIcon from "@/components/shared/DiscordIcon";
+import GitHubIcon from "@/components/shared/GitHubIcon";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import AlbumSidebarRow from "@/components/library/AlbumSidebarRow";
@@ -191,20 +192,17 @@ export default function LibrarySidebar({
           aria-label="Resources"
           className="shrink-0 px-3 py-3 flex flex-col gap-0.5"
         >
-          {/* TODO: Point REDUX_DOCS_URL to production docs when available. */}
           <a
             href={REDUX_DOCS_URL}
             target="_blank"
             rel="noopener noreferrer"
             className={LIBRARY_SIDEBAR_LINK_ROW}
           >
-            <Icon
-              name="BookOpen01"
+            <GitHubIcon
               size={16}
-              className="shrink-0 text-[#888888] group-hover:text-white"
-              aria-hidden
+              className="text-[#888888] group-hover:text-white"
             />
-            <span className="min-w-0 truncate">Docs</span>
+            <span className="min-w-0 truncate">GitHub</span>
           </a>
           <a
             href={REDUX_HELP_FEEDBACK_URL}
