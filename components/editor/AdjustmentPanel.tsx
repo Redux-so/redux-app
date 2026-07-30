@@ -218,7 +218,7 @@ function AIButton({
       {loading ? (
         <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
       ) : (
-        <Icon name="MagicWand01" size={16} aria-hidden />
+        <Icon name="Star01" size={16} aria-hidden />
       )}
       {label}
     </button>
