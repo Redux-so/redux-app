@@ -225,7 +225,7 @@ function AIButton({
   );
 }
 
-// Half-width tool button (toggleable active state)
+// Full-width tool button (toggleable active state)
 function ToolBtn({
   label,
   active,
@@ -995,32 +995,21 @@ export default function AdjustmentPanel({
 
                   {activeSection === "retouch" && (
                     <div className="px-8 pt-4 pb-5 flex flex-col gap-3">
-                      <div className="grid grid-cols-2 gap-3 items-center">
-                        <AIButton
-                          label="Heal"
-                          loading={loadingHeal}
-                          disabled={!canvasImageUrl || loadingHeal}
-                          onClick={() => {
-                            if (isCropping) onToggleCrop?.();
-                            toggleTool("heal");
-                          }}
-                        />
-                        <ToolBtn
-                          label={
-                            loadingBlur ? (
-                              <LoadingSpinner size="sm" variant="brand" label="Blur loading" />
-                            ) : (
-                              "Blur"
-                            )
-                          }
-                          active={activeTool === "blur"}
-                          disabled={loadingBlur}
-                          onClick={() => {
-                            if (isCropping) onToggleCrop?.();
-                            toggleTool("blur");
-                          }}
-                        />
-                      </div>
+                      <ToolBtn
+                        label={
+                          loadingBlur ? (
+                            <LoadingSpinner size="sm" variant="brand" label="Blur loading" />
+                          ) : (
+                            "Blur"
+                          )
+                        }
+                        active={activeTool === "blur"}
+                        disabled={loadingBlur}
+                        onClick={() => {
+                          if (isCropping) onToggleCrop?.();
+                          toggleTool("blur");
+                        }}
+                      />
                       {activeTool === "blur" && (
                         <div className="flex flex-col gap-3 pt-1">
                           <p className="text-[10px] text-[#555555] leading-snug">
@@ -1062,6 +1051,51 @@ export default function AdjustmentPanel({
                           </div>
                         </div>
                       )}
+                      <ToolBtn
+                        label="Eraser"
+                        active={activeTool === "eraser"}
+                        onClick={() => {
+                          if (isCropping) onToggleCrop?.();
+                          toggleTool("eraser");
+                        }}
+                      />
+                      {activeTool === "eraser" && (
+                        <div className="flex flex-col gap-3 pt-1">
+                          <p className="text-[12px] text-[#888888] leading-relaxed">
+                            Paint over the area to erase in white, then confirm.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelEraser}
+                              className="flex-1 h-[34px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-md text-[13px] text-white hover:border-[#3a3a3a] transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void confirmEraser()}
+                              disabled={loadingEraser}
+                              className={BTN_PRIMARY_PANEL}
+                            >
+                              {loadingEraser ? (
+                                <LoadingSpinner size="sm" variant="brand" label="Processing eraser" />
+                              ) : (
+                                "Confirm"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <AIButton
+                        label="Heal"
+                        loading={loadingHeal}
+                        disabled={!canvasImageUrl || loadingHeal}
+                        onClick={() => {
+                          if (isCropping) onToggleCrop?.();
+                          toggleTool("heal");
+                        }}
+                      />
                       {activeTool === "heal" && (
                         <div className="flex flex-col gap-3">
                           <p className="text-[10px] text-[#555555] leading-snug">
@@ -1091,79 +1125,29 @@ export default function AdjustmentPanel({
                           </div>
                         </div>
                       )}
-                      <div className="grid grid-cols-2 gap-3">
-                        <ToolBtn
-                          label="Eraser"
-                          active={activeTool === "eraser"}
-                          onClick={() => {
-                            if (isCropping) onToggleCrop?.();
-                            toggleTool("eraser");
-                          }}
-                        />
-                      </div>
-                      {activeTool === "eraser" && (
-                        <div className="flex flex-col gap-3 pt-1">
-                          <p className="text-[12px] text-[#888888] leading-relaxed">
-                            Paint over the area to erase in white, then confirm.
-                          </p>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={cancelEraser}
-                              className="flex-1 h-[34px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-md text-[13px] text-white hover:border-[#3a3a3a] transition-colors cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void confirmEraser()}
-                              disabled={loadingEraser}
-                              className={BTN_PRIMARY_PANEL}
-                            >
-                              {loadingEraser ? (
-                                <LoadingSpinner size="sm" variant="brand" label="Processing eraser" />
-                              ) : (
-                                "Confirm"
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
 
                   {activeSection === "transform" && (
                     <div className="px-8 pt-4 pb-5 flex flex-col gap-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <ToolBtn
-                          label="Crop"
-                          active={isCropping}
-                          onClick={() => onToggleCrop?.()}
-                        />
-                        <ToolBtn
-                          label="Rotate"
-                          active={false}
-                          onClick={() => onRotateCW?.()}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <ToolBtn
-                          label="Straighten"
-                          active={showStraighten}
-                          onClick={() => {
-                            if (!showStraighten && isCropping) onToggleCrop?.();
-                            setShowStraighten((v) => !v);
-                          }}
-                        />
-                        <ToolBtn
-                          label="Resize"
-                          active={showResize}
-                          onClick={() => {
-                            if (!showResize && isCropping) onToggleCrop?.();
-                            setShowResize((v) => !v);
-                          }}
-                        />
-                      </div>
+                      <ToolBtn
+                        label="Crop"
+                        active={isCropping}
+                        onClick={() => onToggleCrop?.()}
+                      />
+                      <ToolBtn
+                        label="Rotate"
+                        active={false}
+                        onClick={() => onRotateCW?.()}
+                      />
+                      <ToolBtn
+                        label="Straighten"
+                        active={showStraighten}
+                        onClick={() => {
+                          if (!showStraighten && isCropping) onToggleCrop?.();
+                          setShowStraighten((v) => !v);
+                        }}
+                      />
                       {showStraighten && (
                         <AdjustmentSlider
                           label="Angle"
@@ -1181,6 +1165,14 @@ export default function AdjustmentPanel({
                           }}
                         />
                       )}
+                      <ToolBtn
+                        label="Resize"
+                        active={showResize}
+                        onClick={() => {
+                          if (!showResize && isCropping) onToggleCrop?.();
+                          setShowResize((v) => !v);
+                        }}
+                      />
                       {showResize && (
                         <div className="bg-[#1d1d1d] border border-[#2e2e2e] rounded-xl p-3 flex flex-col gap-3">
                           <div className="flex items-center gap-2">
