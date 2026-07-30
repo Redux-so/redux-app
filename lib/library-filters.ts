@@ -2,11 +2,7 @@ import {
   LIBRARY_FILE_TYPE_EXTENSIONS,
   type LibraryFileTypeKey,
 } from "@/constants/image-formats";
-import {
-  DEFAULT_ADJUSTMENTS,
-  normalizeAdjustments,
-  type AdjustmentKey,
-} from "@/constants/adjustments";
+import { hasPersistedEdits, parseVersionAdjustments } from "@/lib/editor-state";
 import type { ImageRecord } from "@/types/image";
 import type { AlbumRecord } from "@/types/album";
 
@@ -100,12 +96,7 @@ function imageCreatedAtWithinRange(
 
 export function hasNonDefaultAdjustments(adjustments: unknown): boolean {
   if (!adjustments || typeof adjustments !== "object") return false;
-  const normalized = normalizeAdjustments(
-    adjustments as Partial<Record<string, number>>,
-  );
-  return (Object.keys(DEFAULT_ADJUSTMENTS) as AdjustmentKey[]).some(
-    (key) => normalized[key] !== DEFAULT_ADJUSTMENTS[key],
-  );
+  return hasPersistedEdits(parseVersionAdjustments(adjustments));
 }
 
 export function countActiveLibraryFilters(filters: LibraryFilters): number {

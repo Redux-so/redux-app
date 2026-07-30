@@ -19,7 +19,9 @@ import {
 interface EditorPreviewContextValue {
   imageId?: string;
   savePreview: () => Promise<string | null>;
+  saveEditorState: () => Promise<void>;
   isSavingPreview: boolean;
+  isSavingEditorState: boolean;
 }
 
 const EditorPreviewContext = createContext<EditorPreviewContextValue | null>(
@@ -34,6 +36,7 @@ interface EditorPreviewProviderProps {
   imageId?: string;
   getPayload: () => PreviewPayload;
   savePreviewRef?: MutableRefObject<(() => Promise<string | null>) | null>;
+  saveEditorStateRef?: MutableRefObject<(() => Promise<void>) | null>;
   children: ReactNode;
 }
 
@@ -41,9 +44,11 @@ export function EditorPreviewProvider({
   imageId,
   getPayload,
   savePreviewRef,
+  saveEditorStateRef,
   children,
 }: EditorPreviewProviderProps) {
   const [isSavingPreview, setIsSavingPreview] = useState(false);
+  const [isSavingEditorState, setIsSavingEditorState] = useState(false);
   const getPayloadRef = useRef(getPayload);
   getPayloadRef.current = getPayload;
 
@@ -79,13 +84,25 @@ export function EditorPreviewProvider({
     };
   }, [savePreview, savePreviewRef]);
 
+  const saveEditorState = useCallback(async (): Promise<void> => {
+    if (!saveEditorStateRef?.current) return;
+    setIsSavingEditorState(true);
+    try {
+      await saveEditorStateRef.current();
+    } finally {
+      setIsSavingEditorState(false);
+    }
+  }, [saveEditorStateRef]);
+
   const value = useMemo(
     () => ({
       imageId,
       savePreview,
+      saveEditorState,
       isSavingPreview,
+      isSavingEditorState,
     }),
-    [imageId, savePreview, isSavingPreview],
+    [imageId, savePreview, saveEditorState, isSavingPreview, isSavingEditorState],
   );
 
   return (

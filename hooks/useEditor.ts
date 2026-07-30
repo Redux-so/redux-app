@@ -3,8 +3,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import useUndo from "use-undo";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustments";
+import {
+  defaultPersistedEditorState,
+  parseVersionAdjustments,
+  persistedStatesEqual,
+  serializePersistedEditorState,
+  type PersistedEditorState,
+} from "@/lib/editor-state";
+import type { ImageTransform } from "@/lib/image-transform";
 
 export type Adjustments = typeof DEFAULT_ADJUSTMENTS;
+
+export interface EditorCanvasSnapshot {
+  transform: ImageTransform;
+  workingImageUrl: string | null;
+  imageBase64: string | null;
+  originalUrl: string | null;
+  workingWidth: number | null;
+  workingHeight: number | null;
+}
+
+export interface UseEditorOptions {
+  getCanvasSnapshot?: () => EditorCanvasSnapshot;
+  onPersistedRestore?: (state: PersistedEditorState) => void;
+  onVersionLoaded?: () => void;
+  canAutoSave?: () => boolean;
+}
 
 function adjustmentsEqual(a: Adjustments, b: Adjustments): boolean {
   return (Object.keys(DEFAULT_ADJUSTMENTS) as AdjustmentKey[]).every(
@@ -12,86 +36,97 @@ function adjustmentsEqual(a: Adjustments, b: Adjustments): boolean {
   );
 }
 
-export function useEditor(imageId?: string) {
+export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
+  const { getCanvasSnapshot, onPersistedRestore, onVersionLoaded, canAutoSave } = options;
+  const getCanvasSnapshotRef = useRef(getCanvasSnapshot);
+  const onPersistedRestoreRef = useRef(onPersistedRestore);
+  const onVersionLoadedRef = useRef(onVersionLoaded);
+  const canAutoSaveRef = useRef(canAutoSave);
+  getCanvasSnapshotRef.current = getCanvasSnapshot;
+  onPersistedRestoreRef.current = onPersistedRestore;
+  onVersionLoadedRef.current = onVersionLoaded;
+  canAutoSaveRef.current = canAutoSave;
+
   const [state, { set, undo, redo, reset, canUndo, canRedo }] = useUndo<Adjustments>(
     { ...DEFAULT_ADJUSTMENTS },
     { useCheckpoints: true },
   );
 
-  // Load the most recent saved version's adjustments when imageId changes.
-  // This restores slider state when the user re-opens an image they edited.
+  const [versionLoaded, setVersionLoaded] = useState(!imageId);
+
+  // Load the most recent saved version when imageId changes.
   useEffect(() => {
-    if (!imageId) return;
+    if (!imageId) {
+      setVersionLoaded(true);
+      return;
+    }
+
+    setVersionLoaded(false);
     fetch(`/api/images/versions?imageId=${imageId}`)
       .then((res) => res.json())
-      .then((data: { versions?: Array<{ adjustments: Record<string, number> }> }) => {
+      .then((data: { versions?: Array<{ adjustments: unknown }> }) => {
         const latest = data.versions?.[0];
-        if (!latest) return;
-        const restored = normalizeAdjustments(latest.adjustments) as Adjustments;
-        reset(restored);
-        lastSavedRef.current = { ...restored };
+        const restored = latest
+          ? parseVersionAdjustments(latest.adjustments)
+          : defaultPersistedEditorState();
+        reset(restored.sliders as Adjustments);
+        lastSavedRef.current = { ...restored.sliders } as Adjustments;
+        lastPersistedRef.current = restored;
+        onPersistedRestoreRef.current?.(restored);
       })
-      .catch((err) => console.error("[useEditor] Failed to load saved adjustments:", err));
+      .catch((err) => {
+        console.error("[useEditor] Failed to load saved editor state:", err);
+        const fallback = defaultPersistedEditorState();
+        onPersistedRestoreRef.current?.(fallback);
+      })
+      .finally(() => {
+        setVersionLoaded(true);
+        onVersionLoadedRef.current?.();
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageId]);
 
   const adjustments = state.present;
   const lastSavedRef = useRef<Adjustments>({ ...DEFAULT_ADJUSTMENTS });
+  const lastPersistedRef = useRef<PersistedEditorState>(defaultPersistedEditorState());
 
-  // ---------------------------------------------------------------------------
-  // Undo/redo fix: track whether the current slider interaction is the first
-  // move in a new drag gesture.
-  //
-  // Problem: previewAdjustment (called every pixel during drag) + use-undo's
-  // checkpoint model means the "before" state pushed to the undo stack is the
-  // LAST preview value, not the value before the drag started.
-  //
-  // Fix: create the undo checkpoint on the FIRST call of a drag gesture (which
-  // still has `state.present` equal to the pre-drag value).  All subsequent
-  // previews during that same drag skip the checkpoint.  updateAdjustment
-  // (called on pointer-up) resets the flag for the next drag.
-  // ---------------------------------------------------------------------------
   const isFirstPreviewRef = useRef(true);
 
   const setAdjustments = useCallback(
     (next: Adjustments, checkpoint?: boolean) => {
-      // use-undo clears future on every set() when references differ, even if
-      // values are identical — skip no-op updates so redo survives undo.
       if (adjustmentsEqual(next, state.present)) return;
       set(next, checkpoint);
     },
     [set, state.present],
   );
 
-  // ---------------------------------------------------------------------------
-  // Auto-save fix: using refs for the interval callback so the setInterval is
-  // only created once per imageId, not re-created on every adjustment change.
-  //
-  // Without this, [saveVersion] in the useEffect deps causes the interval to
-  // restart every time any slider moves — it never reaches 30 seconds.
-  // ---------------------------------------------------------------------------
   const isDirtyRef = useRef(false);
   const adjustmentsRef = useRef<Adjustments>({ ...DEFAULT_ADJUSTMENTS });
   const imageIdRef = useRef(imageId);
 
-  // Keep refs in sync with latest render values (runs synchronously during render)
-  isDirtyRef.current = (Object.keys(adjustments) as AdjustmentKey[]).some(
-    (k) => adjustments[k] !== lastSavedRef.current[k],
+  function buildCurrentPersistedState(): PersistedEditorState {
+    const canvas = getCanvasSnapshotRef.current?.();
+    return {
+      sliders: { ...adjustmentsRef.current },
+      transform: canvas?.transform ?? defaultPersistedEditorState().transform,
+      workingImageUrl: canvas?.workingImageUrl ?? null,
+      workingWidth: canvas?.workingWidth ?? null,
+      workingHeight: canvas?.workingHeight ?? null,
+    };
+  }
+
+  isDirtyRef.current = !persistedStatesEqual(
+    buildCurrentPersistedState(),
+    lastPersistedRef.current,
   );
   adjustmentsRef.current = adjustments;
   imageIdRef.current = imageId;
 
-  // Expose isDirty as a plain boolean for the toolbar indicator
   const isDirty = isDirtyRef.current;
 
-  // justSaved: true for 2 s after a successful save — drives the pulse animation
   const [justSaved, setJustSaved] = useState(false);
   const justSavedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ---------------------------------------------------------------------------
-  // Preview (during drag) — creates one checkpoint on the FIRST move so undo
-  // reverts to the value before the entire drag, not the last pixel position.
-  // ---------------------------------------------------------------------------
   const previewAdjustment = useCallback(
     (key: AdjustmentKey, value: number) => {
       const checkpoint = isFirstPreviewRef.current;
@@ -101,10 +136,6 @@ export function useEditor(imageId?: string) {
     [setAdjustments, state.present],
   );
 
-  // ---------------------------------------------------------------------------
-  // Commit (on pointer-up) — sets the final value without a second checkpoint
-  // and resets the flag for the next drag gesture.
-  // ---------------------------------------------------------------------------
   const updateAdjustment = useCallback(
     (key: AdjustmentKey, value: number) => {
       isFirstPreviewRef.current = true;
@@ -113,7 +144,6 @@ export function useEditor(imageId?: string) {
     [setAdjustments, state.present],
   );
 
-  // Applies a batch of adjustment patches — used by the AI assistant
   const patchAdjustments = useCallback(
     (patch: Partial<Adjustments> & Partial<Record<string, number>>) => {
       isFirstPreviewRef.current = true;
@@ -129,46 +159,76 @@ export function useEditor(imageId?: string) {
     isFirstPreviewRef.current = true;
   }, [reset]);
 
-  // ---------------------------------------------------------------------------
-  // Save — reads current values via refs so it never goes stale inside the
-  // interval.  Using an empty useCallback dep array keeps the reference stable.
-  // ---------------------------------------------------------------------------
-  const saveVersion = useCallback(async () => {
+  /** Apply a restored v2 snapshot to slider state without updating the saved baseline. */
+  const restorePersistedState = useCallback(
+    (state: PersistedEditorState) => {
+      isFirstPreviewRef.current = true;
+      reset(state.sliders as Adjustments);
+      lastSavedRef.current = { ...state.sliders } as Adjustments;
+    },
+    [reset],
+  );
+
+  const saveVersion = useCallback(async (force = false): Promise<PersistedEditorState | null> => {
     const imgId = imageIdRef.current;
-    const adj = adjustmentsRef.current;
-    if (!imgId || !isDirtyRef.current) return;
+    if (!imgId) return null;
+    if (!force && !canAutoSaveRef.current?.()) return null;
+
+    const canvas = getCanvasSnapshotRef.current?.();
+    const persisted = buildCurrentPersistedState();
+    if (!force && persistedStatesEqual(persisted, lastPersistedRef.current)) {
+      return null;
+    }
+
+    const payload: {
+      imageId: string;
+      adjustments: Record<string, unknown>;
+      imageBase64?: string;
+    } = {
+      imageId: imgId,
+      adjustments: serializePersistedEditorState(persisted),
+    };
+
+    if (canvas?.imageBase64) {
+      payload.imageBase64 = canvas.imageBase64;
+    }
+
     try {
-      await fetch("/api/images/versions", {
+      const res = await fetch("/api/images/versions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageId: imgId, adjustments: adj }),
+        body: JSON.stringify(payload),
+        keepalive: !payload.imageBase64,
       });
-      lastSavedRef.current = { ...adj };
-      // Trigger the green-dot pulse for 2 seconds
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { version?: { adjustments: unknown } };
+      const saved = data.version
+        ? parseVersionAdjustments(data.version.adjustments)
+        : persisted;
+      lastSavedRef.current = { ...saved.sliders } as Adjustments;
+      lastPersistedRef.current = saved;
+
       if (justSavedTimerRef.current) clearTimeout(justSavedTimerRef.current);
       setJustSaved(true);
       justSavedTimerRef.current = setTimeout(() => setJustSaved(false), 2000);
+      return saved;
     } catch (err) {
       console.error("[useEditor] Auto-save failed:", err);
+      return null;
     }
-  }, []); // intentionally empty — reads via refs
+  }, []);
 
-  // ---------------------------------------------------------------------------
-  // Auto-save every 30 s.  saveVersion is stable (empty useCallback deps), so
-  // this effect only restarts when imageId changes — not on every slider move.
-  // Also fires on unmount so unsaved changes aren't lost when the user
-  // navigates away before the 30-second interval fires.
-  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!imageId) return;
-    const intervalId = setInterval(saveVersion, 30_000);
+    const intervalId = setInterval(() => void saveVersion(), 30_000);
     return () => {
       clearInterval(intervalId);
-      void saveVersion();
+      if (isDirtyRef.current) void saveVersion(true);
     };
   }, [imageId, saveVersion]);
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (justSavedTimerRef.current) clearTimeout(justSavedTimerRef.current);
@@ -198,5 +258,7 @@ export function useEditor(imageId?: string) {
     isDirty,
     justSaved,
     saveVersion,
+    restorePersistedState,
+    versionLoaded,
   };
 }

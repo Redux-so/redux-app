@@ -8,10 +8,24 @@ import type { ImageRecord } from "@/types/image";
 import { isStoredPreviewUrl } from "@/lib/resolve-preview-source";
 import type { PreviewPayload } from "@/lib/preview-request";
 import type { AdjustmentKey } from "@/constants/adjustments";
+import type { ImageTransform } from "@/lib/image-transform";
+import { DEFAULT_IMAGE_TRANSFORM, parseVersionAdjustments, type PersistedEditorState } from "@/lib/editor-state";
+import { probeImageDimensions } from "@/lib/probe-image-dimensions";
 
 function stripDataUrlBase64(dataUrl: string): string {
   const comma = dataUrl.indexOf(",");
   return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+}
+
+function resolveWorkingImageUrl(
+  originalUrl: string | null,
+  baseImageUrl: string | null,
+  previewUrl: string | null,
+): string | null {
+  if (!baseImageUrl || !originalUrl || baseImageUrl === originalUrl) return null;
+  if (isStoredPreviewUrl(baseImageUrl, previewUrl)) return null;
+  if (baseImageUrl.startsWith("data:")) return null;
+  return baseImageUrl;
 }
 
 import Toolbar from "@/components/editor/Toolbar";
@@ -33,16 +47,36 @@ export default function EditorApp() {
   const [baseImageUrl, setBaseImageUrl] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const savePreviewRef = useRef<(() => Promise<string | null>) | null>(null);
+  const saveEditorStateRef = useRef<(() => Promise<void>) | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const undoRedoOrderRef = useRef<Array<"canvas" | "adjustments">>([]);
+  const imageOriginalUrlRef = useRef<string | null>(null);
+  const pendingRestoreRef = useRef<PersistedEditorState | null>(null);
+  const canvasHydratedRef = useRef(false);
+  const authoritativeStateRef = useRef<PersistedEditorState | null>(null);
+  const [savedTransform, setSavedTransform] = useState<ImageTransform>({
+    ...DEFAULT_IMAGE_TRANSFORM,
+  });
   const previewPixelsRef = useRef<Pick<PreviewPayload, "baseImageUrl" | "imageBase64">>({
     baseImageUrl: null,
     imageBase64: null,
   });
   const [transformVersion, setTransformVersion] = useState(0);
+  const [canvasDimensions, setCanvasDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!imageId) return;
+    canvasHydratedRef.current = false;
+    setBaseImageUrl(null);
+    setImageBase64(null);
+    setCanvasDimensions(null);
+    pendingRestoreRef.current = null;
+    setSavedTransform({ ...DEFAULT_IMAGE_TRANSFORM });
+    previewPixelsRef.current = { baseImageUrl: null, imageBase64: null };
     setLoadingImage(true);
     fetch(`/api/images/${imageId}`)
       .then((res) => res.json())
@@ -53,16 +87,42 @@ export default function EditorApp() {
       .finally(() => setLoadingImage(false));
   }, [imageId]);
 
-  useEffect(() => {
-    if (image?.originalUrl) {
-      setBaseImageUrl(image.originalUrl);
-      setImageBase64(null);
-      previewPixelsRef.current = {
-        baseImageUrl: image.originalUrl,
-        imageBase64: null,
-      };
+  const applyPersistedRestore = useCallback((state: PersistedEditorState) => {
+    pendingRestoreRef.current = state;
+    setSavedTransform({ ...state.transform });
+    if (state.workingWidth && state.workingHeight) {
+      setCanvasDimensions({
+        width: state.workingWidth,
+        height: state.workingHeight,
+      });
+    } else {
+      setCanvasDimensions(null);
     }
-  }, [image?.id, image?.originalUrl]);
+    const url = state.workingImageUrl ?? imageOriginalUrlRef.current;
+    if (!url) return;
+    setBaseImageUrl(state.workingImageUrl ?? url);
+    setImageBase64(null);
+    previewPixelsRef.current = {
+      baseImageUrl: state.workingImageUrl ?? url,
+      imageBase64: null,
+    };
+  }, []);
+
+  useEffect(() => {
+    imageOriginalUrlRef.current = image?.originalUrl ?? null;
+    if (pendingRestoreRef.current) {
+      applyPersistedRestore(pendingRestoreRef.current);
+    }
+  }, [image?.originalUrl, applyPersistedRestore]);
+
+  const getCanvasSnapshotRef = useRef(() => ({
+    transform: { ...DEFAULT_IMAGE_TRANSFORM },
+    workingImageUrl: null as string | null,
+    imageBase64: null as string | null,
+    originalUrl: null as string | null,
+    workingWidth: null as number | null,
+    workingHeight: null as number | null,
+  }));
 
   const {
     adjustments,
@@ -75,9 +135,19 @@ export default function EditorApp() {
     canRedo,
     isDirty,
     justSaved,
-  } = useEditor(imageId);
+    saveVersion,
+    restorePersistedState,
+    versionLoaded,
+  } = useEditor(imageId, {
+    getCanvasSnapshot: () => getCanvasSnapshotRef.current(),
+    onPersistedRestore: applyPersistedRestore,
+    canAutoSave: () => canvasHydratedRef.current,
+  });
 
-  const canvasSourceUrl = baseImageUrl ?? image?.originalUrl ?? null;
+  const editorReady = versionLoaded && !loadingImage;
+  const canvasSourceUrl = editorReady
+    ? baseImageUrl ?? image?.originalUrl ?? null
+    : null;
 
   const {
     canvasRef,
@@ -115,8 +185,35 @@ export default function EditorApp() {
     redoLastCanvas,
     canUndoCanvas,
     canRedoCanvas,
+    clearCanvasHistory,
     getTransformSnapshot,
-  } = useCanvas(canvasSourceUrl, adjustments);
+  } = useCanvas(canvasSourceUrl, adjustments, savedTransform);
+
+  getCanvasSnapshotRef.current = () => {
+    if (authoritativeStateRef.current) {
+      const auth = authoritativeStateRef.current;
+      return {
+        transform: { ...auth.transform },
+        workingImageUrl: auth.workingImageUrl,
+        imageBase64: null,
+        originalUrl: imageOriginalUrlRef.current,
+        workingWidth: auth.workingWidth,
+        workingHeight: auth.workingHeight,
+      };
+    }
+    return {
+      transform: getTransformSnapshot(),
+      workingImageUrl: resolveWorkingImageUrl(
+        imageOriginalUrlRef.current,
+        previewPixelsRef.current.baseImageUrl ?? baseImageUrl,
+        image?.previewUrl ?? null,
+      ),
+      imageBase64: previewPixelsRef.current.imageBase64 ?? imageBase64,
+      originalUrl: imageOriginalUrlRef.current,
+      workingWidth: canvasDimensions?.width ?? null,
+      workingHeight: canvasDimensions?.height ?? null,
+    };
+  };
 
   useEffect(() => {
     if (!activeImageUrl) return;
@@ -139,6 +236,71 @@ export default function EditorApp() {
     }
   }, [activeImageUrl, image?.previewUrl]);
 
+  useEffect(() => {
+    const url = activeImageUrl ?? baseImageUrl ?? image?.originalUrl ?? null;
+    if (!url) return;
+
+    let cancelled = false;
+    void probeImageDimensions(url).then((dims) => {
+      if (!cancelled && dims) setCanvasDimensions(dims);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeImageUrl, baseImageUrl, image?.originalUrl]);
+
+  useEffect(() => {
+    if (versionLoaded && !loadingImage && activeImageUrl) {
+      canvasHydratedRef.current = true;
+    }
+  }, [versionLoaded, loadingImage, activeImageUrl]);
+
+  const scheduleEditorSave = useCallback(() => {
+    if (!imageId) return;
+    if (editorSaveTimerRef.current) clearTimeout(editorSaveTimerRef.current);
+    editorSaveTimerRef.current = setTimeout(() => {
+      void saveVersion();
+    }, 2000);
+  }, [imageId, saveVersion]);
+
+  const saveEditorStateNow = useCallback(async () => {
+    if (editorSaveTimerRef.current) {
+      clearTimeout(editorSaveTimerRef.current);
+      editorSaveTimerRef.current = null;
+    }
+    const saved = await saveVersion(true);
+    if (!saved) return;
+
+    if (saved.workingImageUrl) {
+      setBaseImageUrl(saved.workingImageUrl);
+      setImageBase64(null);
+      previewPixelsRef.current = {
+        baseImageUrl: saved.workingImageUrl,
+        imageBase64: null,
+      };
+    } else {
+      const original = imageOriginalUrlRef.current ?? image?.originalUrl ?? null;
+      setBaseImageUrl(original);
+      setImageBase64(null);
+      previewPixelsRef.current = {
+        baseImageUrl: original,
+        imageBase64: null,
+      };
+    }
+    if (saved.workingWidth && saved.workingHeight) {
+      setCanvasDimensions({
+        width: saved.workingWidth,
+        height: saved.workingHeight,
+      });
+    }
+    authoritativeStateRef.current = null;
+  }, [saveVersion, image?.originalUrl]);
+
+  useEffect(() => {
+    saveEditorStateRef.current = saveEditorStateNow;
+  }, [saveEditorStateNow]);
+
   const schedulePreviewSave = useCallback(() => {
     if (!imageId) return;
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
@@ -155,6 +317,43 @@ export default function EditorApp() {
     await savePreviewRef.current?.();
   }, []);
 
+  const handleRestoreHistory = useCallback(
+    async (raw: unknown) => {
+      const state = parseVersionAdjustments(raw);
+      undoRedoOrderRef.current = [];
+      canvasHydratedRef.current = false;
+      authoritativeStateRef.current = state;
+
+      restorePersistedState(state);
+      applyPersistedRestore(state);
+      clearCanvasHistory();
+      setImageBase64(null);
+
+      const url =
+        state.workingImageUrl ??
+        imageOriginalUrlRef.current ??
+        image?.originalUrl ??
+        null;
+
+      if (url) {
+        await loadImageUrl(url);
+      }
+
+      canvasHydratedRef.current = true;
+      await saveEditorStateNow();
+      await savePreviewNow();
+    },
+    [
+      restorePersistedState,
+      applyPersistedRestore,
+      clearCanvasHistory,
+      loadImageUrl,
+      image?.originalUrl,
+      saveEditorStateNow,
+      savePreviewNow,
+    ],
+  );
+
   const reloadCanvas = useCallback(
     async (url: string) => {
       undoRedoOrderRef.current = [];
@@ -168,6 +367,7 @@ export default function EditorApp() {
         previewPixelsRef.current = { baseImageUrl: url, imageBase64: null };
       }
       await savePreviewNow();
+      await saveEditorStateNow();
     },
     [
       activeImageUrl,
@@ -176,6 +376,7 @@ export default function EditorApp() {
       loadImageUrl,
       image?.previewUrl,
       savePreviewNow,
+      saveEditorStateNow,
     ],
   );
 
@@ -196,7 +397,8 @@ export default function EditorApp() {
       setImageBase64(b64);
     }
     await savePreviewNow();
-  }, [confirmCrop, savePreviewNow]);
+    await saveEditorStateNow();
+  }, [confirmCrop, savePreviewNow, saveEditorStateNow]);
 
   const handleResize = useCallback(
     async (newW: number, newH: number) => {
@@ -208,14 +410,22 @@ export default function EditorApp() {
         setImageBase64(b64);
       }
       await savePreviewNow();
+      await saveEditorStateNow();
     },
-    [resizeCanvas, savePreviewNow],
+    [resizeCanvas, savePreviewNow, saveEditorStateNow],
   );
 
   const bumpTransformPreview = useCallback(() => {
     setTransformVersion((v) => v + 1);
     schedulePreviewSave();
-  }, [schedulePreviewSave]);
+    scheduleEditorSave();
+  }, [schedulePreviewSave, scheduleEditorSave]);
+
+  const persistTransformNow = useCallback(() => {
+    setSavedTransform(getTransformSnapshot());
+    bumpTransformPreview();
+    void saveEditorStateNow();
+  }, [getTransformSnapshot, bumpTransformPreview, saveEditorStateNow]);
 
   const handlePreviewAdjustment = useCallback(
     (key: AdjustmentKey, value: number) => {
@@ -225,62 +435,92 @@ export default function EditorApp() {
     [previewAdjustment],
   );
 
+  const handleCommitAdjustment = useCallback(
+    (key: AdjustmentKey, value: number) => {
+      undoRedoOrderRef.current = [];
+      updateAdjustment(key, value);
+      void saveEditorStateNow();
+    },
+    [updateAdjustment, saveEditorStateNow],
+  );
+
   const handlePatchAdjustments = useCallback(
     (patch: Partial<Record<string, number>>) => {
       undoRedoOrderRef.current = [];
       patchAdjustments(patch);
+      void saveEditorStateNow();
     },
-    [patchAdjustments],
+    [patchAdjustments, saveEditorStateNow],
   );
 
   const handleRotateCW = useCallback(() => {
     undoRedoOrderRef.current = [];
     rotateCW();
-    bumpTransformPreview();
-  }, [rotateCW, bumpTransformPreview]);
+    persistTransformNow();
+  }, [rotateCW, persistTransformNow]);
 
   const handleFlipH = useCallback(() => {
     undoRedoOrderRef.current = [];
     flipH();
-    bumpTransformPreview();
-  }, [flipH, bumpTransformPreview]);
+    persistTransformNow();
+  }, [flipH, persistTransformNow]);
 
   const handleFlipV = useCallback(() => {
     undoRedoOrderRef.current = [];
     flipV();
-    bumpTransformPreview();
-  }, [flipV, bumpTransformPreview]);
+    persistTransformNow();
+  }, [flipV, persistTransformNow]);
 
-  const handleStraighten = useCallback(
+  const handleStraightenPreview = useCallback(
     (degrees: number) => {
       undoRedoOrderRef.current = [];
       straightenImage(degrees);
+      setSavedTransform((prev) => ({ ...prev, straighten: degrees }));
       bumpTransformPreview();
     },
     [straightenImage, bumpTransformPreview],
   );
 
+  const handleStraightenCommit = useCallback(
+    (degrees: number) => {
+      handleStraightenPreview(degrees);
+      void saveEditorStateNow();
+    },
+    [handleStraightenPreview, saveEditorStateNow],
+  );
+
   const handleUndo = useCallback(() => {
     if (canUndoCanvas) {
-      void undoLastCanvas();
+      void undoLastCanvas().then(() => {
+        setSavedTransform(getTransformSnapshot());
+        bumpTransformPreview();
+        void saveEditorStateNow();
+      });
       undoRedoOrderRef.current.push("canvas");
       return;
     }
     if (canUndo) {
       undo();
       undoRedoOrderRef.current.push("adjustments");
+      void saveEditorStateNow();
+      return;
     }
-  }, [canUndoCanvas, canUndo, undoLastCanvas, undo]);
+  }, [canUndoCanvas, canUndo, undoLastCanvas, undo, getTransformSnapshot, bumpTransformPreview, saveEditorStateNow]);
 
   const handleRedo = useCallback(() => {
     const target = undoRedoOrderRef.current.at(-1);
     if (target === "adjustments" && canRedo) {
       redo();
       undoRedoOrderRef.current.pop();
+      void saveEditorStateNow();
       return;
     }
     if (target === "canvas" && canRedoCanvas) {
-      void redoLastCanvas();
+      void redoLastCanvas().then(() => {
+        setSavedTransform(getTransformSnapshot());
+        bumpTransformPreview();
+        void saveEditorStateNow();
+      });
       undoRedoOrderRef.current.pop();
       return;
     }
@@ -289,7 +529,7 @@ export default function EditorApp() {
     } else if (canRedoCanvas) {
       void redoLastCanvas();
     }
-  }, [canRedo, canRedoCanvas, redo, redoLastCanvas]);
+  }, [canRedo, canRedoCanvas, redo, redoLastCanvas, getTransformSnapshot, bumpTransformPreview, saveEditorStateNow]);
 
   const handleCanUndo = canUndoCanvas || canUndo;
   const handleCanRedo = canRedoCanvas || canRedo;
@@ -314,23 +554,38 @@ export default function EditorApp() {
   );
 
   useEffect(() => {
+    if (!canvasHydratedRef.current) return;
     schedulePreviewSave();
+    scheduleEditorSave();
     return () => {
       if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
+      if (editorSaveTimerRef.current) clearTimeout(editorSaveTimerRef.current);
     };
   }, [
     schedulePreviewSave,
+    scheduleEditorSave,
     adjustments,
     baseImageUrl,
     imageBase64,
     transformVersion,
+    canvasDimensions,
+    versionLoaded,
+    loadingImage,
+    activeImageUrl,
   ]);
+
+  useEffect(() => {
+    return () => {
+      void savePreviewRef.current?.();
+    };
+  }, [imageId]);
 
   return (
     <EditorPreviewProvider
       imageId={imageId}
       getPayload={getPreviewPayload}
       savePreviewRef={savePreviewRef}
+      saveEditorStateRef={saveEditorStateRef}
     >
       <div className="flex flex-col h-screen bg-[#161616] overflow-hidden">
         <Toolbar
@@ -354,16 +609,20 @@ export default function EditorApp() {
           <AdjustmentPanel
             adjustments={adjustments}
             onPreview={handlePreviewAdjustment}
-            onCommit={updateAdjustment}
+            onCommit={handleCommitAdjustment}
             onPatch={handlePatchAdjustments}
             imageId={imageId}
             imageUrl={image?.originalUrl ?? null}
             imageWidth={image?.width ?? undefined}
             imageHeight={image?.height ?? undefined}
+            canvasWidth={canvasDimensions?.width}
+            canvasHeight={canvasDimensions?.height}
             isCropping={isCropping}
             onToggleCrop={handleToggleCrop}
             onRotateCW={handleRotateCW}
-            onStraighten={handleStraighten}
+            onStraighten={handleStraightenPreview}
+            onStraightenCommit={handleStraightenCommit}
+            straightenDegrees={savedTransform.straighten}
             onResize={handleResize}
             onReloadCanvas={reloadCanvas}
             canvasImageUrl={activeImageUrl ?? baseImageUrl ?? image?.originalUrl ?? null}
@@ -376,7 +635,7 @@ export default function EditorApp() {
             enableBlurBrush={enableBlurBrush}
             disableBlurBrush={disableBlurBrush}
             exportBlurMask={exportBlurMask}
-            onRestoreHistory={handlePatchAdjustments}
+            onRestoreHistory={handleRestoreHistory}
           />
 
           <EditorErrorBoundary label="canvas">
@@ -418,7 +677,11 @@ export default function EditorApp() {
           imageId={imageId}
           filename={image?.filename}
           adjustments={adjustments}
-          activeImageUrl={baseImageUrl ?? activeImageUrl}
+          activeImageUrl={activeImageUrl ?? baseImageUrl}
+          imageBase64={imageBase64}
+          transform={getTransformSnapshot()}
+          originalUrl={image?.originalUrl ?? null}
+          storedPreviewUrl={image?.previewUrl ?? null}
         />
       </div>
     </EditorPreviewProvider>

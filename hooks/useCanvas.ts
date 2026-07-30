@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
 import { normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustments";
+import type { ImageTransform } from "@/lib/image-transform";
 
 export {
   getTemperatureOverlay,
@@ -128,17 +129,16 @@ function buildCssFilter(adj: CanvasAdjustments): string {
 // ---------------------------------------------------------------------------
 // Internal transform state — stored in a ref so mutations don't re-render
 // ---------------------------------------------------------------------------
-interface TransformState {
-  rotation: number;   // multiple of 90: 0 | 90 | 180 | 270
-  flipX: boolean;
-  flipY: boolean;
-  straighten: number; // -45 to 45 degrees overlay
-}
+type TransformState = ImageTransform;
 
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
-export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustments) {
+export function useCanvas(
+  imageUrl: string | null,
+  adjustments: CanvasAdjustments,
+  savedTransform?: ImageTransform | null,
+) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // containerRef is attached to the outer wrapper div in Canvas.tsx so we can
   // read the available dimensions before Fabric sets them on the canvas element.
@@ -148,12 +148,16 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   const bgImageRef = useRef<FabricImage | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cropRectRef = useRef<any>(null);
-  const transformRef = useRef<TransformState>({
-    rotation: 0,
-    flipX: false,
-    flipY: false,
-    straighten: 0,
-  });
+  const transformRef = useRef<TransformState>(
+    savedTransform
+      ? { ...savedTransform }
+      : {
+          rotation: 0,
+          flipX: false,
+          flipY: false,
+          straighten: 0,
+        },
+  );
 
   const [zoom, setZoom] = useState(1);
   // Mirrors Fabric's internal viewportTransform so CSS overlays (vignette/grain)
@@ -299,6 +303,12 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     canvas.renderAll();
     updateImageBounds();
   }, [updateImageBounds]);
+
+  useEffect(() => {
+    if (!savedTransform) return;
+    transformRef.current = { ...savedTransform };
+    if (canvasReady) applyTransform();
+  }, [savedTransform, canvasReady, applyTransform]);
 
   // Stores the DOM event listener teardown so it can be called from the
   // useEffect cleanup even though the listeners are added inside an async block.
@@ -495,6 +505,10 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   useEffect(() => {
     if (!canvasReady || !imageUrl || !fabricRef.current) return;
 
+    if (savedTransform) {
+      transformRef.current = { ...savedTransform };
+    }
+
     const canvas = fabricRef.current;
     let cancelled = false;
 
@@ -539,7 +553,7 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     })();
 
     return () => { cancelled = true; };
-  }, [imageUrl, canvasReady]);
+  }, [imageUrl, canvasReady, savedTransform]);
 
   // Resize Fabric canvas when the container grows or shrinks (e.g. panel collapse).
   useEffect(() => {
@@ -1211,6 +1225,11 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
   }, []);
 
+  const clearCanvasHistory = useCallback(() => {
+    setImageHistory([]);
+    setImageFuture([]);
+  }, []);
+
   return {
     canvasRef,
     containerRef,
@@ -1249,6 +1268,7 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     redoLastCanvas,
     canUndoCanvas,
     canRedoCanvas,
+    clearCanvasHistory,
     getTransformSnapshot: () => ({ ...transformRef.current }),
   };
 }

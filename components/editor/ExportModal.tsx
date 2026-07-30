@@ -12,6 +12,8 @@ import {
 } from "@/lib/button-styles";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
+import type { ImageTransform } from "@/lib/image-transform";
+import { buildPreviewRequestBody } from "@/lib/preview-request";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
 
@@ -24,6 +26,10 @@ interface ExportModalProps {
   /** The URL of the image currently on the canvas — may differ from the
    *  original if an AI operation (e.g. background removal) replaced it. */
   activeImageUrl?: string | null;
+  imageBase64?: string | null;
+  transform?: ImageTransform;
+  originalUrl?: string | null;
+  storedPreviewUrl?: string | null;
 }
 
 function formatBytes(bytes: number): string {
@@ -46,6 +52,10 @@ export default function ExportModal({
   filename,
   adjustments,
   activeImageUrl,
+  imageBase64,
+  transform,
+  originalUrl,
+  storedPreviewUrl,
 }: ExportModalProps) {
   const titleId = useId();
   const [format, setFormat] = useState<ExportFormat>("jpeg");
@@ -71,15 +81,31 @@ export default function ExportModal({
     setError(null);
 
     try {
+      const previewBody = buildPreviewRequestBody({
+        adjustments,
+        originalUrl: originalUrl ?? null,
+        storedPreviewUrl: storedPreviewUrl ?? null,
+        baseImageUrl: activeImageUrl ?? null,
+        imageBase64: imageBase64 ?? null,
+        transform: transform ?? {
+          rotation: 0,
+          flipX: false,
+          flipY: false,
+          straighten: 0,
+        },
+      });
+
       const res = await fetch("/api/images/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageId,
-          adjustments,
+          adjustments: previewBody.adjustments,
           format,
           quality,
-          imageUrl: activeImageUrl ?? undefined,
+          imageUrl: previewBody.imageUrl,
+          imageBase64: previewBody.imageBase64,
+          transform: previewBody.transform,
         }),
       });
 

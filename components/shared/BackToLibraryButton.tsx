@@ -21,6 +21,7 @@ export default function BackToLibraryButton() {
     setNavigating(true);
     try {
       if (editorPreview?.imageId) {
+        await editorPreview.saveEditorState();
         await editorPreview.savePreview();
       }
       router.push("/library");

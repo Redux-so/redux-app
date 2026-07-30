@@ -28,11 +28,17 @@ interface AdjustmentPanelProps {
   imageUrl?: string | null;
   imageWidth?: number;
   imageHeight?: number;
+  /** Current canvas pixel dimensions — preferred over original DB dims after crop/resize. */
+  canvasWidth?: number;
+  canvasHeight?: number;
   // Canvas transform callbacks
   isCropping?: boolean;
   onToggleCrop?: () => void;
   onRotateCW?: () => void;
   onStraighten?: (degrees: number) => void;
+  onStraightenCommit?: (degrees: number) => void;
+  /** Restored straighten angle — keeps the slider in sync after reload. */
+  straightenDegrees?: number;
   onResize?: (width: number, height: number) => void | Promise<void>;
   /** Called with the new URL after an AI operation replaces the canvas image. */
   onReloadCanvas?: (url: string) => void | Promise<void>;
@@ -47,7 +53,7 @@ interface AdjustmentPanelProps {
   enableBlurBrush?: () => void | Promise<void>;
   disableBlurBrush?: () => void;
   exportBlurMask?: () => Promise<string>;
-  onRestoreHistory?: (patch: Partial<Record<string, number>>) => void;
+  onRestoreHistory?: (raw: unknown) => void | Promise<void>;
 }
 
 type ToolSection = "light" | "color" | "effects" | "retouch" | "transform" | "history";
@@ -276,10 +282,14 @@ export default function AdjustmentPanel({
   imageUrl,
   imageWidth,
   imageHeight,
+  canvasWidth,
+  canvasHeight,
   onToggleCrop,
   isCropping = false,
   onRotateCW,
   onStraighten,
+  onStraightenCommit,
+  straightenDegrees = 0,
   onResize,
   onReloadCanvas,
   canvasImageUrl,
@@ -300,14 +310,28 @@ export default function AdjustmentPanel({
 
   // Straighten inline slider
   const [showStraighten, setShowStraighten] = useState(false);
-  const [straightenDeg, setStraightenDeg] = useState(0);
+  const [straightenDeg, setStraightenDeg] = useState(straightenDegrees);
+
+  useEffect(() => {
+    setStraightenDeg(straightenDegrees);
+  }, [straightenDegrees]);
+
+  const effectiveWidth = canvasWidth ?? imageWidth;
+  const effectiveHeight = canvasHeight ?? imageHeight;
 
   // Resize inline form
   const [showResize, setShowResize] = useState(false);
-  const [resizeW, setResizeW] = useState(String(imageWidth ?? ""));
-  const [resizeH, setResizeH] = useState(String(imageHeight ?? ""));
+  const [resizeW, setResizeW] = useState(String(effectiveWidth ?? ""));
+  const [resizeH, setResizeH] = useState(String(effectiveHeight ?? ""));
   const [resizeLocked, setResizeLocked] = useState(true);
-  const aspectRatio = imageWidth && imageHeight ? imageWidth / imageHeight : 1;
+  const aspectRatio =
+    effectiveWidth && effectiveHeight ? effectiveWidth / effectiveHeight : 1;
+
+  useEffect(() => {
+    if (!effectiveWidth || !effectiveHeight) return;
+    setResizeW(String(effectiveWidth));
+    setResizeH(String(effectiveHeight));
+  }, [effectiveWidth, effectiveHeight]);
 
   function handleResizeW(val: string) {
     const w = parseInt(val);
@@ -402,6 +426,8 @@ export default function AdjustmentPanel({
     setActiveTool((prev) => (prev === tool ? null : tool));
   }
 
+  const aiImageUrl = canvasImageUrl ?? imageUrl;
+
   // ── Shared AI error handler ───────────────────────────────────────────────
   /** Returns true if the error was handled (caller should return early). */
   function handleAiError(status: number): boolean {
@@ -418,13 +444,13 @@ export default function AdjustmentPanel({
 
   // ── Auto Enhance ──────────────────────────────────────────────────────────
   async function runAutoEnhance() {
-    if (!imageUrl) return;
+    if (!aiImageUrl) return;
     setLoadingEnhance(true);
     try {
       const res = await fetch("/api/ai/enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
+        body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -443,13 +469,13 @@ export default function AdjustmentPanel({
 
   // ── Auto Tone Balance ─────────────────────────────────────────────────────
   async function runAutoToneBalance() {
-    if (!imageUrl) return;
+    if (!aiImageUrl) return;
     setLoadingToneBalance(true);
     try {
       const res = await fetch("/api/ai/tone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
+        body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -468,13 +494,13 @@ export default function AdjustmentPanel({
 
   // ── Smart Color Balance ───────────────────────────────────────────────────
   async function runSmartColorBalance() {
-    if (!imageUrl) return;
+    if (!aiImageUrl) return;
     setLoadingSmartColor(true);
     try {
       const res = await fetch("/api/ai/color-balance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
+        body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -495,7 +521,7 @@ export default function AdjustmentPanel({
   async function handleStyleMatchFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     e.target.value = "";
-    if (!file || !imageUrl) return;
+    if (!file || !aiImageUrl) return;
 
     try {
       const { dataUrl, base64, mediaType } = await fileToBase64(file);
@@ -506,7 +532,7 @@ export default function AdjustmentPanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageUrl,
+          imageUrl: aiImageUrl,
           referenceImageBase64: base64,
           referenceImageMediaType: mediaType,
         }),
@@ -543,13 +569,13 @@ export default function AdjustmentPanel({
 
   // ── Remove Background ─────────────────────────────────────────────────────
   async function runRemoveBackground() {
-    if (!imageUrl || !imageId) return;
+    if (!aiImageUrl || !imageId) return;
     setLoadingRemoveBg(true);
     try {
       const res = await fetch("/api/ai/background-remove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl, imageId }),
+        body: JSON.stringify({ imageUrl: aiImageUrl, imageId }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1151,7 +1177,7 @@ export default function AdjustmentPanel({
                           }}
                           onCommit={(v) => {
                             setStraightenDeg(v);
-                            onStraighten?.(v);
+                            onStraightenCommit?.(v);
                           }}
                         />
                       )}

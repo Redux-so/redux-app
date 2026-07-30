@@ -1,7 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
+import type { ImageTransform } from "@/lib/image-transform";
 import { prisma } from "@/lib/prisma";
+import { resolvePreviewSourceUrl } from "@/lib/resolve-preview-source";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
 
@@ -13,6 +15,8 @@ interface ExportBody {
   /** Active canvas URL — overrides the DB original when the image has been
    *  replaced by an AI operation (e.g. background removal). */
   imageUrl?: string;
+  imageBase64?: string;
+  transform?: ImageTransform;
   /** Optional max width for preview thumbnails — applied after all effects. */
   maxWidth?: number;
 }
@@ -41,6 +45,8 @@ export async function POST(request: NextRequest) {
     format = "jpeg",
     quality = 90,
     imageUrl,
+    imageBase64,
+    transform,
     maxWidth,
   } = body;
 
@@ -55,16 +61,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  const fetchUrl = imageUrl ?? image.originalUrl;
-  const imgResponse = await fetch(fetchUrl);
-  if (!imgResponse.ok) {
-    return NextResponse.json(
-      { error: "Failed to fetch image" },
-      { status: 502 },
-    );
-  }
+  let inputBuffer: Buffer;
+  try {
+    const source = resolvePreviewSourceUrl({
+      imageUrl,
+      originalUrl: image.originalUrl,
+      storedPreviewUrl: image.previewUrl,
+      imageBase64,
+    });
 
-  const inputBuffer = Buffer.from(await imgResponse.arrayBuffer());
+    if (source.kind === "base64") {
+      inputBuffer = Buffer.from(source.base64, "base64");
+    } else {
+      const imgResponse = await fetch(source.url);
+      if (!imgResponse.ok) {
+        return NextResponse.json(
+          { error: "Failed to fetch image" },
+          { status: 502 },
+        );
+      }
+      inputBuffer = Buffer.from(await imgResponse.arrayBuffer());
+    }
+  } catch (err) {
+    console.error("[export] Failed to resolve image source:", err);
+    return NextResponse.json({ error: "Failed to fetch image" }, { status: 400 });
+  }
 
   try {
     const outputBuffer = await renderAdjustedImage(inputBuffer, {
@@ -72,6 +93,7 @@ export async function POST(request: NextRequest) {
       format,
       quality,
       maxWidth,
+      transform,
     });
 
     return new NextResponse(outputBuffer as unknown as BodyInit, {

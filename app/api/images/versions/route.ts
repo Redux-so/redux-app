@@ -1,5 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
+import { parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
@@ -56,12 +59,13 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json()) as {
     imageId?: string;
-    adjustments?: Record<string, number>;
+    adjustments?: Record<string, unknown>;
+    imageBase64?: string;
     label?: string;
   };
-  const { imageId, adjustments, label } = body;
+  const { imageId, adjustments: rawAdjustments, imageBase64, label } = body;
 
-  if (!imageId || !adjustments) {
+  if (!imageId || !rawAdjustments) {
     return NextResponse.json(
       { error: "imageId and adjustments are required" },
       { status: 400 },
@@ -77,14 +81,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
+  const editorState = parseVersionAdjustments(rawAdjustments);
+
+  if (imageBase64) {
+    const buffer = Buffer.from(imageBase64, "base64");
+    const uploaded = await uploadToCloudinary(
+      buffer,
+      `${image.publicId}-working-${Date.now()}.jpg`,
+    );
+    editorState.workingImageUrl = uploaded.secureUrl;
+  }
+
+  const adjustments = serializePersistedEditorState(editorState);
+
   const version = await prisma.imageVersion.create({
     data: {
       imageId,
-      // Use the original image's URL/publicId as placeholders until an actual
-      // export is triggered — the adjustments JSON is the source of truth here.
-      url: image.originalUrl,
+      url: editorState.workingImageUrl ?? image.originalUrl,
       publicId: image.publicId,
-      adjustments,
+      adjustments: adjustments as Prisma.InputJsonValue,
       label: label ?? null,
     },
   });

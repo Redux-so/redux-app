@@ -4,12 +4,11 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/shared/Icon";
 import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
-import type { Adjustments } from "@/hooks/useEditor";
 
 interface ImageVersion {
   id: string;
   imageId: string;
-  adjustments: Adjustments;
+  adjustments: unknown;
   label: string | null;
   createdAt: string;
 }
@@ -17,7 +16,7 @@ interface ImageVersion {
 interface HistoryVersionListProps {
   imageId?: string;
   enabled: boolean;
-  onRestore: (adjustments: Partial<Adjustments>) => void;
+  onRestore: (adjustments: unknown) => void | Promise<void>;
 }
 
 function formatRelative(dateStr: string): string {
@@ -58,8 +57,9 @@ export function HistoryVersionList({
 
   function handleRestore(version: ImageVersion) {
     setRestoringId(version.id);
-    onRestore(version.adjustments);
-    setTimeout(() => setRestoringId(null), 600);
+    void Promise.resolve(onRestore(version.adjustments)).finally(() => {
+      setRestoringId(null);
+    });
   }
 
   return (
