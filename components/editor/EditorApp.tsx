@@ -7,6 +7,7 @@ import { useCanvas } from "@/hooks/useCanvas";
 import type { ImageRecord } from "@/types/image";
 import { isStoredPreviewUrl } from "@/lib/resolve-preview-source";
 import type { PreviewPayload } from "@/lib/preview-request";
+import type { AdjustmentKey } from "@/constants/adjustments";
 
 function stripDataUrlBase64(dataUrl: string): string {
   const comma = dataUrl.indexOf(",");
@@ -33,6 +34,7 @@ export default function EditorApp() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const savePreviewRef = useRef<(() => Promise<string | null>) | null>(null);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undoRedoOrderRef = useRef<Array<"canvas" | "adjustments">>([]);
   const previewPixelsRef = useRef<Pick<PreviewPayload, "baseImageUrl" | "imageBase64">>({
     baseImageUrl: null,
     imageBase64: null,
@@ -110,7 +112,9 @@ export default function EditorApp() {
     exportBlurMask,
     pushImageHistory,
     undoLastCanvas,
+    redoLastCanvas,
     canUndoCanvas,
+    canRedoCanvas,
     getTransformSnapshot,
   } = useCanvas(canvasSourceUrl, adjustments);
 
@@ -153,6 +157,7 @@ export default function EditorApp() {
 
   const reloadCanvas = useCallback(
     async (url: string) => {
+      undoRedoOrderRef.current = [];
       if (activeImageUrl) {
         pushImageHistory(activeImageUrl, getTransformSnapshot());
       }
@@ -175,6 +180,7 @@ export default function EditorApp() {
   );
 
   const handleConfirmCrop = useCallback(async () => {
+    undoRedoOrderRef.current = [];
     const dataUrl = await confirmCrop();
     if (dataUrl) {
       const b64 = stripDataUrlBase64(dataUrl);
@@ -186,6 +192,7 @@ export default function EditorApp() {
 
   const handleResize = useCallback(
     async (newW: number, newH: number) => {
+      undoRedoOrderRef.current = [];
       const dataUrl = await resizeCanvas(newW, newH);
       if (dataUrl) {
         const b64 = stripDataUrlBase64(dataUrl);
@@ -202,23 +209,43 @@ export default function EditorApp() {
     schedulePreviewSave();
   }, [schedulePreviewSave]);
 
+  const handlePreviewAdjustment = useCallback(
+    (key: AdjustmentKey, value: number) => {
+      undoRedoOrderRef.current = [];
+      previewAdjustment(key, value);
+    },
+    [previewAdjustment],
+  );
+
+  const handlePatchAdjustments = useCallback(
+    (patch: Partial<Record<string, number>>) => {
+      undoRedoOrderRef.current = [];
+      patchAdjustments(patch);
+    },
+    [patchAdjustments],
+  );
+
   const handleRotateCW = useCallback(() => {
+    undoRedoOrderRef.current = [];
     rotateCW();
     bumpTransformPreview();
   }, [rotateCW, bumpTransformPreview]);
 
   const handleFlipH = useCallback(() => {
+    undoRedoOrderRef.current = [];
     flipH();
     bumpTransformPreview();
   }, [flipH, bumpTransformPreview]);
 
   const handleFlipV = useCallback(() => {
+    undoRedoOrderRef.current = [];
     flipV();
     bumpTransformPreview();
   }, [flipV, bumpTransformPreview]);
 
   const handleStraighten = useCallback(
     (degrees: number) => {
+      undoRedoOrderRef.current = [];
       straightenImage(degrees);
       bumpTransformPreview();
     },
@@ -228,12 +255,36 @@ export default function EditorApp() {
   const handleUndo = useCallback(() => {
     if (canUndoCanvas) {
       void undoLastCanvas();
-    } else {
-      undo();
+      undoRedoOrderRef.current.push("canvas");
+      return;
     }
-  }, [canUndoCanvas, undoLastCanvas, undo]);
+    if (canUndo) {
+      undo();
+      undoRedoOrderRef.current.push("adjustments");
+    }
+  }, [canUndoCanvas, canUndo, undoLastCanvas, undo]);
+
+  const handleRedo = useCallback(() => {
+    const target = undoRedoOrderRef.current.at(-1);
+    if (target === "adjustments" && canRedo) {
+      redo();
+      undoRedoOrderRef.current.pop();
+      return;
+    }
+    if (target === "canvas" && canRedoCanvas) {
+      void redoLastCanvas();
+      undoRedoOrderRef.current.pop();
+      return;
+    }
+    if (canRedo) {
+      redo();
+    } else if (canRedoCanvas) {
+      void redoLastCanvas();
+    }
+  }, [canRedo, canRedoCanvas, redo, redoLastCanvas]);
 
   const handleCanUndo = canUndoCanvas || canUndo;
+  const handleCanRedo = canRedoCanvas || canRedo;
 
   const getPreviewPayload = useCallback(
     () => ({
@@ -283,9 +334,9 @@ export default function EditorApp() {
           resetZoom={resetZoom}
           toggleBefore={toggleBefore}
           canUndo={handleCanUndo}
-          canRedo={canRedo}
+          canRedo={handleCanRedo}
           onUndo={handleUndo}
-          onRedo={redo}
+          onRedo={handleRedo}
           isDirty={isDirty}
           justSaved={justSaved}
           onExport={() => setShowExport(true)}
@@ -294,9 +345,9 @@ export default function EditorApp() {
         <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
           <AdjustmentPanel
             adjustments={adjustments}
-            onPreview={previewAdjustment}
+            onPreview={handlePreviewAdjustment}
             onCommit={updateAdjustment}
-            onPatch={patchAdjustments}
+            onPatch={handlePatchAdjustments}
             imageId={imageId}
             imageUrl={image?.originalUrl ?? null}
             imageWidth={image?.width ?? undefined}
@@ -316,7 +367,7 @@ export default function EditorApp() {
             enableBlurBrush={enableBlurBrush}
             disableBlurBrush={disableBlurBrush}
             exportBlurMask={exportBlurMask}
-            onRestoreHistory={patchAdjustments}
+            onRestoreHistory={handlePatchAdjustments}
           />
 
           <EditorErrorBoundary label="canvas">
@@ -345,7 +396,7 @@ export default function EditorApp() {
           <EditorErrorBoundary label="chat">
             <ChatPanel
               adjustments={adjustments}
-              onPatch={patchAdjustments}
+              onPatch={handlePatchAdjustments}
               imageId={imageId}
               canvasImageUrl={activeImageUrl ?? baseImageUrl ?? image?.originalUrl ?? null}
             />

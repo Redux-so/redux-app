@@ -6,6 +6,12 @@ import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey } from "@
 
 export type Adjustments = typeof DEFAULT_ADJUSTMENTS;
 
+function adjustmentsEqual(a: Adjustments, b: Adjustments): boolean {
+  return (Object.keys(DEFAULT_ADJUSTMENTS) as AdjustmentKey[]).every(
+    (key) => a[key] === b[key],
+  );
+}
+
 export function useEditor(imageId?: string) {
   const [state, { set, undo, redo, reset, canUndo, canRedo }] = useUndo<Adjustments>(
     { ...DEFAULT_ADJUSTMENTS },
@@ -47,6 +53,16 @@ export function useEditor(imageId?: string) {
   // ---------------------------------------------------------------------------
   const isFirstPreviewRef = useRef(true);
 
+  const setAdjustments = useCallback(
+    (next: Adjustments, checkpoint?: boolean) => {
+      // use-undo clears future on every set() when references differ, even if
+      // values are identical — skip no-op updates so redo survives undo.
+      if (adjustmentsEqual(next, state.present)) return;
+      set(next, checkpoint);
+    },
+    [set, state.present],
+  );
+
   // ---------------------------------------------------------------------------
   // Auto-save fix: using refs for the interval callback so the setInterval is
   // only created once per imageId, not re-created on every adjustment change.
@@ -80,9 +96,9 @@ export function useEditor(imageId?: string) {
     (key: AdjustmentKey, value: number) => {
       const checkpoint = isFirstPreviewRef.current;
       isFirstPreviewRef.current = false;
-      set({ ...state.present, [key]: value } as Adjustments, checkpoint);
+      setAdjustments({ ...state.present, [key]: value } as Adjustments, checkpoint);
     },
-    [set, state.present],
+    [setAdjustments, state.present],
   );
 
   // ---------------------------------------------------------------------------
@@ -92,18 +108,18 @@ export function useEditor(imageId?: string) {
   const updateAdjustment = useCallback(
     (key: AdjustmentKey, value: number) => {
       isFirstPreviewRef.current = true;
-      set({ ...state.present, [key]: value } as Adjustments, false);
+      setAdjustments({ ...state.present, [key]: value } as Adjustments, false);
     },
-    [set, state.present],
+    [setAdjustments, state.present],
   );
 
   // Applies a batch of adjustment patches — used by the AI assistant
   const patchAdjustments = useCallback(
     (patch: Partial<Adjustments> & Partial<Record<string, number>>) => {
       isFirstPreviewRef.current = true;
-      set(normalizeAdjustments({ ...state.present, ...patch }) as Adjustments, true);
+      setAdjustments(normalizeAdjustments({ ...state.present, ...patch }) as Adjustments, true);
     },
-    [set, state.present],
+    [setAdjustments, state.present],
   );
 
   const resetAdjustments = useCallback(() => {
@@ -159,13 +175,23 @@ export function useEditor(imageId?: string) {
     };
   }, []);
 
+  const undoAdjustments = useCallback(() => {
+    isFirstPreviewRef.current = true;
+    undo();
+  }, [undo]);
+
+  const redoAdjustments = useCallback(() => {
+    isFirstPreviewRef.current = true;
+    redo();
+  }, [redo]);
+
   return {
     adjustments,
     updateAdjustment,
     previewAdjustment,
     patchAdjustments,
-    undo,
-    redo,
+    undo: undoAdjustments,
+    redo: redoAdjustments,
     canUndo,
     canRedo,
     resetAdjustments,

@@ -172,6 +172,7 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   // replace the canvas image with a new URL via loadImageUrl().
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(imageUrl);
   const [imageHistory, setImageHistory] = useState<{ url: string; transform: TransformState }[]>([]);
+  const [imageFuture, setImageFuture] = useState<{ url: string; transform: TransformState }[]>([]);
   // Ref so undoLastCanvas can call loadImageUrl without a forward-reference TDZ
   const loadImageUrlRef = useRef<((url: string) => Promise<void>) | null>(null);
 
@@ -180,26 +181,52 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
   // ---------------------------------------------------------------------------
   const pushImageHistory = useCallback((url: string, transform: TransformState) => {
     setImageHistory(prev => [...prev, { url, transform }]);
+    setImageFuture([]);
   }, []);
 
   const undoLastCanvas = useCallback(async () => {
+    const currentUrl = activeImageUrl;
+    const currentTransform = { ...transformRef.current };
+    if (!currentUrl) return;
+
     let entry: { url: string; transform: TransformState } | undefined;
     setImageHistory(prev => {
+      if (prev.length === 0) return prev;
       const next = [...prev];
       entry = next.pop();
       return next;
     });
-    // Yield one microtask so setState above is enqueued before the async load
     await Promise.resolve();
-    if (entry) {
-      // Restore transform BEFORE reloading so loadImageUrl picks it up
-      transformRef.current = { ...entry.transform };
-      await loadImageUrlRef.current?.(entry.url);
-    }
-  }, []);
+    if (!entry) return;
 
-  // Derived — reactive because imageHistory is useState
+    setImageFuture(prev => [{ url: currentUrl, transform: currentTransform }, ...prev]);
+    transformRef.current = { ...entry.transform };
+    await loadImageUrlRef.current?.(entry.url);
+  }, [activeImageUrl]);
+
+  const redoLastCanvas = useCallback(async () => {
+    const currentUrl = activeImageUrl;
+    const currentTransform = { ...transformRef.current };
+    if (!currentUrl) return;
+
+    let entry: { url: string; transform: TransformState } | undefined;
+    setImageFuture(prev => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      entry = next.shift();
+      return next;
+    });
+    await Promise.resolve();
+    if (!entry) return;
+
+    setImageHistory(prev => [...prev, { url: currentUrl, transform: currentTransform }]);
+    transformRef.current = { ...entry.transform };
+    await loadImageUrlRef.current?.(entry.url);
+  }, [activeImageUrl]);
+
+  // Derived — reactive because imageHistory / imageFuture are useState
   const canUndoCanvas = imageHistory.length > 0;
+  const canRedoCanvas = imageFuture.length > 0;
 
   // ---------------------------------------------------------------------------
   // Compute the image's rendered bounds from the current FabricImage state.
@@ -1219,7 +1246,9 @@ export function useCanvas(imageUrl: string | null, adjustments: CanvasAdjustment
     exportBlurMask,
     pushImageHistory,
     undoLastCanvas,
+    redoLastCanvas,
     canUndoCanvas,
+    canRedoCanvas,
     getTransformSnapshot: () => ({ ...transformRef.current }),
   };
 }
