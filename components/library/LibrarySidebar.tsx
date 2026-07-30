@@ -214,7 +214,7 @@ export default function LibrarySidebar({
               size={16}
               className="text-[#888888] group-hover:text-white"
             />
-            <span className="min-w-0 truncate">Help & Feedback</span>
+            <span className="min-w-0 truncate">Discord</span>
           </a>
         </nav>
 
