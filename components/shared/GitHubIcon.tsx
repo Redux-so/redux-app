@@ -1,5 +1,5 @@
 interface GitHubIconProps {
-  size?: 16 | 20 | 24 | 48;
+  size?: 16 | 20 | 22 | 24 | 48;
   className?: string;
 }
 

@@ -68,6 +68,8 @@ const TOOL_SECTIONS: {
 
 const RAIL_ICON_STROKE = 1.25;
 const RAIL_ICON_SIZE = 24;
+/** Filled brand marks read larger than stroke icons at the same pixel size. */
+const RAIL_BRAND_ICON_SIZE = 22;
 /** Sun's radiating lines read lighter at the default rail stroke — nudge slightly. */
 const RAIL_ICON_STROKE_OVERRIDES: Partial<Record<IconName, number>> = {
   Sun: 1.7,
@@ -85,11 +87,11 @@ function RailIcon({ iconName }: { iconName: IconName }) {
 }
 
 function RailDiscordIcon() {
-  return <DiscordIcon size={RAIL_ICON_SIZE} />;
+  return <DiscordIcon size={RAIL_BRAND_ICON_SIZE} />;
 }
 
 function RailGitHubIcon() {
-  return <GitHubIcon size={RAIL_ICON_SIZE} />;
+  return <GitHubIcon size={RAIL_BRAND_ICON_SIZE} />;
 }
 
 function applyAiAdjustments(
