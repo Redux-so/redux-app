@@ -1,5 +1,6 @@
 "use client";
 
+import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { getColorOverlays, type CanvasAdjustments, type ImageBounds } from "@/hooks/useCanvas";
 
 interface CanvasProps {
@@ -159,8 +160,9 @@ export default function Canvas({
             Cancel
           </button>
           <button
+            type="button"
             onClick={onConfirmCrop}
-            className="h-[34px] px-5 bg-white rounded-sm text-[13px] text-black font-medium hover:bg-[#e5e5e5] transition-colors cursor-pointer"
+            className={BTN_PRIMARY_SOLID}
           >
             Confirm Crop
           </button>
