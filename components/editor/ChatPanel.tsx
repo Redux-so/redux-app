@@ -118,10 +118,6 @@ function cleanText(raw: string): string {
   return raw.replace(/\[adjustments\][\s\S]*?\[\/adjustments\]/g, "").trim();
 }
 
-function formatTime(d: Date): string {
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
 /**
  * Convert a File to a base64 data-URL (for preview) and the raw base64 string
  * (for the API payload, without the `data:...;base64,` prefix).
@@ -789,10 +785,6 @@ export default function ChatPanel({
                     msg.content
                   )}
                 </div>
-
-                <span className="text-[10px] text-[#444444] px-[2px] select-none">
-                  {formatTime(msg.timestamp)}
-                </span>
               </motion.div>
             ))}
           </div>
