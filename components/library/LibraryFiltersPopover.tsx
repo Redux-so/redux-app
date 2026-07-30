@@ -4,7 +4,8 @@ import { useEffect, useRef } from "react";
 
 import FilterDateField from "@/components/library/FilterDateField";
 import type { LibraryFileTypeKey } from "@/constants/image-formats";
-import { LIBRARY_PANEL_SURFACE } from "@/constants/library-sidebar";
+import { LIBRARY_PANEL_POPOVER } from "@/constants/library-sidebar";
+import { Icon } from "@/components/shared/Icon";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import {
   countActiveLibraryFilters,
@@ -33,6 +34,11 @@ const SECTION_LABEL =
 const OPTION_LABEL =
   "flex cursor-pointer items-center gap-2.5 py-1.5 text-[13px] text-[#cccccc] hover:text-white transition-colors";
 
+const CHOICE_BOX =
+  "flex h-3.5 w-3.5 shrink-0 items-center justify-center border transition-colors";
+const CHOICE_IDLE = "border-[#3a3a3a] bg-[#1d1d1d]";
+const CHOICE_SELECTED = "border-[#8758ed] bg-[#8758ed]";
+
 function Divider() {
   return <div className="my-3 border-t border-white/[0.08]" />;
 }
@@ -55,8 +61,18 @@ function RadioOption({
         name={name}
         checked={checked}
         onChange={onChange}
-        className="h-3.5 w-3.5 shrink-0 accent-[#8758ed]"
+        className="sr-only"
       />
+      <span
+        aria-hidden
+        className={[
+          CHOICE_BOX,
+          "rounded-full",
+          checked ? CHOICE_SELECTED : CHOICE_IDLE,
+        ].join(" ")}
+      >
+        {checked && <span className="h-1.5 w-1.5 rounded-full bg-[#1d1d1d]" />}
+      </span>
       {label}
     </label>
   );
@@ -77,8 +93,18 @@ function CheckboxOption({
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="h-3.5 w-3.5 shrink-0 rounded accent-[#8758ed]"
+        className="sr-only"
       />
+      <span
+        aria-hidden
+        className={[
+          CHOICE_BOX,
+          "rounded-[4px]",
+          checked ? `${CHOICE_SELECTED} text-white` : `${CHOICE_IDLE} text-transparent`,
+        ].join(" ")}
+      >
+        <Icon name="Check" size={12} strokeWidth={2.5} aria-hidden />
+      </span>
       {label}
     </label>
   );
@@ -145,7 +171,7 @@ export default function LibraryFiltersPopover({
   return (
     <div
       ref={panelRef}
-      className={`absolute right-0 top-[calc(100%+8px)] z-50 w-[300px] rounded-lg p-4 ${LIBRARY_PANEL_SURFACE}`}
+      className={`absolute right-0 top-[calc(100%+8px)] z-50 w-[300px] rounded-lg p-4 ${LIBRARY_PANEL_POPOVER}`}
     >
       <div className="mb-3 flex items-center justify-between">
         <span className="text-[14px] font-medium text-white">Filters</span>

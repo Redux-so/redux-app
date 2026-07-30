@@ -144,16 +144,14 @@ export default function PhotoCardAlbumMenu({
                       >
                         <span
                           className={[
-                            "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                            "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
                             isMember
-                              ? "border-white/30 bg-white/[0.12]"
-                              : "border-white/[0.15] bg-transparent",
+                              ? "border-[#8758ed] bg-[#8758ed] text-white"
+                              : "border-[#3a3a3a] bg-[#1d1d1d] text-transparent",
                           ].join(" ")}
                           aria-hidden
                         >
-                          {isMember && (
-                            <Icon name="Check" size={16} className="text-white" aria-hidden />
-                          )}
+                          <Icon name="Check" size={12} strokeWidth={2.5} aria-hidden />
                         </span>
                         <Icon
                           name="Folder"

@@ -7,8 +7,11 @@ import {
   SURFACE_ICON_BTN,
 } from "@/lib/surface-colors";
 
-/** Library left panel + filter popover — same flat panel surface (no shadow). */
+/** Library left panel shell (sidebar uses border-r on top of this). */
 export const LIBRARY_PANEL_SURFACE = `${SURFACE_BG_PANEL} ${SURFACE_BORDER}`;
+
+/** Library popovers — full 1px border matching the sidebar edge. */
+export const LIBRARY_PANEL_POPOVER = `${SURFACE_BG_PANEL} border border-solid ${SURFACE_BORDER}`;
 
 /** Library left panel width — keep sidebar shell and profile popover in sync. */
 export const LIBRARY_SIDEBAR_WIDTH_PX = 260;
