@@ -43,7 +43,7 @@ export default function ChatEmptyState({
             >
               <Icon
                 name={suggestion.iconName}
-                size={20}
+                size={24}
                 className="shrink-0 text-[#888888] transition-colors group-hover:text-white"
                 aria-hidden
               />
