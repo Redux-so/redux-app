@@ -67,9 +67,9 @@ const TOOL_SECTIONS: {
   iconName: IconName;
 }[] = [
   { id: "light", label: "Light", title: "Light adjustments", iconName: "Sun" },
-  { id: "color", label: "Color", title: "Color adjustments", iconName: "Palette" },
-  { id: "effects", label: "Effects", title: "Effects adjustments", iconName: "Zap" },
-  { id: "retouch", label: "Retouch", title: "Retouch tools", iconName: "Brush03" },
+  { id: "color", label: "Color", title: "Color adjustments", iconName: "Colors" },
+  { id: "effects", label: "Effects", title: "Effects adjustments", iconName: "Star04" },
+  { id: "retouch", label: "Retouch", title: "Retouch tools", iconName: "Brush01" },
   { id: "transform", label: "Transform", title: "Crop and geometry", iconName: "Crop01" },
 ];
 

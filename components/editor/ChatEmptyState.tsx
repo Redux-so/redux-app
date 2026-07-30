@@ -3,6 +3,8 @@ import Image from "next/image";
 import { Icon } from "@/components/shared/Icon";
 import { CHAT_SUGGESTIONS } from "@/constants/chat-suggestions";
 
+const SUGGESTION_ICON_SLOT_CLASS = "inline-flex h-7 w-7 shrink-0 items-center justify-center text-[#888888] transition-colors group-hover:text-white [&>svg]:block [&>svg]:h-6 [&>svg]:w-6 [&>svg]:shrink-0";
+
 interface ChatEmptyStateProps {
   disabled?: boolean;
   onSelectSuggestion: (message: string) => void;
@@ -35,19 +37,21 @@ export default function ChatEmptyState({
               disabled={disabled}
               onClick={() => onSelectSuggestion(suggestion.message)}
               className={[
-                "group flex h-11 w-full items-center gap-2.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 text-left text-[14px] font-medium text-[#cccccc] transition-colors",
+                "group flex h-11 min-h-11 max-h-11 w-full shrink-0 items-center gap-2.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 text-left text-[14px] font-medium leading-none text-[#cccccc] transition-colors",
                 disabled
                   ? "cursor-not-allowed opacity-40 pointer-events-none"
                   : "cursor-pointer hover:border-[#3a3a3a] hover:text-white",
               ].join(" ")}
             >
-              <Icon
-                name={suggestion.iconName}
-                size={24}
-                className="shrink-0 text-[#888888] transition-colors group-hover:text-white"
-                aria-hidden
-              />
-              <span className="min-w-0 truncate">{suggestion.label}</span>
+              <span className={SUGGESTION_ICON_SLOT_CLASS}>
+                <Icon
+                  name={suggestion.iconName}
+                  size={24}
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+              </span>
+              <span className="min-w-0 flex-1 truncate">{suggestion.label}</span>
             </button>
           ))}
           </div>

@@ -12,7 +12,7 @@ export const CHAT_SUGGESTIONS: ChatSuggestion[] = [
     id: "edit-recommendations",
     label: "Get edit recommendations",
     message: "What edits would you recommend for this image?",
-    iconName: "MagicWand01",
+    iconName: "Star04",
   },
   {
     id: "exposure-color",
@@ -24,6 +24,6 @@ export const CHAT_SUGGESTIONS: ChatSuggestion[] = [
     id: "style-mood",
     label: "Explore style & mood",
     message: "What mood or style would suit this photo?",
-    iconName: "Palette",
+    iconName: "Colors",
   },
 ];
