@@ -904,23 +904,31 @@ export default function ChatPanel({
                     className="shrink-0 rounded"
                     aria-hidden
                   />
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={
-                      chatBlocked
-                        ? chatQuota?.hasPurchasedCredits
-                          ? "Purchase more credits to continue chatting…"
-                          : "Purchase credits to continue chatting…"
-                        : "Describe the edit you want..."
-                    }
-                    rows={1}
-                    disabled={chatBlocked}
-                    className="w-full resize-none bg-transparent pt-0 text-[15px] font-normal text-white placeholder:text-[#666666] placeholder:font-normal outline-none leading-snug min-h-[24px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fieldSizing: "content" } as React.CSSProperties}
-                  />
+                  <div className="relative min-w-0 flex-1">
+                    {chatBlocked && !input && (
+                      <span
+                        className="pointer-events-none absolute left-0 top-0 text-[15px] font-normal leading-snug text-[#666666]"
+                        aria-hidden
+                      >
+                        {chatQuota?.hasPurchasedCredits
+                          ? "Purchase more credits to continue chatting..."
+                          : "Purchase credits to continue chatting..."}
+                      </span>
+                    )}
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={
+                        chatBlocked ? "" : "Describe the edit you want..."
+                      }
+                      rows={1}
+                      disabled={chatBlocked}
+                      className="w-full resize-none bg-transparent pt-0 text-[15px] font-normal text-white placeholder:text-[#666666] placeholder:font-normal outline-none leading-snug min-h-[24px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ fieldSizing: "content" } as React.CSSProperties}
+                    />
+                  </div>
                 </div>
               </div>
 
