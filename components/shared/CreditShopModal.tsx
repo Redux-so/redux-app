@@ -150,7 +150,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         key={bundle.id}
                         className={`flex items-center justify-between rounded-xl px-4 py-3.5 border bg-[#161616] ${
                           bestValue
-                            ? "border-[#8758ed]"
+                            ? "border-[#794ADE]"
                             : bundle.popular
                             ? "border-[#794ADE]/40"
                             : "border-[#2e2e2e]"
@@ -160,13 +160,13 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
                             bundle.popular ? "border-[#794ADE]/40 bg-[#794ADE]/[0.12]" : "border-[#2e2e2e] bg-[#1d1d1d]"
                           }`}>
-                            <Icon name="Coins01" size={16} className={bundle.popular ? "text-[#B07EF0]" : "text-white"} aria-hidden />
+                            <Icon name="Coins01" size={16} className={bundle.popular ? "text-[#A688F0]" : "text-white"} aria-hidden />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="text-white text-[13px] font-medium">{bundle.name}</p>
                               {bundle.popular && (
-                                <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-[#794ADE]/20 text-[#B07EF0]">
+                                <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-[#794ADE]/20 text-[#A688F0]">
                                   Popular
                                 </span>
                               )}
@@ -178,7 +178,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           {bestValue && (
-                            <span className="rounded-full bg-[#8758ed] px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
+                            <span className="rounded-full bg-[#794ADE] px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
                               Best Value
                             </span>
                           )}

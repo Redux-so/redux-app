@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
+import { CHAT_USER_BUBBLE_CLASS } from "@/lib/brand-colors";
 import { BTN_PRIMARY_ICON, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
@@ -28,8 +29,6 @@ import {
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
 
-const USER_CHAT_BUBBLE_CLASS =
-  "rounded-xl border border-[#8758ed]/20 bg-[#382074] text-[13px] font-medium text-white py-2.5 px-4";
 
 const BTN_SECONDARY =
   "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#2e2e2e] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#3a3a3a] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
@@ -773,7 +772,7 @@ export default function ChatPanel({
                 <div
                   className={`max-w-[320px] leading-relaxed whitespace-pre-wrap break-words ${
                     msg.role === "user"
-                      ? USER_CHAT_BUBBLE_CLASS
+                      ? CHAT_USER_BUBBLE_CLASS
                       : "rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] border border-[#2e2e2e] text-[#e5e5e5]"
                   }`}
                 >

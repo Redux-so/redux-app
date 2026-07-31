@@ -1,5 +1,8 @@
 import { dark } from "@clerk/themes";
 
+import {
+  PRIMARY_BRAND_HEX,
+} from "@/lib/brand-colors";
 import { INTER_FONT_FAMILY } from "@/lib/fonts";
 import {
   SURFACE_BORDER_HEX,
@@ -7,9 +10,18 @@ import {
   SURFACE_RAISED_HEX,
 } from "@/lib/surface-colors";
 
+const clerkPrimaryBtn =
+  "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#794ADE] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9168eb] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active";
+
+const clerkPrimaryBtnCompact =
+  "!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#794ADE] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9168eb] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active";
+
+const clerkBrandLink =
+  "!text-[#794ADE] hover:!text-[#9168eb]";
+
 /** Shared Clerk variables — aligned with Redux dark UI and lib/button-styles CTAs. */
 export const reduxClerkVariables = {
-  colorPrimary: "#8758ed",
+  colorPrimary: PRIMARY_BRAND_HEX,
   colorPrimaryForeground: "#ffffff",
   colorBackground: SURFACE_PANEL_HEX,
   colorForeground: "#ffffff",
@@ -33,11 +45,10 @@ const reduxFormElements = {
   formFieldInput:
     "!h-11 !rounded-lg !border !border-solid !border-[#2e2e2e] !bg-[#1d1d1d] !text-[14px] !text-white placeholder:!text-[#555555] focus:!border-[#3a3a3a]",
   formFieldInputShowPasswordButton: "!text-[#888888] hover:!text-white",
-  formButtonPrimary:
-    "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
-  formFieldAction: "!text-[#8758ed] hover:!text-[#9a6ff2]",
+  formButtonPrimary: clerkPrimaryBtn,
+  formFieldAction: clerkBrandLink,
   formFieldErrorText: "!text-red-400",
-  formResendCodeLink: "!text-[#8758ed] hover:!text-[#9a6ff2]",
+  formResendCodeLink: clerkBrandLink,
   otpCodeFieldInput:
     "!rounded-lg !border-[#2e2e2e] !bg-[#1d1d1d] !text-white",
 } as const;
@@ -123,9 +134,9 @@ export const reduxAuthAppearance = {
     footerAction: "!w-full !overflow-visible",
     footerActionText: "!text-[14px] !text-[#888888]",
     footerActionLink:
-      "!text-[14px] !font-medium !text-[#8758ed] hover:!text-[#9a6ff2]",
+      "!text-[14px] !font-medium !text-[#794ADE] hover:!text-[#9168eb]",
     footerPages: "!text-[#888888]",
-    footerPagesLink: "!text-[#8758ed] hover:!text-[#9a6ff2]",
+    footerPagesLink: clerkBrandLink,
     alternativeMethodsBlockButton:
       "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/15 !bg-transparent !px-5 !text-white hover:!bg-white/[0.05]",
     socialButtons: "!flex !w-full !max-w-none !flex-col !gap-3 !overflow-visible",
@@ -165,8 +176,7 @@ export const reduxSignInAppearance = {
       "!text-[13px] !font-normal !normal-case !tracking-normal !text-[#555555]",
     socialButtonsBlockButton:
       "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-md !border !border-solid !border-[#2e2e2e] !bg-[#1d1d1d] !px-5 !text-white !shadow-none hover:!border-[#3a3a3a]",
-    formButtonPrimary:
-      "!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#8758ed] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9a6ff2] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active",
+    formButtonPrimary: clerkPrimaryBtnCompact,
   },
 };
 

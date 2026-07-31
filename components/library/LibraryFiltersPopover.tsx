@@ -6,6 +6,7 @@ import FilterDateField from "@/components/library/FilterDateField";
 import type { LibraryFileTypeKey } from "@/constants/image-formats";
 import { LIBRARY_PANEL_POPOVER } from "@/constants/library-sidebar";
 import { Icon } from "@/components/shared/Icon";
+import { LIBRARY_CHOICE_SELECTED_CLASS } from "@/lib/brand-colors";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import {
   countActiveLibraryFilters,
@@ -37,7 +38,7 @@ const OPTION_LABEL =
 const CHOICE_BOX =
   "flex h-3.5 w-3.5 shrink-0 items-center justify-center border transition-colors";
 const CHOICE_IDLE = "border-[#3a3a3a] bg-[#1d1d1d]";
-const CHOICE_SELECTED = "border-[#8758ed] bg-[#8758ed]";
+const CHOICE_SELECTED = LIBRARY_CHOICE_SELECTED_CLASS;
 
 function Divider() {
   return <div className="my-3 border-t border-white/[0.08]" />;

@@ -198,7 +198,7 @@ export default function SearchBar({
             "relative flex shrink-0 items-center justify-center transition-colors cursor-pointer",
             isLarge ? "h-10 w-10" : "h-9 w-9",
             hasActiveFilters
-              ? "text-[#B07EF0]"
+              ? "text-[#A688F0]"
               : "text-[#888888] hover:text-white",
           ].join(" ")}
         >
@@ -209,7 +209,7 @@ export default function SearchBar({
             aria-hidden
           />
           {hasActiveFilters && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#8758ed] px-1 text-[10px] font-semibold leading-none text-white">
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#794ADE] px-1 text-[10px] font-semibold leading-none text-white">
               {activeFilterCount}
             </span>
           )}

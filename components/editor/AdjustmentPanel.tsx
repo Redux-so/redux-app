@@ -1024,7 +1024,7 @@ export default function AdjustmentPanel({
                               step={1}
                               value={blurIntensity}
                               onChange={(e) => setBlurIntensity(Number(e.target.value))}
-                              className="flex-1 accent-[#8B44E8] h-[3px] cursor-pointer"
+                              className="flex-1 accent-[#794ADE] h-[3px] cursor-pointer"
                             />
                             <span className="text-[11px] text-[#888888] w-[24px] text-right shrink-0">{blurIntensity}</span>
                           </div>
@@ -1184,7 +1184,7 @@ export default function AdjustmentPanel({
                                 type="number"
                                 value={resizeW}
                                 onChange={(e) => handleResizeW(e.target.value)}
-                                className="w-full h-[30px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
+                                className="w-full h-[30px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#794ADE]/60"
                               />
                             </div>
                             <button
@@ -1206,7 +1206,7 @@ export default function AdjustmentPanel({
                                 type="number"
                                 value={resizeH}
                                 onChange={(e) => handleResizeH(e.target.value)}
-                                className="w-full h-[30px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#682FBF]/60"
+                                className="w-full h-[30px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[12px] text-white outline-none focus:border-[#794ADE]/60"
                               />
                             </div>
                           </div>
@@ -1271,7 +1271,7 @@ export default function AdjustmentPanel({
                   value={genFillDirection}
                   onChange={(e) => setGenFillDirection(e.target.value as ExpandDirection)}
                   disabled={loadingGenFill}
-                  className="h-[34px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[13px] text-white outline-none focus:border-[#682FBF]/60 cursor-pointer disabled:opacity-40"
+                  className="h-[34px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[13px] text-white outline-none focus:border-[#794ADE]/60 cursor-pointer disabled:opacity-40"
                 >
                   <option value="top">Top</option>
                   <option value="bottom">Bottom</option>
@@ -1291,7 +1291,7 @@ export default function AdjustmentPanel({
                   value={genFillPixels}
                   onChange={(e) => setGenFillPixels(e.target.value)}
                   disabled={loadingGenFill}
-                  className="h-[34px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[13px] text-white outline-none focus:border-[#682FBF]/60 disabled:opacity-40"
+                  className="h-[34px] bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 text-[13px] text-white outline-none focus:border-[#794ADE]/60 disabled:opacity-40"
                 />
               </div>
 
@@ -1305,7 +1305,7 @@ export default function AdjustmentPanel({
                   disabled={loadingGenFill}
                   rows={3}
                   placeholder="Describe what should appear in the new area…"
-                  className="w-full bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 py-2 text-[13px] text-white outline-none focus:border-[#682FBF]/60 resize-none disabled:opacity-40 placeholder:text-[#555555]"
+                  className="w-full bg-[#1d1d1d] border border-[#2e2e2e] rounded-lg px-2 py-2 text-[13px] text-white outline-none focus:border-[#794ADE]/60 resize-none disabled:opacity-40 placeholder:text-[#555555]"
                 />
               </div>
 

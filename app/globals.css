@@ -4,11 +4,16 @@
   --background: #161616;
   --foreground: #ededed;
   --surface-chrome: #121212;
-  --accent: #682FBF;
+  --accent: #794ADE;
   --accent-glow: #794ade;
   --accent-glow-rgb: 121, 74, 222;
+  --brand-primary: #794ADE;
+  --brand-primary-hover: #9168eb;
+  --brand-link: #A688F0;
+  --brand-link-hover: #BBA0F5;
+  --brand-chat-bubble-bg: #2d2568;
   --scrollbar-thumb: rgba(255, 255, 255, 0.12);
-  --scrollbar-thumb-hover: rgba(104, 47, 191, 0.38);
+  --scrollbar-thumb-hover: rgba(121, 74, 222, 0.38);
 }
 
 @theme inline {

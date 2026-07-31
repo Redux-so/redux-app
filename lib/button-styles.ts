@@ -1,10 +1,10 @@
 import { SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
+import { BTN_PRIMARY_VISUAL } from "@/lib/brand-colors";
+
 export const BTN_PRIMARY_TYPE =
   "text-[13px] font-medium text-white leading-none";
 
 /** Shared primary CTA shell — bg, border, radius, shadows, hover/active */
-const BTN_PRIMARY_VISUAL =
-  "rounded-md border border-white/20 bg-[#8758ed] shadow-btn-primary transition-[background-color,box-shadow,transform] duration-200 hover:bg-[#9a6ff2] hover:shadow-btn-primary-hover active:scale-[0.98] active:shadow-btn-primary-active disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100";
 
 /** Standalone CTA — header, toolbar, modal footers (matches h-9 chrome controls) */
 export const BTN_PRIMARY_SOLID = [

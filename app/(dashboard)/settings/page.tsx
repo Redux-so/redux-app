@@ -421,7 +421,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowAllTransactions(true)}
-                    className="text-[12px] font-medium text-[#B07EF0] hover:text-[#c9a0f5] transition-colors cursor-pointer"
+                    className="text-[12px] font-medium text-[#A688F0] hover:text-[#BBA0F5] transition-colors cursor-pointer"
                   >
                     View all
                   </button>

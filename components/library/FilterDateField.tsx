@@ -162,7 +162,7 @@ export default function FilterDateField({
                   className={[
                     "flex h-8 w-full items-center justify-center rounded-md text-[12px] transition-colors cursor-pointer",
                     selectedDay
-                      ? "bg-[#682FBF]/25 font-medium text-[#B07EF0]"
+                      ? "bg-[#794ADE]/25 font-medium text-[#A688F0]"
                       : inMonth
                         ? "text-white hover:bg-[#1d1d1d]"
                         : "text-[#555555] hover:bg-[#1d1d1d] hover:text-[#888888]",

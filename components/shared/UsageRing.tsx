@@ -272,7 +272,7 @@ export default function UsageRing({
               <button
                 type="button"
                 onClick={handlePurchaseAction}
-                className="mt-1.5 block text-[12px] font-medium text-[#B07EF0] hover:text-[#c9a0f5] transition-colors cursor-pointer"
+                className="mt-1.5 block text-[12px] font-medium text-[#A688F0] hover:text-[#BBA0F5] transition-colors cursor-pointer"
               >
                 {view.purchaseActionLabel}
               </button>
