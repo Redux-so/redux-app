@@ -11,7 +11,7 @@ export const PRIMARY_BRAND_LINK_HOVER_HEX = "#BBA0F5";
 export const PRIMARY_BRAND_RGB = "121, 74, 222";
 
 /** Dark tint for chat user message bubbles. */
-export const CHAT_USER_BUBBLE_BG_HEX = "#2d2568";
+export const CHAT_USER_BUBBLE_BG_HEX = "#1e1034";
 
 /** Tailwind class fragments (static strings for JIT). */
 export const BRAND_BG_CLASS = "bg-[#794ADE]";
@@ -45,6 +45,6 @@ export const AUTH_PRIMARY_BTN_CLASS = [
 ].join(" ");
 
 export const CHAT_USER_BUBBLE_CLASS =
-  "rounded-xl border border-[#794ADE]/20 bg-[#2d2568] text-[13px] font-medium text-white py-2.5 px-4";
+  "rounded-xl border border-[#794ADE]/20 bg-[#1e1034] text-[13px] font-medium text-white py-2.5 px-4";
 
 export const LIBRARY_CHOICE_SELECTED_CLASS = "border-[#794ADE] bg-[#794ADE]";
