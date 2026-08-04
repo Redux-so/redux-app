@@ -3,7 +3,8 @@ import Image from "next/image";
 import { Icon } from "@/components/shared/Icon";
 import { CHAT_SUGGESTIONS } from "@/constants/chat-suggestions";
 
-const SUGGESTION_ICON_SLOT_CLASS = "inline-flex h-7 w-7 shrink-0 items-center justify-center text-[#888888] transition-colors group-hover:text-white [&>svg]:block [&>svg]:h-6 [&>svg]:w-6 [&>svg]:shrink-0";
+const SUGGESTION_ICON_SLOT_CLASS = "inline-flex h-6 w-6 shrink-0 items-center justify-center text-[#888888] transition-colors group-hover:text-white [&>svg]:block [&>svg]:h-[22px] [&>svg]:w-[22px] [&>svg]:shrink-0";
+const SUGGESTION_ICON_STROKE = 1.25;
 
 interface ChatEmptyStateProps {
   disabled?: boolean;
@@ -26,7 +27,7 @@ export default function ChatEmptyState({
           aria-hidden
         />
         <div className="flex w-full flex-col items-center -translate-y-4">
-          <p className="mb-7 text-center text-[18px] font-normal text-[#888888]">
+          <p className="mb-7 text-center text-[17px] font-normal text-[#888888]">
             How may I help you?
           </p>
           <div className="flex w-full flex-col gap-2">
@@ -37,7 +38,7 @@ export default function ChatEmptyState({
               disabled={disabled}
               onClick={() => onSelectSuggestion(suggestion.message)}
               className={[
-                "group flex h-11 min-h-11 max-h-11 w-full shrink-0 items-center gap-2.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 text-left text-[14px] font-medium leading-none text-[#cccccc] transition-colors",
+                "group flex h-[46px] min-h-[46px] max-h-[46px] w-full shrink-0 items-center gap-2.5 rounded-lg border border-[#2e2e2e] bg-[#1d1d1d] px-4 text-left text-[15px] font-medium leading-none text-[#cccccc] transition-colors",
                 disabled
                   ? "cursor-not-allowed opacity-40 pointer-events-none"
                   : "cursor-pointer hover:border-[#3a3a3a] hover:text-white",
@@ -46,8 +47,8 @@ export default function ChatEmptyState({
               <span className={SUGGESTION_ICON_SLOT_CLASS}>
                 <Icon
                   name={suggestion.iconName}
-                  size={24}
-                  strokeWidth={1.5}
+                  size={20}
+                  strokeWidth={SUGGESTION_ICON_STROKE}
                   aria-hidden
                 />
               </span>
