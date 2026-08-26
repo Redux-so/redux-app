@@ -773,7 +773,7 @@ export default function ChatPanel({
                   className={`max-w-[320px] leading-relaxed whitespace-pre-wrap break-words ${
                     msg.role === "user"
                       ? CHAT_USER_BUBBLE_CLASS
-                      : "rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] border border-[#2e2e2e] text-[#e5e5e5]"
+                      : "rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] text-[#e5e5e5]"
                   }`}
                 >
                   {msg.content === "" && msg.role === "assistant" ? (
