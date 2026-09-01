@@ -19,7 +19,7 @@ import {
   CHAT_PANEL_COLLAPSED_WIDTH_PX,
   CHAT_PANEL_WIDTH_PX,
 } from "@/constants/chat-panel";
-import { BTN_BRAND_ICON, BTN_PRIMARY_SOLID, BTN_SOFT_FG } from "@/lib/button-styles";
+import { BTN_BRAND_ICON, BTN_PRIMARY_COMPACT } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 import { ChatMarkdown } from "@/lib/chat-markdown";
@@ -885,11 +885,7 @@ export default function ChatPanel({
                   <button type="button" onClick={handleUndoAllChanges} className={BTN_SECONDARY}>
                     Undo all
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleKeepAllChanges}
-                    className={`${BTN_PRIMARY_SOLID} ${BTN_SOFT_FG} !h-8 !px-3.5 !text-[12px] !font-semibold !rounded-md`}
-                  >
+                  <button type="button" onClick={handleKeepAllChanges} className={BTN_PRIMARY_COMPACT}>
                     Keep all
                   </button>
                 </div>

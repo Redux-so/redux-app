@@ -26,6 +26,14 @@ export const BTN_PRIMARY_SOLID = [
   BTN_MODAL_VISUAL,
 ].join(" ");
 
+/** Compact CTA — pairs with h-8 secondary buttons (e.g. chat changes bar) */
+export const BTN_PRIMARY_COMPACT = [
+  "inline-flex items-center justify-center h-8 px-3.5 whitespace-nowrap cursor-pointer select-none",
+  "text-[12px] font-semibold leading-none",
+  BTN_SOFT_FG,
+  BTN_MODAL_VISUAL,
+].join(" ");
+
 /** Panel row CTA — pairs with h-[34px] ghost Cancel buttons */
 export const BTN_PRIMARY_PANEL = [
   "inline-flex flex-1 items-center justify-center gap-1.5 h-[34px] px-4 min-w-0 cursor-pointer select-none",
