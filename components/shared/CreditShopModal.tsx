@@ -32,6 +32,9 @@ function isBestValueBundle(bundle: Bundle): boolean {
   return bundle.name === "Advanced";
 }
 
+const BEST_VALUE_BORDER_CLASS =
+  "border-2 border-[#794ADE] shadow-[0_7px_16px_rgba(121,74,222,0.1),0_13px_30px_rgba(121,74,222,0.05)]";
+
 export default function CreditShopModal({ open, onClose }: CreditShopModalProps) {
   const [mounted, setMounted] = useState(false);
   const [bundles, setBundles] = useState<Bundle[]>([]);
@@ -130,7 +133,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
               </div>
 
               {/* Body */}
-              <div className="px-6 py-5">
+              <div className="overflow-visible px-6 py-5">
                 {loading ? (
                   <div className="flex items-center justify-center py-10">
                     <LoadingSpinner size="md" label="Loading credit bundles" />
@@ -142,16 +145,23 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                     message="No credit packages available right now."
                   />
                 ) : (
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2.5 overflow-visible">
                     {bundles.map((bundle) => {
                       const bestValue = isBestValueBundle(bundle);
                       return (
                       <div
                         key={bundle.id}
+                        className={bestValue ? "relative isolate pb-1.5" : undefined}
+                      >
+                        {bestValue && (
+                          <div
+                            aria-hidden
+                            className="pointer-events-none absolute left-5 right-5 top-[62%] -bottom-2 rounded-[999px] bg-[#794ADE]/11 blur-[11px]"
+                          />
+                        )}
+                        <div
                         className={`flex items-center justify-between rounded-xl px-4 py-3.5 border bg-[#161616] ${
-                          bestValue
-                            ? "border-[#794ADE]"
-                            : bundle.popular
+                          bestValue ? `relative z-[1] ${BEST_VALUE_BORDER_CLASS}` : bundle.popular
                             ? "border-[#794ADE]/40"
                             : "border-[#2e2e2e]"
                         }`}
@@ -193,6 +203,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                             {formatPrice(bundle.price)}
                           </button>
                         </div>
+                      </div>
                       </div>
                     );
                     })}
