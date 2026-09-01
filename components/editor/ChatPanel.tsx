@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -11,7 +12,6 @@ import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
-import { CHAT_USER_BUBBLE_CLASS } from "@/lib/brand-colors";
 import { BTN_PRIMARY_ICON, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
@@ -50,6 +50,10 @@ const CHAT_SURFACE_SHADOW =
 const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
   "rounded-md border border-[#2e2e2e] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
+
+const CHAT_AVATAR_PX = 36;
+const CHAT_AVATAR_SHELL =
+  "flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-lg bg-[#1d1d1d] border border-[#2e2e2e]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -370,12 +374,52 @@ function ToolbarIconBtn({
   );
 }
 
+function ChatMessageAvatar({
+  role,
+  imageUrl,
+}: {
+  role: "user" | "assistant";
+  imageUrl?: string | null;
+}) {
+  if (role === "user" && imageUrl) {
+    return (
+      <Image
+        key={imageUrl}
+        src={imageUrl}
+        alt=""
+        width={CHAT_AVATAR_PX}
+        height={CHAT_AVATAR_PX}
+        className="h-[36px] w-[36px] shrink-0 rounded-lg object-cover"
+        aria-hidden
+      />
+    );
+  }
+
+  if (role === "assistant") {
+    return (
+      <div className={CHAT_AVATAR_SHELL} aria-hidden>
+        <Image
+          src="/r-logo.png"
+          alt=""
+          width={34}
+          height={34}
+          className="shrink-0"
+          aria-hidden
+        />
+      </div>
+    );
+  }
+
+  return <div className={CHAT_AVATAR_SHELL} aria-hidden />;
+}
+
 export default function ChatPanel({
   adjustments,
   onPatch,
   imageId,
   canvasImageUrl,
 }: ChatPanelProps) {
+  const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -739,7 +783,7 @@ export default function ChatPanel({
           {/* Message thread */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-3"
+            className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-10"
           >
             {messages.length === 0 && (
               <ChatEmptyState
@@ -756,33 +800,40 @@ export default function ChatPanel({
                 initial={{ opacity: 0, y: messageInitialY }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: messageDuration, ease: "easeOut" }}
-                className={`flex flex-col gap-[4px] ${msg.role === "user" ? "items-end" : "items-start"}`}
+                className="flex w-full flex-col items-start gap-[4px]"
               >
-                {msg.imagePreview && (
-                  <div className="mb-1">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={msg.imagePreview}
-                      alt="Attached reference"
-                      className="max-w-[140px] max-h-[100px] rounded-lg object-cover border border-white/[0.08]"
-                    />
+                <div className="flex w-full items-start gap-2">
+                  <ChatMessageAvatar
+                    role={msg.role}
+                    imageUrl={msg.role === "user" ? user?.imageUrl : undefined}
+                  />
+                  <div className="flex min-w-0 flex-col gap-1">
+                    {msg.imagePreview && (
+                      <div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={msg.imagePreview}
+                          alt="Attached reference"
+                          className="max-w-[140px] max-h-[100px] rounded-lg object-cover border border-white/[0.08]"
+                        />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[320px] whitespace-pre-wrap break-words ${
+                        msg.role === "user"
+                          ? "text-[14px] font-normal leading-snug text-white"
+                          : "leading-relaxed rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] text-[#e5e5e5]"
+                      }`}
+                    >
+                      {msg.content === "" && msg.role === "assistant" ? (
+                        <LoadingSpinner size="xs" variant="muted" label="Assistant is typing" />
+                      ) : msg.role === "assistant" ? (
+                        <ChatMarkdown content={msg.content} />
+                      ) : (
+                        msg.content
+                      )}
+                    </div>
                   </div>
-                )}
-
-                <div
-                  className={`max-w-[320px] leading-relaxed whitespace-pre-wrap break-words ${
-                    msg.role === "user"
-                      ? CHAT_USER_BUBBLE_CLASS
-                      : "rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] text-[#e5e5e5]"
-                  }`}
-                >
-                  {msg.content === "" && msg.role === "assistant" ? (
-                    <LoadingSpinner size="xs" variant="muted" label="Assistant is typing" />
-                  ) : msg.role === "assistant" ? (
-                    <ChatMarkdown content={msg.content} />
-                  ) : (
-                    msg.content
-                  )}
                 </div>
               </motion.div>
             ))}
