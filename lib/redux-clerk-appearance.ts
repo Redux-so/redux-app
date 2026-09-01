@@ -38,7 +38,7 @@ export const reduxClerkVariables = {
 } as const;
 
 const reduxModalButtonPrimary =
-  "!box-border !flex !h-10 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/15 !bg-white !px-5 !text-[13px] !font-medium !leading-none !text-[#161616] !shadow-none transition-colors duration-200 hover:!bg-[#e5e5e5] active:!bg-[#d4d4d4]";
+  "!box-border !flex !h-10 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-[#ffffff]/10 !bg-[#ededed] !px-5 !text-[13px] !font-medium !leading-none !text-[#2a2a2a] !shadow-none transition-colors duration-200 hover:!bg-[#e0e0e0] active:!bg-[#d4d4d4] [&_svg]:!text-[#2a2a2a] [&_svg]:!stroke-current";
 
 const reduxFormElements = {
   formFieldLabel: "!text-[13px] !font-medium !text-[#888888]",
@@ -102,7 +102,7 @@ export const reduxClerkProviderAppearance = {
   variables: {
     ...reduxClerkVariables,
     colorPrimary: "#ffffff",
-    colorPrimaryForeground: "#161616",
+    colorPrimaryForeground: "#2a2a2a",
   },
   elements: reduxUserProfileElements,
 };

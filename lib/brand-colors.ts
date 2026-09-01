@@ -26,8 +26,8 @@ export const BRAND_ACCENT_CLASS = "accent-[#794ADE]";
 
 export const EMPTY_STATE_ICON_CLASS = "text-[#794ADE]";
 
-/** Primary CTA shell shared by lib/button-styles. */
-export const BTN_PRIMARY_VISUAL = [
+/** Brand purple CTA shell — credit/auth/chat-send exceptions only. */
+export const BTN_BRAND_VISUAL = [
   "rounded-md border border-white/20 bg-[#794ADE] shadow-btn-primary",
   "transition-[background-color,box-shadow,transform] duration-200",
   "hover:bg-[#9168eb] hover:shadow-btn-primary-hover",

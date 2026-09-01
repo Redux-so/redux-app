@@ -10,7 +10,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import toast from "react-hot-toast";
 import SettingsBackButton from "@/components/shared/SettingsBackButton";
-import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import { reduxUserProfileAppearance } from "@/lib/redux-clerk-appearance";
 import {
@@ -407,7 +407,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setCreditShopOpen(true)}
-                  className={BTN_PRIMARY_SOLID}
+                  className={BTN_BRAND_SOLID}
                 >
                   Purchase Credits
                 </button>

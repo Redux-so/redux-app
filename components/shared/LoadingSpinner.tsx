@@ -8,7 +8,7 @@ const SIZE_CLASSES = {
 } as const;
 
 const VARIANT_CLASSES = {
-  default: "border-[#888888]/20 border-t-[#888888]",
+  default: "border-[#2a2a2a]/20 border-t-[#2a2a2a]",
   muted: "border-white/10 border-t-[#555555]",
   brand: "border-[#794ADE]/25 border-t-[#A688F0]",
 } as const;

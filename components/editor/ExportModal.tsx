@@ -239,7 +239,7 @@ export default function ExportModal({
             className={BTN_PRIMARY_SOLID}
           >
             {pendingAction === "download" ? (
-              <LoadingSpinner size="sm" variant="brand" label="Exporting" />
+              <LoadingSpinner size="sm" variant="default" label="Exporting" />
             ) : (
               <Icon name="Download01" size={16} aria-hidden />
             )}

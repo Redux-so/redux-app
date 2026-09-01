@@ -11,7 +11,7 @@ import { HistoryVersionList } from "./HistoryPanel";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
-import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_BRAND_SOLID, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import EmptyState from "@/components/shared/EmptyState";
@@ -196,7 +196,7 @@ function RailLink({
   );
 }
 
-// Credit-backed AI action — matches toolbar Export (`BTN_PRIMARY_SOLID`)
+// Credit-backed AI action — brand purple CTA
 function AIButton({
   label,
   loading,
@@ -213,7 +213,7 @@ function AIButton({
       type="button"
       onClick={onClick}
       disabled={loading || disabled}
-      className={`${BTN_PRIMARY_SOLID} w-full`}
+      className={`${BTN_BRAND_SOLID} w-full`}
     >
       {loading ? (
         <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
@@ -998,7 +998,7 @@ export default function AdjustmentPanel({
                       <ToolBtn
                         label={
                           loadingBlur ? (
-                            <LoadingSpinner size="sm" variant="brand" label="Blur loading" />
+                            <LoadingSpinner size="sm" variant="default" label="Blur loading" />
                           ) : (
                             "Blur"
                           )
@@ -1043,7 +1043,7 @@ export default function AdjustmentPanel({
                               className={BTN_PRIMARY_PANEL}
                             >
                               {loadingBlur ? (
-                                <LoadingSpinner size="sm" variant="brand" label="Processing blur" />
+                                <LoadingSpinner size="sm" variant="default" label="Processing blur" />
                               ) : (
                                 "Confirm"
                               )}
@@ -1079,7 +1079,7 @@ export default function AdjustmentPanel({
                               className={BTN_PRIMARY_PANEL}
                             >
                               {loadingEraser ? (
-                                <LoadingSpinner size="sm" variant="brand" label="Processing eraser" />
+                                <LoadingSpinner size="sm" variant="default" label="Processing eraser" />
                               ) : (
                                 "Confirm"
                               )}
@@ -1117,7 +1117,7 @@ export default function AdjustmentPanel({
                               className={BTN_PRIMARY_PANEL}
                             >
                               {loadingHeal ? (
-                                <LoadingSpinner size="sm" variant="brand" label="Processing heal" />
+                                <LoadingSpinner size="sm" variant="default" label="Processing heal" />
                               ) : (
                                 "Confirm"
                               )}
