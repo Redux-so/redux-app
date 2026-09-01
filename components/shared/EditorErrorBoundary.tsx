@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/nextjs";
 import type { ReactNode } from "react";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { CHAT_PANEL_WIDTH_PX } from "@/constants/chat-panel";
 
 type EditorBoundaryLabel = "canvas" | "chat";
 
@@ -15,7 +16,7 @@ const FALLBACK_SHELL: Record<EditorBoundaryLabel, string> = {
   canvas:
     "flex flex-1 min-h-0 min-w-0 items-center justify-center border border-white/10 bg-[#161616] p-6",
   chat:
-    "flex shrink-0 h-full w-[360px] min-w-0 items-center justify-center border-l border-white/10 bg-[#161616] p-6",
+    "flex shrink-0 h-full min-w-0 items-center justify-center border-l border-white/10 bg-[#161616] p-6",
 };
 
 interface EditorErrorBoundaryProps {
@@ -34,7 +35,11 @@ export default function EditorErrorBoundary({
         scope.setContext("editor", { section: label });
       }}
       fallback={({ resetError }) => (
-        <div className={FALLBACK_SHELL[label]} role="alert">
+        <div
+          className={FALLBACK_SHELL[label]}
+          style={label === "chat" ? { width: CHAT_PANEL_WIDTH_PX } : undefined}
+          role="alert"
+        >
           <div className="flex max-w-sm flex-col items-center gap-4 text-center">
             <p className="text-sm text-white/70">{LABEL_COPY[label]}</p>
             <button type="button" className={BTN_PRIMARY_SOLID} onClick={resetError}>

@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import { Icon } from "@/components/shared/Icon";
 import { CHAT_SUGGESTIONS } from "@/constants/chat-suggestions";
+import { CHAT_PANEL_GUTTER_PX, CHAT_PANEL_WIDTH_PX } from "@/constants/chat-panel";
 
 const SUGGESTION_ICON_SLOT_CLASS = "inline-flex h-6 w-6 shrink-0 items-center justify-center text-[#888888] transition-colors group-hover:text-white [&>svg]:block [&>svg]:h-[22px] [&>svg]:w-[22px] [&>svg]:shrink-0";
 const SUGGESTION_ICON_STROKE = 1.25;
@@ -17,7 +18,10 @@ export default function ChatEmptyState({
 }: ChatEmptyStateProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center w-full">
-      <div className="flex w-full max-w-[360px] flex-col items-center">
+      <div
+        className="flex w-full flex-col items-center"
+        style={{ maxWidth: CHAT_PANEL_WIDTH_PX - CHAT_PANEL_GUTTER_PX * 2 }}
+      >
         <Image
           src="/r-logo.png"
           alt=""

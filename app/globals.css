@@ -80,6 +80,28 @@ body {
   scrollbar-gutter: stable;
 }
 
+/* Editor chat message thread — scrollable, no visible scrollbar */
+[data-chat-scroll],
+.chat-panel-scroll {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+[data-chat-scroll]::-webkit-scrollbar,
+.chat-panel-scroll::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+[data-chat-scroll]::-webkit-scrollbar-thumb,
+[data-chat-scroll]::-webkit-scrollbar-track,
+.chat-panel-scroll::-webkit-scrollbar-thumb,
+.chat-panel-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+  display: none !important;
+}
+
 /* Clerk auth — full-width pill CTAs; avoid clipping button shadows */
 .auth-clerk-root,
 .auth-clerk-root :is(

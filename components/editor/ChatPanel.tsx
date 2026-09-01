@@ -12,6 +12,13 @@ import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
+import {
+  CHAT_ATTACHMENT_FILENAME_MAX_WIDTH_PX,
+  CHAT_INPUT_ATTACHMENT_MAX_WIDTH_PX,
+  CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX,
+  CHAT_PANEL_COLLAPSED_WIDTH_PX,
+  CHAT_PANEL_WIDTH_PX,
+} from "@/constants/chat-panel";
 import { BTN_PRIMARY_ICON, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
@@ -51,9 +58,12 @@ const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
   "rounded-md border border-[#2e2e2e] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
 
-const CHAT_AVATAR_PX = 36;
+const CHAT_PANEL_GUTTER_CLASS = "px-8";
+const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
+const CHAT_AVATAR_PX = 40;
+const CHAT_AVATAR_LOGO_PX = 38;
 const CHAT_AVATAR_SHELL =
-  "flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-lg bg-[#1d1d1d] border border-[#2e2e2e]";
+  "flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-lg bg-[#1d1d1d] border border-[#2e2e2e]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -389,7 +399,7 @@ function ChatMessageAvatar({
         alt=""
         width={CHAT_AVATAR_PX}
         height={CHAT_AVATAR_PX}
-        className="h-[36px] w-[36px] shrink-0 rounded-lg object-cover"
+        className="h-[40px] w-[40px] shrink-0 rounded-lg object-cover"
         aria-hidden
       />
     );
@@ -401,8 +411,8 @@ function ChatMessageAvatar({
         <Image
           src="/r-logo.png"
           alt=""
-          width={34}
-          height={34}
+          width={CHAT_AVATAR_LOGO_PX}
+          height={CHAT_AVATAR_LOGO_PX}
           className="shrink-0"
           aria-hidden
         />
@@ -742,14 +752,16 @@ export default function ChatPanel({
       className={[
         "flex flex-col shrink-0 h-full min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
         "bg-[#121212] border-l border-[#2e2e2e] rounded-l-2xl",
-        panelCollapsed ? "w-[44px]" : "w-[360px]",
       ].join(" ")}
+      style={{
+        width: panelCollapsed ? CHAT_PANEL_COLLAPSED_WIDTH_PX : CHAT_PANEL_WIDTH_PX,
+      }}
     >
       {/* Panel header */}
       <div
         className={[
           PANEL_HEADER,
-          panelCollapsed ? "justify-center px-0" : "px-4",
+          panelCollapsed ? "justify-center px-0" : CHAT_PANEL_GUTTER_CLASS,
         ].join(" ")}
       >
         {panelCollapsed ? (
@@ -783,7 +795,8 @@ export default function ChatPanel({
           {/* Message thread */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto min-h-0 px-6 py-5 flex flex-col gap-10"
+            data-chat-scroll
+            className={`chat-panel-scroll flex-1 overflow-y-auto min-h-0 py-5 flex flex-col gap-10 ${CHAT_PANEL_GUTTER_CLASS}`}
           >
             {messages.length === 0 && (
               <ChatEmptyState
@@ -802,24 +815,25 @@ export default function ChatPanel({
                 transition={{ duration: messageDuration, ease: "easeOut" }}
                 className="flex w-full flex-col items-start gap-[4px]"
               >
-                <div className="flex w-full items-start gap-2">
+                <div className="flex w-full items-start gap-5">
                   <ChatMessageAvatar
                     role={msg.role}
                     imageUrl={msg.role === "user" ? user?.imageUrl : undefined}
                   />
-                  <div className="flex min-w-0 flex-col gap-1">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
                     {msg.imagePreview && (
                       <div>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={msg.imagePreview}
                           alt="Attached reference"
-                          className="max-w-[140px] max-h-[100px] rounded-lg object-cover border border-white/[0.08]"
+                          className="max-h-[100px] rounded-lg object-cover border border-white/[0.08]"
+                          style={{ maxWidth: CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX }}
                         />
                       </div>
                     )}
                     <div
-                      className={`max-w-[320px] whitespace-pre-wrap break-words ${
+                      className={`min-w-0 whitespace-pre-wrap break-words ${
                         msg.role === "user"
                           ? "text-[14px] font-normal leading-snug text-white"
                           : "leading-relaxed rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] text-[#e5e5e5]"
@@ -842,7 +856,7 @@ export default function ChatPanel({
           {/* Changes indicator bar */}
           {pendingChanges.length > 0 && (
             <div
-              className={`mx-6 mb-2 shrink-0 overflow-hidden rounded-md border border-white/[0.08] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
+              className={`${CHAT_PANEL_GUTTER_MARGIN_CLASS} mb-2 shrink-0 overflow-hidden rounded-md border border-white/[0.08] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
             >
               <div className="flex items-center gap-2 px-3 py-2 min-w-0">
                 <button
@@ -897,7 +911,7 @@ export default function ChatPanel({
           )}
 
           {/* Input composite — pinned to bottom */}
-          <div className="shrink-0 px-6 pb-4 pt-2">
+          <div className={`shrink-0 pb-4 pt-2 ${CHAT_PANEL_GUTTER_CLASS}`}>
             {attachedPreview && (
               <div className="pb-2">
                 <div className="relative inline-block">
@@ -905,7 +919,8 @@ export default function ChatPanel({
                   <img
                     src={attachedPreview}
                     alt="Attached"
-                    className="h-[56px] w-auto max-w-[120px] rounded-lg object-cover border border-white/[0.08]"
+                    className="h-[56px] w-auto rounded-lg object-cover border border-white/[0.08]"
+                    style={{ maxWidth: CHAT_INPUT_ATTACHMENT_MAX_WIDTH_PX }}
                   />
                   <button
                     type="button"
@@ -916,7 +931,10 @@ export default function ChatPanel({
                   </button>
                 </div>
                 {attachedFile && (
-                  <p className="text-[10px] text-[#555555] mt-[3px] truncate max-w-[200px]">
+                  <p
+                    className="text-[10px] text-[#555555] mt-[3px] truncate"
+                    style={{ maxWidth: CHAT_ATTACHMENT_FILENAME_MAX_WIDTH_PX }}
+                  >
                     {attachedFile.name}
                   </p>
                 )}
