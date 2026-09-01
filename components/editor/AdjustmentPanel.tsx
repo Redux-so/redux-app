@@ -11,7 +11,7 @@ import { HistoryVersionList } from "./HistoryPanel";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments } from "@/constants/adjustments";
 import { createExpandedCanvas, type ExpandDirection } from "@/hooks/useCanvas";
-import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_BRAND_SOLID, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_MODAL_PANEL, BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import EmptyState from "@/components/shared/EmptyState";
@@ -196,7 +196,7 @@ function RailLink({
   );
 }
 
-// Credit-backed AI action — brand purple CTA
+// Credit-backed AI action — matches idle ToolBtn (Eraser, Heal, etc.)
 function AIButton({
   label,
   loading,
@@ -213,12 +213,16 @@ function AIButton({
       type="button"
       onClick={onClick}
       disabled={loading || disabled}
-      className={`${BTN_BRAND_SOLID} w-full`}
+      className={
+        loading || disabled
+          ? "flex w-full items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium rounded-md border border-white/[0.05] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
+          : `flex w-full items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium rounded-md text-white/80 ${SURFACE_SECONDARY_BTN}`
+      }
     >
       {loading ? (
-        <LoadingSpinner size="sm" variant="brand" label={`${label} loading`} />
+        <LoadingSpinner size="sm" variant="muted" label={`${label} loading`} />
       ) : (
-        <Icon name="Star01" size={16} aria-hidden />
+        <Icon name="Star01" size={16} className="shrink-0" aria-hidden />
       )}
       {label}
     </button>
