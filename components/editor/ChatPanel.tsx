@@ -432,6 +432,7 @@ export default function ChatPanel({
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [inputFocused, setInputFocused] = useState(false);
   const [sending, setSending] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [changesExpanded, setChangesExpanded] = useState(false);
@@ -956,7 +957,7 @@ export default function ChatPanel({
             )}
 
             <div
-              className={`overflow-hidden rounded-xl border-2 border-[#2e2e2e] bg-[#1d1d1d] transition-colors focus-within:border-[#794ADE] ${CHAT_SURFACE_SHADOW}`}
+              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? "border-[#794ADE]" : "border-[#2e2e2e]"} ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
@@ -984,6 +985,8 @@ export default function ChatPanel({
                       ref={textareaRef}
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
+                      onFocus={() => setInputFocused(true)}
+                      onBlur={() => setInputFocused(false)}
                       onKeyDown={handleKeyDown}
                       placeholder={
                         chatBlocked ? "" : "Describe the edit you want..."
