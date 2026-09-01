@@ -891,7 +891,7 @@ export default function ChatPanel({
             )}
 
             <div
-              className={`overflow-hidden rounded-xl border border-[#2e2e2e] bg-[#1d1d1d] transition-colors focus-within:border-[#3a3a3a] ${CHAT_SURFACE_SHADOW}`}
+              className={`overflow-hidden rounded-xl border-2 border-[#2e2e2e] bg-[#1d1d1d] transition-colors focus-within:border-[#794ADE] ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
