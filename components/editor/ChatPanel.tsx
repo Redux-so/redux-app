@@ -762,6 +762,7 @@ export default function ChatPanel({
       <div
         className={[
           PANEL_HEADER,
+          "relative",
           panelCollapsed ? "justify-center px-0" : CHAT_PANEL_GUTTER_CLASS,
         ].join(" ")}
       >
@@ -776,18 +777,18 @@ export default function ChatPanel({
             <Icon name="ChevronLeft" size={16} aria-hidden={false} aria-label="Collapse chat panel" />
           </button>
         ) : (
-          <div className="flex min-w-0 items-center gap-2">
+          <>
             <button
               type="button"
               aria-expanded
               aria-label="Collapse chat panel"
               onClick={() => setPanelCollapsed(true)}
-              className="shrink-0 text-[#888888] hover:text-white transition-colors cursor-pointer"
+              className="absolute left-[18px] top-1/2 shrink-0 -translate-x-1/2 -translate-y-1/2 text-[#888888] hover:text-white transition-colors cursor-pointer"
             >
               <Icon name="ChevronRight" size={16} aria-hidden={false} aria-label="Collapse chat panel" />
             </button>
             <span className={PANEL_TITLE}>Chat</span>
-          </div>
+          </>
         )}
       </div>
 
