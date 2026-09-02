@@ -577,9 +577,11 @@ export default function SettingsPage() {
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-[#2e2e2e] bg-[#121212] pl-3 pr-3">
           <Suspense
             fallback={
-              <span className="inline-flex shrink-0 items-center gap-1.5 px-2 py-1.5 text-[13px] text-[#888888]">
-                <Icon name="ChevronLeft" size={16} aria-hidden />
-                Back
+              <span
+                className="inline-flex shrink-0 items-center justify-center w-10 h-10 text-[#888888]"
+                aria-hidden
+              >
+                <Icon name="ChevronLeft" size={28} aria-hidden />
               </span>
             }
           >
