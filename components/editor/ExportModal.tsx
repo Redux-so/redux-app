@@ -6,9 +6,9 @@ import * as SliderPrimitive from "@radix-ui/react-slider";
 import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import {
+  BTN_BRAND_SOLID,
   BTN_FORMAT_IDLE,
   BTN_MODAL_FORMAT_SELECTED,
-  BTN_PRIMARY_SOLID,
 } from "@/lib/button-styles";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
@@ -236,10 +236,15 @@ export default function ExportModal({
             type="button"
             onClick={() => void triggerExport()}
             disabled={loading || !imageId}
-            className={BTN_PRIMARY_SOLID}
+            className={BTN_BRAND_SOLID}
           >
             {pendingAction === "download" ? (
-              <LoadingSpinner size="sm" variant="default" label="Exporting" />
+              <LoadingSpinner
+                size="sm"
+                variant="muted"
+                label="Exporting"
+                className="[&>span:first-child]:border-white/25 [&>span:first-child]:border-t-white/85"
+              />
             ) : (
               <Icon name="Download01" size={16} aria-hidden />
             )}

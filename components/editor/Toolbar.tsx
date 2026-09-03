@@ -1,6 +1,6 @@
 "use client";
 
-import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 import BackToLibraryButton from "@/components/shared/BackToLibraryButton";
 import { Icon } from "@/components/shared/Icon";
 import { SURFACE_BTN_ACTIVE, SURFACE_BTN_IDLE } from "@/lib/surface-colors";
@@ -154,7 +154,7 @@ export default function Toolbar({
         <button
           onClick={onExport}
           title="Export / share"
-          className={`${BTN_PRIMARY_SOLID} shrink-0`}
+          className={`${BTN_BRAND_SOLID} shrink-0`}
         >
           <Icon name="Download01" size={16} aria-hidden />
           Export
