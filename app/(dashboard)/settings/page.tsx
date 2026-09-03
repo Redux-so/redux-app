@@ -315,17 +315,17 @@ export default function SettingsPage() {
           <Section label="Account & Profile">
             <div className="flex items-center gap-4 py-5 border-b border-[#2e2e2e]">
               {!userLoaded ? (
-                <Skeleton className="w-[56px] h-[56px] rounded-full shrink-0" />
+                <Skeleton className="w-[60px] h-[60px] rounded-full shrink-0" />
               ) : user?.imageUrl ? (
                 <Image
                   src={user.imageUrl}
                   alt="avatar"
-                  width={56}
-                  height={56}
+                  width={60}
+                  height={60}
                   className="rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-[56px] h-[56px] rounded-full bg-[#1f1f1f] border border-[#2e2e2e] shrink-0" />
+                <div className="w-[60px] h-[60px] rounded-full bg-[#1f1f1f] border border-[#2e2e2e] shrink-0" />
               )}
               <div className="flex flex-col gap-[2px] min-w-0">
                 {!userLoaded ? (

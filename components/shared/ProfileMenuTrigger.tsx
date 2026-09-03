@@ -9,7 +9,7 @@ import {
 
 export type ProfileMenuVariant = "full" | "compact";
 
-const AVATAR_PX = 36;
+const AVATAR_PX = 40;
 
 interface ProfileMenuTriggerProps {
   variant: ProfileMenuVariant;
@@ -32,10 +32,10 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
         alt=""
         width={AVATAR_PX}
         height={AVATAR_PX}
-        className="h-[36px] w-[36px] shrink-0 rounded-lg object-cover"
+        className="h-[40px] w-[40px] shrink-0 rounded-full object-cover"
       />
     ) : (
-      <div className="h-[36px] w-[36px] shrink-0 rounded-lg bg-[#1d1d1d] border border-[#2e2e2e]" />
+      <div className="h-[40px] w-[40px] shrink-0 rounded-full bg-[#1d1d1d] border border-[#2e2e2e]" />
     );
 
     if (variant === "compact") {

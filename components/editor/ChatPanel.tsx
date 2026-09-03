@@ -62,10 +62,10 @@ const TOOLBAR_CHIP =
 
 const CHAT_PANEL_GUTTER_CLASS = "px-8";
 const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
-const CHAT_AVATAR_PX = 40;
-const CHAT_AVATAR_LOGO_PX = 38;
+const CHAT_AVATAR_PX = 44;
+const CHAT_AVATAR_LOGO_PX = 42;
 const CHAT_AVATAR_SHELL =
-  "flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-lg bg-[#1d1d1d] border border-[#2e2e2e]";
+  "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d] border border-[#2e2e2e]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -401,7 +401,7 @@ function ChatMessageAvatar({
         alt=""
         width={CHAT_AVATAR_PX}
         height={CHAT_AVATAR_PX}
-        className="h-[40px] w-[40px] shrink-0 rounded-lg object-cover"
+        className="h-[44px] w-[44px] shrink-0 rounded-full object-cover"
         aria-hidden
       />
     );
