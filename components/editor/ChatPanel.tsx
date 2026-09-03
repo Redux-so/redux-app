@@ -7,17 +7,19 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { Icon } from "@/components/shared/Icon";
 import ChatEmptyState from "@/components/editor/ChatEmptyState";
-import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { ShimmerText } from "@/components/shared/ShimmerText";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import {
+  CHAT_ASSISTANT_LOADING_LABEL,
   CHAT_ATTACHMENT_FILENAME_MAX_WIDTH_PX,
   CHAT_INPUT_ATTACHMENT_MAX_WIDTH_PX,
   CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX,
   CHAT_PANEL_COLLAPSED_WIDTH_PX,
   CHAT_PANEL_WIDTH_PX,
+  CHAT_STATUS_TEXT_CLASS,
 } from "@/constants/chat-panel";
 import { BTN_BRAND_ICON, BTN_PRIMARY_COMPACT } from "@/lib/button-styles";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
@@ -809,7 +811,11 @@ export default function ChatPanel({
               />
             )}
 
-            {messages.map((msg) => (
+            {messages.map((msg) => {
+              const isAssistantLoading =
+                msg.role === "assistant" && msg.content === "";
+
+              return (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: messageInitialY }}
@@ -822,6 +828,12 @@ export default function ChatPanel({
                     role={msg.role}
                     imageUrl={msg.role === "user" ? user?.imageUrl : undefined}
                   />
+                  {isAssistantLoading ? (
+                    <ShimmerText
+                      label={CHAT_ASSISTANT_LOADING_LABEL}
+                      className={`self-center ${CHAT_STATUS_TEXT_CLASS}`}
+                    />
+                  ) : (
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     {msg.imagePreview && (
                       <div>
@@ -841,18 +853,18 @@ export default function ChatPanel({
                           : "leading-relaxed rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] text-[#e5e5e5]"
                       }`}
                     >
-                      {msg.content === "" && msg.role === "assistant" ? (
-                        <LoadingSpinner size="xs" variant="muted" label="Assistant is typing" />
-                      ) : msg.role === "assistant" ? (
+                      {msg.role === "assistant" ? (
                         <ChatMarkdown content={msg.content} />
                       ) : (
                         msg.content
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Changes indicator bar */}

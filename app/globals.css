@@ -267,3 +267,41 @@ body {
     inset 0 0 52px rgba(var(--accent-glow-rgb), 0.38),
     0 0 32px rgba(var(--accent-glow-rgb), 0.23);
 }
+
+/* ShimmerText — sweeping highlight on status labels (chat loading, etc.) */
+@keyframes shimmer-text {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.shimmer-text {
+  color: transparent !important;
+  background-color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    #6a6a6a 0%,
+    #6a6a6a 32%,
+    #ededed 50%,
+    #6a6a6a 68%,
+    #6a6a6a 100%
+  );
+  background-size: 300% 100%;
+  background-repeat: no-repeat;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent !important;
+  animation: shimmer-text 2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text {
+    animation: none;
+    background-image: none;
+    color: #888888 !important;
+    -webkit-text-fill-color: #888888 !important;
+  }
+}
