@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/shared/Icon";
 import EmptyState from "@/components/shared/EmptyState";
+import { LIBRARY_CHOICE_SELECTED_CLASS } from "@/lib/brand-colors";
 import type { AlbumRecord } from "@/types/album";
 import toast from "react-hot-toast";
 
@@ -146,7 +147,7 @@ export default function PhotoCardAlbumMenu({
                           className={[
                             "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
                             isMember
-                              ? "border-[#794ADE] bg-[#794ADE] text-white"
+                              ? `${LIBRARY_CHOICE_SELECTED_CLASS} text-white`
                               : "border-[#2e2e2e] bg-[#1d1d1d] text-transparent",
                           ].join(" ")}
                           aria-hidden

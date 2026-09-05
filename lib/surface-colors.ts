@@ -60,5 +60,5 @@ export const SURFACE_GHOST_BTN =
 export const SURFACE_SECONDARY_BTN =
   "border border-[#262626] bg-[#1d1d1d] text-white hover:bg-[#1d1d1d] hover:border-[#2e2e2e] transition-colors cursor-pointer";
 
-/** Decorative empty-state icons — brand purple accent. */
+/** Decorative empty-state icons — brand accent. */
 export { EMPTY_STATE_ICON_CLASS } from "@/lib/brand-colors";

@@ -11,6 +11,7 @@ import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import toast from "react-hot-toast";
 import SettingsBackButton from "@/components/shared/SettingsBackButton";
 import { BTN_BRAND_SOLID } from "@/lib/button-styles";
+import { BRAND_LINK_TEXT_CLASS, BRAND_LINK_TEXT_HOVER_CLASS } from "@/lib/brand-colors";
 import CreditShopModal from "@/components/shared/CreditShopModal";
 import { reduxUserProfileAppearance } from "@/lib/redux-clerk-appearance";
 import {
@@ -421,7 +422,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowAllTransactions(true)}
-                    className="text-[12px] font-medium text-[#A688F0] hover:text-[#BBA0F5] transition-colors cursor-pointer"
+                    className={`text-[12px] font-medium ${BRAND_LINK_TEXT_CLASS} ${BRAND_LINK_TEXT_HOVER_CLASS} transition-colors cursor-pointer`}
                   >
                     View all
                   </button>

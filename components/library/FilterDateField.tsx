@@ -17,6 +17,10 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/shared/Icon";
+import {
+  BRAND_LINK_TEXT_CLASS,
+  PRIMARY_BRAND_HEX,
+} from "@/lib/brand-colors";
 import { LIBRARY_PANEL_POPOVER } from "@/constants/library-sidebar";
 
 interface FilterDateFieldProps {
@@ -162,7 +166,7 @@ export default function FilterDateField({
                   className={[
                     "flex h-8 w-full items-center justify-center rounded-md text-[12px] transition-colors cursor-pointer",
                     selectedDay
-                      ? "bg-[#794ADE]/25 font-medium text-[#A688F0]"
+                      ? `bg-[${PRIMARY_BRAND_HEX}]/25 font-medium ${BRAND_LINK_TEXT_CLASS}`
                       : inMonth
                         ? "text-white hover:bg-[#1d1d1d]"
                         : "text-[#555555] hover:bg-[#1d1d1d] hover:text-[#888888]",

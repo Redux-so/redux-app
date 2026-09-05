@@ -10,7 +10,7 @@ const SIZE_CLASSES = {
 const VARIANT_CLASSES = {
   default: "border-[#2a2a2a]/20 border-t-[#2a2a2a]",
   muted: "border-white/10 border-t-[#555555]",
-  brand: "border-[#794ADE]/25 border-t-[#A688F0]",
+  brand: "border-[#3A6FFF]/25 border-t-[#7CA8FF]",
 } as const;
 
 export type LoadingSpinnerSize = keyof typeof SIZE_CLASSES;

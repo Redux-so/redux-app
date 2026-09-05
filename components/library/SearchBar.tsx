@@ -10,6 +10,7 @@ import {
   type LibraryFilters,
 } from "@/lib/library-filters";
 import { useTypewriterPlaceholder } from "@/hooks/useTypewriterPlaceholder";
+import { BRAND_BG_CLASS, BRAND_LINK_TEXT_CLASS } from "@/lib/brand-colors";
 import toast from "react-hot-toast";
 import type { ImageRecord } from "@/types/image";
 
@@ -197,7 +198,7 @@ export default function SearchBar({
             "relative flex shrink-0 items-center justify-center transition-colors cursor-pointer",
             isLarge ? "h-10 w-10" : "h-9 w-9",
             hasActiveFilters
-              ? "text-[#A688F0]"
+              ? BRAND_LINK_TEXT_CLASS
               : "text-[#888888] hover:text-white",
           ].join(" ")}
         >
@@ -208,7 +209,7 @@ export default function SearchBar({
             aria-hidden
           />
           {hasActiveFilters && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#794ADE] px-1 text-[10px] font-semibold leading-none text-white">
+            <span className={`absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full ${BRAND_BG_CLASS} px-1 text-[10px] font-semibold leading-none text-white`}>
               {activeFilterCount}
             </span>
           )}

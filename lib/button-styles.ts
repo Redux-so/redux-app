@@ -11,7 +11,7 @@ export const BTN_SOFT_FG =
 export const BTN_PRIMARY_TYPE =
   `text-[13px] font-medium leading-none ${BTN_SOFT_FG}`;
 
-/** Brand purple label — credit/auth/chat-send exceptions */
+/** Brand CTA label — credit/auth/chat-send exceptions */
 export const BTN_BRAND_TYPE =
   "text-[13px] font-medium text-white leading-none";
 
@@ -72,7 +72,7 @@ export const BTN_PRIMARY_BLOCK = [
   BTN_MODAL_VISUAL,
 ].join(" ");
 
-/** Compact icon-only primary — default white (use BTN_BRAND_ICON for purple) */
+/** Compact icon-only primary — default white (use BTN_BRAND_ICON for brand CTA) */
 export const BTN_PRIMARY_ICON = [
   "inline-flex shrink-0 items-center justify-center w-8 h-8 cursor-pointer select-none",
   BTN_PRIMARY_TYPE,
@@ -86,28 +86,28 @@ export const BTN_FORMAT_SELECTED = [
   BTN_MODAL_VISUAL,
 ].join(" ");
 
-/** Brand purple standalone CTA */
+/** Brand CTA standalone button */
 export const BTN_BRAND_SOLID = [
   "inline-flex items-center justify-center gap-1.5 h-9 px-4 whitespace-nowrap cursor-pointer select-none",
   BTN_BRAND_TYPE,
   BTN_BRAND_VISUAL,
 ].join(" ");
 
-/** Brand purple panel row CTA */
+/** Brand CTA panel row button */
 export const BTN_BRAND_PANEL = [
   "inline-flex flex-1 items-center justify-center gap-1.5 h-[34px] px-4 min-w-0 cursor-pointer select-none",
   BTN_BRAND_TYPE,
   BTN_BRAND_VISUAL,
 ].join(" ");
 
-/** Brand purple full-width panel CTA */
+/** Brand CTA full-width panel button */
 export const BTN_BRAND_BLOCK = [
   "inline-flex w-full items-center justify-center gap-1.5 h-[34px] px-4 cursor-pointer select-none",
   BTN_BRAND_TYPE,
   BTN_BRAND_VISUAL,
 ].join(" ");
 
-/** Brand purple compact icon-only (chat send) */
+/** Brand CTA compact icon-only (chat send) */
 export const BTN_BRAND_ICON = [
   "inline-flex shrink-0 items-center justify-center w-8 h-8 cursor-pointer select-none",
   BTN_BRAND_TYPE,

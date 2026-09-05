@@ -10,7 +10,7 @@ export const TOAST_BOX_SHADOW =
   `0 0 0 2px rgba(255, 255, 255, 0.12), 0 4px 24px rgba(${PRIMARY_BRAND_RGB}, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)`;
 
 export const TOAST_SHELL_CLASS =
-  "rounded-xl border border-white/20 bg-[#794ADE] shadow-btn-primary text-[13px] font-medium text-white py-2.5 px-4";
+  "rounded-xl border border-white/20 bg-[#3A6FFF] shadow-btn-primary text-[13px] font-medium text-white py-2.5 px-4";
 
 export const TOAST_INLINE_STYLE = {
   background: PRIMARY_BRAND_HEX,

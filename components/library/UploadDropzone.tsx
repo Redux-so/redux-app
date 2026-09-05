@@ -4,6 +4,7 @@ import { useRef } from "react";
 
 import { Icon } from "@/components/shared/Icon";
 import { useImageUpload } from "@/hooks/useImageUpload";
+import { BRAND_BG_CLASS } from "@/lib/brand-colors";
 import { EMPTY_STATE_ICON_CLASS } from "@/lib/surface-colors";
 
 interface UploadDropzoneProps {
@@ -51,7 +52,7 @@ export default function UploadDropzone({ onUploadComplete }: UploadDropzoneProps
             </p>
             <div className="mt-1 h-[2px] w-full max-w-[280px] overflow-hidden rounded-full bg-white/[0.08]">
               <div
-                className="h-full rounded-full bg-[#794ADE] transition-all duration-150"
+                className={`h-full rounded-full ${BRAND_BG_CLASS} transition-all duration-150`}
                 style={{ width: isProcessing ? "100%" : `${progress}%` }}
               />
             </div>

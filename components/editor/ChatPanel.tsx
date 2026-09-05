@@ -22,6 +22,7 @@ import {
   CHAT_STATUS_TEXT_CLASS,
 } from "@/constants/chat-panel";
 import { BTN_BRAND_ICON, BTN_PRIMARY_COMPACT } from "@/lib/button-styles";
+import { BRAND_BORDER_CLASS } from "@/lib/brand-colors";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 import { ChatMarkdown } from "@/lib/chat-markdown";
@@ -970,7 +971,7 @@ export default function ChatPanel({
             )}
 
             <div
-              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? "border-[#794ADE]" : "border-[#262626]"} ${CHAT_SURFACE_SHADOW}`}
+              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#262626]"} ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">

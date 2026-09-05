@@ -6,6 +6,12 @@ import { Icon } from "@/components/shared/Icon";
 import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { BTN_MODAL_SOLID } from "@/lib/button-styles";
+import {
+  BRAND_BG_CLASS,
+  BRAND_LINK_TEXT_CLASS,
+  PRIMARY_BRAND_HEX,
+  PRIMARY_BRAND_RGB,
+} from "@/lib/brand-colors";
 import { AnimatePresence, motion } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -32,8 +38,7 @@ function isBestValueBundle(bundle: Bundle): boolean {
   return bundle.name === "Advanced";
 }
 
-const BEST_VALUE_BORDER_CLASS =
-  "border-2 border-[#794ADE] shadow-[0_7px_16px_rgba(121,74,222,0.1),0_13px_30px_rgba(121,74,222,0.05)]";
+const BEST_VALUE_BORDER_CLASS = `border-2 border-[${PRIMARY_BRAND_HEX}] shadow-[0_7px_16px_rgba(${PRIMARY_BRAND_RGB},0.1),0_13px_30px_rgba(${PRIMARY_BRAND_RGB},0.05)]`;
 
 export default function CreditShopModal({ open, onClose }: CreditShopModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -156,27 +161,27 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         {bestValue && (
                           <div
                             aria-hidden
-                            className="pointer-events-none absolute left-5 right-5 top-[62%] -bottom-2 rounded-[999px] bg-[#794ADE]/11 blur-[11px]"
+                            className={`pointer-events-none absolute left-5 right-5 top-[62%] -bottom-2 rounded-[999px] bg-[${PRIMARY_BRAND_HEX}]/11 blur-[11px]`}
                           />
                         )}
                         <div
                         className={`flex items-center justify-between rounded-xl px-4 py-3.5 border bg-[#161616] ${
                           bestValue ? `relative z-[1] ${BEST_VALUE_BORDER_CLASS}` : bundle.popular
-                            ? "border-[#794ADE]/40"
+                            ? `border-[${PRIMARY_BRAND_HEX}]/40`
                             : "border-[#212121]"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
-                            bundle.popular ? "border-[#794ADE]/40 bg-[#794ADE]/[0.12]" : "border-[#262626] bg-[#1d1d1d]"
+                            bundle.popular ? `border-[${PRIMARY_BRAND_HEX}]/40 bg-[${PRIMARY_BRAND_HEX}]/[0.12]` : "border-[#262626] bg-[#1d1d1d]"
                           }`}>
-                            <Icon name="Coins01" size={16} className={bundle.popular ? "text-[#A688F0]" : "text-white"} aria-hidden />
+                            <Icon name="Coins01" size={16} className={bundle.popular ? BRAND_LINK_TEXT_CLASS : "text-white"} aria-hidden />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="text-white text-[13px] font-medium">{bundle.name}</p>
                               {bundle.popular && (
-                                <span className="rounded-full px-2 py-0.5 text-[11px] font-medium bg-[#794ADE]/20 text-[#A688F0]">
+                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium bg-[${PRIMARY_BRAND_HEX}]/20 ${BRAND_LINK_TEXT_CLASS}`}>
                                   Popular
                                 </span>
                               )}
@@ -188,7 +193,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           {bestValue && (
-                            <span className="rounded-full bg-[#794ADE] px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">
+                            <span className={`rounded-full ${BRAND_BG_CLASS} px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap`}>
                               Best Value
                             </span>
                           )}

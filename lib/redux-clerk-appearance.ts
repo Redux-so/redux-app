@@ -2,6 +2,7 @@ import { dark } from "@clerk/themes";
 
 import {
   PRIMARY_BRAND_HEX,
+  PRIMARY_BRAND_HOVER_HEX,
 } from "@/lib/brand-colors";
 import { GEIST_SANS_FONT_FAMILY } from "@/lib/fonts";
 import {
@@ -11,13 +12,13 @@ import {
 } from "@/lib/surface-colors";
 
 const clerkPrimaryBtn =
-  "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#794ADE] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9168eb] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active";
+  `!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[${PRIMARY_BRAND_HEX}] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[${PRIMARY_BRAND_HOVER_HEX}] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active`;
 
 const clerkPrimaryBtnCompact =
-  "!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[#794ADE] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[#9168eb] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active";
+  `!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[${PRIMARY_BRAND_HEX}] !px-5 !text-[13px] !font-medium !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[${PRIMARY_BRAND_HOVER_HEX}] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active`;
 
 const clerkBrandLink =
-  "!text-[#794ADE] hover:!text-[#9168eb]";
+  `!text-[${PRIMARY_BRAND_HEX}] hover:!text-[${PRIMARY_BRAND_HOVER_HEX}]`;
 
 /** Shared Clerk variables — aligned with Redux dark UI and lib/button-styles CTAs. */
 export const reduxClerkVariables = {
@@ -138,7 +139,7 @@ export const reduxAuthAppearance = {
     footerAction: "!w-full !overflow-visible",
     footerActionText: "!text-[14px] !text-[#888888]",
     footerActionLink:
-      "!text-[14px] !font-medium !text-[#794ADE] hover:!text-[#9168eb]",
+      `!text-[14px] !font-medium !text-[${PRIMARY_BRAND_HEX}] hover:!text-[${PRIMARY_BRAND_HOVER_HEX}]`,
     footerPages: "!text-[#888888]",
     footerPagesLink: clerkBrandLink,
     alternativeMethodsBlockButton:

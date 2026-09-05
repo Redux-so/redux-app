@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { useReducedMotion } from "framer-motion";
 import { CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
+import { BRAND_LINK_TEXT_CLASS, BRAND_LINK_TEXT_HOVER_CLASS } from "@/lib/brand-colors";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
 import {
   deriveUsageRingState,
@@ -272,7 +273,7 @@ export default function UsageRing({
               <button
                 type="button"
                 onClick={handlePurchaseAction}
-                className="mt-1.5 block text-[12px] font-medium text-[#A688F0] hover:text-[#BBA0F5] transition-colors cursor-pointer"
+                className={`mt-1.5 block text-[12px] font-medium ${BRAND_LINK_TEXT_CLASS} ${BRAND_LINK_TEXT_HOVER_CLASS} transition-colors cursor-pointer`}
               >
                 {view.purchaseActionLabel}
               </button>
