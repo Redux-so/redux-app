@@ -4,7 +4,7 @@ import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 const BTN_GHOST =
-  "h-9 px-4 text-[14px] text-[#888888] border border-[#2e2e2e] rounded-md hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed";
+  "h-9 px-4 text-[14px] text-[#888888] border border-[#282828] rounded-md hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -31,9 +31,9 @@ export default function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70">
-      <div className="w-[360px] bg-[#121212] border border-[#2e2e2e] rounded-xl shadow-2xl p-6 flex flex-col gap-4">
+      <div className="w-[360px] bg-[#121212] border border-[#282828] rounded-xl shadow-2xl p-6 flex flex-col gap-4">
         <div className="flex items-start gap-3">
-          <div className="shrink-0 w-[30px] h-[30px] rounded-md bg-[#1d1d1d] border border-[#2e2e2e] flex items-center justify-center">
+          <div className="shrink-0 w-[30px] h-[30px] rounded-md bg-[#1d1d1d] border border-[#282828] flex items-center justify-center">
             <Icon name="AlertTriangle" size={16} className="text-[#ef4444]" aria-hidden />
           </div>
           <div>

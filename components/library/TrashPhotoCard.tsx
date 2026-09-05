@@ -86,7 +86,7 @@ export default function TrashPhotoCard({
             onClick={handleRestore}
             disabled={isRestoring}
             aria-label={isRestoring ? "Restoring photo" : "Restore photo"}
-            className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-white/[0.15] bg-white/[0.12] text-white hover:bg-white/[0.2] disabled:cursor-not-allowed disabled:opacity-50 @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-1.5 @[11rem]:px-3`}
+            className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-white/[0.12] bg-white/[0.12] text-white hover:bg-white/[0.2] disabled:cursor-not-allowed disabled:opacity-50 @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-1.5 @[11rem]:px-3`}
           >
             <Icon name="FlipBackward" size={16} className="shrink-0" aria-hidden />
             <span className="hidden text-[13px] font-medium @[11rem]:inline">

@@ -35,7 +35,7 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
         className="h-[40px] w-[40px] shrink-0 rounded-full object-cover"
       />
     ) : (
-      <div className="h-[40px] w-[40px] shrink-0 rounded-full bg-[#1d1d1d] border border-[#2e2e2e]" />
+      <div className="h-[40px] w-[40px] shrink-0 rounded-full bg-[#1d1d1d] border border-[#282828]" />
     );
 
     if (variant === "compact") {
@@ -50,7 +50,7 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
           className={[
             "flex shrink-0 items-center justify-center h-12 w-12 rounded-xl border transition-colors cursor-pointer",
             open
-              ? "bg-[#1d1d1d] !border-[#2e2e2e] text-white"
+              ? "bg-[#1d1d1d] !border-[#282828] text-white"
               : "text-white/40 border-[#121212] hover:bg-[#1d1d1d] hover:text-white",
           ].join(" ")}
         >

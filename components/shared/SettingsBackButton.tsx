@@ -40,7 +40,7 @@ export default function SettingsBackButton() {
       {navigating ? (
         <LoadingSpinner size="xs" label={label} />
       ) : (
-        <Icon name="ChevronLeft" size={28} aria-hidden />
+        <Icon name="ChevronLeft" size={24} aria-hidden />
       )}
     </button>
   );

@@ -91,7 +91,7 @@ export default function PhotoCardAlbumMenu({
           setOpen((prev) => !prev);
         }}
         className={[
-          "pointer-events-auto flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.12] bg-black/40 text-[#888888] backdrop-blur-sm transition-all cursor-pointer",
+          "pointer-events-auto flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.10] bg-black/40 text-[#888888] backdrop-blur-sm transition-all cursor-pointer",
           open
             ? "opacity-100 text-white"
             : "opacity-0 hover:text-white group-hover:opacity-100",
@@ -108,7 +108,7 @@ export default function PhotoCardAlbumMenu({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute left-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-[#2e2e2e] bg-[#121212] p-2 shadow-2xl"
+            className="absolute left-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-[#282828] bg-[#121212] p-2 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#888888]">
@@ -147,11 +147,11 @@ export default function PhotoCardAlbumMenu({
                             "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
                             isMember
                               ? "border-[#794ADE] bg-[#794ADE] text-white"
-                              : "border-[#3a3a3a] bg-[#1d1d1d] text-transparent",
+                              : "border-[#333333] bg-[#1d1d1d] text-transparent",
                           ].join(" ")}
                           aria-hidden
                         >
-                          <Icon name="Check" size={12} strokeWidth={2.5} aria-hidden />
+                          <Icon name="Check" size={16} strokeWidth={2.5} aria-hidden />
                         </span>
                         <Icon
                           name="Folder"

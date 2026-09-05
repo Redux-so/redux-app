@@ -43,28 +43,28 @@ const reduxModalButtonPrimary =
 const reduxFormElements = {
   formFieldLabel: "!text-[13px] !font-medium !text-[#888888]",
   formFieldInput:
-    "!h-11 !rounded-lg !border !border-solid !border-[#2e2e2e] !bg-[#1d1d1d] !text-[14px] !text-white placeholder:!text-[#555555] focus:!border-[#3a3a3a]",
+    "!h-11 !rounded-lg !border !border-solid !border-[#282828] !bg-[#1d1d1d] !text-[14px] !text-white placeholder:!text-[#555555] focus:!border-[#333333]",
   formFieldInputShowPasswordButton: "!text-[#888888] hover:!text-white",
   formButtonPrimary: clerkPrimaryBtn,
   formFieldAction: clerkBrandLink,
   formFieldErrorText: "!text-red-400",
   formResendCodeLink: clerkBrandLink,
   otpCodeFieldInput:
-    "!rounded-lg !border-[#2e2e2e] !bg-[#1d1d1d] !text-white",
+    "!rounded-lg !border-[#282828] !bg-[#1d1d1d] !text-white",
 } as const;
 
 /** UserProfile modal (Edit Profile / Security) — rendered in a body portal by openUserProfile(). */
 const reduxUserProfileElements = {
   modalBackdrop: "!bg-black/70",
   modalContent:
-    "!rounded-xl !border !border-[#2e2e2e] !bg-[#121212] !shadow-2xl",
+    "!rounded-xl !border !border-[#282828] !bg-[#121212] !shadow-2xl",
   rootBox: "!bg-[#121212]",
   cardBox: "!shadow-none",
-  card: "!rounded-xl !border !border-[#2e2e2e] !bg-[#121212] !shadow-none",
-  navbar: "!border-r !border-[#2e2e2e] !bg-[#121212]",
+  card: "!rounded-xl !border !border-[#282828] !bg-[#121212] !shadow-none",
+  navbar: "!border-r !border-[#282828] !bg-[#121212]",
   navbarButtons: "!bg-[#121212]",
   navbarButton:
-    "!text-[#888888] hover:!bg-[#1d1d1d] hover:!text-white data-[active=true]:!bg-[#1d1d1d] data-[active=true]:!border-[#2e2e2e] data-[active=true]:!text-white",
+    "!text-[#888888] hover:!bg-[#1d1d1d] hover:!text-white data-[active=true]:!bg-[#1d1d1d] data-[active=true]:!border-[#282828] data-[active=true]:!text-white",
   navbarButtonIcon: "!text-[#888888]",
   pageScrollBox: "!bg-[#121212]",
   page: "!bg-[#121212]",
@@ -79,10 +79,10 @@ const reduxUserProfileElements = {
   userAvatarBox: "!rounded-full",
   userPreviewAvatarBox: "!rounded-full",
   userPreviewAvatarImage: "!rounded-full",
-  badge: "!border !border-[#2e2e2e] !bg-[#1d1d1d] !text-[#888888]",
+  badge: "!border !border-[#282828] !bg-[#1d1d1d] !text-[#888888]",
   accordionTriggerButton: "!text-white hover:!bg-[#1d1d1d]",
   menuButton: "!text-[#888888] hover:!bg-[#1d1d1d] hover:!text-white",
-  menuList: "!rounded-md !border !border-[#2e2e2e] !bg-[#121212]",
+  menuList: "!rounded-md !border !border-[#282828] !bg-[#121212]",
   menuItem: "!text-[#cccccc] hover:!bg-[#1d1d1d]",
   alertText: "!text-[#888888]",
   footer: "!bg-transparent",
@@ -179,7 +179,7 @@ export const reduxSignInAppearance = {
     dividerText:
       "!text-[13px] !font-normal !normal-case !tracking-normal !text-[#555555]",
     socialButtonsBlockButton:
-      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-md !border !border-solid !border-[#2e2e2e] !bg-[#1d1d1d] !px-5 !text-white !shadow-none hover:!border-[#3a3a3a]",
+      "!box-border !flex !h-12 !w-full !min-w-0 !items-center !justify-center !gap-2.5 !rounded-md !border !border-solid !border-[#282828] !bg-[#1d1d1d] !px-5 !text-white !shadow-none hover:!border-[#333333]",
     formButtonPrimary: clerkPrimaryBtnCompact,
   },
 };

@@ -115,9 +115,9 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
             transition={{ duration: 0.18, ease: "easeOut" }}
             className="fixed inset-0 z-[90] flex items-center justify-center pointer-events-none"
           >
-            <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#121212] border border-[#2e2e2e] rounded-xl shadow-2xl">
+            <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#121212] border border-[#282828] rounded-xl shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-4">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
                 <div>
                   <h2 className="text-white text-[16px] font-medium">Purchase Credits</h2>
                   <p className="text-[#888888] text-[12px] mt-[2px]">
@@ -163,12 +163,12 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                         className={`flex items-center justify-between rounded-xl px-4 py-3.5 border bg-[#161616] ${
                           bestValue ? `relative z-[1] ${BEST_VALUE_BORDER_CLASS}` : bundle.popular
                             ? "border-[#794ADE]/40"
-                            : "border-[#2e2e2e]"
+                            : "border-[#282828]"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
-                            bundle.popular ? "border-[#794ADE]/40 bg-[#794ADE]/[0.12]" : "border-[#2e2e2e] bg-[#1d1d1d]"
+                            bundle.popular ? "border-[#794ADE]/40 bg-[#794ADE]/[0.12]" : "border-[#282828] bg-[#1d1d1d]"
                           }`}>
                             <Icon name="Coins01" size={16} className={bundle.popular ? "text-[#A688F0]" : "text-white"} aria-hidden />
                           </div>
@@ -212,7 +212,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
               </div>
 
               {/* Footer */}
-              <div className="border-t border-white/[0.08] px-6 py-3.5">
+              <div className="border-t border-white/[0.06] px-6 py-3.5">
                 <p className="text-[#555555] text-[12px] text-center">
                   Secure checkout powered by Stripe · Credits never expire
                 </p>

@@ -133,7 +133,7 @@ export default function PhotoCard({
           "pointer-events-auto absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-sm transition-all",
           isFavorite
             ? "border-[#ef4444]/30 bg-black/50 text-[#ef4444] opacity-100"
-            : "border-white/[0.12] bg-black/40 text-[#888888] opacity-0 hover:text-white group-hover:opacity-100",
+            : "border-white/[0.10] bg-black/40 text-[#888888] opacity-0 hover:text-white group-hover:opacity-100",
           isTogglingFavorite ? "cursor-wait opacity-70" : "cursor-pointer",
         ].join(" ")}
       >
@@ -150,7 +150,7 @@ export default function PhotoCard({
           type="button"
           onClick={handleEdit}
           aria-label="Edit photo"
-          className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-white/[0.15] bg-white/[0.12] hover:bg-white/[0.2] @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-2 @[11rem]:px-4`}
+          className={`${OVERLAY_ACTION} h-8 w-8 gap-0 border-white/[0.12] bg-white/[0.12] hover:bg-white/[0.2] @[11rem]:h-9 @[11rem]:w-auto @[11rem]:gap-2 @[11rem]:px-4`}
         >
           <Icon name="Edit01" size={16} aria-hidden />
           <span className="hidden text-[13px] font-medium text-white @[11rem]:inline">

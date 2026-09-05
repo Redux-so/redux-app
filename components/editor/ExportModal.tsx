@@ -151,7 +151,7 @@ export default function ExportModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="mx-4 w-full max-w-[480px] rounded-xl border border-[#2e2e2e] bg-[#121212] p-6 shadow-2xl"
+        className="mx-4 w-full max-w-[480px] rounded-xl border border-[#282828] bg-[#121212] p-6 shadow-2xl"
       >
         {/* Header — same typography as Upload modal */}
         <div className="mb-5 flex items-center justify-between">
@@ -169,7 +169,7 @@ export default function ExportModal({
         </div>
 
         {/* Body inset — echoes upload “card” zones */}
-        <div className="flex flex-col gap-4 rounded-xl border border-[#2e2e2e] bg-[#1d1d1d] p-4">
+        <div className="flex flex-col gap-4 rounded-xl border border-[#282828] bg-[#1d1d1d] p-4">
           <div className="flex flex-col gap-2">
             <span className="text-[12px] font-semibold text-[#888888]">
               Format

@@ -9,14 +9,14 @@ import { AUTH_PRIMARY_BTN_CLASS } from "@/lib/brand-colors";
 const AFTER_AUTH = "/library";
 
 const AUTH_INPUT =
-  "h-10 w-full rounded-lg border border-solid border-[#2e2e2e] bg-[#1d1d1d] px-3 text-[13px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-[#3a3a3a] disabled:opacity-50 disabled:cursor-not-allowed";
+  "h-10 w-full rounded-lg border border-solid border-[#282828] bg-[#1d1d1d] px-3 text-[13px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-[#333333] disabled:opacity-50 disabled:cursor-not-allowed";
 
 const AUTH_LABEL = "text-[13px] font-medium text-white";
 
 const AUTH_PRIMARY_BTN = AUTH_PRIMARY_BTN_CLASS;
 
 const AUTH_GOOGLE_BTN =
-  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-solid border-[#2e2e2e] bg-[#1d1d1d] px-4 text-[13px] font-medium leading-none text-white transition-colors hover:bg-white/[0.05] hover:border-[#3a3a3a] disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-solid border-[#282828] bg-[#1d1d1d] px-4 text-[13px] font-medium leading-none text-white transition-colors hover:bg-white/[0.05] hover:border-[#333333] disabled:opacity-40 disabled:cursor-not-allowed";
 
 const AUTH_SECONDARY_LINK =
   "text-[13px] font-medium text-white underline underline-offset-2 hover:text-white/80 transition-colors";

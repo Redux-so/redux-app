@@ -84,7 +84,7 @@ export function HistoryVersionList({
         versions.map((version, idx) => (
           <div
             key={version.id}
-            className="group flex items-center justify-between border-b border-[#2e2e2e] px-6 py-3.5 transition-colors hover:bg-[#1d1d1d]"
+            className="group flex items-center justify-between border-b border-[#282828] px-6 py-3.5 transition-colors hover:bg-[#1d1d1d]"
           >
             <div className="flex min-w-0 flex-col gap-[2px]">
               <span className="text-[14px] text-[#e5e5e5]">
@@ -100,7 +100,7 @@ export function HistoryVersionList({
               disabled={restoringId === version.id}
               className={
                 restoringId === version.id
-                  ? "ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-white/[0.05] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
+                  ? "ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-white/[0.04] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
                   : `ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md text-white/80 ${SURFACE_SECONDARY_BTN}`
               }
             >
