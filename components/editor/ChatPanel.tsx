@@ -20,6 +20,7 @@ import {
   CHAT_PANEL_COLLAPSED_WIDTH_PX,
   CHAT_PANEL_WIDTH_PX,
   CHAT_STATUS_TEXT_CLASS,
+  CHAT_STATUS_TEXT_COLOR_CLASS,
 } from "@/constants/chat-panel";
 import { BTN_BRAND_ICON, BTN_PRIMARY_COMPACT } from "@/lib/button-styles";
 import { BRAND_BORDER_CLASS } from "@/lib/brand-colors";
@@ -829,39 +830,59 @@ export default function ChatPanel({
                     role={msg.role}
                     imageUrl={msg.role === "user" ? user?.imageUrl : undefined}
                   />
-                  {isAssistantLoading ? (
-                    <ShimmerText
-                      label={CHAT_ASSISTANT_LOADING_LABEL}
-                      className={`self-center ${CHAT_STATUS_TEXT_CLASS}`}
-                    />
-                  ) : (
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    {msg.imagePreview && (
-                      <div>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={msg.imagePreview}
-                          alt="Attached reference"
-                          className="max-h-[100px] rounded-lg object-cover border border-[#262626]"
-                          style={{ maxWidth: CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX }}
-                        />
-                      </div>
-                    )}
-                    <div
-                      className={`min-w-0 whitespace-pre-wrap break-words ${
-                        msg.role === "user"
-                          ? "text-[14px] font-normal leading-snug text-white"
-                          : "leading-relaxed rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] text-[#e5e5e5]"
-                      }`}
-                    >
-                      {msg.role === "assistant" ? (
-                        <ChatMarkdown content={msg.content} />
+                  <div className="relative flex min-w-0 flex-1 flex-col gap-1">
+                    <AnimatePresence mode="wait" initial={false}>
+                      {isAssistantLoading ? (
+                        <motion.div
+                          key={`${msg.id}-loading`}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: messageDuration }}
+                          className="flex items-center py-2.5"
+                        >
+                          <ShimmerText
+                            label={CHAT_ASSISTANT_LOADING_LABEL}
+                            className={`${CHAT_STATUS_TEXT_CLASS} ${CHAT_STATUS_TEXT_COLOR_CLASS}`}
+                          />
+                        </motion.div>
                       ) : (
-                        msg.content
+                        <motion.div
+                          key={`${msg.id}-content`}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: messageDuration }}
+                          className="flex min-w-0 flex-1 flex-col gap-1"
+                        >
+                          {msg.imagePreview && (
+                            <div>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={msg.imagePreview}
+                                alt="Attached reference"
+                                className="max-h-[100px] rounded-lg object-cover border border-[#262626]"
+                                style={{ maxWidth: CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX }}
+                              />
+                            </div>
+                          )}
+                          <div
+                            className={`min-w-0 whitespace-pre-wrap break-words ${
+                              msg.role === "user"
+                                ? "text-[14px] font-normal leading-snug text-white"
+                                : "leading-relaxed rounded-lg px-3 py-2.5 text-[14px] bg-[#1d1d1d] text-[#e5e5e5]"
+                            }`}
+                          >
+                            {msg.role === "assistant" ? (
+                              <ChatMarkdown content={msg.content} />
+                            ) : (
+                              msg.content
+                            )}
+                          </div>
+                        </motion.div>
                       )}
-                    </div>
+                    </AnimatePresence>
                   </div>
-                  )}
                 </div>
               </motion.div>
               );

@@ -5,19 +5,30 @@ interface ShimmerTextProps {
 }
 
 /**
- * Inline status label with a CSS shimmer sweep (background-clip text).
- * Respects prefers-reduced-motion via `.shimmer-text` in globals.css.
- * Do not pass Tailwind `text-*` color utilities — they break the gradient fill.
+ * Inline status label with a sweeping highlight overlay.
+ * Base text stays solid #888888; shimmer is a clipped gradient layer on top.
+ * Respects prefers-reduced-motion via `.shimmer-text-highlight` in globals.css.
  */
 export function ShimmerText({ label, className = "" }: ShimmerTextProps) {
+  const typography = className.trim();
+
   return (
     <span
       role="status"
       aria-live="polite"
       aria-label={label}
-      className={["shimmer-text inline-block select-none", className].join(" ")}
+      className={[
+        "shimmer-text relative inline-block select-none text-[#888888]",
+        typography,
+      ].join(" ")}
     >
       {label}
+      <span
+        aria-hidden
+        className={["shimmer-text-highlight absolute inset-0", typography].join(" ")}
+      >
+        {label}
+      </span>
     </span>
   );
 }

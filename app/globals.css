@@ -302,7 +302,7 @@ body {
   );
 }
 
-/* ShimmerText — sweeping highlight on status labels (chat loading, etc.) */
+/* ShimmerText — base label + sweeping highlight overlay (chat loading, etc.) */
 @keyframes shimmer-text {
   0% {
     background-position: 200% center;
@@ -313,29 +313,31 @@ body {
 }
 
 .shimmer-text {
-  color: transparent !important;
+  color: #888888;
+}
+
+.shimmer-text-highlight {
+  color: transparent;
   background-color: transparent;
   background-image: linear-gradient(
     90deg,
-    #6a6a6a 0%,
-    #6a6a6a 32%,
+    transparent 0%,
+    transparent 32%,
     #ededed 50%,
-    #6a6a6a 68%,
-    #6a6a6a 100%
+    transparent 68%,
+    transparent 100%
   );
   background-size: 300% 100%;
   background-repeat: no-repeat;
   background-clip: text;
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent !important;
+  -webkit-text-fill-color: transparent;
   animation: shimmer-text 2s linear infinite;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .shimmer-text {
-    animation: none;
-    background-image: none;
-    color: #888888 !important;
-    -webkit-text-fill-color: #888888 !important;
+  .shimmer-text-highlight {
+    display: none;
   }
 }
