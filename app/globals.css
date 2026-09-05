@@ -8,6 +8,7 @@
   --accent-glow: #794ade;
   --accent-glow-rgb: 121, 74, 222;
   --accent-glow-heading-opacity: 0.32;
+  --accent-glow-dropzone-opacity: 0.17;
   --brand-primary: #794ADE;
   --brand-primary-hover: #9168eb;
   --brand-link: #A688F0;
@@ -256,6 +257,49 @@ body {
   );
   filter: blur(48px);
   pointer-events: none;
+}
+
+/* Library upload dropzone — bottom-left interior glow only (contained inside border) */
+.accent-glow-dropzone-left {
+  position: relative;
+  overflow: hidden;
+}
+
+.accent-glow-dropzone-left::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 115% 120% at 0% 100%,
+    rgba(var(--accent-glow-rgb), var(--accent-glow-dropzone-opacity)) 0%,
+    rgba(
+        var(--accent-glow-rgb),
+        calc(var(--accent-glow-dropzone-opacity) * 0.4)
+      )
+      38%,
+    transparent 68%
+  );
+  transition: opacity 0.2s ease;
+}
+
+.accent-glow-dropzone-left:hover::before {
+  background: radial-gradient(
+    ellipse 118% 125% at 0% 100%,
+    rgba(
+        var(--accent-glow-rgb),
+        calc(var(--accent-glow-dropzone-opacity) * 1.15)
+      )
+      0%,
+    rgba(
+        var(--accent-glow-rgb),
+        calc(var(--accent-glow-dropzone-opacity) * 0.48)
+      )
+      40%,
+    transparent 70%
+  );
 }
 
 /* ShimmerText — sweeping highlight on status labels (chat loading, etc.) */
