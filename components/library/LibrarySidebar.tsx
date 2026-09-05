@@ -218,7 +218,7 @@ export default function LibrarySidebar({
           </a>
         </nav>
 
-        <div className="shrink-0 px-4 py-4 border-t border-[#282828]">
+        <div className="shrink-0 px-4 py-4 border-t border-[#262626]">
           <ProfileMenu
             variant="full"
             className="w-full"

@@ -73,7 +73,7 @@ export default function Toolbar({
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
   return (
-    <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-[#282828] bg-[#121212] pl-3 pr-3">
+    <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-[#262626] bg-[#121212] pl-3 pr-3">
       {/* Left — back to library */}
       <div className="flex min-w-0 shrink-0 items-center justify-self-start gap-3">
         <BackToLibraryButton />

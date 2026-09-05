@@ -37,11 +37,11 @@ const OPTION_LABEL =
 
 const CHOICE_BOX =
   "flex h-3.5 w-3.5 shrink-0 items-center justify-center border transition-colors";
-const CHOICE_IDLE = "border-[#333333] bg-[#1d1d1d]";
+const CHOICE_IDLE = "border-[#2e2e2e] bg-[#1d1d1d]";
 const CHOICE_SELECTED = LIBRARY_CHOICE_SELECTED_CLASS;
 
 function Divider() {
-  return <div className="my-3 border-t border-white/[0.06]" />;
+  return <div className="my-3 border-t border-[#262626]" />;
 }
 
 function RadioOption({

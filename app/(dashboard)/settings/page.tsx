@@ -68,9 +68,9 @@ function formatFeature(feature: string | null): string {
 
 const SECTION_LABEL = "text-[12px] font-semibold text-[#888888]";
 const SETTING_ROW =
-  "flex items-center justify-between py-3.5 border-b border-[#282828] last:border-0";
+  "flex items-center justify-between py-3.5 border-b border-[#262626] last:border-0";
 const BTN_GHOST =
-  "h-9 px-4 text-[14px] text-[#888888] border border-[#282828] rounded-md hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
+  "h-9 px-4 text-[14px] text-[#888888] border border-[#262626] rounded-md hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer whitespace-nowrap";
 
 const NAV_ITEM_BASE = [
   "shrink-0 rounded-lg px-3 py-2 text-left text-[14px] font-medium outline-none focus-visible:ring-1 focus-visible:ring-white/20",
@@ -93,8 +93,8 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-[#121212] border border-[#282828] rounded-xl overflow-hidden">
-      <div className="px-6 py-4 border-b border-[#282828]">
+    <div className="bg-[#121212] border border-[#262626] rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[#262626]">
         <span className={SECTION_LABEL}>{label}</span>
       </div>
       <div className="px-6 pb-6">{children}</div>
@@ -140,10 +140,10 @@ function TransactionTable({ transactions }: { transactions: Transaction[] }) {
   const bodyCell = "px-4 py-3 align-middle";
 
   return (
-    <div className="border border-[#282828] rounded-xl overflow-hidden">
+    <div className="border border-[#262626] rounded-xl overflow-hidden">
       <table className="w-full table-fixed border-collapse">
         <thead>
-          <tr className="bg-[#161616] border-b border-[#282828]">
+          <tr className="bg-[#161616] border-b border-[#212121]">
             <th scope="col" className={`${headCell} w-[24%]`}>
               Date
             </th>
@@ -162,7 +162,7 @@ function TransactionTable({ transactions }: { transactions: Transaction[] }) {
           {transactions.map((tx) => (
             <tr
               key={tx.id}
-              className="border-b border-[#282828] last:border-0 hover:bg-[#161616] transition-colors"
+              className="border-b border-[#262626] last:border-0 hover:bg-[#161616] transition-colors"
             >
               <td
                 className={`${bodyCell} text-[14px] text-[#888888] whitespace-nowrap`}
@@ -313,7 +313,7 @@ export default function SettingsPage() {
       case "profile":
         return (
           <Section label="Account & Profile">
-            <div className="flex items-center gap-4 py-5 border-b border-[#282828]">
+            <div className="flex items-center gap-4 py-5 border-b border-[#262626]">
               {!userLoaded ? (
                 <Skeleton className="w-[60px] h-[60px] rounded-full shrink-0" />
               ) : user?.imageUrl ? (
@@ -325,7 +325,7 @@ export default function SettingsPage() {
                   className="rounded-full object-cover shrink-0"
                 />
               ) : (
-                <div className="w-[60px] h-[60px] rounded-full bg-[#1f1f1f] border border-[#282828] shrink-0" />
+                <div className="w-[60px] h-[60px] rounded-full bg-[#1f1f1f] border border-[#262626] shrink-0" />
               )}
               <div className="flex flex-col gap-[2px] min-w-0">
                 {!userLoaded ? (
@@ -376,7 +376,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowDeleteAccount(true)}
-                className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#282828] rounded-md hover:bg-[#1d1d1d] transition-colors cursor-pointer whitespace-nowrap"
+                className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#262626] rounded-md hover:bg-[#1d1d1d] transition-colors cursor-pointer whitespace-nowrap"
               >
                 Delete Account
               </button>
@@ -387,10 +387,10 @@ export default function SettingsPage() {
       case "billing":
         return (
           <Section label="Credits & Billing">
-            <div className="py-5 border-b border-[#282828]">
-              <div className="flex flex-wrap items-center justify-between gap-4 bg-[#161616] border border-[#282828] rounded-xl px-5 py-4">
+            <div className="py-5 border-b border-[#262626]">
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-[#161616] border border-[#212121] rounded-xl px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-[32px] h-[32px] rounded-md bg-[#1d1d1d] border border-[#282828] flex items-center justify-center shrink-0">
+                  <div className="w-[32px] h-[32px] rounded-md bg-[#1d1d1d] border border-[#262626] flex items-center justify-center shrink-0">
                     <Icon name="Coins01" size={16} className="text-white" aria-hidden />
                   </div>
                   <div>
@@ -414,7 +414,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="py-5 border-b border-[#282828]">
+            <div className="py-5 border-b border-[#262626]">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <p className={SECTION_LABEL}>Transaction History</p>
                 {hasMoreTransactions && !showAllTransactions && (
@@ -518,7 +518,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowClearLibrary(true)}
-                className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#282828] rounded-md hover:bg-[#1d1d1d] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
+                className="h-9 px-4 text-[14px] text-[#ef4444] border border-[#262626] rounded-md hover:bg-[#1d1d1d] transition-colors cursor-pointer flex items-center gap-[6px] whitespace-nowrap"
               >
                 <Icon name="Trash04" size={16} aria-hidden />
                 Clear Library
@@ -530,7 +530,7 @@ export default function SettingsPage() {
       case "about":
         return (
           <Section label="About">
-            <div className="py-5 border-b border-[#282828]">
+            <div className="py-5 border-b border-[#262626]">
               <p className="text-white text-[14px] font-medium">Redux</p>
               <p className="text-[#888888] text-[14px] mt-[2px]">Version 1.0.0</p>
               <p className="text-[#888888] text-[14px] mt-2 leading-relaxed">
@@ -574,7 +574,7 @@ export default function SettingsPage() {
   return (
     <>
       <div className="flex flex-col h-screen bg-[#161616] overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-[#282828] bg-[#121212] pl-3 pr-3">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-[#262626] bg-[#121212] pl-3 pr-3">
           <Suspense
             fallback={
               <span
