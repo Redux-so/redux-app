@@ -246,7 +246,7 @@ export default function ExportModal({
                 className="[&>span:first-child]:border-white/25 [&>span:first-child]:border-t-white/85"
               />
             ) : (
-              <Icon name="Download01" size={16} aria-hidden />
+              <Icon name="Download01" size={20} strokeWidth={2} aria-hidden />
             )}
             {pendingAction === "download" ? "Exporting…" : "Download"}
           </button>

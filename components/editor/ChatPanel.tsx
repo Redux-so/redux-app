@@ -1088,7 +1088,7 @@ export default function ChatPanel({
                           : "shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
                       ].join(" ")}
                     >
-                      <Icon name="Send01" size={16} aria-hidden />
+                      <Icon name="Send01" size={20} strokeWidth={2} aria-hidden />
                     </button>
                   )}
                 </div>
