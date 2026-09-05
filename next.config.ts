@@ -8,6 +8,7 @@ import {
 const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["geist"],
   images: {
     remotePatterns: [
       {

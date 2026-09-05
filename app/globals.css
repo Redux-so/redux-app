@@ -21,8 +21,8 @@
   --color-foreground: var(--foreground);
   --color-surface-chrome: var(--surface-chrome);
   --color-accent: var(--accent);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-sans);
 
   --shadow-btn-primary:
     0 1px 2px rgba(0, 0, 0, 0.5),
@@ -43,12 +43,12 @@ body {
   line-height: 1.6;
 }
 
-/* Clerk portaled UI inherits Inter from body; reinforce on root nodes. */
+/* Clerk portaled UI inherits Geist Sans from body; reinforce on root nodes. */
 .cl-rootBox,
 .cl-card,
 .cl-userProfile-root,
 .cl-modalContent {
-  font-family: var(--font-inter), sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
 }
 
 /* Modern dark scrollbars — all scrollable regions (Firefox + WebKit) */

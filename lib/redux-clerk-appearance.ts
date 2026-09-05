@@ -3,7 +3,7 @@ import { dark } from "@clerk/themes";
 import {
   PRIMARY_BRAND_HEX,
 } from "@/lib/brand-colors";
-import { INTER_FONT_FAMILY } from "@/lib/fonts";
+import { GEIST_SANS_FONT_FAMILY } from "@/lib/fonts";
 import {
   SURFACE_BORDER_HEX,
   SURFACE_PANEL_HEX,
@@ -34,7 +34,7 @@ export const reduxClerkVariables = {
   colorTextSecondary: "#888888",
   colorBorder: SURFACE_BORDER_HEX,
   borderRadius: "6px",
-  fontFamily: INTER_FONT_FAMILY,
+  fontFamily: GEIST_SANS_FONT_FAMILY,
 } as const;
 
 const reduxModalButtonPrimary =
