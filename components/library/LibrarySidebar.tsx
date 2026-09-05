@@ -125,6 +125,28 @@ export default function LibrarySidebar({
                 </button>
               );
             })}
+            <button
+              type="button"
+              aria-current={sidebarView.kind === "trash" ? "page" : undefined}
+              onClick={() => onSidebarViewChange({ kind: "trash" })}
+              className={[
+                LIBRARY_SIDEBAR_BTN_ROW,
+                sidebarView.kind === "trash"
+                  ? LIBRARY_SIDEBAR_BTN_ACTIVE
+                  : LIBRARY_SIDEBAR_BTN_IDLE,
+              ].join(" ")}
+            >
+              <Icon
+                name="Trash04"
+                size={16}
+                className={[
+                  "shrink-0",
+                  sidebarView.kind === "trash" ? "text-white" : "text-[#888888]",
+                ].join(" ")}
+                aria-hidden
+              />
+              <span className="min-w-0 truncate">Trash</span>
+            </button>
           </nav>
         </div>
 
@@ -161,31 +183,6 @@ export default function LibrarySidebar({
               </nav>
             )}
           </div>
-
-          <nav aria-label="Trash" className="shrink-0 px-3 pb-2">
-            <button
-              type="button"
-              aria-current={sidebarView.kind === "trash" ? "page" : undefined}
-              onClick={() => onSidebarViewChange({ kind: "trash" })}
-              className={[
-                LIBRARY_SIDEBAR_BTN_ROW,
-                sidebarView.kind === "trash"
-                  ? LIBRARY_SIDEBAR_BTN_ACTIVE
-                  : LIBRARY_SIDEBAR_BTN_IDLE,
-              ].join(" ")}
-            >
-              <Icon
-                name="Trash04"
-                size={16}
-                className={[
-                  "shrink-0",
-                  sidebarView.kind === "trash" ? "text-white" : "text-[#888888]",
-                ].join(" ")}
-                aria-hidden
-              />
-              <span className="min-w-0 truncate">Trash</span>
-            </button>
-          </nav>
         </div>
 
         <nav
