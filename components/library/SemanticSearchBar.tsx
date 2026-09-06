@@ -44,7 +44,7 @@ export default function SemanticSearchBar({
           placeholder="Search by mood, scene, subject… (Enter)"
           disabled={loading}
           enterKeyHint="search"
-          className="w-full h-[30px] bg-[#1d1d1d] border border-[#262626] rounded-sm pl-[28px] pr-3 text-[12px] text-white placeholder:text-[#888888] outline-none focus:border-[#2e2e2e] transition-colors disabled:opacity-50"
+          className="w-full h-[30px] bg-[#1d1d1d] border border-[#212121] rounded-sm pl-[28px] pr-3 text-[12px] text-white placeholder:text-[#888888] outline-none focus:border-[#282828] transition-colors disabled:opacity-50"
         />
         {loading && (
           <LoadingSpinner

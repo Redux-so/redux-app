@@ -95,7 +95,7 @@ export default function FilterDateField({
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="group flex h-9 w-full items-center gap-2 rounded-lg border border-[#262626] bg-[#1d1d1d] px-3 text-left transition-colors hover:border-[#2e2e2e] focus:border-[#2e2e2e] focus:outline-none"
+        className="group flex h-9 w-full items-center gap-2 rounded-lg border border-[#212121] bg-[#1d1d1d] px-3 text-left transition-colors hover:border-[#282828] focus:border-[#282828] focus:outline-none"
       >
         <span
           className={[

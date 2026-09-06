@@ -65,7 +65,7 @@ function ProfileMenuPopoverContent({
         Purchase Credits
       </button>
 
-      <div className="my-1.5 border-t border-[#262626]" />
+      <div className="my-1.5 border-t border-[#212121]" />
 
       <button
         type="button"
@@ -227,7 +227,7 @@ export default function ProfileMenu({
                   width: resolvedPopoverWidth,
                   zIndex: 80,
                 }}
-                className="bg-[#121212] border border-[#262626] rounded-xl shadow-2xl origin-bottom-left"
+                className="bg-[#121212] border border-[#212121] rounded-xl shadow-2xl origin-bottom-left"
               >
                 {popoverContent}
               </motion.div>
@@ -257,7 +257,7 @@ export default function ProfileMenu({
                 exit={{ opacity: 0, scale: 0.95, y: 4 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
                 className={[
-                  "absolute bottom-full mb-2 z-50 bg-[#121212] border border-[#262626] rounded-xl shadow-2xl",
+                  "absolute bottom-full mb-2 z-50 bg-[#121212] border border-[#212121] rounded-xl shadow-2xl",
                   popoverCentered
                     ? "left-1/2 -translate-x-1/2 origin-bottom"
                     : "origin-bottom-left",

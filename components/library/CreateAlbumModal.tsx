@@ -77,7 +77,7 @@ export default function CreateAlbumModal({
           >
             <form
               onSubmit={handleSubmit}
-              className="pointer-events-auto w-full max-w-[300px] rounded-lg border border-[#262626] bg-[#121212] p-4 shadow-2xl"
+              className="pointer-events-auto w-full max-w-[300px] rounded-lg border border-[#212121] bg-[#121212] p-4 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-[14px] font-medium text-white">New album</h2>
@@ -93,7 +93,7 @@ export default function CreateAlbumModal({
                 placeholder="Album name"
                 maxLength={80}
                 disabled={submitting}
-                className="mt-4 h-9 w-full rounded-lg border border-[#262626] bg-[#1d1d1d] px-3 text-[13px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-[#2e2e2e] disabled:opacity-50"
+                className="mt-4 h-9 w-full rounded-lg border border-[#212121] bg-[#1d1d1d] px-3 text-[13px] text-white placeholder:text-[#555555] outline-none transition-colors focus:border-[#282828] disabled:opacity-50"
               />
 
               <div className="mt-4 flex items-center justify-end gap-2">

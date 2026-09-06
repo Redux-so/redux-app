@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import type { ReactNode } from "react";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import { CHAT_PANEL_WIDTH_PX } from "@/constants/chat-panel";
+import { SURFACE_BORDER_MAIN } from "@/lib/surface-colors";
 
 type EditorBoundaryLabel = "canvas" | "chat";
 
@@ -14,9 +15,9 @@ const LABEL_COPY: Record<EditorBoundaryLabel, string> = {
 
 const FALLBACK_SHELL: Record<EditorBoundaryLabel, string> = {
   canvas:
-    "flex flex-1 min-h-0 min-w-0 items-center justify-center border border-white/10 bg-[#161616] p-6",
+    `flex flex-1 min-h-0 min-w-0 items-center justify-center border ${SURFACE_BORDER_MAIN} bg-[#161616] p-6`,
   chat:
-    "flex shrink-0 h-full min-w-0 items-center justify-center border-l border-white/10 bg-[#161616] p-6",
+    `flex shrink-0 h-full min-w-0 items-center justify-center border-l ${SURFACE_BORDER_MAIN} bg-[#161616] p-6`,
 };
 
 interface EditorErrorBoundaryProps {

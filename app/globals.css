@@ -204,17 +204,17 @@ body {
 
 .cl-modalContent,
 .cl-userProfile-root .cl-card {
-  border-color: #262626 !important;
+  border-color: #212121 !important;
 }
 
 .cl-userProfile-root .cl-navbar {
-  border-color: #262626 !important;
+  border-color: #212121 !important;
 }
 
 .cl-userProfile-root .cl-formFieldInput,
 .cl-userProfile-root .cl-otpCodeFieldInput {
   background: #1d1d1d !important;
-  border-color: #262626 !important;
+  border-color: #212121 !important;
   color: #ffffff !important;
 }
 

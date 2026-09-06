@@ -98,7 +98,7 @@ export default function AlbumSidebarRow({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute right-0 top-[calc(100%+4px)] z-30 min-w-[160px] rounded-lg border border-[#262626] bg-[#121212] p-1 shadow-2xl"
+            className="absolute right-0 top-[calc(100%+4px)] z-30 min-w-[160px] rounded-lg border border-[#212121] bg-[#121212] p-1 shadow-2xl"
           >
             <button
               type="button"

@@ -42,7 +42,7 @@ import {
 
 
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#262626] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#2e2e2e] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#212121] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#282828] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
 
 const AVAILABLE_MODELS = [
   { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
@@ -60,14 +60,14 @@ const CHAT_SURFACE_SHADOW =
   "shadow-[0_1px_3px_rgba(0,0,0,0.32),0_2px_8px_rgba(0,0,0,0.14)]";
 const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
-  "rounded-md border border-[#262626] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
+  "rounded-md border border-[#212121] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
 
 const CHAT_PANEL_GUTTER_CLASS = "px-8";
 const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
 const CHAT_AVATAR_PX = 44;
 const CHAT_AVATAR_LOGO_PX = 42;
 const CHAT_AVATAR_SHELL =
-  "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d] border border-[#262626]";
+  "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d] border border-[#212121]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -315,7 +315,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                   aria-disabled="true"
                   className="flex items-center justify-end gap-2 px-3 py-1.5 text-[12px] text-[#555555] opacity-60 cursor-default select-none"
                 >
-                  <span className="shrink-0 rounded-full border border-[#262626] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-[#555555]">
+                  <span className="shrink-0 rounded-full border border-[#212121] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-[#555555]">
                     {COMING_SOON_MODEL_ROW.badge}
                   </span>
                 </div>
@@ -343,7 +343,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
           "shrink-0 items-center gap-0.5 px-1.5 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
-            : "cursor-pointer hover:border-[#2e2e2e]",
+            : "cursor-pointer hover:border-[#282828]",
         ].join(" ")}
       >
         <span className="whitespace-nowrap font-semibold text-[#888888]">
@@ -756,7 +756,7 @@ export default function ChatPanel({
     <div
       className={[
         "flex flex-col shrink-0 h-full min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
-        "bg-[#121212] border-l border-[#262626] rounded-l-2xl",
+        "bg-[#121212] border-l border-[#212121] rounded-l-2xl",
       ].join(" ")}
       style={{
         width: panelCollapsed ? CHAT_PANEL_COLLAPSED_WIDTH_PX : CHAT_PANEL_WIDTH_PX,
@@ -861,7 +861,7 @@ export default function ChatPanel({
                               <img
                                 src={msg.imagePreview}
                                 alt="Attached reference"
-                                className="max-h-[100px] rounded-lg object-cover border border-[#262626]"
+                                className="max-h-[100px] rounded-lg object-cover border border-[#212121]"
                                 style={{ maxWidth: CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX }}
                               />
                             </div>
@@ -892,7 +892,7 @@ export default function ChatPanel({
           {/* Changes indicator bar */}
           {pendingChanges.length > 0 && (
             <div
-              className={`${CHAT_PANEL_GUTTER_MARGIN_CLASS} mb-2 shrink-0 overflow-hidden rounded-md border border-[#262626] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
+              className={`${CHAT_PANEL_GUTTER_MARGIN_CLASS} mb-2 shrink-0 overflow-hidden rounded-md border border-[#212121] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
             >
               <div className="flex items-center gap-2 px-3 py-2 min-w-0">
                 <button
@@ -928,7 +928,7 @@ export default function ChatPanel({
               </div>
 
               {changesExpanded && (
-                <div className="border-t border-[#262626] px-3 py-2 space-y-1.5">
+                <div className="border-t border-[#212121] px-3 py-2 space-y-1.5">
                   {pendingChanges.map((change) => (
                     <div
                       key={change.key}
@@ -951,7 +951,7 @@ export default function ChatPanel({
                   <img
                     src={attachedPreview}
                     alt="Attached"
-                    className="h-[56px] w-auto rounded-lg object-cover border border-[#262626]"
+                    className="h-[56px] w-auto rounded-lg object-cover border border-[#212121]"
                     style={{ maxWidth: CHAT_INPUT_ATTACHMENT_MAX_WIDTH_PX }}
                   />
                   <button
@@ -992,7 +992,7 @@ export default function ChatPanel({
             )}
 
             <div
-              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#262626]"} ${CHAT_SURFACE_SHADOW}`}
+              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#212121]"} ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
@@ -1036,7 +1036,7 @@ export default function ChatPanel({
               </div>
 
               {/* Lower toolbar row */}
-              <div className="flex items-center justify-between gap-2 border-t border-[#262626] px-4 pb-3 pt-3">
+              <div className="flex items-center justify-between gap-2 border-t border-[#212121] px-4 pb-3 pt-3">
                 <div className="flex min-w-0 items-center gap-1.5 shrink-0">
                   <div className={`${TOOLBAR_CHIP} flex ${TOOLBAR_CHIP_H} w-8 items-center justify-center`}>
                     <ToolbarIconBtn
