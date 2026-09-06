@@ -169,7 +169,7 @@ export default function ExportModal({
         </div>
 
         {/* Body inset — echoes upload “card” zones */}
-        <div className="flex flex-col gap-4 rounded-xl border border-[#212121] bg-[#1d1d1d] p-4">
+        <div className="flex flex-col gap-4 rounded-xl border border-[#262626] bg-[#1d1d1d] p-4">
           <div className="flex flex-col gap-2">
             <span className="text-[12px] font-semibold text-[#888888]">
               Format
@@ -246,7 +246,7 @@ export default function ExportModal({
                 className="[&>span:first-child]:border-white/25 [&>span:first-child]:border-t-white/85"
               />
             ) : (
-              <Icon name="Download01" size={20} strokeWidth={2} aria-hidden />
+              <Icon name="Download01" size={16} strokeWidth={2} aria-hidden />
             )}
             {pendingAction === "download" ? "Exporting…" : "Download"}
           </button>

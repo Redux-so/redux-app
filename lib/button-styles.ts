@@ -13,7 +13,7 @@ export const BTN_PRIMARY_TYPE =
 
 /** Brand CTA label + icon weight — white on blue chrome */
 export const BTN_BRAND_TYPE =
-  "text-[14px] font-semibold text-white leading-none [&_svg]:shrink-0 [&_svg]:!size-5 [&_svg]:stroke-[2]";
+  "text-[13px] font-semibold text-white leading-none [&_svg]:shrink-0 [&_svg]:!size-4 [&_svg]:stroke-[2]";
 
 /** Soft white CTA shell — muted vs pure white on dark chrome */
 export const BTN_MODAL_VISUAL =
@@ -88,28 +88,28 @@ export const BTN_FORMAT_SELECTED = [
 
 /** Brand CTA standalone button */
 export const BTN_BRAND_SOLID = [
-  "inline-flex items-center justify-center gap-1.5 h-9 px-4 whitespace-nowrap cursor-pointer select-none",
+  "inline-flex items-center justify-center gap-1.5 h-8 px-3.5 whitespace-nowrap cursor-pointer select-none",
   BTN_BRAND_TYPE,
   BTN_BRAND_VISUAL,
 ].join(" ");
 
 /** Brand CTA panel row button */
 export const BTN_BRAND_PANEL = [
-  "inline-flex flex-1 items-center justify-center gap-1.5 h-[34px] px-4 min-w-0 cursor-pointer select-none",
+  "inline-flex flex-1 items-center justify-center gap-1.5 h-8 px-3.5 min-w-0 cursor-pointer select-none",
   BTN_BRAND_TYPE,
   BTN_BRAND_VISUAL,
 ].join(" ");
 
 /** Brand CTA full-width panel button */
 export const BTN_BRAND_BLOCK = [
-  "inline-flex w-full items-center justify-center gap-1.5 h-[34px] px-4 cursor-pointer select-none",
+  "inline-flex w-full items-center justify-center gap-1.5 h-8 px-3.5 cursor-pointer select-none",
   BTN_BRAND_TYPE,
   BTN_BRAND_VISUAL,
 ].join(" ");
 
 /** Brand CTA compact icon-only (chat send) */
 export const BTN_BRAND_ICON = [
-  "inline-flex shrink-0 items-center justify-center w-8 h-8 cursor-pointer select-none",
+  "inline-flex shrink-0 items-center justify-center w-7 h-7 cursor-pointer select-none",
   BTN_BRAND_TYPE,
   BTN_BRAND_VISUAL,
 ].join(" ");

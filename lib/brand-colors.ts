@@ -37,8 +37,8 @@ export const BTN_BRAND_VISUAL = [
 
 /** Clerk / auth primary button (full class string). */
 export const AUTH_PRIMARY_BTN_CLASS = [
-  "inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-white/20",
-  "bg-[#3A6FFF] text-[14px] font-semibold leading-none text-white shadow-btn-primary",
+  "inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-white/20",
+  "bg-[#3A6FFF] text-[13px] font-semibold leading-none text-white shadow-btn-primary",
   "transition-[background-color,box-shadow] duration-200",
   "hover:bg-[#5285FF] hover:shadow-btn-primary-hover active:shadow-btn-primary-active",
   "disabled:opacity-40 disabled:cursor-not-allowed",

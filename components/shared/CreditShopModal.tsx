@@ -173,7 +173,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                       >
                         <div className="flex items-center gap-3">
                           <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
-                            bundle.popular ? `border-[${PRIMARY_BRAND_HEX}]/40 bg-[${PRIMARY_BRAND_HEX}]/[0.12]` : "border-[#212121] bg-[#1d1d1d]"
+                            bundle.popular ? `border-[${PRIMARY_BRAND_HEX}]/40 bg-[${PRIMARY_BRAND_HEX}]/[0.12]` : "border-[#262626] bg-[#1d1d1d]"
                           }`}>
                             <Icon name="Coins01" size={16} className={bundle.popular ? BRAND_LINK_TEXT_CLASS : "text-white"} aria-hidden />
                           </div>

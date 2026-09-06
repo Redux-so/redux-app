@@ -136,7 +136,7 @@ export default function SearchBar({
       <form
         onSubmit={handleSubmit}
         className={[
-          "relative flex w-full items-center border bg-[#1d1d1d] transition-colors focus-within:border-[#282828]",
+          "relative flex w-full items-center border bg-[#1d1d1d] transition-colors focus-within:border-[#2e2e2e]",
           isLarge
             ? "h-[52px] rounded-xl border-[#212121] pl-12 pr-2"
             : "h-[38px] rounded-lg border-[#212121] pl-9 pr-1.5",

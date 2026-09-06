@@ -148,7 +148,7 @@ export default function PhotoCardAlbumMenu({
                             "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
                             isMember
                               ? `${LIBRARY_CHOICE_SELECTED_CLASS} text-white`
-                              : "border-[#282828] bg-[#1d1d1d] text-transparent",
+                              : "border-[#2e2e2e] bg-[#1d1d1d] text-transparent",
                           ].join(" ")}
                           aria-hidden
                         >

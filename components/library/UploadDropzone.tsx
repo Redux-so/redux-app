@@ -37,7 +37,7 @@ export default function UploadDropzone({ onUploadComplete }: UploadDropzoneProps
           if (!isBusy) inputRef.current?.click();
         }}
         className={[
-          "accent-glow-dropzone-left relative overflow-hidden flex min-h-[128px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed border-[#212121] bg-[#1d1d1d] transition-[border-color,background-color] duration-200",
+          "accent-glow-dropzone-left relative overflow-hidden flex min-h-[128px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed border-[#262626] bg-[#1d1d1d] transition-[border-color,background-color] duration-200",
           isBusy
             ? "pointer-events-none opacity-80"
             : "hover:border-[#282828] hover:bg-white/[0.05]",

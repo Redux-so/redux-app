@@ -155,7 +155,7 @@ export default function Canvas({
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-10">
           <button
             onClick={onCancelCrop}
-            className="h-[34px] px-5 bg-[#1d1d1d] border border-[#212121] rounded-sm text-[13px] text-white hover:border-[#282828] transition-colors cursor-pointer"
+            className="h-[34px] px-5 bg-[#1d1d1d] border border-[#262626] rounded-sm text-[13px] text-white hover:border-[#2e2e2e] transition-colors cursor-pointer"
           >
             Cancel
           </button>

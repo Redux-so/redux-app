@@ -8,14 +8,17 @@ export const SURFACE_RAISED_HEX = "#1d1d1d";
 export const SURFACE_BORDER_ON_MAIN_HEX = "#1c1c1c";
 export const SURFACE_BORDER_ON_MAIN_FOCUS_HEX = "#242424";
 
-/** Default structural borders on panel / raised surfaces (#121212, #1d1d1d). */
+/** Default structural borders on panel surfaces (#121212). */
 export const SURFACE_BORDER_HEX = "#212121";
-/** One small step above default — hover/focus on panel / raised only. */
+/** One small step above default — hover/focus on panel surfaces only. */
 export const SURFACE_BORDER_FOCUS_HEX = "#282828";
 
-/** Per-tier aliases (panel/raised use unified pair; main keeps its own). */
+/** Borders on `#1d1d1d` raised surfaces — slightly brighter than panel tier. */
+export const SURFACE_BORDER_ON_RAISED_HEX = "#262626";
+export const SURFACE_BORDER_ON_RAISED_FOCUS_HEX = "#2e2e2e";
+
+/** Per-tier aliases. */
 export const SURFACE_BORDER_ON_PANEL_HEX = SURFACE_BORDER_HEX;
-export const SURFACE_BORDER_ON_RAISED_HEX = SURFACE_BORDER_FOCUS_HEX;
 
 export const SURFACE_BG_MAIN = "bg-[#161616]";
 export const SURFACE_BG_PANEL = "bg-[#121212]";
@@ -25,10 +28,12 @@ export const SURFACE_BORDER_MAIN = "border-[#1c1c1c]";
 export const SURFACE_BORDER_MAIN_FOCUS = "border-[#242424]";
 export const SURFACE_BORDER = "border-[#212121]";
 export const SURFACE_BORDER_FOCUS = "border-[#282828]";
+export const SURFACE_BORDER_RAISED = "border-[#262626]";
+export const SURFACE_BORDER_RAISED_FOCUS = "border-[#2e2e2e]";
 
 /** Search bars, text fields, dropzones. */
 export const SURFACE_INPUT =
-  "border border-solid border-[#212121] bg-[#1d1d1d] outline-none transition-colors focus:border-[#282828] hover:border-[#282828]";
+  "border border-solid border-[#262626] bg-[#1d1d1d] outline-none transition-colors focus:border-[#2e2e2e] hover:border-[#2e2e2e]";
 
 /** Modals, popovers, dropdown panels. */
 export const SURFACE_POPOVER =
@@ -46,7 +51,7 @@ export const SURFACE_BTN_IDLE_ON_MAIN =
   "border-[#161616] text-[#888888] hover:bg-[#1d1d1d] hover:text-white";
 
 export const SURFACE_BTN_ACTIVE =
-  "bg-[#1d1d1d] !border-[#212121] text-white";
+  "bg-[#1d1d1d] !border-[#262626] text-white";
 
 /** Icon-sized control on a panel. */
 export const SURFACE_ICON_BTN =
@@ -58,7 +63,7 @@ export const SURFACE_GHOST_BTN =
 
 /** Secondary action button inside adjustment/editor panels. */
 export const SURFACE_SECONDARY_BTN =
-  "border border-[#212121] bg-[#1d1d1d] text-white hover:bg-[#1d1d1d] hover:border-[#282828] transition-colors cursor-pointer";
+  "border border-[#262626] bg-[#1d1d1d] text-white hover:bg-[#1d1d1d] hover:border-[#2e2e2e] transition-colors cursor-pointer";
 
 /** Decorative empty-state icons — brand accent. */
 export { EMPTY_STATE_ICON_CLASS } from "@/lib/brand-colors";

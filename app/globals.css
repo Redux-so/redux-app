@@ -131,7 +131,6 @@ body {
 }
 
 .auth-clerk-root :is(
-  .cl-formButtonPrimary,
   .cl-socialButtonsBlockButton,
   .cl-alternativeMethodsBlockButton
 ) {
@@ -140,6 +139,17 @@ body {
   width: 100% !important;
   max-width: none !important;
   min-height: 3rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+}
+
+.auth-clerk-root .cl-formButtonPrimary {
+  box-sizing: border-box !important;
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 2.5rem !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 6px !important;
@@ -214,7 +224,7 @@ body {
 .cl-userProfile-root .cl-formFieldInput,
 .cl-userProfile-root .cl-otpCodeFieldInput {
   background: #1d1d1d !important;
-  border-color: #212121 !important;
+  border-color: #262626 !important;
   color: #ffffff !important;
 }
 

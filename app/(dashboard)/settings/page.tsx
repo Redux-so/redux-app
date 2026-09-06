@@ -391,7 +391,7 @@ export default function SettingsPage() {
             <div className="py-5 border-b border-[#212121]">
               <div className="flex flex-wrap items-center justify-between gap-4 bg-[#161616] border border-[#1c1c1c] rounded-xl px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-[32px] h-[32px] rounded-md bg-[#1d1d1d] border border-[#212121] flex items-center justify-center shrink-0">
+                  <div className="w-[32px] h-[32px] rounded-md bg-[#1d1d1d] border border-[#262626] flex items-center justify-center shrink-0">
                     <Icon name="Coins01" size={16} className="text-white" aria-hidden />
                   </div>
                   <div>

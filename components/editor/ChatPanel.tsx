@@ -42,7 +42,7 @@ import {
 
 
 const BTN_SECONDARY =
-  "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#212121] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#282828] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#262626] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#2e2e2e] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
 
 const AVAILABLE_MODELS = [
   { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
@@ -60,14 +60,14 @@ const CHAT_SURFACE_SHADOW =
   "shadow-[0_1px_3px_rgba(0,0,0,0.32),0_2px_8px_rgba(0,0,0,0.14)]";
 const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
-  "rounded-md border border-[#212121] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
+  "rounded-md border border-[#262626] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
 
 const CHAT_PANEL_GUTTER_CLASS = "px-8";
 const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
 const CHAT_AVATAR_PX = 44;
 const CHAT_AVATAR_LOGO_PX = 42;
 const CHAT_AVATAR_SHELL =
-  "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d] border border-[#212121]";
+  "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d] border border-[#262626]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -343,7 +343,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
           "shrink-0 items-center gap-0.5 px-1.5 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
-            : "cursor-pointer hover:border-[#282828]",
+            : "cursor-pointer hover:border-[#2e2e2e]",
         ].join(" ")}
       >
         <span className="whitespace-nowrap font-semibold text-[#888888]">
@@ -992,7 +992,7 @@ export default function ChatPanel({
             )}
 
             <div
-              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#212121]"} ${CHAT_SURFACE_SHADOW}`}
+              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#262626]"} ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
@@ -1084,11 +1084,11 @@ export default function ChatPanel({
                       title="Send"
                       className={[
                         canSend
-                          ? `${BTN_BRAND_ICON} !h-8 !w-8 !rounded-md`
-                          : "shrink-0 flex items-center justify-center w-8 h-8 rounded-md bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
+                          ? BTN_BRAND_ICON
+                          : "shrink-0 flex items-center justify-center w-7 h-7 rounded-md bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
                       ].join(" ")}
                     >
-                      <Icon name="Send01" size={20} strokeWidth={2} aria-hidden />
+                      <Icon name="Send01" size={16} strokeWidth={2} aria-hidden />
                     </button>
                   )}
                 </div>

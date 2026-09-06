@@ -100,7 +100,7 @@ export function HistoryVersionList({
               disabled={restoringId === version.id}
               className={
                 restoringId === version.id
-                  ? "ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-[#212121] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
+                  ? "ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-[#262626] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
                   : `ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md text-white/80 ${SURFACE_SECONDARY_BTN}`
               }
             >
