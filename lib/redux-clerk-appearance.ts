@@ -1,6 +1,7 @@
 import { dark } from "@clerk/themes";
 
 import {
+  BRAND_CTA_CLASS,
   PRIMARY_BRAND_HEX,
   PRIMARY_BRAND_HOVER_HEX,
 } from "@/lib/brand-colors";
@@ -12,10 +13,10 @@ import {
 } from "@/lib/surface-colors";
 
 const clerkPrimaryBtn =
-  `!box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[${PRIMARY_BRAND_HEX}] !px-4 !text-[13px] !font-semibold !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[${PRIMARY_BRAND_HOVER_HEX}] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active`;
+  `${BRAND_CTA_CLASS} !box-border !flex !h-11 !w-full !min-w-0 !items-center !justify-center !px-4 !text-[13px] !font-medium !leading-none !text-white disabled:!opacity-40 disabled:!cursor-not-allowed`;
 
 const clerkPrimaryBtnCompact =
-  `!box-border !flex !h-10 !w-full !min-w-0 !items-center !justify-center !rounded-md !border !border-white/20 !bg-[${PRIMARY_BRAND_HEX}] !px-4 !text-[13px] !font-semibold !leading-none !text-white !shadow-btn-primary transition-[background-color,box-shadow] duration-200 hover:!bg-[${PRIMARY_BRAND_HOVER_HEX}] hover:!shadow-btn-primary-hover active:!shadow-btn-primary-active`;
+  `${BRAND_CTA_CLASS} !box-border !flex !h-10 !w-full !min-w-0 !items-center !justify-center !px-4 !text-[13px] !font-medium !leading-none !text-white disabled:!opacity-40 disabled:!cursor-not-allowed`;
 
 const clerkBrandLink =
   `!text-[${PRIMARY_BRAND_HEX}] hover:!text-[${PRIMARY_BRAND_HOVER_HEX}]`;

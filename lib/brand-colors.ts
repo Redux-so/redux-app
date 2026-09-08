@@ -26,22 +26,16 @@ export const BRAND_ACCENT_CLASS = "accent-[#3A6FFF]";
 
 export const EMPTY_STATE_ICON_CLASS = "text-[#3A6FFF]";
 
+/** Shared class — pill inset chrome from redux-web hero-pill-cta--purple. */
+export const BRAND_CTA_CLASS = "brand-cta";
+
 /** Brand CTA shell — credit/auth/chat-send exceptions only. */
-export const BTN_BRAND_VISUAL = [
-  "rounded-md border border-white/20 bg-[#3A6FFF] shadow-btn-primary",
-  "transition-[background-color,box-shadow,transform] duration-200",
-  "hover:bg-[#5285FF] hover:shadow-btn-primary-hover",
-  "active:scale-[0.98] active:shadow-btn-primary-active",
-  "disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
-].join(" ");
+export const BTN_BRAND_VISUAL = BRAND_CTA_CLASS;
 
 /** Clerk / auth primary button (full class string). */
 export const AUTH_PRIMARY_BTN_CLASS = [
-  "inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-white/20",
-  "bg-[#3A6FFF] text-[13px] font-semibold leading-none text-white shadow-btn-primary",
-  "transition-[background-color,box-shadow] duration-200",
-  "hover:bg-[#5285FF] hover:shadow-btn-primary-hover active:shadow-btn-primary-active",
-  "disabled:opacity-40 disabled:cursor-not-allowed",
+  `${BRAND_CTA_CLASS} inline-flex h-9 w-full items-center justify-center gap-1.5`,
+  "text-[13px] font-medium leading-none text-white",
 ].join(" ");
 
 export const CHAT_USER_BUBBLE_CLASS =

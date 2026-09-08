@@ -11,9 +11,9 @@ export const BTN_SOFT_FG =
 export const BTN_PRIMARY_TYPE =
   `text-[13px] font-medium leading-none ${BTN_SOFT_FG}`;
 
-/** Brand CTA label + icon weight — white on blue chrome */
+/** Brand CTA label + icon weight — white on blue chrome (matches redux-web pill CTAs). */
 export const BTN_BRAND_TYPE =
-  "text-[13px] font-semibold text-white leading-none [&_svg]:shrink-0 [&_svg]:!size-4 [&_svg]:stroke-[2]";
+  "text-[13px] font-medium text-white leading-none [&_svg]:shrink-0 [&_svg]:!size-4 [&_svg]:stroke-[2]";
 
 /** Soft white CTA shell — muted vs pure white on dark chrome */
 export const BTN_MODAL_VISUAL =
