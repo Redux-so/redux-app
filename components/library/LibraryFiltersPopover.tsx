@@ -7,7 +7,7 @@ import type { LibraryFileTypeKey } from "@/constants/image-formats";
 import { LIBRARY_PANEL_POPOVER } from "@/constants/library-sidebar";
 import { Icon } from "@/components/shared/Icon";
 import { LIBRARY_CHOICE_SELECTED_CLASS } from "@/lib/brand-colors";
-import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 import {
   countActiveLibraryFilters,
   DEFAULT_LIBRARY_FILTERS,
@@ -322,7 +322,7 @@ export default function LibraryFiltersPopover({
         <button
           type="button"
           onClick={onApply}
-          className={`${BTN_PRIMARY_SOLID} shrink-0`}
+          className={`${BTN_BRAND_SOLID} shrink-0`}
         >
           Apply
         </button>

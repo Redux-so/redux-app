@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 
 interface CreateAlbumModalProps {
   open: boolean;
@@ -108,7 +108,7 @@ export default function CreateAlbumModal({
                 <button
                   type="submit"
                   disabled={submitting || !name.trim()}
-                  className={`${BTN_PRIMARY_SOLID} h-8 px-3 text-[13px] disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`${BTN_BRAND_SOLID} h-8 px-3 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {submitting ? "Creating..." : "Create"}
                 </button>

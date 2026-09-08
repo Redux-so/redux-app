@@ -10,7 +10,7 @@ import {
   type LibraryFilters,
 } from "@/lib/library-filters";
 import { useTypewriterPlaceholder } from "@/hooks/useTypewriterPlaceholder";
-import { BRAND_BG_CLASS, BRAND_LINK_TEXT_CLASS } from "@/lib/brand-colors";
+import { BRAND_BG_CLASS } from "@/lib/brand-colors";
 import toast from "react-hot-toast";
 import type { ImageRecord } from "@/types/image";
 
@@ -195,11 +195,8 @@ export default function SearchBar({
           aria-label="Filter photos"
           aria-expanded={filtersOpen}
           className={[
-            "relative flex shrink-0 items-center justify-center transition-colors cursor-pointer",
+            "relative flex shrink-0 items-center justify-center text-[#888888] transition-colors cursor-pointer hover:text-white",
             isLarge ? "h-10 w-10" : "h-9 w-9",
-            hasActiveFilters
-              ? BRAND_LINK_TEXT_CLASS
-              : "text-[#888888] hover:text-white",
           ].join(" ")}
         >
           <Icon
