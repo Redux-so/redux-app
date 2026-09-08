@@ -65,9 +65,9 @@ const TOOLBAR_CHIP =
 const CHAT_PANEL_GUTTER_CLASS = "px-8";
 const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
 const CHAT_AVATAR_PX = 44;
-const CHAT_AVATAR_LOGO_PX = 42;
+const CHAT_AVATAR_LOGO_PX = 38;
 const CHAT_AVATAR_SHELL =
-  "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d] border border-[#262626]";
+  "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
   exposure: "Exposure",
   contrast: "Contrast",
@@ -1000,9 +1000,9 @@ export default function ChatPanel({
                   <Image
                     src="/r-logo.png"
                     alt=""
-                    width={42}
-                    height={42}
-                    className="shrink-0 rounded"
+                    width={46}
+                    height={46}
+                    className="shrink-0 -translate-y-1 rounded"
                     aria-hidden
                   />
                   <div className="relative min-w-0 flex-1">
