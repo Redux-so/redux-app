@@ -122,7 +122,7 @@ export default function ReduxClerkAuthShell({
       {/* Right — full-bleed photo (exactly 50% on lg+) */}
       <div className="relative hidden h-full w-full min-w-0 lg:block">
         <Image
-          src="/mount-fuji.jpg"
+          src="/sign-in-hero.jpg"
           alt=""
           fill
           priority
