@@ -576,7 +576,7 @@ export default function ChatPanel({
     toast.custom(
       (t) => (
         <div
-          className={`flex items-center gap-3 transition-opacity ${TOAST_SHELL_CLASS} ${t.visible ? "opacity-100" : "opacity-0"}`}
+          className={`transition-opacity ${TOAST_SHELL_CLASS} ${t.visible ? "opacity-100" : "opacity-0"}`}
         >
           <span>Purchase credits to continue chatting.</span>
           <button
