@@ -101,14 +101,14 @@ export default function ReduxClerkAuthShell({
             >
               By clicking continue, you agree to our{" "}
               <a
-                href="#"
+                href="https://redux.so/terms"
                 className="underline underline-offset-2 hover:text-[#888888] transition-colors"
               >
                 Terms of Service
               </a>{" "}
               and{" "}
               <a
-                href="#"
+                href="https://redux.so/privacy"
                 className="underline underline-offset-2 hover:text-[#888888] transition-colors"
               >
                 Privacy Policy
