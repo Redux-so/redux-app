@@ -24,6 +24,17 @@
   --brand-cta-inset-top: rgba(255, 255, 255, 0.1);
   --brand-cta-inset-top-hover: rgba(255, 255, 255, 0.12);
   --brand-cta-inset-bottom: rgba(0, 0, 0, 0.3);
+
+  /* Marketing / bento showcase (redux-web parity) */
+  --dot-grid-color: rgba(255, 255, 255, 0.038);
+  --dot-grid-radius: 0.85px;
+  --dot-grid-cell: 20px;
+  --marketing-card-border: rgba(255, 255, 255, 0.065);
+  --marketing-card-inset-highlight: rgba(255, 255, 255, 0.09);
+  --marketing-card-inset-shadow: rgba(0, 0, 0, 0.42);
+  --card-border-width: 1px;
+  --card-shadow-outer: 0 4px 10px rgba(0, 0, 0, 0.45);
+  --card-radius: var(--brand-cta-radius);
 }
 
 @theme inline {
@@ -427,7 +438,100 @@ body {
     inset 0 -1px 0 var(--brand-cta-inset-bottom) !important;
 }
 
+/* Product tour footer — identical 36px box; brand CTA without outer drop shadow. */
+.onboarding-footer-btn {
+  box-sizing: border-box;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  max-height: 2.25rem;
+  padding-block: 0;
+}
+
+.onboarding-footer-btn.brand-cta {
+  box-shadow:
+    inset 0 1px 0 var(--brand-cta-inset-top),
+    inset 0 -1px 0 var(--brand-cta-inset-bottom);
+}
+
+.onboarding-footer-btn.brand-cta:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 var(--brand-cta-inset-top-hover),
+    inset 0 -1px 0 var(--brand-cta-inset-bottom);
+}
+
 /* Toast notifications — react-hot-toast goober defaults are white/grey; force brand CTA pill. */
+/* Bento-style chat input shell (redux-web ui-card-border). */
+.ui-card-border {
+  position: relative;
+  isolation: isolate;
+  border: var(--card-border-width) solid var(--marketing-card-border);
+  border-radius: var(--card-radius);
+  box-shadow:
+    inset 0 1px 0 var(--marketing-card-inset-highlight),
+    inset 0 -1px 0 var(--marketing-card-inset-shadow),
+    var(--card-shadow-outer);
+}
+
+/* Accent glow behind onboarding / marketing chat input. */
+.onboarding-convo-chat-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: 122%;
+  height: 195%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.onboarding-convo-chat-glow::before,
+.onboarding-convo-chat-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.onboarding-convo-chat-glow::before {
+  background: radial-gradient(
+    ellipse 92% 85% at 50% 50%,
+    rgba(var(--accent-glow-rgb), 0.44) 0%,
+    rgba(var(--accent-glow-rgb), 0.24) 26%,
+    rgba(var(--accent-glow-rgb), 0.12) 44%,
+    rgba(var(--accent-glow-rgb), 0.05) 58%,
+    transparent 72%
+  );
+  filter: blur(48px);
+}
+
+.onboarding-convo-chat-glow::after {
+  background-image: radial-gradient(
+    circle,
+    var(--dot-grid-color) var(--dot-grid-radius),
+    transparent var(--dot-grid-radius)
+  );
+  background-size: var(--dot-grid-cell) var(--dot-grid-cell);
+  background-position: center;
+  mask-image: radial-gradient(
+    ellipse 92% 85% at 50% 50%,
+    rgb(0 0 0 / 1) 0%,
+    rgb(0 0 0 / 0.82) 32%,
+    rgb(0 0 0 / 0.38) 52%,
+    transparent 70%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 92% 85% at 50% 50%,
+    rgb(0 0 0 / 1) 0%,
+    rgb(0 0 0 / 0.82) 32%,
+    rgb(0 0 0 / 0.38) 52%,
+    transparent 70%
+  );
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+}
+
 [data-rht-toaster] .redux-toast.brand-cta {
   display: inline-flex !important;
   align-items: center !important;
