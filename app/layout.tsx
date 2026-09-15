@@ -7,6 +7,32 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Redux",
   description: "AI-powered photo editing",
+  icons: {
+    icon: [
+      {
+        url: "/favicon-white.png",
+        type: "image/png",
+        media: "(prefers-color-scheme: dark)",
+      },
+      {
+        url: "/favicon-black.png",
+        type: "image/png",
+        media: "(prefers-color-scheme: light)",
+      },
+      { url: "/favicon-black.png", type: "image/png" },
+    ],
+    apple: [
+      {
+        url: "/favicon-white.png",
+        media: "(prefers-color-scheme: dark)",
+      },
+      {
+        url: "/favicon-black.png",
+        media: "(prefers-color-scheme: light)",
+      },
+      { url: "/favicon-black.png" },
+    ],
+  },
 };
 
 export default function RootLayout({
