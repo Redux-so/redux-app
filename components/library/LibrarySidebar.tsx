@@ -25,7 +25,11 @@ import {
   LIBRARY_SIDEBAR_WIDTH_PX,
   LIBRARY_PANEL_SURFACE,
 } from "@/constants/library-sidebar";
-import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
+import {
+  EXTERNAL_LINK_PROPS,
+  REDUX_DOCS_URL,
+  REDUX_HELP_FEEDBACK_URL,
+} from "@/constants/support";
 import type { LibrarySidebarView } from "@/lib/library-filters";
 import type { AlbumRecord } from "@/types/album";
 
@@ -191,8 +195,7 @@ export default function LibrarySidebar({
         >
           <a
             href={REDUX_DOCS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...EXTERNAL_LINK_PROPS}
             className={LIBRARY_SIDEBAR_LINK_ROW}
           >
             <GitHubIcon
@@ -203,8 +206,7 @@ export default function LibrarySidebar({
           </a>
           <a
             href={REDUX_HELP_FEEDBACK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...EXTERNAL_LINK_PROPS}
             className={LIBRARY_SIDEBAR_LINK_ROW}
           >
             <DiscordIcon

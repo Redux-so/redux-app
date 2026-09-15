@@ -24,6 +24,12 @@ import {
   SURFACE_BTN_IDLE_ON_MAIN,
   SURFACE_BTN_ROW,
 } from "@/lib/surface-colors";
+import {
+  EXTERNAL_LINK_PROPS,
+  REDUX_PRIVACY_URL,
+  REDUX_TERMS_URL,
+  openExternalUrl,
+} from "@/constants/support";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -294,7 +300,7 @@ export default function SettingsPage() {
         toast.error(data.error ?? "Could not open billing portal.");
         return;
       }
-      if (data.url) window.location.href = data.url;
+      if (data.url) openExternalUrl(data.url);
     } catch {
       toast.error("Failed to open billing portal.");
     } finally {
@@ -554,13 +560,15 @@ export default function SettingsPage() {
               <span className="text-[14px] text-white">Legal</span>
               <div className="flex items-center gap-3">
                 <a
-                  href="#"
+                  href={REDUX_TERMS_URL}
+                  {...EXTERNAL_LINK_PROPS}
                   className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
                 >
                   Terms of Service
                 </a>
                 <a
-                  href="#"
+                  href={REDUX_PRIVACY_URL}
+                  {...EXTERNAL_LINK_PROPS}
                   className="text-[14px] text-[#888888] underline underline-offset-2 hover:text-white transition-colors"
                 >
                   Privacy Policy

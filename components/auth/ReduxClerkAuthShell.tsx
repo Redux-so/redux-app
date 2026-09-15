@@ -1,6 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import {
+  EXTERNAL_LINK_PROPS,
+  REDUX_PRIVACY_URL,
+  REDUX_TERMS_URL,
+} from "@/constants/support";
+
 interface ReduxClerkAuthShellProps {
   title: string;
   subtitle?: string;
@@ -101,14 +107,16 @@ export default function ReduxClerkAuthShell({
             >
               By clicking continue, you agree to our{" "}
               <a
-                href="https://redux.so/terms"
+                href={REDUX_TERMS_URL}
+                {...EXTERNAL_LINK_PROPS}
                 className="underline underline-offset-2 hover:text-[#888888] transition-colors"
               >
                 Terms of Service
               </a>{" "}
               and{" "}
               <a
-                href="https://redux.so/privacy"
+                href={REDUX_PRIVACY_URL}
+                {...EXTERNAL_LINK_PROPS}
                 className="underline underline-offset-2 hover:text-[#888888] transition-colors"
               >
                 Privacy Policy

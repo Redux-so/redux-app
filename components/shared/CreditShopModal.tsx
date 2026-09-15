@@ -14,6 +14,7 @@ import {
 } from "@/lib/brand-colors";
 import { AnimatePresence, motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { openExternalUrl } from "@/constants/support";
 
 interface Bundle {
   id: string;
@@ -87,7 +88,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
         return;
       }
       if (data.url) {
-        window.location.href = data.url;
+        openExternalUrl(data.url);
       }
     } catch {
       toast.error("Purchase failed. Please try again.");

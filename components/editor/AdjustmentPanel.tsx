@@ -16,7 +16,11 @@ import { BRAND_ACCENT_CLASS, BRAND_FOCUS_RING_CLASS } from "@/lib/brand-colors";
 import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import EmptyState from "@/components/shared/EmptyState";
-import { REDUX_DOCS_URL, REDUX_HELP_FEEDBACK_URL } from "@/constants/support";
+import {
+  EXTERNAL_LINK_PROPS,
+  REDUX_DOCS_URL,
+  REDUX_HELP_FEEDBACK_URL,
+} from "@/constants/support";
 import { SURFACE_BTN_ACTIVE, SURFACE_BTN_IDLE, SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
 
 interface AdjustmentPanelProps {
@@ -187,9 +191,7 @@ function RailLink({
       href={href}
       title={title}
       aria-label={title}
-      {...(external
-        ? { target: "_blank", rel: "noopener noreferrer" }
-        : {})}
+      {...(external ? EXTERNAL_LINK_PROPS : {})}
       className="flex shrink-0 items-center justify-center h-12 w-12 rounded-xl border border-[#121212] text-[#888888] transition-colors hover:bg-[#1d1d1d] hover:text-white"
     >
       {children}
