@@ -552,7 +552,7 @@ export default function SettingsPage() {
                 className={`${BTN_GHOST} flex items-center gap-[6px]`}
               >
                 <Icon name="Mail01" size={16} aria-hidden />
-                Contact Support
+                Contact
               </a>
             </div>
 
