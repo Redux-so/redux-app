@@ -751,161 +751,6 @@ export default function ChatPanel({
 
   const canSend = !!input.trim() && !sending && !chatBlocked;
 
-  const chatInputComposite = (
-    <div className={`shrink-0 pb-4 pt-2 ${CHAT_PANEL_GUTTER_CLASS}`}>
-      {attachedPreview && (
-        <div className="pb-2">
-          <div className="relative inline-block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={attachedPreview}
-              alt="Attached"
-              className="h-[56px] w-auto rounded-lg object-cover border border-[#212121]"
-              style={{ maxWidth: CHAT_INPUT_ATTACHMENT_MAX_WIDTH_PX }}
-            />
-            <button
-              type="button"
-              onClick={clearAttachment}
-              className="absolute -top-[6px] -right-[6px] w-[16px] h-[16px] rounded-full bg-white/[0.12] border border-white/[0.2] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.2] transition-colors"
-            >
-              <Icon name="XClose" size={16} aria-hidden />
-            </button>
-          </div>
-          {attachedFile && (
-            <p
-              className="text-[10px] text-[#555555] mt-[3px] truncate"
-              style={{ maxWidth: CHAT_ATTACHMENT_FILENAME_MAX_WIDTH_PX }}
-            >
-              {attachedFile.name}
-            </p>
-          )}
-        </div>
-      )}
-
-      {chatBlocked && (
-        <p className="pb-2 text-[12px] text-[#666666] leading-snug">
-          {chatQuota?.hasPurchasedCredits
-            ? "You're out of credits. "
-            : "Free messages used. "}
-          <button
-            type="button"
-            onClick={openCreditShop}
-            className="text-[#a3a3a3] underline underline-offset-2 hover:text-white cursor-pointer"
-          >
-            {chatQuota?.hasPurchasedCredits
-              ? "Purchase more credits"
-              : "Purchase credits"}
-          </button>{" "}
-          to continue chatting.
-        </p>
-      )}
-
-      <div
-        className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#262626]"} ${CHAT_SURFACE_SHADOW}`}
-      >
-        <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
-          <div className="flex w-full items-center gap-3.5">
-            <Image
-              src="/r-logo.png"
-              alt=""
-              width={46}
-              height={46}
-              className="shrink-0 -translate-y-1 rounded"
-              aria-hidden
-            />
-            <div className="relative min-w-0 flex-1">
-              {chatBlocked && !input && (
-                <span
-                  className="pointer-events-none absolute left-0 top-0 text-[15px] font-normal leading-snug text-[#666666]"
-                  aria-hidden
-                >
-                  {chatQuota?.hasPurchasedCredits
-                    ? "Purchase more credits to continue chatting..."
-                    : "Purchase credits to continue chatting..."}
-                </span>
-              )}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                onKeyDown={handleKeyDown}
-                placeholder={chatBlocked ? "" : "Describe the edit you want..."}
-                rows={1}
-                disabled={chatBlocked}
-                className="w-full resize-none bg-transparent pt-0 text-[15px] font-normal text-white placeholder:text-[#666666] placeholder:font-normal outline-none leading-snug min-h-[24px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fieldSizing: "content" } as React.CSSProperties}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 border-t border-[#212121] px-4 pb-3 pt-3">
-          <div className="flex min-w-0 items-center gap-1.5 shrink-0">
-            <div className={`${TOOLBAR_CHIP} flex ${TOOLBAR_CHIP_H} w-8 items-center justify-center`}>
-              <ToolbarIconBtn
-                title="Attach reference image"
-                disabled={chatBlocked}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Icon name="Paperclip" size={16} aria-hidden />
-              </ToolbarIconBtn>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  void handleFileChange(e);
-                }}
-              />
-            </div>
-
-            <ChatModelSelector disabled={chatBlocked} />
-
-            <UsageRing
-              quota={chatQuota}
-              onPurchaseClick={openCreditShop}
-              reduceMotion={!!prefersReducedMotion}
-            />
-          </div>
-
-          <div className="flex shrink-0 items-center">
-            {sending ? (
-              <div className={`${TOOLBAR_CHIP} flex ${TOOLBAR_CHIP_H} w-8 items-center justify-center`}>
-                <button
-                  type="button"
-                  onClick={handleCancelGeneration}
-                  title="Stop generation"
-                  className="inline-flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
-                >
-                  <Icon name="Stop" size={16} aria-hidden />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  void handleSend();
-                }}
-                disabled={!canSend}
-                title="Send"
-                className={[
-                  canSend
-                    ? BTN_BRAND_ICON
-                    : "shrink-0 flex items-center justify-center w-7 h-7 rounded-md bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
-                ].join(" ")}
-              >
-                <Icon name="Send01" size={16} strokeWidth={2} aria-hidden />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div
@@ -1097,7 +942,159 @@ export default function ChatPanel({
             </div>
           )}
 
-          {chatInputComposite}
+          {/* Input composite — pinned to bottom */}
+          <div className={`shrink-0 pb-4 pt-2 ${CHAT_PANEL_GUTTER_CLASS}`}>
+            {attachedPreview && (
+              <div className="pb-2">
+                <div className="relative inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={attachedPreview}
+                    alt="Attached"
+                    className="h-[56px] w-auto rounded-lg object-cover border border-[#212121]"
+                    style={{ maxWidth: CHAT_INPUT_ATTACHMENT_MAX_WIDTH_PX }}
+                  />
+                  <button
+                    type="button"
+                    onClick={clearAttachment}
+                    className="absolute -top-[6px] -right-[6px] w-[16px] h-[16px] rounded-full bg-white/[0.12] border border-white/[0.2] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.2] transition-colors"
+                  >
+                    <Icon name="XClose" size={16} aria-hidden />
+                  </button>
+                </div>
+                {attachedFile && (
+                  <p
+                    className="text-[10px] text-[#555555] mt-[3px] truncate"
+                    style={{ maxWidth: CHAT_ATTACHMENT_FILENAME_MAX_WIDTH_PX }}
+                  >
+                    {attachedFile.name}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {chatBlocked && (
+              <p className="pb-2 text-[12px] text-[#666666] leading-snug">
+                {chatQuota?.hasPurchasedCredits
+                  ? "You're out of credits. "
+                  : "Free messages used. "}
+                <button
+                  type="button"
+                  onClick={openCreditShop}
+                  className="text-[#a3a3a3] underline underline-offset-2 hover:text-white cursor-pointer"
+                >
+                  {chatQuota?.hasPurchasedCredits
+                    ? "Purchase more credits"
+                    : "Purchase credits"}
+                </button>{" "}
+                to continue chatting.
+              </p>
+            )}
+
+            <div
+              className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#262626]"} ${CHAT_SURFACE_SHADOW}`}
+            >
+              {/* Upper input field */}
+              <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
+                <div className="flex w-full items-center gap-3.5">
+                  <Image
+                    src="/r-logo.png"
+                    alt=""
+                    width={46}
+                    height={46}
+                    className="shrink-0 -translate-y-1 rounded"
+                    aria-hidden
+                  />
+                  <div className="relative min-w-0 flex-1">
+                    {chatBlocked && !input && (
+                      <span
+                        className="pointer-events-none absolute left-0 top-0 text-[15px] font-normal leading-snug text-[#666666]"
+                        aria-hidden
+                      >
+                        {chatQuota?.hasPurchasedCredits
+                          ? "Purchase more credits to continue chatting..."
+                          : "Purchase credits to continue chatting..."}
+                      </span>
+                    )}
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onFocus={() => setInputFocused(true)}
+                      onBlur={() => setInputFocused(false)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={
+                        chatBlocked ? "" : "Describe the edit you want..."
+                      }
+                      rows={1}
+                      disabled={chatBlocked}
+                      className="w-full resize-none bg-transparent pt-0 text-[15px] font-normal text-white placeholder:text-[#666666] placeholder:font-normal outline-none leading-snug min-h-[24px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ fieldSizing: "content" } as React.CSSProperties}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Lower toolbar row */}
+              <div className="flex items-center justify-between gap-2 border-t border-[#212121] px-4 pb-3 pt-3">
+                <div className="flex min-w-0 items-center gap-1.5 shrink-0">
+                  <div className={`${TOOLBAR_CHIP} flex ${TOOLBAR_CHIP_H} w-8 items-center justify-center`}>
+                    <ToolbarIconBtn
+                      title="Attach reference image"
+                      disabled={chatBlocked}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Icon name="Paperclip" size={16} aria-hidden />
+                    </ToolbarIconBtn>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => { void handleFileChange(e); }}
+                    />
+                  </div>
+
+                  <ChatModelSelector disabled={chatBlocked} />
+
+                  <UsageRing
+                    quota={chatQuota}
+                    onPurchaseClick={openCreditShop}
+                    reduceMotion={!!prefersReducedMotion}
+                  />
+                </div>
+
+                <div className="flex shrink-0 items-center">
+                  {sending ? (
+                    <div className={`${TOOLBAR_CHIP} flex ${TOOLBAR_CHIP_H} w-8 items-center justify-center`}>
+                      <button
+                        type="button"
+                        onClick={handleCancelGeneration}
+                        title="Stop generation"
+                        className="inline-flex items-center justify-center text-white/90 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <Icon name="Stop" size={16} aria-hidden />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { void handleSend(); }}
+                      disabled={!canSend}
+                      title="Send"
+                      className={[
+                        canSend
+                          ? BTN_BRAND_ICON
+                          : "shrink-0 flex items-center justify-center w-7 h-7 rounded-md bg-white/[0.08] text-[#666666] opacity-50 cursor-not-allowed",
+                      ].join(" ")}
+                    >
+                      <Icon name="Send01" size={16} strokeWidth={2} aria-hidden />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

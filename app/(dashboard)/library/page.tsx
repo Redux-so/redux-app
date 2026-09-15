@@ -18,7 +18,6 @@ import { DEFAULT_LIBRARY_SIDEBAR_VIEW } from "@/constants/library-quick-filters"
 import type { AlbumRecord } from "@/types/album";
 import type { ImageRecord, ImageGroup } from "@/types/image";
 import toast from "react-hot-toast";
-import OnboardingAutoOpen from "@/components/onboarding/OnboardingAutoOpen";
 
 function groupImagesByDeletedMonth(images: ImageRecord[]): ImageGroup[] {
   if (!images.length) return [];
@@ -491,7 +490,6 @@ export default function LibraryPage() {
           />
         </main>
       </div>
-      <OnboardingAutoOpen />
     </div>
   );
 }

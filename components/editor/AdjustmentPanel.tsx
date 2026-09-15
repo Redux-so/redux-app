@@ -59,10 +59,6 @@ interface AdjustmentPanelProps {
   disableBlurBrush?: () => void;
   exportBlurMask?: () => Promise<string>;
   onRestoreHistory?: (raw: unknown) => void | Promise<void>;
-  /** Product tour / static previews — open a section on first paint. */
-  initialActiveSection?: ToolSection | null;
-  /** Product tour — tool rail + adjustment sliders only (no AI actions, rail footer). */
-  showcaseMode?: boolean;
 }
 
 type ToolSection = "light" | "color" | "effects" | "retouch" | "transform" | "history";
@@ -314,12 +310,8 @@ export default function AdjustmentPanel({
   disableBlurBrush,
   exportBlurMask,
   onRestoreHistory,
-  initialActiveSection = null,
-  showcaseMode = false,
 }: AdjustmentPanelProps) {
-  const [activeSection, setActiveSection] = useState<ToolSection | null>(
-    () => initialActiveSection ?? null,
-  );
+  const [activeSection, setActiveSection] = useState<ToolSection | null>(null);
   const panelInnerRef = useRef<HTMLDivElement>(null);
   const [activeTool, setActiveTool] = useState<ActiveTool>(null);
 
@@ -852,13 +844,7 @@ export default function AdjustmentPanel({
 
   return (
     <>
-      <div
-        className={
-          showcaseMode
-            ? "flex h-full w-full min-w-0"
-            : "flex shrink-0 h-full min-w-0"
-        }
-      >
+      <div className="flex shrink-0 h-full min-w-0">
         {/* Icon tool rail */}
         <div className="flex flex-col shrink-0 w-[72px] h-full items-center bg-[#121212] border-r border-[#212121]">
           <div className="flex flex-col items-center py-4 gap-4">
@@ -872,35 +858,31 @@ export default function AdjustmentPanel({
                 <RailIcon iconName={iconName} />
               </RailBtn>
             ))}
-            {!showcaseMode && (
-              <RailBtn
-                active={activeSection === "history"}
-                title="Version history"
-                onClick={() => toggleActiveSection("history")}
-              >
-                <RailIcon iconName="ClockRewind" />
-              </RailBtn>
-            )}
+            <RailBtn
+              active={activeSection === "history"}
+              title="Version history"
+              onClick={() => toggleActiveSection("history")}
+            >
+              <RailIcon iconName="ClockRewind" />
+            </RailBtn>
           </div>
 
-          {!showcaseMode && (
-            <div className="mt-auto shrink-0 pb-4 w-full flex flex-col items-center gap-4">
-              <RailLink href={REDUX_DOCS_URL} title="GitHub" external>
-                <RailGitHubIcon />
-              </RailLink>
-              <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback" external>
-                <RailDiscordIcon />
-              </RailLink>
-              <ProfileMenu
-                variant="compact"
-                settingsReturnPath={
-                  imageId
-                    ? `/editor?imageId=${encodeURIComponent(imageId)}`
-                    : "/editor"
-                }
-              />
-            </div>
-          )}
+          <div className="mt-auto shrink-0 pb-4 w-full flex flex-col items-center gap-4">
+            <RailLink href={REDUX_DOCS_URL} title="GitHub" external>
+              <RailGitHubIcon />
+            </RailLink>
+            <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback" external>
+              <RailDiscordIcon />
+            </RailLink>
+            <ProfileMenu
+              variant="compact"
+              settingsReturnPath={
+                imageId
+                  ? `/editor?imageId=${encodeURIComponent(imageId)}`
+                  : "/editor"
+              }
+            />
+          </div>
         </div>
 
         {/* Section panel */}
@@ -940,22 +922,20 @@ export default function AdjustmentPanel({
                           onCommit={(v) => onCommit(key, v)}
                         />
                       ))}
-                      {!showcaseMode && (
-                        <div className="flex flex-col gap-3 px-8 pt-5 pb-3">
-                          <AIButton
-                            label="Auto Enhance"
-                            loading={loadingEnhance}
-                            disabled={!imageUrl}
-                            onClick={() => void runAutoEnhance()}
-                          />
-                          <AIButton
-                            label="Auto Tone Balance"
-                            loading={loadingToneBalance}
-                            disabled={!imageUrl}
-                            onClick={() => void runAutoToneBalance()}
-                          />
-                        </div>
-                      )}
+                      <div className="flex flex-col gap-3 px-8 pt-5 pb-3">
+                        <AIButton
+                          label="Auto Enhance"
+                          loading={loadingEnhance}
+                          disabled={!imageUrl}
+                          onClick={() => void runAutoEnhance()}
+                        />
+                        <AIButton
+                          label="Auto Tone Balance"
+                          loading={loadingToneBalance}
+                          disabled={!imageUrl}
+                          onClick={() => void runAutoToneBalance()}
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -971,40 +951,38 @@ export default function AdjustmentPanel({
                           trackVariant={COLOR_TRACK_VARIANTS[key] ?? "neutral"}
                         />
                       ))}
-                      {!showcaseMode && (
-                        <div className="flex flex-col gap-3 px-8 pt-5 pb-3">
-                          <AIButton
-                            label="Smart Color Balance"
-                            loading={loadingSmartColor}
-                            disabled={!imageUrl}
-                            onClick={() => void runSmartColorBalance()}
-                          />
-                          <input
-                            ref={styleMatchInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => { void handleStyleMatchFilePick(e); }}
-                          />
-                          {styleMatchPreview && (
-                            <div className="px-0 pb-1">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={styleMatchPreview}
-                                alt="Style reference"
-                                className="h-[48px] w-auto max-w-full rounded-sm object-cover border border-[#212121]"
-                              />
-                              <p className="text-[10px] text-[#555555] mt-1">Reference style</p>
-                            </div>
-                          )}
-                          <AIButton
-                            label="Style Match"
-                            loading={loadingStyleMatch}
-                            disabled={!imageUrl}
-                            onClick={() => styleMatchInputRef.current?.click()}
-                          />
-                        </div>
-                      )}
+                      <div className="flex flex-col gap-3 px-8 pt-5 pb-3">
+                        <AIButton
+                          label="Smart Color Balance"
+                          loading={loadingSmartColor}
+                          disabled={!imageUrl}
+                          onClick={() => void runSmartColorBalance()}
+                        />
+                        <input
+                          ref={styleMatchInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => { void handleStyleMatchFilePick(e); }}
+                        />
+                        {styleMatchPreview && (
+                          <div className="px-0 pb-1">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={styleMatchPreview}
+                              alt="Style reference"
+                              className="h-[48px] w-auto max-w-full rounded-sm object-cover border border-[#212121]"
+                            />
+                            <p className="text-[10px] text-[#555555] mt-1">Reference style</p>
+                          </div>
+                        )}
+                        <AIButton
+                          label="Style Match"
+                          loading={loadingStyleMatch}
+                          disabled={!imageUrl}
+                          onClick={() => styleMatchInputRef.current?.click()}
+                        />
+                      </div>
                     </div>
                   )}
 

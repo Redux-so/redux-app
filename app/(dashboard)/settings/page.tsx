@@ -13,7 +13,6 @@ import SettingsBackButton from "@/components/shared/SettingsBackButton";
 import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 import { BRAND_LINK_TEXT_CLASS, BRAND_LINK_TEXT_HOVER_CLASS } from "@/lib/brand-colors";
 import CreditShopModal from "@/components/shared/CreditShopModal";
-import { useOnboarding } from "@/components/onboarding/OnboardingProvider";
 import { reduxUserProfileAppearance } from "@/lib/redux-clerk-appearance";
 import {
   SETTINGS_NAV_ITEMS,
@@ -230,7 +229,6 @@ export default function SettingsPage() {
   const [clearingLibrary, setClearingLibrary] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
-  const { openTour } = useOnboarding();
 
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
@@ -549,23 +547,13 @@ export default function SettingsPage() {
 
             <div className={SETTING_ROW}>
               <span className="text-[14px] text-white">Support</span>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => openTour("help")}
-                  className={`${BTN_GHOST} flex items-center gap-[6px]`}
-                >
-                  <Icon name="HelpCircle" size={16} aria-hidden />
-                  Help
-                </button>
-                <a
-                  href="mailto:admin@redux.so?subject=Redux%20Support%20Request"
-                  className={`${BTN_GHOST} flex items-center gap-[6px]`}
-                >
-                  <Icon name="Mail01" size={16} aria-hidden />
-                  Contact
-                </a>
-              </div>
+              <a
+                href="mailto:admin@redux.so?subject=Redux%20Support%20Request"
+                className={`${BTN_GHOST} flex items-center gap-[6px]`}
+              >
+                <Icon name="Mail01" size={16} aria-hidden />
+                Contact Support
+              </a>
             </div>
 
             <div className={SETTING_ROW}>
