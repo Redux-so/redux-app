@@ -66,7 +66,7 @@ const TOOLBAR_CHIP =
 const CHAT_PANEL_GUTTER_CLASS = "px-8";
 const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
 const CHAT_AVATAR_PX = 44;
-const CHAT_AVATAR_LOGO_PX = 38;
+const CHAT_AVATAR_LOGO_PX = 32;
 const CHAT_AVATAR_SHELL =
   "flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-[#1d1d1d]";
 const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
