@@ -21,17 +21,7 @@ export const metadata: Metadata = {
       },
       { url: "/favicon-black.png", type: "image/png" },
     ],
-    apple: [
-      {
-        url: "/favicon-white.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/favicon-black.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      { url: "/favicon-black.png" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png" }],
   },
 };
 

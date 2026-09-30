@@ -86,12 +86,12 @@ export default function LibrarySidebar({
         style={{ width: LIBRARY_SIDEBAR_WIDTH_PX }}
       >
         <div className="shrink-0">
-          <div className="flex items-center px-5 pt-4 pb-0">
+          <div className="flex items-center px-3 pt-4 pb-0">
             <Link
               href="/library"
-              className="inline-flex items-center no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
+              className="inline-flex items-center pl-2.5 no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
             >
-              <AppChromeLogo />
+              <AppChromeLogo className="-ml-1" />
             </Link>
           </div>
           <p className={`px-5 mt-3 mb-3 ${SECTION_LABEL}`}>Library</p>

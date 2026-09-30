@@ -1,5 +1,4 @@
-import Image from "next/image";
-
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Icon } from "@/components/shared/Icon";
 import { CHAT_SUGGESTIONS } from "@/constants/chat-suggestions";
 import { CHAT_PANEL_GUTTER_PX, CHAT_PANEL_WIDTH_PX } from "@/constants/chat-panel";
@@ -22,13 +21,11 @@ export default function ChatEmptyState({
         className="flex w-full flex-col items-center"
         style={{ maxWidth: CHAT_PANEL_WIDTH_PX - CHAT_PANEL_GUTTER_PX * 2 }}
       >
-        <Image
-          src="/r-logo.png"
-          alt=""
+        <BrandLogo
           width={96}
           height={96}
-          className="mb-4 shrink-0 rounded"
-          aria-hidden
+          className="mb-4 shrink-0"
+          decorative
         />
         <div className="flex w-full flex-col items-center -translate-y-4">
           <p className="mb-7 text-center text-[17px] font-normal text-[#888888]">

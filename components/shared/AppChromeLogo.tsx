@@ -1,16 +1,20 @@
-import Image from "next/image";
+import BrandLogo from "@/components/shared/BrandLogo";
 
 /** Same logo markup for library header + editor toolbar so position is identical across routes. */
 const LOGO_PX = 52;
 
-export default function AppChromeLogo() {
+const LOGO_CLASS = "h-[52px] w-auto shrink-0 object-contain";
+
+type AppChromeLogoProps = {
+  className?: string;
+};
+
+export default function AppChromeLogo({ className }: AppChromeLogoProps) {
   return (
-    <Image
-      src="/logo.png"
-      alt="Redux"
+    <BrandLogo
       width={LOGO_PX}
       height={LOGO_PX}
-      className="h-[52px] w-auto shrink-0 object-contain"
+      className={[LOGO_CLASS, className].filter(Boolean).join(" ")}
       priority
     />
   );

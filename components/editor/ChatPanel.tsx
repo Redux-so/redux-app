@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
+import BrandLogo from "@/components/shared/BrandLogo";
 import { Icon } from "@/components/shared/Icon";
 import ChatEmptyState from "@/components/editor/ChatEmptyState";
 import { ShimmerText } from "@/components/shared/ShimmerText";
@@ -412,13 +413,11 @@ function ChatMessageAvatar({
   if (role === "assistant") {
     return (
       <div className={CHAT_AVATAR_SHELL} aria-hidden>
-        <Image
-          src="/r-logo.png"
-          alt=""
+        <BrandLogo
           width={CHAT_AVATAR_LOGO_PX}
           height={CHAT_AVATAR_LOGO_PX}
           className="shrink-0"
-          aria-hidden
+          decorative
         />
       </div>
     );
@@ -997,13 +996,11 @@ export default function ChatPanel({
               {/* Upper input field */}
               <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
                 <div className="flex w-full items-center gap-3.5">
-                  <Image
-                    src="/r-logo.png"
-                    alt=""
+                  <BrandLogo
                     width={46}
                     height={46}
-                    className="shrink-0 -translate-y-1 rounded"
-                    aria-hidden
+                    className="shrink-0 -translate-y-1"
+                    decorative
                   />
                   <div className="relative min-w-0 flex-1">
                     {chatBlocked && !input && (

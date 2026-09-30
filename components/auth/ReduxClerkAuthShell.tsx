@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import BrandLogo from "@/components/shared/BrandLogo";
+
 import {
   EXTERNAL_LINK_PROPS,
   REDUX_PRIVACY_URL,
@@ -49,11 +51,9 @@ export default function ReduxClerkAuthShell({
                 : "mb-5 flex justify-center"
             }
           >
-            <Image
-              src="/logo.png"
-              alt="Redux"
+            <BrandLogo
               width={260}
-              height={85}
+              height={260}
               className={
                 isLarge
                   ? "h-[76px] w-auto object-contain sm:h-[84px]"
