@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { reduxClerkProviderAppearance } from "@/lib/redux-clerk-appearance";
+import { APPLE_TOUCH_ICON_PATH, FAVICON_PATH } from "@/constants/brand";
 import { geistSans } from "@/lib/fonts";
 import "./globals.css";
 
@@ -8,20 +9,8 @@ export const metadata: Metadata = {
   title: "Redux",
   description: "AI-powered photo editing",
   icons: {
-    icon: [
-      {
-        url: "/favicon-white.png",
-        type: "image/png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/favicon-black.png",
-        type: "image/png",
-        media: "(prefers-color-scheme: light)",
-      },
-      { url: "/favicon-black.png", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png" }],
+    icon: [{ url: FAVICON_PATH, type: "image/png" }],
+    apple: [{ url: APPLE_TOUCH_ICON_PATH }],
   },
 };
 

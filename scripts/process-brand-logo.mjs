@@ -1,6 +1,8 @@
 /**
- * Convert brand mark (white on black) to transparent PNG + favicons.
+ * Convert brand mark (white on black) to transparent PNG for in-app UI.
  * Run: node scripts/process-brand-logo.mjs <source-image>
+ *
+ * Tab / Apple icons: use scripts/process-favicons.mjs with squircle tile sources.
  */
 import sharp from "sharp";
 import { mkdirSync } from "node:fs";
@@ -34,18 +36,6 @@ function applyBlackToTransparent(data) {
   return out;
 }
 
-function invertMarkToDark(data) {
-  const out = Buffer.from(data);
-  for (let i = 0; i < out.length; i += 4) {
-    const a = out[i + 3];
-    if (a === 0) continue;
-    out[i] = 22;
-    out[i + 1] = 22;
-    out[i + 2] = 22;
-  }
-  return out;
-}
-
 async function rgbaToPngBuffer(rgba, width, height, size) {
   return sharp(rgba, { raw: { width, height, channels: 4 } })
     .resize(size, size)
@@ -62,26 +52,13 @@ async function main() {
 
   const { data, width, height } = await loadRgba(source);
   const transparent = applyBlackToTransparent(data);
-  const darkMark = invertMarkToDark(transparent);
-
   const logo512 = await rgbaToPngBuffer(transparent, width, height, 512);
   const assetsBrandDir = join(root, "assets", "brand");
   mkdirSync(assetsBrandDir, { recursive: true });
   await sharp(logo512).toFile(join(publicDir, "logo.png"));
   await sharp(logo512).toFile(join(assetsBrandDir, "redux-mark.png"));
 
-  const faviconWhite = await sharp(logo512).resize(32, 32).png().toBuffer();
-  await sharp(faviconWhite).toFile(join(publicDir, "favicon-white.png"));
-
-  const dark512 = await rgbaToPngBuffer(darkMark, width, height, 512);
-  const faviconBlack = await sharp(dark512).resize(32, 32).png().toBuffer();
-  await sharp(faviconBlack).toFile(join(publicDir, "favicon-black.png"));
-
-  await sharp(logo512).resize(180, 180).png().toFile(join(publicDir, "apple-touch-icon.png"));
-
-  console.log(
-    "Wrote public/logo.png, assets/brand/redux-mark.png, favicon-white.png, favicon-black.png, apple-touch-icon.png",
-  );
+  console.log("Wrote public/logo.png, assets/brand/redux-mark.png");
 }
 
 main().catch((err) => {
