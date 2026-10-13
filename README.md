@@ -1,16 +1,21 @@
 # Redux
 
-Your AI agent for professional photo editing.
+Agentic photo editing platform
 
-## Developer docs
+## Development
 
-Local-only context files (gitignored):
+Use Node.js 20.9 or newer and [pnpm](https://pnpm.io/).
 
-- **`.devnotes`** — phase tracking, editor UI spec, env/security notes, decisions
-- **`.context`** — compact stack + editor layout briefing for AI tools
+```bash
+pnpm install
+pnpm dev
+```
 
-## Stack
+The app runs at [http://localhost:3000](http://localhost:3000).
 
-Next.js App Router · TypeScript · Clerk · Prisma · Cloudinary · Fabric.js · Anthropic / Replicate AI
+Keep local configuration in `.env.local`. Next.js loads that file for `pnpm dev`. Prisma reads `DATABASE_URL` and `DIRECT_URL` for PostgreSQL, and the Prisma CLI needs the file passed explicitly:
 
-See `.context` for architecture details.
+```bash
+node --env-file=.env.local ./node_modules/prisma/build/index.js generate
+node --env-file=.env.local ./node_modules/prisma/build/index.js migrate dev
+```
