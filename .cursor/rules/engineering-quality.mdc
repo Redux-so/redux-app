@@ -1,0 +1,54 @@
+---
+description: Core engineering discipline for all Redux work (simplicity, reuse, scoped diffs)
+alwaysApply: true
+---
+
+# Engineering quality
+
+Simple, professional changes. No spaghetti, no duplicate systems, no speculative abstractions, no "AI slop."
+
+## Before implementation
+
+- Inspect the existing implementation in the files you will touch (and their callers).
+- Search for existing helpers, components, hooks, and utilities before adding new ones.
+- Understand the root problem; do not patch symptoms in isolation.
+- Prefer the **smallest correct solution** that fits current architecture.
+- Reuse established patterns (routes, Prisma access, UI tokens, shared components).
+- Do not introduce abstractions for hypothetical future needs.
+
+## During implementation
+
+- Keep changes scoped to the assigned task; avoid unrelated refactors.
+- Do not duplicate logic or run parallel implementations of the same capability.
+- Preserve strong TypeScript typing; avoid `any` unless truly unavoidable.
+- Do not suppress type or lint errors to make checks pass.
+- Do not add dependencies unless the task clearly requires them.
+- Prefer readable, boring code over clever code.
+- Keep functions and components focused; avoid premature abstraction and premature optimization.
+- Do not change application behavior unless the task requires it.
+
+## Before completion
+
+- Remove debug code and dead code introduced by your change.
+- Inspect the **complete diff** (not only the last file edited).
+- Look for duplicate implementations, unnecessary complexity, security regressions, and performance regressions.
+- Run relevant validation (see `.cursor/rules/testing.mdc`); do not claim a check passed unless it actually ran.
+
+## Self-review before opening a PR
+
+Review your diff like a senior engineer. Fix legitimate issues before opening the PR.
+
+Check for:
+
+- Unnecessary complexity
+- Duplicate logic
+- Poor or premature abstractions
+- Scope creep
+- Weak typing
+- Security issues (auth, tenancy, secrets, untrusted URLs/inputs)
+- Performance regressions
+- Dead code
+- Missing error handling
+- Accidental behavior changes
+
+Then open the PR with an honest summary and testing notes. **Do not merge**; stop for human review.
