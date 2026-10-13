@@ -19,3 +19,5 @@ Keep local configuration in `.env.local`. Next.js loads that file for `pnpm dev`
 node --env-file=.env.local ./node_modules/prisma/build/index.js generate
 node --env-file=.env.local ./node_modules/prisma/build/index.js migrate dev
 ```
+
+Before opening a pull request, run `pnpm run lint`. Run `pnpm run build` when a change affects routes, types, or shared modules.
