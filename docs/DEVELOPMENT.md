@@ -12,12 +12,25 @@
 | `pnpm run dev` | Dev server (Turbopack; `NODE_OPTIONS` raises memory) |
 | `pnpm run build` | Production build |
 | `pnpm run start` | Run production server locally |
-| `pnpm run lint` | ESLint |
+| `pnpm run lint` | ESLint (`eslint .`) |
+| `pnpm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `pnpm run test` | CI test gate — skips when no test files; fails if tests exist without a runner |
 | `pnpm run embed:all` | Regenerate CLIP embeddings (`scripts/reembed-images.ts`) |
 
-**Typecheck:** no dedicated `typecheck` script; `pnpm run build` runs TypeScript via Next.js.
+**Tests:** there is no unit/e2e runner yet. `pnpm run test` only verifies that test files are not added without wiring a runner. Add Vitest/Jest (or similar) before introducing `*.test.*` / `*.spec.*` files.
 
-**Tests:** no test runner script in `package.json` at documentation time.
+## Continuous integration
+
+GitHub Actions workflow [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on **pull requests to `main`**:
+
+1. `pnpm install --frozen-lockfile`
+2. `pnpm exec prisma generate`
+3. `pnpm run lint`
+4. `pnpm run typecheck`
+5. `pnpm run test`
+6. `pnpm run build`
+
+CI uses **placeholder** env vars for Prisma and Clerk so compile/generate succeed without real secrets. Optional repo secret: **`SENTRY_AUTH_TOKEN`** (Sentry source map upload during build; omit if not needed).
 
 ## Prisma
 
@@ -81,7 +94,8 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 ## Validate a change
 
 1. `pnpm run lint`
-2. `pnpm run build` for non-trivial or cross-route changes
+2. `pnpm run typecheck`
+3. `pnpm run build` for non-trivial or cross-route changes
 3. Manual QA: library, editor with `?imageId=`, settings, auth
 4. For UI: confirm layout, interactions, and browser console
 5. For API/AI: exercise route with authenticated session; verify credits and 401/404 behavior

@@ -8,8 +8,9 @@ alwaysApply: true
 
 - Validate the **specific task** you changed; do not rely on unrelated passing checks.
 - Run `pnpm run lint` before finishing substantive code changes.
-- Run `pnpm run build` when changes affect routes, types, or shared modules (no separate typecheck script exists).
-- There is no default unit/e2e test script in `package.json` — do not claim tests passed unless you ran explicit commands.
+- Run `pnpm run typecheck` when types or shared modules change.
+- Run `pnpm run build` when changes affect routes, types, or shared modules.
+- Run `pnpm run test` in CI; there is no unit/e2e runner yet — do not claim tests passed unless you added and ran a real suite.
 - For UI work: run `pnpm run dev`, exercise the affected pages, and inspect the browser console.
 - For API work: hit endpoints with an authenticated session when possible; verify 401/404/402 behavior as relevant.
 - Report validation honestly in the PR (command + result); never state "all tests pass" without evidence.

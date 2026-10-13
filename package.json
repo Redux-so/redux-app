@@ -2,11 +2,17 @@
   "name": "redux-app",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/ci-test.mjs",
     "embed:all": "tsx scripts/reembed-images.ts"
   },
   "prisma": {

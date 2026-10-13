@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+
+    env:
+      # Prisma schema requires these names; generate/build do not connect to this DB.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      # Clerk keys are read at build time; placeholders satisfy Next.js compile only.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci_placeholder
+      CLERK_SECRET_KEY: sk_test_ci_placeholder
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm run test
+
+      - name: Production build
+        run: pnpm run build
+        env:
+          # Optional: set SENTRY_AUTH_TOKEN in GitHub repo secrets for source map uploads.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
