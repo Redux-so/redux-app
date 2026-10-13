@@ -100,6 +100,10 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 4. For UI: confirm layout, interactions, and browser console
 5. For API/AI: exercise route with authenticated session; verify credits and 401/404 behavior
 
+## Superpowers (Cursor)
+
+Optional Agent plugin for planning/debugging/verification workflows. Install and precedence vs Redux rules: [SUPERPOWERS.md](SUPERPOWERS.md).
+
 ## Cloud Agent notes
 
 - Full app behavior requires external services and env vars; agents may be blocked on auth or missing keys.

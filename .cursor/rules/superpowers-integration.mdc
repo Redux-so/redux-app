@@ -1,0 +1,31 @@
+---
+description: How obra/superpowers (Cursor plugin) complements Redux repo rules — not a replacement
+alwaysApply: true
+---
+
+# Superpowers integration (Redux)
+
+Superpowers is installed via Cursor Agent marketplace (`/plugin-add superpowers`). See [docs/SUPERPOWERS.md](../../docs/SUPERPOWERS.md).
+
+## Role
+
+Use Superpowers for **process**: clarify intent before coding, systematic debugging, verification before claiming success, and structured review — especially on non-trivial or ambiguous work.
+
+## Precedence
+
+1. Current Linear/issue scope and user instructions.
+2. [AGENTS.md](../../AGENTS.md), `/docs`, and Redux `.cursor/rules` (especially `engineering-quality.mdc` and domain rules).
+3. CI commands in [docs/DEVELOPMENT.md](../../docs/DEVELOPMENT.md) — run them; do not claim pass without output.
+4. Superpowers skills — follow when they **complement** the above; never override Redux stack conventions, tenancy/auth, or “smallest correct diff.”
+
+## Do not duplicate
+
+Do not restate Superpowers skill text in this repo. Do not add parallel “methodology” rules that repeat `engineering-quality.mdc`.
+
+## Tests
+
+This repo has **no** unit/e2e runner yet. Do not add throwaway tests to satisfy TDD rhetoric. If TDD is appropriate, treat “add test runner + first real tests” as its own scoped task aligned with `pnpm run test` / CI.
+
+## PRs
+
+Superpowers may suggest merge/PR flows. Redux policy: open a PR with honest validation notes; **do not merge**; wait for human review.

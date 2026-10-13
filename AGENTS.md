@@ -21,7 +21,9 @@ Persistent project knowledge lives in **`/docs`** and this file. Do not rely on 
 3. Inspect existing code in the area you will change; reuse helpers and patterns.
 4. Work on **one scoped task** at a time — simplest correct solution, no unrelated refactoring.
 
-Domain rules (when they apply): `.cursor/rules/frontend.mdc`, `backend.mdc`, `database.mdc`, `testing.mdc`.
+Domain rules (when they apply): `.cursor/rules/frontend.mdc`, `backend.mdc`, `database.mdc`, `testing.mdc`, `superpowers-integration.mdc`.
+
+**Superpowers (optional Cursor plugin):** install in Agent via `/plugin-add superpowers` (IDE-only). Use it for planning/debugging/verification discipline; Redux docs and rules above still govern stack, scope, and merge policy. See [docs/SUPERPOWERS.md](docs/SUPERPOWERS.md).
 
 ## Code standards
 
