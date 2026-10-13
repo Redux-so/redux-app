@@ -1,0 +1,16 @@
+---
+description: Prisma schema, migrations, and database access
+globs: prisma/**/*,lib/prisma.ts,lib/pgvector.ts
+alwaysApply: false
+---
+
+# Database rules
+
+- Read `prisma/schema.prisma` before any schema change.
+- Do not change schema, run migrations, or alter relations unless the task explicitly requires it.
+- Preserve naming conventions (`User.clerkId`, `Image.userId`, cuid ids).
+- User-owned data must filter by `userId`; never return cross-tenant rows.
+- `Image.embedding` is managed via raw SQL / pgvector helpers — do not assume standard Prisma queries for vector ops.
+- Migrations must be intentional; avoid destructive changes without explicit task approval.
+- After schema changes: `pnpm exec prisma generate` and document migration steps in the PR.
+- Seed data for bundles lives in `prisma/seed.ts` — do not run seed against production casually.

@@ -1,0 +1,100 @@
+# Development guide
+
+## Package manager
+
+**pnpm** (lockfile: `pnpm-lock.yaml`)
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| `pnpm install` | Install dependencies |
+| `pnpm run dev` | Dev server (Turbopack; `NODE_OPTIONS` raises memory) |
+| `pnpm run build` | Production build |
+| `pnpm run start` | Run production server locally |
+| `pnpm run lint` | ESLint |
+| `pnpm run embed:all` | Regenerate CLIP embeddings (`scripts/reembed-images.ts`) |
+
+**Typecheck:** no dedicated `typecheck` script; `pnpm run build` runs TypeScript via Next.js.
+
+**Tests:** no test runner script in `package.json` at documentation time.
+
+## Prisma
+
+| Command | Purpose |
+|---------|---------|
+| `pnpm exec prisma generate` | Generate client after schema changes |
+| `pnpm exec prisma migrate dev` | Local migrations (use intentionally) |
+| `pnpm exec prisma db seed` | Seed credit bundles (`prisma/seed.ts`) |
+| `pnpm exec prisma studio` | DB UI (often port 5555) |
+
+**Database:** PostgreSQL with `DATABASE_URL` and `DIRECT_URL`. Enable pgvector in Neon:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+After adding images without embeddings, run `pnpm run embed:all`.
+
+## Environment variables
+
+Use **`.env`** (Prisma/server) and **`.env.local`** (Next.js). Both should include shared values where noted in scratch docs (e.g. `NEXT_PUBLIC_APP_URL`).
+
+Never commit secrets. Names referenced in code:
+
+| Variable | Used for |
+|----------|----------|
+| `DATABASE_URL`, `DIRECT_URL` | Prisma / Neon |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk (standard Clerk setup) |
+| `CLERK_WEBHOOK_SECRET` | Clerk webhook Svix verification |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary |
+| `UPLOADTHING_TOKEN` | UploadThing |
+| `ANTHROPIC_API_KEY` | Chat / vision AI |
+| `REPLICATE_API_TOKEN` | Replicate models (heal, CLIP, etc.) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe |
+| `NEXT_PUBLIC_APP_URL` | Checkout redirect URLs |
+| `KV_REST_API_URL` (+ related KV vars per Vercel) | Rate limiting |
+| `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Sentry (token for CI/source maps) |
+
+Optional script vars: `REEMBED_BETWEEN_REPLICATE_MS`, `REEMBED_ALL`.
+
+There is no committed `.env.example` in the repository; obtain values from team secrets or service dashboards.
+
+## Local services
+
+- **PostgreSQL (Neon)** — required for auth-linked data and library
+- **Clerk** — required for sign-in and protected routes
+- **Cloudinary, UploadThing, Stripe, Anthropic, Replicate** — required for full feature testing
+- **Vercel KV** — optional locally; rate limits may no-op if unset (`lib/kv.ts`)
+- **ngrok** — only for local Stripe webhook testing (see scratch notes)
+
+## Start the app
+
+```bash
+pnpm install
+pnpm exec prisma generate
+pnpm run dev
+```
+
+Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
+
+## Validate a change
+
+1. `pnpm run lint`
+2. `pnpm run build` for non-trivial or cross-route changes
+3. Manual QA: library, editor with `?imageId=`, settings, auth
+4. For UI: confirm layout, interactions, and browser console
+5. For API/AI: exercise route with authenticated session; verify credits and 401/404 behavior
+
+## Cloud Agent notes
+
+- Full app behavior requires external services and env vars; agents may be blocked on auth or missing keys.
+- Do not push to `main`; use a branch and PR per [AGENTS.md](../AGENTS.md).
+- Read `/docs` before large changes; editor layout details are in [DESIGN.md](DESIGN.md).
+- Next.js **16** — check `node_modules/next/dist/docs/` when APIs differ from training data.
+- Known local quirk: hydration mismatch warning in console (documented as non-fatal in `.devnotes`).
+
+## Brand assets
+
+- In-app logo: `assets/brand/redux-mark.png`, `constants/brand.ts`
+- Favicons: `scripts/process-favicons.mjs` → `public/favicon.png`

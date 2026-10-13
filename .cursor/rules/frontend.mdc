@@ -1,0 +1,18 @@
+---
+description: Frontend and UI work for Redux (React, Next.js App Router, Tailwind)
+globs: app/**/*.tsx,components/**/*.{tsx,ts},hooks/**/*.ts,app/globals.css
+alwaysApply: false
+---
+
+# Frontend rules
+
+- Read [docs/DESIGN.md](../../docs/DESIGN.md) before editor, library, or settings layout changes.
+- Reuse components under `components/shared/`, `components/editor/`, `components/library/`.
+- Import icons only via `components/shared/Icon.tsx`.
+- Use tokens from `lib/surface-colors.ts`, `lib/button-styles.ts`, `lib/panel-chrome.ts` — avoid one-off hex values.
+- Prefer Server Components; add `"use client"` only for interactivity, Fabric.js, or browser APIs.
+- Preserve accessibility: labels, `aria-*`, keyboard behavior on menus and dialogs.
+- Portaled UI (modals, dropdowns) should use `createPortal(..., document.body)` when panels clip content.
+- Keep responsive behavior on settings tabs and library grid.
+- Do not refactor unrelated UI in the same task.
+- After UI changes: run dev server, visually verify, check browser console for errors.

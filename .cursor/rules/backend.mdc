@@ -1,0 +1,17 @@
+---
+description: API routes, server logic, and integrations
+globs: app/api/**/*.ts,lib/**/*.ts,middleware.ts,instrumentation*.ts
+alwaysApply: false
+---
+
+# Backend rules
+
+- Follow existing route handler patterns under `app/api/**/route.ts`.
+- Authenticate with `requireAuthUser()` or Clerk `auth()` unless the route is listed in `lib/public-routes.ts`.
+- Validate inputs; return explicit HTTP status codes and JSON errors.
+- Scope Prisma queries by authenticated `user.id` (or `image.userId` for versions).
+- For AI routes accepting `imageUrl`, use ownership checks (`lib/verify-user-image.ts`) before credits or fetches.
+- Never expose secrets (Cloudinary, Stripe, Anthropic, Replicate, UploadThing) to the client.
+- Respect credit costs (`constants/credits.ts`) and rate limiting patterns in sibling routes.
+- Avoid new public API surface unless the task requires it.
+- Webhooks must verify signatures (Clerk Svix, Stripe) before side effects.
