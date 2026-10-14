@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic, formatAdjustmentsForPrompt } from "@/lib/anthropic";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
   checkRateLimitPerMinute,
@@ -110,10 +110,11 @@ function pushImageBlock(
 }
 
 export async function POST(request: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
+  const { user } = authResult;
 
   const body = (await request.json()) as ChatRequestBody;
   const {
@@ -131,11 +132,6 @@ export async function POST(request: Request) {
   }
 
   // ── Find user ─────────────────────────────────────────────────────────────
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
   // ── Block only when lifetime free is used up AND there are no credits left.
   // While lifetimeFreeAI < 20, messages are free (lifetime counter increments).
   // Once lifetimeFreeAI reaches 20, each message deducts 1 credit with no extra step.

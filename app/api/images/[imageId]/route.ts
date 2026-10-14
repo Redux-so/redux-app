@@ -1,26 +1,22 @@
-import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
 import { isImageFavorite, mergeImageMetadata } from "@/lib/image-metadata";
 import { permanentlyDeleteImageById } from "@/lib/permanently-delete-image";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ imageId: string }> },
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
+  const { user } = authResult;
 
   const { imageId } = await params;
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
 
   const image = await prisma.image.findFirst({
     where: { id: imageId, userId: user.id, ...ACTIVE_IMAGE_WHERE },
@@ -57,17 +53,13 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ imageId: string }> },
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
+  const { user } = authResult;
 
   const { imageId } = await params;
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
 
   const body = (await request.json()) as {
     previewUrl?: string;
@@ -140,17 +132,13 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ imageId: string }> },
 ) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
+  const { user } = authResult;
 
   const { imageId } = await params;
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
 
   const image = await prisma.image.findFirst({
     where: { id: imageId, userId: user.id, ...TRASHED_IMAGE_WHERE },

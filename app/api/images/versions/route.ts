@@ -1,25 +1,21 @@
-import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 
 export async function GET(request: NextRequest) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
+  const { user } = authResult;
 
   const { searchParams } = new URL(request.url);
   const imageId = searchParams.get("imageId");
   if (!imageId) {
     return NextResponse.json({ error: "imageId is required" }, { status: 400 });
-  }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ versions: [] });
   }
 
   // Verify the image belongs to this user before returning its versions
@@ -47,15 +43,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+  const { user } = authResult;
 
   const body = (await request.json()) as {
     imageId?: string;

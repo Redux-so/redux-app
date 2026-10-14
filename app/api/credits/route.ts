@@ -1,26 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 
 export async function GET() {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true, creditBalance: true, lifetimeFreeAI: true },
-  });
-
-  if (!user) {
-    return NextResponse.json({
-      creditBalance: 0,
-      lifetimeFreeAI: 0,
-      totalPurchasedCredits: 0,
-      hasPurchasedCredits: false,
-    });
-  }
+  const { user } = authResult;
 
   const purchaseAggregate = await prisma.creditTransaction.aggregate({
     where: { userId: user.id, type: "PURCHASE" },

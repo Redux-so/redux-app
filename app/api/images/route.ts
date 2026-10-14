@@ -1,9 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { hasNonDefaultAdjustments } from "@/lib/library-filters";
 import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
 import { isImageFavorite } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
 
 const IMAGE_SELECT = {
@@ -57,15 +57,11 @@ function mapImageRow({ versions, metadata, ...image }: ImageListRow) {
 }
 
 export async function GET(request: NextRequest) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ images: [], total: 0, page: 1, limit: 50 });
-  }
+  const { user } = authResult;
 
   const { searchParams } = new URL(request.url);
   const trash = searchParams.get("trash") === "1";
@@ -95,15 +91,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+  const { user } = authResult;
 
   const body = await request.json() as { ufsUrl?: string; utKey?: string; name?: string; size?: number };
   const { ufsUrl, utKey, name, size } = body;
@@ -141,15 +133,11 @@ export async function POST(request: NextRequest) {
 
 /** Soft-delete: move photo to trash without removing storage. */
 export async function DELETE(request: NextRequest) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+  const { user } = authResult;
 
   const body = await request.json() as { imageId?: string };
   const { imageId } = body;

@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 
 // blurIntensity 1–100 maps sigma to ~1–30 for Sharp's Gaussian blur
 function intensityToSigma(intensity: number): number {
@@ -21,17 +21,13 @@ interface RequestBody {
 
 export async function POST(request: Request) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireAuthUser();
+    if ("error" in authResult) {
+      return authResult.error;
     }
+    const { user } = authResult;
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const body = (await request.json()) as RequestBody;
+      const body = (await request.json()) as RequestBody;
     const { imageUrl, maskBase64, imageId, blurIntensity = 30 } = body;
 
     if (!imageUrl || !maskBase64 || !imageId) {
