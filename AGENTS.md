@@ -33,15 +33,69 @@ Domain rules (when they apply): `.cursor/rules/frontend.mdc`, `backend.mdc`, `da
 
 ## Validation
 
-See [`.cursor/rules/testing.mdc`](.cursor/rules/testing.mdc). At minimum: `pnpm run lint`; `pnpm run build` when routes, types, or shared modules change. No default test script — do not claim tests passed without running them.
+Command details and CI: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md), [`.cursor/rules/testing.mdc`](.cursor/rules/testing.mdc). Before opening a PR, follow **Verification and Handoff** below and the self-review checklist in `engineering-quality.mdc`.
+
+## Verification and Handoff
+
+Before opening a pull request:
+
+- Run all **relevant** automated checks for the task (not unrelated green checks).
+- `pnpm run lint`
+- `pnpm run typecheck` when types or shared modules change
+- `pnpm run test` (no unit/e2e runner yet — report what actually ran; do not claim a suite passed unless you added and executed one)
+- `pnpm run build` when routes, types, or shared modules change
+- `pnpm run dev` when the task affects runtime behavior; test the affected flow in the browser
+- Exercise the main happy path and at least one relevant edge or error case
+- Check the browser console for new errors or warnings
+- Check relevant network requests when useful (API, auth, credits)
+- Fix issues found during verification before opening the PR
+- Do not claim a check passed unless it actually ran successfully
+
+**User-facing or behavior-changing work:** record a short screen recording of the completed flow; keep it focused; attach to the PR when supported; add screenshots when they clarify the result.
+
+**Backend, security, database, infrastructure, or non-visual work:** do not record a meaningless demo video; provide the most relevant proof instead (tests, logs, request/response evidence, or before/after measurements).
+
+### PR description template
+
+Use this structure in the PR body (honest results only):
+
+**What changed**
+
+- 2–4 concise bullets
+
+**Why it works**
+
+- 1–3 concise bullets on the approach
+
+**Verification**
+
+- lint result
+- typecheck result
+- test result
+- build result
+- browser/manual flows tested
+- edge/error cases tested
+
+**Evidence**
+
+- video/screenshots for user-facing work
+- tests/logs/measurements for backend or security work
+
+**Issues encountered**
+
+- problems, compromises, warnings, or remaining limitations — or: *None observed*
+
+**Human review**
+
+- Never merge the PR automatically
+- Stop once the PR and verification evidence are ready; wait for human review
 
 ## Git and PR workflow
 
 - **Never push directly to `main`.** Use a separate branch per task.
 - Commit completed work with a clear message.
-- Complete the **self-review** checklist in `engineering-quality.mdc` on your full diff; fix issues before opening the PR.
-- Open a PR with summary and honest testing notes.
-- **Do not merge** the PR; stop and wait for human review.
+- Complete self-review on the full diff (`engineering-quality.mdc`); fix legitimate issues before opening the PR.
+- Open the PR using the **Verification and Handoff** template above.
 
 ## Editor UI
 
