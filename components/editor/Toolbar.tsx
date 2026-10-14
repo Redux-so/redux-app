@@ -157,7 +157,7 @@ export default function Toolbar({
           className={`${BTN_BRAND_SOLID} shrink-0`}
         >
           <Icon name="Download01" size={16} strokeWidth={2} aria-hidden />
-          Export
+          Export Photo
         </button>
       </div>
     </div>
