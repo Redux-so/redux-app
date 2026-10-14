@@ -100,14 +100,18 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 4. For UI: confirm layout, interactions, and browser console
 5. For API/AI: exercise route with authenticated session; verify credits and 401/404 behavior
 
+## Workflows (manual vs Cloud Agent)
+
+- **Local manual Cursor:** [MANUAL_DEVELOPMENT_WORKFLOW.md](MANUAL_DEVELOPMENT_WORKFLOW.md) — default; Git stays under your control unless you ask otherwise.
+- **Cursor Cloud Agent / Linear:** [CLOUD_AGENT_WORKFLOW.md](CLOUD_AGENT_WORKFLOW.md) — branch, commit, push, PR, handoff; read [AGENTS.md](../AGENTS.md) first.
+
 ## Superpowers (Cursor)
 
 Optional Agent plugin for planning/debugging/verification workflows. Install and precedence vs Redux rules: [SUPERPOWERS.md](SUPERPOWERS.md).
 
-## Cloud Agent notes
+## Cloud Agent environment notes
 
 - Full app behavior requires external services and env vars; agents may be blocked on auth or missing keys.
-- Do not push to `main`; use a branch and PR per [AGENTS.md](../AGENTS.md).
 - Read `/docs` before large changes; editor layout details are in [DESIGN.md](DESIGN.md).
 - Next.js **16** — check `node_modules/next/dist/docs/` when APIs differ from training data.
 - Known local quirk: hydration mismatch warning in console (documented as non-fatal in `.devnotes`).

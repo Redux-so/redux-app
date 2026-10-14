@@ -25,12 +25,14 @@ Optional telemetry opt-out (Superpowers docs): set `SUPERPOWERS_DISABLE_TELEMETR
 ## Intended workflow with Redux
 
 ```text
-Linear issue
-  → read AGENTS.md + relevant /docs
-  → Superpowers (brainstorm / plan / debug / verify / review skills as context dictates)
+Linear / Cloud Agent issue
+  → read AGENTS.md + relevant /docs + docs/CLOUD_AGENT_WORKFLOW.md
+  → Superpowers (brainstorm / plan / debug / verify / review as appropriate)
   → implement (engineering-quality + domain .cursor/rules)
-  → pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build
-  → PR → human review (never auto-merge)
+  → checks → commit / push / PR per CLOUD_AGENT_WORKFLOW.md
+
+Manual local Cursor
+  → AGENTS.md + docs/MANUAL_DEVELOPMENT_WORKFLOW.md (no auto git unless you ask)
 ```
 
 ## What takes precedence
@@ -49,7 +51,7 @@ When Superpowers and Redux instructions overlap, use this order:
 | Tests | No unit/e2e runner yet; `pnpm run test` is a gate only; do not add trivial/fake tests (`engineering-quality`, `testing.mdc`) | TDD skill pushes RED-GREEN-REFACTOR when **adding a real suite** — coordinate with a Linear issue to introduce Vitest/Jest first |
 | Scope | One scoped task; no unrelated refactors | Plans may be large — **execute only the slice** matching the current issue |
 | Docs | Permanent knowledge in `/docs` | Superpowers may write design/plan markdown — prefer `/docs` or issue-linked plans; avoid duplicating ARCHITECTURE/PRODUCT |
-| Merge | Agents must not merge PRs | `finishing-a-development-branch` suggests options — **human** still merges |
+| Merge / PR | Manual: no PR unless you ask; Cloud: see CLOUD_AGENT_WORKFLOW.md | `finishing-a-development-branch` suggests options — **human** still merges |
 
 ## When Superpowers typically activates
 
