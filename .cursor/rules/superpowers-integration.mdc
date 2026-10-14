@@ -26,6 +26,6 @@ Do not restate Superpowers skill text in this repo. Do not add parallel “metho
 
 This repo has **no** unit/e2e runner yet. Do not add throwaway tests to satisfy TDD rhetoric. If TDD is appropriate, treat “add test runner + first real tests” as its own scoped task aligned with `pnpm run test` / CI.
 
-## PRs
+## Git / PRs
 
-Superpowers may suggest merge/PR flows. Redux policy: open a PR with honest validation notes; **do not merge**; wait for human review.
+Superpowers may suggest merge/PR flows. **Manual Cursor:** no branch/commit/push/PR unless the user asks ([docs/MANUAL_DEVELOPMENT_WORKFLOW.md](../../docs/MANUAL_DEVELOPMENT_WORKFLOW.md)). **Cloud Agent / Linear:** follow [docs/CLOUD_AGENT_WORKFLOW.md](../../docs/CLOUD_AGENT_WORKFLOW.md); never auto-merge.

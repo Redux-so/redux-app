@@ -1,0 +1,12 @@
+---
+description: Git/PR defaults — manual Cursor unless Cloud Agent or Linear task
+alwaysApply: true
+---
+
+# Git and delivery workflow
+
+**Default (local manual Cursor):** Do not create branches, commit, push, or open pull requests unless the user **explicitly asks**. See [docs/MANUAL_DEVELOPMENT_WORKFLOW.md](../../docs/MANUAL_DEVELOPMENT_WORKFLOW.md).
+
+**Cursor Cloud Agent / Linear-delegated tasks:** Follow [docs/CLOUD_AGENT_WORKFLOW.md](../../docs/CLOUD_AGENT_WORKFLOW.md) — separate branch, commit, push, PR, verification handoff, no auto-merge.
+
+If mode is unclear, assume **manual** (no git actions) unless the user or task description clearly indicates Cloud Agent / Linear delegation.
