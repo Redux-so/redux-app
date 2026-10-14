@@ -1,9 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
   checkRateLimitPerMinute,
@@ -58,17 +58,13 @@ interface RequestBody {
 
 export async function POST(request: Request) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireAuthUser();
+    if ("error" in authResult) {
+      return authResult.error;
     }
+    const { user } = authResult;
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    if (user.creditBalance < HEAL_COST) {
+      if (user.creditBalance < HEAL_COST) {
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
     }
 

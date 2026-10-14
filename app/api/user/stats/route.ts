@@ -1,24 +1,14 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { ACTIVE_IMAGE_WHERE } from "@/lib/image-query";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 
 export async function GET() {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({
-      creditBalance: 0,
-      transactionHistory: [],
-      imageCount: 0,
-      totalStorageBytes: 0,
-      uploadsToday: 0,
-    });
-  }
+  const { user } = authResult;
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);

@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import type { ImageTransform } from "@/lib/image-transform";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 import { resolvePreviewSourceUrl } from "@/lib/resolve-preview-source";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
@@ -28,15 +28,11 @@ const FORMAT_MIME: Record<ExportFormat, string> = {
 };
 
 export async function POST(request: NextRequest) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await requireAuthUser();
+  if ("error" in authResult) {
+    return authResult.error;
   }
-
-  const user = await prisma.user.findUnique({ where: { clerkId } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+  const { user } = authResult;
 
   const body = (await request.json()) as ExportBody;
   const {

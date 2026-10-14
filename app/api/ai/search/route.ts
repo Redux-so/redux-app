@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
   checkRateLimitPerMinute,
@@ -53,17 +53,13 @@ function rowSimilarity(r: SearchRow): number {
 
 export async function GET(request: Request) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireAuthUser();
+    if ("error" in authResult) {
+      return authResult.error;
     }
+    const { user } = authResult;
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const { searchParams } = new URL(request.url);
+      const { searchParams } = new URL(request.url);
     const rawQuery = (searchParams.get("query") ?? "").trim();
     if (!rawQuery) {
       return NextResponse.json({ error: "query is required" }, { status: 400 });

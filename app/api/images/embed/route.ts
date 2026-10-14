@@ -1,21 +1,17 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
 
 export async function POST(request: Request) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireAuthUser();
+    if ("error" in authResult) {
+      return authResult.error;
     }
+    const { user } = authResult;
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const body = await request.json();
+      const body = await request.json();
     const imageId = typeof body.imageId === "string" ? body.imageId.trim() : "";
     const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
 

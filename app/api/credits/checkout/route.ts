@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
 
 function logCheckoutError(label: string, err: unknown) {
   console.error(`[credits/checkout] ${label}:`, err);
@@ -19,10 +19,11 @@ function logCheckoutError(label: string, err: unknown) {
 
 export async function POST(request: Request) {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireAuthUser();
+    if ("error" in authResult) {
+      return authResult.error;
     }
+    const { user } = authResult;
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
@@ -66,12 +67,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { clerkId } });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
     if (!appUrl) {
       console.error(
         "[credits/checkout] NEXT_PUBLIC_APP_URL is missing — cannot build checkout redirect URLs.",

@@ -1,6 +1,7 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { upsertPrismaUser } from "@/lib/ensure-prisma-user";
+import { clerkProfileFromCurrentUser } from "@/lib/require-user";
 
 const f = createUploadthing();
 
@@ -22,14 +23,9 @@ export const ourFileRouter = {
       if (!clerkId) throw new Error("Unauthorized");
 
       const clerkUser = await currentUser();
-      const email = clerkUser?.emailAddresses[0]?.emailAddress ?? "";
-      const name = clerkUser?.fullName ?? null;
-
-      const user = await prisma.user.upsert({
-        where: { clerkId },
-        update: {},
-        create: { clerkId, email, name },
-      });
+      const user = await upsertPrismaUser(
+        clerkProfileFromCurrentUser(clerkId, clerkUser),
+      );
 
       return { userId: user.id };
     })
