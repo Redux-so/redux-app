@@ -1,57 +1,95 @@
-/** Build CSP string for Next.js headers (dev may need unsafe-eval for HMR). */
-export function buildContentSecurityPolicy(isDev: boolean): string {
-  const scriptSrc = [
-    "'self'",
-    "'unsafe-inline'",
-    "https://*.clerk.accounts.dev",
-    "https://clerk.com",
-    "https://challenges.cloudflare.com",
-    "https://js.stripe.com",
-    ...(isDev ? ["'unsafe-eval'"] : []),
-  ].join(" ");
+import type { ClerkMiddlewareOptions } from "@clerk/nextjs/server";
 
-  return [
-    "default-src 'self'",
-    `script-src ${scriptSrc}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https://res.cloudinary.com https://img.clerk.com https://*.ufs.sh https://utfs.io https://*.stripe.com",
-    "font-src 'self' data: https://fonts.gstatic.com",
-    [
-      "connect-src 'self'",
-      "https://*.clerk.accounts.dev",
-      "https://clerk.com",
-      "https://res.cloudinary.com",
-      "https://*.ufs.sh",
-      "https://utfs.io",
-      "https://uploadthing.com",
-      "https://*.uploadthing.com",
-      "https://api.stripe.com",
-      "https://*.stripe.com",
-      "https://*.ingest.us.sentry.io",
-    ].join(" "),
-    "frame-src 'self' https://*.clerk.accounts.dev https://clerk.com https://challenges.cloudflare.com https://js.stripe.com https://hooks.stripe.com",
-    "worker-src 'self' blob:",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join("; ");
+/** Clerk production / fraud-protection hosts (see Clerk CSP guide). */
+const CLERK_CSP_HOSTS = {
+  "script-src": [
+    "https://challenges.cloudflare.com",
+    "https://*.protect.clerk.com",
+    "https://*.clerk.com",
+    "https://clerk.com",
+  ],
+  "connect-src": [
+    "https://*.protect.clerk.com:*",
+    "https://*.clerk.com",
+    "https://clerk.com",
+  ],
+  "frame-src": ["https://*.protect.clerk.com", "https://*.clerk.com"],
+} as const satisfies Record<string, string[]>;
+
+/** CSP directives merged with Clerk defaults in `proxy.ts`. */
+export const REDUX_CSP_DIRECTIVES = {
+  "img-src": [
+    "data:",
+    "blob:",
+    "https://res.cloudinary.com",
+    "https://*.ufs.sh",
+    "https://utfs.io",
+  ],
+  "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
+  "style-src": ["https://fonts.googleapis.com"],
+  "connect-src": [
+    "https://res.cloudinary.com",
+    "https://*.ufs.sh",
+    "https://utfs.io",
+    "https://uploadthing.com",
+    "https://*.uploadthing.com",
+    "https://*.ingest.us.sentry.io",
+  ],
+  "object-src": ["'none'"],
+  "base-uri": ["'self'"],
+} as const satisfies Record<string, string[]>;
+
+/** Clerk middleware CSP: strict nonces in production; dev keeps unsafe-eval for HMR. */
+export function clerkContentSecurityPolicyOptions(): ClerkMiddlewareOptions {
+  return {
+    contentSecurityPolicy: {
+      strict: process.env.NODE_ENV === "production",
+      directives: {
+        "script-src": [...CLERK_CSP_HOSTS["script-src"]],
+        "connect-src": [
+          ...CLERK_CSP_HOSTS["connect-src"],
+          ...REDUX_CSP_DIRECTIVES["connect-src"],
+        ],
+        "frame-src": [...CLERK_CSP_HOSTS["frame-src"]],
+        "img-src": [...REDUX_CSP_DIRECTIVES["img-src"]],
+        "font-src": [...REDUX_CSP_DIRECTIVES["font-src"]],
+        "style-src": [...REDUX_CSP_DIRECTIVES["style-src"]],
+        "object-src": [...REDUX_CSP_DIRECTIVES["object-src"]],
+        "base-uri": [...REDUX_CSP_DIRECTIVES["base-uri"]],
+      },
+    },
+  };
 }
 
-export const SECURITY_HEADERS = [
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
-  {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
-  {
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
-  },
-] as const;
+export function buildSecurityHeaders(isProduction: boolean) {
+  const headers = [
+    {
+      key: "X-Frame-Options",
+      value: "DENY",
+    },
+    {
+      key: "X-Content-Type-Options",
+      value: "nosniff",
+    },
+    {
+      key: "Referrer-Policy",
+      value: "strict-origin-when-cross-origin",
+    },
+    {
+      key: "Permissions-Policy",
+      value: "camera=(), microphone=(), geolocation=()",
+    },
+  ] as const;
+
+  if (isProduction) {
+    return [
+      ...headers,
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+    ] as const;
+  }
+
+  return headers;
+}

@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { apiUnauthorizedResponse } from "@/lib/api-error";
+import { clerkContentSecurityPolicyOptions } from "@/lib/content-security-policy";
 import { ALL_PUBLIC_ROUTES } from "@/lib/public-routes";
 
 const isPublicRoute = createRouteMatcher(ALL_PUBLIC_ROUTES);
@@ -16,7 +17,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   await auth.protect();
-});
+}, clerkContentSecurityPolicyOptions());
 
 export const config = {
   matcher: ["/((?!_next|.*\\..*).*)"],
