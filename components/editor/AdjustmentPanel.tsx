@@ -630,8 +630,8 @@ export default function AdjustmentPanel({
         return;
       }
       if (!res.ok) {
-        const errBody = (await res.json().catch(() => ({}))) as { detail?: string };
-        throw new Error(errBody.detail ?? `HTTP ${res.status}`);
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
@@ -671,8 +671,8 @@ export default function AdjustmentPanel({
         body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId }),
       });
       if (!res.ok) {
-        const errBody = (await res.json().catch(() => ({}))) as { detail?: string };
-        throw new Error(errBody.detail ?? `HTTP ${res.status}`);
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
@@ -712,8 +712,8 @@ export default function AdjustmentPanel({
         body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId, blurIntensity }),
       });
       if (!res.ok) {
-        const errBody = (await res.json().catch(() => ({}))) as { detail?: string };
-        throw new Error(errBody.detail ?? `HTTP ${res.status}`);
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {
@@ -819,8 +819,8 @@ export default function AdjustmentPanel({
         return;
       }
       if (!res.ok) {
-        const errBody = (await res.json().catch(() => ({}))) as { detail?: string };
-        throw new Error(errBody.detail ?? `HTTP ${res.status}`);
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
       if (data.resultUrl) {

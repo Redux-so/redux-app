@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
@@ -298,20 +299,10 @@ export async function GET(request: Request) {
         },
       );
     } catch (innerErr) {
-      console.error("[GET /api/ai/search]", innerErr);
       await refundCredits("Refund: semantic search failed");
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Search failed", detail: message },
-        { status: 500 },
-      );
+      return apiInternalErrorResponse("GET /api/ai/search", innerErr, "Search failed");
     }
   } catch (outerErr) {
-    console.error("[GET /api/ai/search] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("GET /api/ai/search", outerErr);
   }
 }

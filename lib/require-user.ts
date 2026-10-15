@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import type { NextResponse } from "next/server";
 import type { User } from "@prisma/client";
+import { apiUnauthorizedResponse } from "@/lib/api-error";
 import {
   type ClerkUserProfile,
   upsertPrismaUser,
@@ -44,7 +45,7 @@ export async function getPrismaUserForClerkId(clerkId: string): Promise<User> {
 export async function requireAuthUser(): Promise<RequireAuthUserResult> {
   const { userId: clerkId } = await auth();
   if (!clerkId) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    return { error: apiUnauthorizedResponse() };
   }
 
   const user = await getPrismaUserForClerkId(clerkId);

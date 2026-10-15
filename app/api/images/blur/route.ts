@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import { blurImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
@@ -114,19 +115,9 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      console.error("[/api/images/blur]", innerErr);
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Blur failed", detail: message },
-        { status: 500 },
-      );
+      return apiInternalErrorResponse("/api/images/blur", innerErr, "Blur failed");
     }
   } catch (outerErr) {
-    console.error("[/api/images/blur] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("/api/images/blur", outerErr);
   }
 }
