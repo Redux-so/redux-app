@@ -34,6 +34,14 @@ Run all **relevant** automated checks (not unrelated green checks):
 | `pnpm run build` | Routes, types, or shared modules change |
 | `pnpm run dev` + browser | Runtime / UI behavior changes |
 
+## Local browser URL
+
+For Cloud Agent browser verification, always use:
+
+`http://localhost:3000`
+
+Do not use `http://127.0.0.1:3000`. Next.js 16 may block dev HMR requests from `127.0.0.1`, which can prevent React hydration and leave Clerk stuck at `loaded: false`.
+
 Also:
 
 - Exercise the main happy path and at least one relevant edge or error case.
