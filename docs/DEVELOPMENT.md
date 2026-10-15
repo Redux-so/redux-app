@@ -103,7 +103,7 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 ## Workflows (manual vs Cloud Agent)
 
 - **Local manual Cursor:** [MANUAL_DEVELOPMENT_WORKFLOW.md](MANUAL_DEVELOPMENT_WORKFLOW.md) — default; Git stays under your control unless you ask otherwise.
-- **Cursor Cloud Agent / Linear:** [CLOUD_AGENT_WORKFLOW.md](CLOUD_AGENT_WORKFLOW.md) — branch, commit, push, PR, handoff; read [AGENTS.md](../AGENTS.md) first.
+- **Cursor Cloud Agent / Linear:** [CLOUD_AGENT_WORKFLOW.md](CLOUD_AGENT_WORKFLOW.md).
 
 ## Superpowers (Cursor)
 

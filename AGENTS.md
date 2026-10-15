@@ -15,7 +15,7 @@ Persistent project knowledge lives in **`/docs`** and this file. Do not rely on 
 | Interactive Cursor in this repo (you at the keyboard) | [docs/MANUAL_DEVELOPMENT_WORKFLOW.md](docs/MANUAL_DEVELOPMENT_WORKFLOW.md) |
 | Cursor Cloud Agent or Linear-delegated task | [docs/CLOUD_AGENT_WORKFLOW.md](docs/CLOUD_AGENT_WORKFLOW.md) |
 
-Git behavior (branch, commit, push, PR) **depends on that workflow** — not on this file alone.
+For Git, PR, and handoff details, use the workflow doc for your context — not the steps in this file.
 
 ## Before you work
 

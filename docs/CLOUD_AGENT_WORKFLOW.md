@@ -2,12 +2,12 @@
 
 Use this when a task runs on **Cursor Cloud Agent** or is **delegated from Linear** (autonomous delivery with a PR handoff).
 
-Also read [AGENTS.md](../AGENTS.md), [DEVELOPMENT.md](DEVELOPMENT.md), and [`.cursor/rules/engineering-quality.mdc`](../.cursor/rules/engineering-quality.mdc).
+Also use [DEVELOPMENT.md](DEVELOPMENT.md) for commands and env; follow [`.cursor/rules/engineering-quality.mdc`](../.cursor/rules/engineering-quality.mdc).
 
 ## Scope
 
-- Read issue/Linear scope and relevant `/docs` before coding.
-- One scoped task; no unrelated refactors.
+- Read [AGENTS.md](../AGENTS.md), the assigned issue, and relevant `/docs` before coding.
+- Implement **one scoped task** from the issue; no unrelated refactors.
 - Do not modify auth, Prisma schema, infrastructure, or dependencies unless the task requires it.
 
 ## Git and PR (required for this workflow)

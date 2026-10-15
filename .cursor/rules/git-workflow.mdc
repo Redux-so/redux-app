@@ -14,7 +14,7 @@ Pick the path that matches **how this task is running**:
 
 **Manual:** no branch, commit, push, or PR unless the user **explicitly** asks.
 
-**Cloud / Linear:** branch per task, commit, push, open PR, never merge automatically — details in the cloud workflow doc.
+**Cloud / Linear:** follow [docs/CLOUD_AGENT_WORKFLOW.md](../../docs/CLOUD_AGENT_WORKFLOW.md) (autonomous branch → PR; never merge automatically).
 
 If mode is unclear, assume **manual** (no git actions) unless the user or task description clearly indicates Cloud Agent / Linear delegation.
 
