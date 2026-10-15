@@ -9,7 +9,7 @@ Verified from the repository unless marked **uncertain**.
 | Framework | **Next.js 16** App Router (`app/`) |
 | Language | TypeScript |
 | UI | React 19, Tailwind CSS 4 |
-| Auth | **Clerk** (`middleware.ts`, `@clerk/nextjs`) |
+| Auth | **Clerk** (`proxy.ts`, `@clerk/nextjs`) |
 | Database | **PostgreSQL** (Neon) via **Prisma 5** |
 | Vector search | **pgvector** on `Image.embedding` (768-d); raw SQL via `lib/pgvector.ts` |
 | Uploads | **UploadThing** (`app/api/uploadthing/`) |
@@ -22,11 +22,11 @@ Verified from the repository unless marked **uncertain**.
 | Errors | **Sentry** (`withSentryConfig` in `next.config.ts`, instrumentation) |
 | Icons | **@untitledui/icons** via `components/shared/Icon.tsx` only |
 
-**Uncertain / not wired in app code (present in `package.json` only):** `inngest`, `posthog-js` — no imports found in application source at documentation time.
+**Uncertain / not wired in app code (present in `package.json` only):** `posthog-js` — no imports found in application source at documentation time.
 
 ## Authentication
 
-- `middleware.ts`: `clerkMiddleware` + `auth.protect()` for non-public routes
+- `proxy.ts` (Next.js 16 replacement for `middleware.ts`): `clerkMiddleware` + `auth.protect()` for non-public routes
 - Public routes: `lib/public-routes.ts` (landing, sign-in/up, SSO callback, webhooks, Sentry tunnel)
 - API handlers resolve DB user via `lib/require-user.ts` (`clerkId` → `User`)
 - Clerk webhook syncs users: `app/api/webhooks/clerk/route.ts` (Svix + `CLERK_WEBHOOK_SECRET`)
@@ -119,4 +119,4 @@ See [docs/DEVELOPMENT.md](DEVELOPMENT.md) for variable names (no secret values).
 
 - Secrets only on server; Cloudinary secret, Stripe, Anthropic, Replicate, UploadThing tokens never exposed to client
 - Next.js 16 conventions — consult local `node_modules/next/dist/docs/` when unsure
-- Matcher in middleware excludes static files (`.*\\..*`)
+- Matcher in `proxy.ts` excludes static files (`.*\\..*`)

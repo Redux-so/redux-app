@@ -1,6 +1,6 @@
 ---
 description: API routes, server logic, and integrations
-globs: app/api/**/*.ts,lib/**/*.ts,middleware.ts,instrumentation*.ts
+globs: app/api/**/*.ts,lib/**/*.ts,proxy.ts,instrumentation*.ts
 alwaysApply: false
 ---
 
