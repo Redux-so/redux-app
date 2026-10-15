@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
@@ -9,12 +10,12 @@ import {
 import { embedSearchQueryText } from "@/lib/search-clip";
 import { CLIP_VECTOR_DIM, vectorToPgLiteral } from "@/lib/pgvector";
 import type { ImageRecord } from "@/types/image";
+import { parseSearchQueryParam } from "@/lib/api-validation";
 
 /** GET must stay uncached so clients always get fresh hits (not a stale empty payload). */
 export const dynamic = "force-dynamic";
 
 const SEMANTIC_SEARCH_COST = 3;
-const MAX_QUERY_LEN = 500;
 const SEARCH_LIMIT = 20;
 /**
  * After taking the top {@link SEARCH_LIMIT} by similarity, keep rows within this margin
@@ -60,16 +61,11 @@ export async function GET(request: Request) {
     const { user } = authResult;
 
       const { searchParams } = new URL(request.url);
-    const rawQuery = (searchParams.get("query") ?? "").trim();
-    if (!rawQuery) {
-      return NextResponse.json({ error: "query is required" }, { status: 400 });
+    const queryResult = parseSearchQueryParam(searchParams.get("query"));
+    if (!queryResult.ok) {
+      return queryResult.response;
     }
-    if (rawQuery.length > MAX_QUERY_LEN) {
-      return NextResponse.json(
-        { error: `query must be at most ${MAX_QUERY_LEN} characters` },
-        { status: 400 },
-      );
-    }
+    const rawQuery = queryResult.data;
 
     if (user.creditBalance < SEMANTIC_SEARCH_COST) {
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
@@ -303,20 +299,10 @@ export async function GET(request: Request) {
         },
       );
     } catch (innerErr) {
-      console.error("[GET /api/ai/search]", innerErr);
       await refundCredits("Refund: semantic search failed");
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Search failed", detail: message },
-        { status: 500 },
-      );
+      return apiInternalErrorResponse("GET /api/ai/search", innerErr, "Search failed");
     }
   } catch (outerErr) {
-    console.error("[GET /api/ai/search] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("GET /api/ai/search", outerErr);
   }
 }

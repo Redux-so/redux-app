@@ -2,6 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { ACTIVE_IMAGE_WHERE } from "@/lib/image-query";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
+import {
+  albumImageBodySchema,
+  parseJsonRequest,
+  parseResourceIdParam,
+} from "@/lib/api-validation";
 
 export async function POST(
   request: NextRequest,
@@ -13,13 +18,18 @@ export async function POST(
   }
   const { user } = authResult;
 
-  const { albumId } = await params;
-
-  const body = (await request.json()) as { imageId?: string };
-  const { imageId } = body;
-  if (!imageId) {
-    return NextResponse.json({ error: "imageId is required" }, { status: 400 });
+  const { albumId: rawAlbumId } = await params;
+  const albumIdResult = parseResourceIdParam(rawAlbumId);
+  if (!albumIdResult.ok) {
+    return albumIdResult.response;
   }
+  const albumId = albumIdResult.data;
+
+  const parsed = await parseJsonRequest(request, albumImageBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
+  }
+  const { imageId } = parsed.data;
 
   const album = await prisma.album.findFirst({
     where: { id: albumId, userId: user.id },
@@ -58,13 +68,18 @@ export async function DELETE(
   }
   const { user } = authResult;
 
-  const { albumId } = await params;
-
-  const body = (await request.json()) as { imageId?: string };
-  const { imageId } = body;
-  if (!imageId) {
-    return NextResponse.json({ error: "imageId is required" }, { status: 400 });
+  const { albumId: rawAlbumId } = await params;
+  const albumIdResult = parseResourceIdParam(rawAlbumId);
+  if (!albumIdResult.ok) {
+    return albumIdResult.response;
   }
+  const albumId = albumIdResult.data;
+
+  const parsed = await parseJsonRequest(request, albumImageBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
+  }
+  const { imageId } = parsed.data;
 
   const album = await prisma.album.findFirst({
     where: { id: albumId, userId: user.id },

@@ -3,12 +3,14 @@ import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -50,12 +52,6 @@ function extractOutputUrl(output: unknown): string {
   throw new Error(`Unexpected Replicate output shape: ${String(output)}`);
 }
 
-interface RequestBody {
-  imageUrl: string;
-  maskBase64: string;
-  imageId: string;
-}
-
 export async function POST(request: Request) {
   try {
     const authResult = await requireAuthUser();
@@ -88,15 +84,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as RequestBody;
-    const { imageUrl, maskBase64, imageId } = body;
-
-    if (!imageUrl || !maskBase64 || !imageId) {
-      return NextResponse.json(
-        { error: "imageUrl, maskBase64, and imageId are required" },
-        { status: 400 },
-      );
+    const parsed = await parseJsonRequest(request, maskImageOperationBodySchema);
+    if (!parsed.ok) {
+      return parsed.response;
     }
+    const { imageUrl, maskBase64, imageId } = parsed.data;
 
     const image = await prisma.image.findFirst({
       where: { id: imageId, userId: user.id },
@@ -199,20 +191,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      console.error("[/api/ai/heal]", innerErr);
       await refundCredits("Refund: heal failed");
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Heal failed", detail: message },
-        { status: 500 },
-      );
+      return apiInternalErrorResponse("/api/ai/heal", innerErr, "Heal failed");
     }
   } catch (outerErr) {
-    console.error("[/api/ai/heal] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("/api/ai/heal", outerErr);
   }
 }

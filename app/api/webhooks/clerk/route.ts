@@ -1,24 +1,16 @@
 // PUBLIC: verified via Svix webhook signature (CLERK_WEBHOOK_SECRET)
 import { headers } from "next/headers";
 import { Webhook, WebhookVerificationError } from "svix/dist/webhook";
-import { upsertPrismaUser } from "@/lib/ensure-prisma-user";
+import type { ClerkWebhookUserData } from "@/lib/clerk-user-profile";
+import {
+  tombstonePrismaUserByClerkId,
+  upsertPrismaUser,
+} from "@/lib/ensure-prisma-user";
 import { clerkProfileFromWebhookPayload } from "@/lib/require-user";
-
-interface ClerkEmailAddress {
-  email_address: string;
-  id: string;
-}
-
-interface ClerkUserPayload {
-  id: string;
-  email_addresses: ClerkEmailAddress[];
-  first_name: string | null;
-  last_name: string | null;
-}
 
 interface WebhookEvent {
   type: string;
-  data: ClerkUserPayload;
+  data: ClerkWebhookUserData;
 }
 
 export async function POST(request: Request) {
@@ -49,8 +41,16 @@ export async function POST(request: Request) {
 
   const { type, data } = event;
 
-  if (type === "user.created" || type === "user.updated") {
-    await upsertPrismaUser(clerkProfileFromWebhookPayload(data));
+  switch (type) {
+    case "user.created":
+    case "user.updated":
+      await upsertPrismaUser(clerkProfileFromWebhookPayload(data));
+      break;
+    case "user.deleted":
+      await tombstonePrismaUserByClerkId(data.id);
+      break;
+    default:
+      break;
   }
 
   return new Response("OK", { status: 200 });

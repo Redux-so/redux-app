@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
+import { blurImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 // blurIntensity 1–100 maps sigma to ~1–30 for Sharp's Gaussian blur
 function intensityToSigma(intensity: number): number {
@@ -12,13 +14,6 @@ function intensityToSigma(intensity: number): number {
 
 const CLOUDINARY_MAX_BYTES = 9 * 1024 * 1024;
 
-interface RequestBody {
-  imageUrl: string;
-  maskBase64: string;
-  imageId: string;
-  blurIntensity?: number;
-}
-
 export async function POST(request: Request) {
   try {
     const authResult = await requireAuthUser();
@@ -27,15 +22,11 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
-      const body = (await request.json()) as RequestBody;
-    const { imageUrl, maskBase64, imageId, blurIntensity = 30 } = body;
-
-    if (!imageUrl || !maskBase64 || !imageId) {
-      return NextResponse.json(
-        { error: "imageUrl, maskBase64, and imageId are required" },
-        { status: 400 },
-      );
+    const parsed = await parseJsonRequest(request, blurImageBodySchema);
+    if (!parsed.ok) {
+      return parsed.response;
     }
+    const { imageUrl, maskBase64, imageId, blurIntensity } = parsed.data;
 
     const image = await prisma.image.findFirst({
       where: { id: imageId, userId: user.id },
@@ -124,19 +115,9 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      console.error("[/api/images/blur]", innerErr);
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Blur failed", detail: message },
-        { status: 500 },
-      );
+      return apiInternalErrorResponse("/api/images/blur", innerErr, "Blur failed");
     }
   } catch (outerErr) {
-    console.error("[/api/images/blur] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("/api/images/blur", outerErr);
   }
 }

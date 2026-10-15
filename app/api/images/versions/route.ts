@@ -4,6 +4,11 @@ import { parseVersionAdjustments, serializePersistedEditorState } from "@/lib/ed
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
+import {
+  parseJsonRequest,
+  parseResourceIdParam,
+  saveVersionBodySchema,
+} from "@/lib/api-validation";
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuthUser();
@@ -13,10 +18,11 @@ export async function GET(request: NextRequest) {
   const { user } = authResult;
 
   const { searchParams } = new URL(request.url);
-  const imageId = searchParams.get("imageId");
-  if (!imageId) {
-    return NextResponse.json({ error: "imageId is required" }, { status: 400 });
+  const imageIdResult = parseResourceIdParam(searchParams.get("imageId") ?? "");
+  if (!imageIdResult.ok) {
+    return imageIdResult.response;
   }
+  const imageId = imageIdResult.data;
 
   // Verify the image belongs to this user before returning its versions
   const image = await prisma.image.findFirst({
@@ -49,20 +55,11 @@ export async function POST(request: NextRequest) {
   }
   const { user } = authResult;
 
-  const body = (await request.json()) as {
-    imageId?: string;
-    adjustments?: Record<string, unknown>;
-    imageBase64?: string;
-    label?: string;
-  };
-  const { imageId, adjustments: rawAdjustments, imageBase64, label } = body;
-
-  if (!imageId || !rawAdjustments) {
-    return NextResponse.json(
-      { error: "imageId and adjustments are required" },
-      { status: 400 },
-    );
+  const parsed = await parseJsonRequest(request, saveVersionBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
   }
+  const { imageId, adjustments: rawAdjustments, imageBase64, label } = parsed.data;
 
   // Verify the image belongs to this user
   const image = await prisma.image.findFirst({
