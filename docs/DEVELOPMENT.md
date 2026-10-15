@@ -104,10 +104,14 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 
 Optional Agent plugin for planning/debugging/verification workflows. Install and precedence vs Redux rules: [SUPERPOWERS.md](SUPERPOWERS.md).
 
+## Agent workflows
+
+- **Manual Cursor:** [MANUAL_DEVELOPMENT_WORKFLOW.md](MANUAL_DEVELOPMENT_WORKFLOW.md) — Git only when you ask.
+- **Cloud Agent / Linear:** [CLOUD_AGENT_WORKFLOW.md](CLOUD_AGENT_WORKFLOW.md) — branch, commit, push, PR; never merge automatically.
+
 ## Cloud Agent notes
 
 - Full app behavior requires external services and env vars; agents may be blocked on auth or missing keys.
-- Do not push to `main`; use a branch and PR per [AGENTS.md](../AGENTS.md).
 - Read `/docs` before large changes; editor layout details are in [DESIGN.md](DESIGN.md).
 - Next.js **16** — check `node_modules/next/dist/docs/` when APIs differ from training data.
 - Known local quirk: hydration mismatch warning in console (documented as non-fatal in `.devnotes`).

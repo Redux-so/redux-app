@@ -49,7 +49,7 @@ When Superpowers and Redux instructions overlap, use this order:
 | Tests | No unit/e2e runner yet; `pnpm run test` is a gate only; do not add trivial/fake tests (`engineering-quality`, `testing.mdc`) | TDD skill pushes RED-GREEN-REFACTOR when **adding a real suite** — coordinate with a Linear issue to introduce Vitest/Jest first |
 | Scope | One scoped task; no unrelated refactors | Plans may be large — **execute only the slice** matching the current issue |
 | Docs | Permanent knowledge in `/docs` | Superpowers may write design/plan markdown — prefer `/docs` or issue-linked plans; avoid duplicating ARCHITECTURE/PRODUCT |
-| Merge | Agents must not merge PRs | `finishing-a-development-branch` suggests options — **human** still merges |
+| Merge | Cloud Agent must not merge PRs ([CLOUD_AGENT_WORKFLOW.md](CLOUD_AGENT_WORKFLOW.md)) | `finishing-a-development-branch` suggests options — **human** still merges |
 
 ## When Superpowers typically activates
 

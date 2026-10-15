@@ -1,0 +1,19 @@
+---
+description: Git/PR behavior — manual sessions vs Cloud Agent / Linear
+alwaysApply: true
+---
+
+# Git workflow
+
+Pick the path that matches **how this task is running**:
+
+| Context | Doc |
+|---------|-----|
+| Interactive Cursor (user at keyboard) | [docs/MANUAL_DEVELOPMENT_WORKFLOW.md](../../docs/MANUAL_DEVELOPMENT_WORKFLOW.md) |
+| Cursor Cloud Agent or Linear-delegated | [docs/CLOUD_AGENT_WORKFLOW.md](../../docs/CLOUD_AGENT_WORKFLOW.md) |
+
+**Manual:** no branch, commit, push, or PR unless the user **explicitly** asks.
+
+**Cloud / Linear:** branch per task, commit, push, open PR, never merge automatically — details in the cloud workflow doc.
+
+Engineering quality and validation apply in both cases; see [engineering-quality.mdc](engineering-quality.mdc) and [testing.mdc](testing.mdc).

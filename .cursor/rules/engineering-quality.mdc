@@ -34,9 +34,9 @@ Simple, professional changes. No spaghetti, no duplicate systems, no speculative
 - Look for duplicate implementations, unnecessary complexity, security regressions, and performance regressions.
 - Run relevant validation (see `.cursor/rules/testing.mdc`); do not claim a check passed unless it actually ran.
 
-## Self-review before opening a PR
+## Self-review before finishing
 
-Review your diff like a senior engineer. Fix legitimate issues before opening the PR.
+Review your diff like a senior engineer. Fix legitimate issues before you hand off the task.
 
 Check for:
 
@@ -51,4 +51,4 @@ Check for:
 - Missing error handling
 - Accidental behavior changes
 
-Then open the PR with an honest summary and testing notes. **Do not merge**; stop for human review.
+Handoff format and Git steps depend on context — [git-workflow.mdc](git-workflow.mdc) and the manual vs cloud workflow docs in `/docs`.

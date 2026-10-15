@@ -13,5 +13,6 @@ alwaysApply: true
 - Run `pnpm run test` in CI; there is no unit/e2e runner yet — do not claim tests passed unless you added and ran a real suite.
 - For UI work: run `pnpm run dev`, exercise the affected pages, and inspect the browser console.
 - For API work: hit endpoints with an authenticated session when possible; verify 401/404/402 behavior as relevant.
-- Report validation honestly in the PR (command + result); never state "all tests pass" without evidence.
-- Before opening a PR, run the self-review checklist in `.cursor/rules/engineering-quality.mdc` on the full diff.
+- Report validation honestly when handing off (PR or chat): command + result; never state "all tests pass" without evidence.
+- Before finishing, run the self-review checklist in `.cursor/rules/engineering-quality.mdc` on the full diff.
+- Git/PR steps: see `.cursor/rules/git-workflow.mdc`.
