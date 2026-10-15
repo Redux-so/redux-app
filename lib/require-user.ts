@@ -3,6 +3,11 @@ import type { NextResponse } from "next/server";
 import type { User } from "@prisma/client";
 import { apiUnauthorizedResponse } from "@/lib/api-error";
 import {
+  displayNameFromClerkParts,
+  primaryEmailFromWebhookAddresses,
+  type ClerkWebhookUserData,
+} from "@/lib/clerk-user-profile";
+import {
   type ClerkUserProfile,
   upsertPrismaUser,
 } from "@/lib/ensure-prisma-user";
@@ -11,15 +16,14 @@ export type RequireAuthUserResult =
   | { user: User }
   | { error: NextResponse };
 
-export function clerkProfileFromWebhookPayload(data: {
-  id: string;
-  email_addresses: { email_address: string }[];
-  first_name: string | null;
-  last_name: string | null;
-}): ClerkUserProfile {
-  const email = data.email_addresses[0]?.email_address ?? "";
-  const name =
-    [data.first_name, data.last_name].filter(Boolean).join(" ") || null;
+export function clerkProfileFromWebhookPayload(
+  data: ClerkWebhookUserData,
+): ClerkUserProfile {
+  const email = primaryEmailFromWebhookAddresses(
+    data.email_addresses,
+    data.primary_email_address_id,
+  );
+  const name = displayNameFromClerkParts(data.first_name, data.last_name);
   return { clerkId: data.id, email, name };
 }
 
@@ -30,7 +34,10 @@ export function clerkProfileFromCurrentUser(
   if (!clerkUser) {
     return { clerkId, email: "", name: null };
   }
-  const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+  const email =
+    clerkUser.primaryEmailAddress?.emailAddress ??
+    clerkUser.emailAddresses[0]?.emailAddress ??
+    "";
   const name = clerkUser.fullName ?? null;
   return { clerkId, email, name };
 }
