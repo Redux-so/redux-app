@@ -3,6 +3,7 @@ import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import type { ImageTransform } from "@/lib/image-transform";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { apiErrorResponse, logApiError } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import { resolvePreviewSourceUrl } from "@/lib/resolve-preview-source";
 
@@ -55,8 +56,8 @@ export async function POST(
       inputBuffer = Buffer.from(await imgResponse.arrayBuffer());
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Invalid image source";
-    return NextResponse.json({ error: message }, { status: 400 });
+    logApiError("POST /api/images/[imageId]/generate-preview", err);
+    return apiErrorResponse("Invalid image source", 400);
   }
 
   try {

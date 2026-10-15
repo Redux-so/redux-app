@@ -3,6 +3,7 @@ import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
@@ -304,20 +305,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      console.error("[/api/ai/generative-fill]", innerErr);
       await refundCredits("Refund: generative fill failed");
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Generative fill failed", detail: message },
-        { status: 500 },
-      );
+      return apiInternalErrorResponse("/api/ai/generative-fill", innerErr, "Generative fill failed");
     }
   } catch (outerErr) {
-    console.error("[/api/ai/generative-fill] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("/api/ai/generative-fill", outerErr);
   }
 }

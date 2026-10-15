@@ -3,6 +3,7 @@ import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
@@ -199,20 +200,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      console.error("[/api/ai/heal]", innerErr);
       await refundCredits("Refund: heal failed");
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Heal failed", detail: message },
-        { status: 500 },
-      );
+      return apiInternalErrorResponse("/api/ai/heal", innerErr, "Heal failed");
     }
   } catch (outerErr) {
-    console.error("[/api/ai/heal] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("/api/ai/heal", outerErr);
   }
 }

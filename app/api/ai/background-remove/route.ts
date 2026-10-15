@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Replicate from "replicate";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
@@ -141,8 +142,6 @@ export async function POST(request: Request) {
 
     } catch (innerErr) {
       // ── Refund credit on processing failure ───────────────────────────────
-      console.error("[/api/ai/background-remove]", innerErr);
-
       await prisma.user.update({
         where: { id: user.id },
         data: { creditBalance: { increment: 1 } },
@@ -157,19 +156,14 @@ export async function POST(request: Request) {
         },
       });
 
-      const message = innerErr instanceof Error ? innerErr.message : String(innerErr);
-      return NextResponse.json(
-        { error: "Background removal failed", detail: message },
-        { status: 500 },
+      return apiInternalErrorResponse(
+        "/api/ai/background-remove",
+        innerErr,
+        "Background removal failed",
       );
     }
 
   } catch (outerErr) {
-    console.error("[/api/ai/background-remove] Unexpected error:", outerErr);
-    const message = outerErr instanceof Error ? outerErr.message : String(outerErr);
-    return NextResponse.json(
-      { error: "Internal server error", detail: message },
-      { status: 500 },
-    );
+    return apiInternalErrorResponse("/api/ai/background-remove", outerErr);
   }
 }
