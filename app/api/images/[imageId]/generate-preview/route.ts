@@ -3,6 +3,7 @@ import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { apiErrorResponse, logApiError } from "@/lib/api-error";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { resolvePreviewSourceUrl } from "@/lib/resolve-preview-source";
 import { parseJsonRequest, parseResourceIdParam, previewMutationBodySchema } from "@/lib/api-validation";
@@ -17,6 +18,11 @@ export async function POST(
     return authResult.error;
   }
   const { user } = authResult;
+
+  const rateLimited = await enforceFeatureRateLimits(user.id, "preview");
+  if (rateLimited) {
+    return rateLimited;
+  }
 
   const { imageId: rawImageId } = await params;
   const imageIdResult = parseResourceIdParam(rawImageId);

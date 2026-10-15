@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 
 export async function POST(
@@ -12,6 +13,11 @@ export async function POST(
     return authResult.error;
   }
   const { user } = authResult;
+
+  const rateLimited = await enforceFeatureRateLimits(user.id, "preview");
+  if (rateLimited) {
+    return rateLimited;
+  }
 
   const { imageId } = await params;
 

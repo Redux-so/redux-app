@@ -3,13 +3,21 @@ import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { CREDIT_COSTS } from "@/constants/credits";
 import { apiInternalErrorResponse } from "@/lib/api-error";
+import { deductCredits, refundCredits } from "@/lib/credit-ledger";
+import {
+  enforceFeatureRateLimits,
+  insufficientCreditsResponse,
+} from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import {
   fetchReplicateDeliveryBuffer,
   fetchTrustedMediaBuffer,
 } from "@/lib/safe-remote-fetch";
+
+const ERASE_COST = CREDIT_COSTS.erase;
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -57,6 +65,15 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
+    if (user.creditBalance < ERASE_COST) {
+      return insufficientCreditsResponse();
+    }
+
+    const rateLimited = await enforceFeatureRateLimits(user.id, "erase");
+    if (rateLimited) {
+      return rateLimited;
+    }
+
     const parsed = await parseJsonRequest(request, maskImageOperationBodySchema);
     if (!parsed.ok) {
       return parsed.response;
@@ -69,6 +86,8 @@ export async function POST(request: Request) {
     if (!image) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
+
+    await deductCredits(user.id, "erase");
 
     try {
       const { buffer: sourceImageBuffer } = await fetchTrustedMediaBuffer(imageUrl);
@@ -146,6 +165,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
+      await refundCredits(user.id, "erase", ERASE_COST, "Erase failed");
       return apiInternalErrorResponse("/api/images/erase", innerErr, "Erase failed");
     }
   } catch (outerErr) {

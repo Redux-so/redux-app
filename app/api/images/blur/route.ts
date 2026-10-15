@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { apiInternalErrorResponse } from "@/lib/api-error";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { blurImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
@@ -22,6 +23,11 @@ export async function POST(request: Request) {
       return authResult.error;
     }
     const { user } = authResult;
+
+    const rateLimited = await enforceFeatureRateLimits(user.id, "blur");
+    if (rateLimited) {
+      return rateLimited;
+    }
 
     const parsed = await parseJsonRequest(request, blurImageBodySchema);
     if (!parsed.ok) {

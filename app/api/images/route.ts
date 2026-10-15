@@ -3,6 +3,7 @@ import { hasNonDefaultAdjustments } from "@/lib/library-filters";
 import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
 import { isImageFavorite } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
 import {
@@ -102,6 +103,11 @@ export async function POST(request: NextRequest) {
     return authResult.error;
   }
   const { user } = authResult;
+
+  const rateLimited = await enforceFeatureRateLimits(user.id, "image_upload");
+  if (rateLimited) {
+    return rateLimited;
+  }
 
   const parsed = await parseJsonRequest(request, createImageBodySchema);
   if (!parsed.ok) {
