@@ -1,15 +1,15 @@
-# Manual development workflow (interactive Cursor)
+# Manual development workflow
 
-Use this when **you** are driving Cursor in the IDE — ad-hoc fixes, exploration, pairing, or any session that is **not** a Cursor Cloud Agent / Linear-delegated run.
+**Applies when you use Cursor interactively on your machine** (normal Agent chat, local edits). This is the **default** unless the task is explicitly Cursor Cloud Agent or Linear-delegated.
 
-Universal engineering rules still apply: [AGENTS.md](../AGENTS.md), [`.cursor/rules/engineering-quality.mdc`](../.cursor/rules/engineering-quality.mdc), and [DEVELOPMENT.md](DEVELOPMENT.md).
+Engineering rules still apply: [AGENTS.md](../AGENTS.md), [docs/DEVELOPMENT.md](DEVELOPMENT.md), and `.cursor/rules/`.
 
 ## What the agent should do
 
-- Make **only** the changes you asked for (scoped task).
+- Make only the **requested** code changes.
 - Inspect existing code; reuse patterns; smallest correct diff.
-- Run **relevant** validation (`lint`, `typecheck`, `build`, manual QA as appropriate).
-- Self-review the full diff before saying the work is done.
+- Run **relevant** checks before you consider the task done (`pnpm run lint`, `typecheck`, `build`, etc. — see DEVELOPMENT.md).
+- Review the full diff for unnecessary complexity (see `engineering-quality.mdc`).
 - Summarize what changed and what was verified in chat.
 
 ## Git — under your control
@@ -21,8 +21,12 @@ Unless **you explicitly ask**, the agent must **not**:
 - push
 - open a pull request
 
-You decide when and how to branch, commit, and open PRs.
+**Leave Git workflow under your control.** If you want a branch, commit message, or PR text, ask the agent to **propose** them; the agent should not run git write operations unless you request it.
 
 ## Handoff
 
 Report honestly in the conversation: what changed, checks run (with results), and any known limits. No PR template required unless you ask for a PR.
+
+## Cloud Agent contrast
+
+Autonomous branch → commit → push → PR is documented only in [CLOUD_AGENT_WORKFLOW.md](CLOUD_AGENT_WORKFLOW.md).

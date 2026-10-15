@@ -26,9 +26,9 @@ Git behavior (branch, commit, push, PR) **depends on that workflow** — not on 
    - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — commands, env, validation
    - [docs/ROADMAP.md](docs/ROADMAP.md) — planned work (GitHub Issues are the task queue)
    - [docs/DECISIONS.md](docs/DECISIONS.md) — recorded decisions
-2. Follow [`.cursor/rules/engineering-quality.mdc`](.cursor/rules/engineering-quality.mdc) for how to implement and review work.
-3. Inspect existing code in the area you will change; reuse helpers and patterns.
-4. Work on **one scoped task** at a time — simplest correct solution, no unrelated refactoring.
+2. Follow [`.cursor/rules/engineering-quality.mdc`](.cursor/rules/engineering-quality.mdc).
+3. Inspect existing code in the area you will change; reuse helpers, components, and patterns.
+4. Work on **one scoped task** at a time — smallest correct solution, no unrelated refactoring.
 
 Domain rules (when they apply): `.cursor/rules/frontend.mdc`, `backend.mdc`, `database.mdc`, `testing.mdc`, `superpowers-integration.mdc`, `git-workflow.mdc`.
 
@@ -40,11 +40,11 @@ Domain rules (when they apply): `.cursor/rules/frontend.mdc`, `backend.mdc`, `da
 - Prefer Server Components; use `"use client"` only when needed (canvas, hooks, browser APIs).
 - Do not change auth, Prisma schema, infrastructure, or dependencies unless the task requires it.
 
-## Validation
+## Validation and self-review
 
-Run **relevant** checks for the task you changed — see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) and [`.cursor/rules/testing.mdc`](.cursor/rules/testing.mdc). Do not claim a check passed unless it actually ran.
-
-Complete self-review on the full diff per `engineering-quality.mdc` before you consider the task done.
+- Run **relevant** checks for what you changed (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) and [`.cursor/rules/testing.mdc`](.cursor/rules/testing.mdc)).
+- Do not claim a check passed unless it actually ran successfully.
+- Before finishing, review the full diff per `engineering-quality.mdc` (complexity, duplication, security, scope).
 
 How to report results (PR, handoff, or chat) is defined in the **workflow doc** for your context (manual vs cloud).
 

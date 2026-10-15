@@ -16,4 +16,6 @@ Pick the path that matches **how this task is running**:
 
 **Cloud / Linear:** branch per task, commit, push, open PR, never merge automatically — details in the cloud workflow doc.
 
+If mode is unclear, assume **manual** (no git actions) unless the user or task description clearly indicates Cloud Agent / Linear delegation.
+
 Engineering quality and validation apply in both cases; see [engineering-quality.mdc](engineering-quality.mdc) and [testing.mdc](testing.mdc).

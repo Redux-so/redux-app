@@ -15,4 +15,4 @@ alwaysApply: true
 - For API work: hit endpoints with an authenticated session when possible; verify 401/404/402 behavior as relevant.
 - Report validation honestly when handing off (PR or chat): command + result; never state "all tests pass" without evidence.
 - Before finishing, run the self-review checklist in `.cursor/rules/engineering-quality.mdc` on the full diff.
-- Git/PR steps: see `.cursor/rules/git-workflow.mdc`.
+- Git/PR steps: see `.cursor/rules/git-workflow.mdc`. Cloud Agent PR handoff: [docs/CLOUD_AGENT_WORKFLOW.md](../../docs/CLOUD_AGENT_WORKFLOW.md).

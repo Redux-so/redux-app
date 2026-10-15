@@ -66,3 +66,11 @@ Use this structure (honest results only):
 **Issues encountered** — problems, compromises, or *None observed*  
 
 **Human review** — PR is ready; do not merge until a human approves.
+
+## Linear / task description hint
+
+When creating or editing Linear issues for Cloud Agent, include:
+
+- Link or name of the issue scope
+- Pointers to relevant docs (PRODUCT, ARCHITECTURE, DESIGN as needed)
+- Explicit note: *Follow [docs/CLOUD_AGENT_WORKFLOW.md](CLOUD_AGENT_WORKFLOW.md) and [AGENTS.md](../AGENTS.md).*
