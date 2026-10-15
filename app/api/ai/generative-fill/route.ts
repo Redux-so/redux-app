@@ -10,6 +10,7 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
+import { generativeFillBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -53,15 +54,6 @@ function extractOutputUrl(output: unknown): string {
   throw new Error(`Unexpected Replicate output shape: ${String(output)}`);
 }
 
-type ExpandDirection = "top" | "bottom" | "left" | "right";
-
-interface RequestBody {
-  imageUrl: string;
-  expandDirection: ExpandDirection;
-  expandPixels: number;
-  prompt: string;
-}
-
 export async function POST(request: Request) {
   try {
     const authResult = await requireAuthUser();
@@ -94,30 +86,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = (await request.json()) as RequestBody;
-    const { imageUrl, expandDirection, expandPixels, prompt } = body;
-
-    const directions: ExpandDirection[] = ["top", "bottom", "left", "right"];
-    if (!imageUrl || typeof imageUrl !== "string") {
-      return NextResponse.json({ error: "imageUrl is required" }, { status: 400 });
+    const parsed = await parseJsonRequest(request, generativeFillBodySchema);
+    if (!parsed.ok) {
+      return parsed.response;
     }
-    if (!directions.includes(expandDirection)) {
-      return NextResponse.json(
-        { error: "expandDirection must be top, bottom, left, or right" },
-        { status: 400 },
-      );
-    }
-    const px = Math.round(Number(expandPixels));
-    if (!Number.isFinite(px) || px < 1 || px > 512) {
-      return NextResponse.json(
-        { error: "expandPixels must be between 1 and 512" },
-        { status: 400 },
-      );
-    }
-    const trimmedPrompt = typeof prompt === "string" ? prompt.trim() : "";
-    if (!trimmedPrompt) {
-      return NextResponse.json({ error: "prompt is required" }, { status: 400 });
-    }
+    const { imageUrl, expandDirection, expandPixels, prompt } = parsed.data;
+    const trimmedPrompt = prompt;
+    const px = expandPixels;
 
     const image = await assertUserOwnsImageUrl(user.id, imageUrl);
     if (!image) {

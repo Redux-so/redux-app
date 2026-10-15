@@ -12,6 +12,7 @@ import {
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
+import { parseJsonRequest, styleMatchBodySchema } from "@/lib/api-validation";
 
 const STYLE_MATCH_COST = 3;
 
@@ -27,12 +28,6 @@ const SYSTEM_PROMPT =
 
 function toThumbnailUrl(url: string): string {
   return url.replace("/upload/", "/upload/w_400,q_70,f_jpg/");
-}
-
-interface RequestBody {
-  imageUrl: string;
-  referenceImageBase64: string;
-  referenceImageMediaType: string;
 }
 
 export async function POST(request: Request) {
@@ -66,15 +61,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json()) as RequestBody;
-  const { imageUrl, referenceImageBase64, referenceImageMediaType } = body;
-
-  if (!imageUrl || !referenceImageBase64 || !referenceImageMediaType) {
-    return NextResponse.json(
-      { error: "imageUrl, referenceImageBase64, and referenceImageMediaType are required" },
-      { status: 400 },
-    );
+  const parsed = await parseJsonRequest(request, styleMatchBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
   }
+  const { imageUrl, referenceImageBase64 } = parsed.data;
 
   const ownedImage = await assertUserOwnsImageUrl(user.id, imageUrl);
   if (!ownedImage) {

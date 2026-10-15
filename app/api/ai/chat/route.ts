@@ -22,6 +22,11 @@ import {
   type ChatImageMediaType,
 } from "@/lib/chat-image-context";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
+import {
+  API_LIMITS,
+  chatRequestBodySchema,
+  parseJsonRequest,
+} from "@/lib/api-validation";
 
 // ---------------------------------------------------------------------------
 // SSE helpers
@@ -47,25 +52,13 @@ const CREDIT_HOURLY_LIMIT = 60;
 // ---------------------------------------------------------------------------
 // POST /api/ai/chat
 // ---------------------------------------------------------------------------
-interface ChatRequestBody {
-  userMessage: string;
-  adjustments?: Record<AdjustmentKey, number>;
-  conversationHistory?: ChatHistoryMessage[];
-  imageId?: string;
-  workspaceImageUrl?: string;
-  imageBase64?: string;
-  imageMediaType?: string;
-}
-
-const MAX_CONVERSATION_HISTORY = 20;
-
 function buildAnthropicMessages(
   history: ChatHistoryMessage[],
   userContent: (ImageBlockParam | TextBlockParam)[],
 ): MessageParam[] {
   const messages: MessageParam[] = [];
 
-  for (const entry of history.slice(-MAX_CONVERSATION_HISTORY)) {
+  for (const entry of history.slice(-API_LIMITS.CHAT_HISTORY_MAX_MESSAGES)) {
     const content = entry.content.trim();
     if (!content) continue;
     messages.push({ role: entry.role, content });
@@ -116,20 +109,19 @@ export async function POST(request: Request) {
   }
   const { user } = authResult;
 
-  const body = (await request.json()) as ChatRequestBody;
+  const parsed = await parseJsonRequest(request, chatRequestBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
+  }
   const {
     userMessage,
-    adjustments = {},
-    conversationHistory = [],
+    adjustments,
+    conversationHistory,
     imageId,
     workspaceImageUrl,
     imageBase64,
     imageMediaType,
-  } = body;
-
-  if (!userMessage?.trim()) {
-    return NextResponse.json({ error: "userMessage is required" }, { status: 400 });
-  }
+  } = parsed.data;
 
   // ── Find user ─────────────────────────────────────────────────────────────
   // ── Block only when lifetime free is used up AND there are no credits left.

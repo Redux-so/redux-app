@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
+import { embedImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 export async function POST(request: Request) {
   try {
@@ -11,16 +12,11 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
-      const body = await request.json();
-    const imageId = typeof body.imageId === "string" ? body.imageId.trim() : "";
-    const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl.trim() : "";
-
-    if (!imageId || !imageUrl) {
-      return NextResponse.json(
-        { error: "imageId and imageUrl are required" },
-        { status: 400 },
-      );
+    const parsed = await parseJsonRequest(request, embedImageBodySchema);
+    if (!parsed.ok) {
+      return parsed.response;
     }
+    const { imageId, imageUrl } = parsed.data;
 
     const image = await prisma.image.findFirst({
       where: { id: imageId, userId: user.id },

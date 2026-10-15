@@ -5,6 +5,11 @@ import { isImageFavorite } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
+import {
+  createImageBodySchema,
+  deleteImageBodySchema,
+  parseJsonRequest,
+} from "@/lib/api-validation";
 
 const IMAGE_SELECT = {
   id: true,
@@ -97,11 +102,11 @@ export async function POST(request: NextRequest) {
   }
   const { user } = authResult;
 
-  const body = await request.json() as { ufsUrl?: string; utKey?: string; name?: string; size?: number };
-  const { ufsUrl, utKey, name, size } = body;
-  if (!ufsUrl || !name || size == null) {
-    return NextResponse.json({ error: "ufsUrl, name, and size are required" }, { status: 400 });
+  const parsed = await parseJsonRequest(request, createImageBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
   }
+  const { ufsUrl, utKey, name, size } = parsed.data;
 
   const response = await fetch(ufsUrl);
   const arrayBuffer = await response.arrayBuffer();
@@ -139,11 +144,11 @@ export async function DELETE(request: NextRequest) {
   }
   const { user } = authResult;
 
-  const body = await request.json() as { imageId?: string };
-  const { imageId } = body;
-  if (!imageId) {
-    return NextResponse.json({ error: "imageId is required" }, { status: 400 });
+  const parsed = await parseJsonRequest(request, deleteImageBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
   }
+  const { imageId } = parsed.data;
 
   const image = await prisma.image.findFirst({
     where: { id: imageId, userId: user.id, ...ACTIVE_IMAGE_WHERE },

@@ -1,25 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
-import type { ImageTransform } from "@/lib/image-transform";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import { resolvePreviewSourceUrl } from "@/lib/resolve-preview-source";
+import { exportBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
-
-interface ExportBody {
-  imageId?: string;
-  adjustments?: Record<string, number>;
-  format?: ExportFormat;
-  quality?: number;
-  /** Active canvas URL — overrides the DB original when the image has been
-   *  replaced by an AI operation (e.g. background removal). */
-  imageUrl?: string;
-  imageBase64?: string;
-  transform?: ImageTransform;
-  /** Optional max width for preview thumbnails — applied after all effects. */
-  maxWidth?: number;
-}
 
 const FORMAT_MIME: Record<ExportFormat, string> = {
   jpeg: "image/jpeg",
@@ -34,21 +20,20 @@ export async function POST(request: NextRequest) {
   }
   const { user } = authResult;
 
-  const body = (await request.json()) as ExportBody;
+  const parsed = await parseJsonRequest(request, exportBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
+  }
   const {
     imageId,
-    adjustments = {},
-    format = "jpeg",
-    quality = 90,
+    adjustments,
+    format,
+    quality,
     imageUrl,
     imageBase64,
     transform,
     maxWidth,
-  } = body;
-
-  if (!imageId) {
-    return NextResponse.json({ error: "imageId is required" }, { status: 400 });
-  }
+  } = parsed.data;
 
   const image = await prisma.image.findFirst({
     where: { id: imageId, userId: user.id },
