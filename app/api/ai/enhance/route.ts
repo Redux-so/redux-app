@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic } from "@/lib/anthropic";
-import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
@@ -12,6 +11,12 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { imageUrlOnlyBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import {
+  chargeCreditFeature,
+  insufficientCreditsResponse,
+  refundCreditFeature,
+} from "@/lib/atomic-credits";
+import { CREDIT_COSTS } from "@/constants/credits";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor. Analyze this image and return optimal adjustment values " +
@@ -35,8 +40,8 @@ export async function POST(request: Request) {
   }
   const { user } = authResult;
 
-  if (user.creditBalance < 1) {
-    return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+  if (user.creditBalance < CREDIT_COSTS.auto_enhance) {
+    return insufficientCreditsResponse();
   }
 
   const minuteLimit = await checkRateLimitPerMinute(
@@ -70,19 +75,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  // Deduct credit before calling the API
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { creditBalance: { decrement: 1 } },
+  const charge = await chargeCreditFeature({
+    userId: user.id,
+    feature: "auto_enhance",
   });
-  await prisma.creditTransaction.create({
-    data: {
-      userId: user.id,
-      type: "DEDUCTION",
-      amount: -1,
-      feature: "auto_enhance",
-    },
-  });
+  if (!charge.ok) {
+    return insufficientCreditsResponse();
+  }
 
   try {
     // Fetch the thumbnail from Cloudinary
@@ -123,10 +122,10 @@ export async function POST(request: Request) {
       adjustments = JSON.parse(cleaned) as Partial<Record<AdjustmentKey, number>>;
     } catch {
       console.error("[/api/ai/enhance] Failed to parse JSON response:", rawText);
-      // Refund on parse failure
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { creditBalance: { increment: 1 } },
+      await refundCreditFeature({
+        userId: user.id,
+        feature: "auto_enhance",
+        description: "Refund: auto enhance parse failure",
       });
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
@@ -138,10 +137,10 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("[/api/ai/enhance] Error:", err);
-    // Refund credit on unexpected failure
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { creditBalance: { increment: 1 } },
+    await refundCreditFeature({
+      userId: user.id,
+      feature: "auto_enhance",
+      description: "Refund: auto enhance failed",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

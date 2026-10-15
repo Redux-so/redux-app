@@ -27,6 +27,12 @@ import {
   chatRequestBodySchema,
   parseJsonRequest,
 } from "@/lib/api-validation";
+import {
+  chargeCreditFeature,
+  insufficientCreditsResponse,
+  refundCreditFeature,
+} from "@/lib/atomic-credits";
+import { CREDIT_COSTS } from "@/constants/credits";
 
 // ---------------------------------------------------------------------------
 // SSE helpers
@@ -181,6 +187,7 @@ export async function POST(request: Request) {
   let lifetimeFreeRemaining: number;
   let lifetimeFreeUsed: number;
   let creditBalanceAfter: number;
+  let chatCreditCharged = false;
 
   if (onFreeTier) {
     await prisma.user.update({
@@ -195,24 +202,20 @@ export async function POST(request: Request) {
     creditBalanceAfter = user.creditBalance;
   } else {
     // Paid path: lifetime free already exhausted — charge 1 credit per message.
-    if (user.creditBalance < 1) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    if (user.creditBalance < CREDIT_COSTS.chat_message) {
+      return insufficientCreditsResponse();
     }
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { creditBalance: { decrement: 1 } },
+    const charge = await chargeCreditFeature({
+      userId: user.id,
+      feature: "chat_message",
     });
-    await prisma.creditTransaction.create({
-      data: {
-        userId: user.id,
-        type: "DEDUCTION",
-        amount: -1,
-        feature: "chat_message",
-      },
-    });
+    if (!charge.ok) {
+      return insufficientCreditsResponse();
+    }
+    chatCreditCharged = true;
     lifetimeFreeRemaining = 0;
     lifetimeFreeUsed = user.lifetimeFreeAI;
-    creditBalanceAfter = user.creditBalance - 1;
+    creditBalanceAfter = charge.balanceAfter;
   }
 
   // ── Build Anthropic message content ───────────────────────────────────────
@@ -304,6 +307,17 @@ export async function POST(request: Request) {
         }
       } catch (err) {
         console.error("[/api/ai/chat] Anthropic stream error:", err);
+        if (chatCreditCharged) {
+          try {
+            await refundCreditFeature({
+              userId: user.id,
+              feature: "chat_message",
+              description: "Refund: chat stream failed",
+            });
+          } catch (refundErr) {
+            console.error("[/api/ai/chat] Failed to refund chat credit:", refundErr);
+          }
+        }
         controller.enqueue(
           encodeEvent({ type: "text", text: "\n\nSomething went wrong. Please try again." }),
         );

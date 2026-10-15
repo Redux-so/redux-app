@@ -11,12 +11,16 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import {
+  chargeCreditFeature,
+  insufficientCreditsResponse,
+  refundCreditFeature,
+} from "@/lib/atomic-credits";
+import { CREDIT_COSTS } from "@/constants/credits";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
-
-const HEAL_COST = 2;
 
 const REPLICATE_MODEL =
   "stability-ai/stable-diffusion-inpainting:95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3";
@@ -60,8 +64,8 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
-      if (user.creditBalance < HEAL_COST) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+      if (user.creditBalance < CREDIT_COSTS.heal) {
+      return insufficientCreditsResponse();
     }
 
     const minuteLimit = await checkRateLimitPerMinute(
@@ -97,35 +101,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { creditBalance: { decrement: HEAL_COST } },
-    });
-    await prisma.creditTransaction.create({
-      data: {
-        userId: user.id,
-        type: "DEDUCTION",
-        amount: -HEAL_COST,
-        feature: "heal",
-      },
-    });
-
-    const userId = user.id;
-
-    async function refundCredits(reason: string) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { creditBalance: { increment: HEAL_COST } },
-      });
-      await prisma.creditTransaction.create({
-        data: {
-          userId,
-          type: "REFUND",
-          amount: HEAL_COST,
-          feature: "heal",
-          description: reason,
-        },
-      });
+    const charge = await chargeCreditFeature({ userId: user.id, feature: "heal" });
+    if (!charge.ok) {
+      return insufficientCreditsResponse();
     }
 
     try {
@@ -191,7 +169,11 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      await refundCredits("Refund: heal failed");
+      await refundCreditFeature({
+        userId: user.id,
+        feature: "heal",
+        description: "Refund: heal failed",
+      });
       return apiInternalErrorResponse("/api/ai/heal", innerErr, "Heal failed");
     }
   } catch (outerErr) {

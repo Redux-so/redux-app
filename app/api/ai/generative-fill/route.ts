@@ -12,12 +12,16 @@ import {
 } from "@/lib/kv";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { generativeFillBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import {
+  chargeCreditFeature,
+  insufficientCreditsResponse,
+  refundCreditFeature,
+} from "@/lib/atomic-credits";
+import { CREDIT_COSTS } from "@/constants/credits";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
-
-const GENERATIVE_FILL_COST = 3;
 
 const REPLICATE_MODEL =
   "stability-ai/stable-diffusion-inpainting:95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3";
@@ -63,8 +67,8 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
-      if (user.creditBalance < GENERATIVE_FILL_COST) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+      if (user.creditBalance < CREDIT_COSTS.generative_fill) {
+      return insufficientCreditsResponse();
     }
 
     const minuteLimit = await checkRateLimitPerMinute(
@@ -100,35 +104,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { creditBalance: { decrement: GENERATIVE_FILL_COST } },
+    const charge = await chargeCreditFeature({
+      userId: user.id,
+      feature: "generative_fill",
     });
-    await prisma.creditTransaction.create({
-      data: {
-        userId: user.id,
-        type: "DEDUCTION",
-        amount: -GENERATIVE_FILL_COST,
-        feature: "generative_fill",
-      },
-    });
-
-    const userId = user.id;
-
-    async function refundCredits(reason: string) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { creditBalance: { increment: GENERATIVE_FILL_COST } },
-      });
-      await prisma.creditTransaction.create({
-        data: {
-          userId,
-          type: "REFUND",
-          amount: GENERATIVE_FILL_COST,
-          feature: "generative_fill",
-          description: reason,
-        },
-      });
+    if (!charge.ok) {
+      return insufficientCreditsResponse();
     }
 
     try {
@@ -280,7 +261,11 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      await refundCredits("Refund: generative fill failed");
+      await refundCreditFeature({
+        userId: user.id,
+        feature: "generative_fill",
+        description: "Refund: generative fill failed",
+      });
       return apiInternalErrorResponse("/api/ai/generative-fill", innerErr, "Generative fill failed");
     }
   } catch (outerErr) {

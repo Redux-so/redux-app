@@ -10,6 +10,12 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { imageUrlAndIdBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import {
+  chargeCreditFeature,
+  insufficientCreditsResponse,
+  refundCreditFeature,
+} from "@/lib/atomic-credits";
+import { CREDIT_COSTS } from "@/constants/credits";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -29,8 +35,8 @@ export async function POST(request: Request) {
     const { user } = authResult;
 
     // ── User ────────────────────────────────────────────────────────────────
-      if (user.creditBalance < 1) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+      if (user.creditBalance < CREDIT_COSTS.remove_background) {
+      return insufficientCreditsResponse();
     }
 
     const minuteLimit = await checkRateLimitPerMinute(
@@ -68,19 +74,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    // ── Deduct credit upfront ───────────────────────────────────────────────
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { creditBalance: { decrement: 1 } },
+    const charge = await chargeCreditFeature({
+      userId: user.id,
+      feature: "remove_background",
     });
-    await prisma.creditTransaction.create({
-      data: {
-        userId: user.id,
-        type: "DEDUCTION",
-        amount: -1,
-        feature: "remove_background",
-      },
-    });
+    if (!charge.ok) {
+      return insufficientCreditsResponse();
+    }
 
     try {
       // ── Call Replicate ────────────────────────────────────────────────────
@@ -133,19 +133,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
 
     } catch (innerErr) {
-      // ── Refund credit on processing failure ───────────────────────────────
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { creditBalance: { increment: 1 } },
-      });
-      await prisma.creditTransaction.create({
-        data: {
-          userId: user.id,
-          type: "REFUND",
-          amount: 1,
-          feature: "remove_background",
-          description: "Refund: background removal failed",
-        },
+      await refundCreditFeature({
+        userId: user.id,
+        feature: "remove_background",
+        description: "Refund: background removal failed",
       });
 
       return apiInternalErrorResponse(
