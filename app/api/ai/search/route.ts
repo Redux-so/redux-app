@@ -7,6 +7,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { embedSearchQueryText } from "@/lib/search-clip";
 import { CLIP_VECTOR_DIM, vectorToPgLiteral } from "@/lib/pgvector";
 import type { ImageRecord } from "@/types/image";
@@ -76,20 +77,12 @@ export async function GET(request: Request) {
       "semantic_search",
       RATE_LIMIT_MINUTE.semantic_search,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const rateLimit = await checkRateLimit(user.id, "semantic_search", 20);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+    if (hourlyDenied) return hourlyDenied;
 
     await prisma.user.update({
       where: { id: user.id },

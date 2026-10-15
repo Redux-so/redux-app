@@ -9,6 +9,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { imageUrlAndIdBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 const replicate = new Replicate({
@@ -38,20 +39,12 @@ export async function POST(request: Request) {
       "background_remove",
       RATE_LIMIT_MINUTE.background_remove,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const rateLimit = await checkRateLimit(user.id, "background_remove", 20);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+    if (hourlyDenied) return hourlyDenied;
 
     // ── Body ────────────────────────────────────────────────────────────────
     const parsed = await parseJsonRequest(request, imageUrlAndIdBodySchema);

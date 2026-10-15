@@ -10,6 +10,8 @@ export const CREDIT_COSTS = {
   generative_fill: 3,
   chat_message: 1,
   semantic_search: 3,
+  erase: 1,
+  image_embed: 1,
 } as const;
 
 export type CreditFeature = keyof typeof CREDIT_COSTS;

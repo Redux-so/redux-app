@@ -670,6 +670,15 @@ export default function AdjustmentPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId }),
       });
+      if (res.status === 402) {
+        toast("Insufficient credits — purchase more to continue.", { icon: "💳" });
+        return;
+      }
+      if (res.status === 429 || res.status === 503) {
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(errBody.error ?? "Too many requests. Please slow down.");
+        return;
+      }
       if (!res.ok) {
         const errBody = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(errBody.error ?? `HTTP ${res.status}`);
@@ -711,6 +720,11 @@ export default function AdjustmentPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId, blurIntensity }),
       });
+      if (res.status === 429 || res.status === 503) {
+        const errBody = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(errBody.error ?? "Too many requests. Please slow down.");
+        return;
+      }
       if (!res.ok) {
         const errBody = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(errBody.error ?? `HTTP ${res.status}`);

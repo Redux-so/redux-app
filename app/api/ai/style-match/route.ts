@@ -9,6 +9,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
@@ -46,20 +47,12 @@ export async function POST(request: Request) {
     "style_match",
     RATE_LIMIT_MINUTE.style_match,
   );
-  if (!minuteLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please slow down." },
-      { status: 429 },
-    );
-  }
+  const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+  if (minuteDenied) return minuteDenied;
 
   const rateLimit = await checkRateLimit(user.id, "style_match", 20);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please slow down." },
-      { status: 429 },
-    );
-  }
+  const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+  if (hourlyDenied) return hourlyDenied;
 
   const parsed = await parseJsonRequest(request, styleMatchBodySchema);
   if (!parsed.ok) {

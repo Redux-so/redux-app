@@ -1,5 +1,6 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { upsertPrismaUser } from "@/lib/ensure-prisma-user";
 import { clerkProfileFromCurrentUser } from "@/lib/require-user";
 
@@ -26,6 +27,15 @@ export const ourFileRouter = {
       const user = await upsertPrismaUser(
         clerkProfileFromCurrentUser(clerkId, clerkUser),
       );
+
+      const rateLimited = await enforceFeatureRateLimits(
+        user.id,
+        "image_upload",
+      );
+      if (rateLimited) {
+        const body = (await rateLimited.json()) as { error?: string };
+        throw new Error(body.error ?? "Upload rate limit exceeded");
+      }
 
       return { userId: user.id };
     })

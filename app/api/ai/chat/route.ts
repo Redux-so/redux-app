@@ -8,6 +8,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
@@ -141,40 +142,24 @@ export async function POST(request: Request) {
       "chat_free",
       RATE_LIMIT_MINUTE.chat_free,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const hourly = await checkRateLimit(user.id, "chat_free", FREE_HOURLY_LIMIT);
-    if (!hourly.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(hourly);
+    if (hourlyDenied) return hourlyDenied;
   } else {
     const minuteLimit = await checkRateLimitPerMinute(
       user.id,
       "chat_credit",
       RATE_LIMIT_MINUTE.chat_credit,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const hourly = await checkRateLimit(user.id, "chat_credit", CREDIT_HOURLY_LIMIT);
-    if (!hourly.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(hourly);
+    if (hourlyDenied) return hourlyDenied;
   }
 
   // ── Consume free message or credit ───────────────────────────────────────

@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   parseJsonRequest,
@@ -16,6 +17,11 @@ export async function GET(request: NextRequest) {
     return authResult.error;
   }
   const { user } = authResult;
+
+  const rateLimited = await enforceFeatureRateLimits(user.id, "list_versions");
+  if (rateLimited) {
+    return rateLimited;
+  }
 
   const { searchParams } = new URL(request.url);
   const imageIdResult = parseResourceIdParam(searchParams.get("imageId") ?? "");
@@ -54,6 +60,11 @@ export async function POST(request: NextRequest) {
     return authResult.error;
   }
   const { user } = authResult;
+
+  const rateLimited = await enforceFeatureRateLimits(user.id, "save_version");
+  if (rateLimited) {
+    return rateLimited;
+  }
 
   const parsed = await parseJsonRequest(request, saveVersionBodySchema);
   if (!parsed.ok) {

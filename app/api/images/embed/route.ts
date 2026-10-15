@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { apiInternalErrorResponse } from "@/lib/api-error";
-import { requireAuthUser } from "@/lib/require-user";
-import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
+import { CREDIT_COSTS } from "@/constants/credits";
 import { embedImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { apiInternalErrorResponse } from "@/lib/api-error";
+import { deductCredits, refundCredits } from "@/lib/credit-ledger";
+import {
+  enforceFeatureRateLimits,
+  insufficientCreditsResponse,
+} from "@/lib/expensive-route-guard";
+import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
+import { prisma } from "@/lib/prisma";
+import { requireAuthUser } from "@/lib/require-user";
+
+const EMBED_COST = CREDIT_COSTS.image_embed;
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +20,15 @@ export async function POST(request: Request) {
       return authResult.error;
     }
     const { user } = authResult;
+
+    if (user.creditBalance < EMBED_COST) {
+      return insufficientCreditsResponse();
+    }
+
+    const rateLimited = await enforceFeatureRateLimits(user.id, "embed");
+    if (rateLimited) {
+      return rateLimited;
+    }
 
     const parsed = await parseJsonRequest(request, embedImageBodySchema);
     if (!parsed.ok) {
@@ -26,10 +43,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    // CLIP image encoder (Replicate clip-features, inputs = imageUrl) → pgvector(768)
-    await generateAndPersistImageEmbedding(imageId, imageUrl, user.id);
+    await deductCredits(user.id, "image_embed");
 
-    return NextResponse.json({ ok: true });
+    try {
+      // CLIP image encoder (Replicate clip-features, inputs = imageUrl) → pgvector(768)
+      await generateAndPersistImageEmbedding(imageId, imageUrl, user.id);
+      return NextResponse.json({ ok: true });
+    } catch (err) {
+      await refundCredits(user.id, "image_embed", EMBED_COST, "Embedding failed");
+      return apiInternalErrorResponse("POST /api/images/embed", err, "Embedding failed");
+    }
   } catch (err) {
     return apiInternalErrorResponse("POST /api/images/embed", err, "Embedding failed");
   }
