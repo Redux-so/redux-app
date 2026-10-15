@@ -8,6 +8,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { imageUrlAndIdBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -16,11 +17,6 @@ const replicate = new Replicate({
 // Full identifier passed to replicate.run() — owner/model:version
 const REPLICATE_MODEL =
   "851-labs/background-removal:a029dff38972b5fda4ec5d75d7d1cd25aeff621d2cf4946a41055d7db66b80bc";
-
-interface RequestBody {
-  imageUrl: string;
-  imageId: string;
-}
 
 export async function POST(request: Request) {
   try {
@@ -57,15 +53,11 @@ export async function POST(request: Request) {
     }
 
     // ── Body ────────────────────────────────────────────────────────────────
-    const body = (await request.json()) as RequestBody;
-    const { imageUrl, imageId } = body;
-
-    if (!imageUrl || !imageId) {
-      return NextResponse.json(
-        { error: "imageUrl and imageId are required" },
-        { status: 400 },
-      );
+    const parsed = await parseJsonRequest(request, imageUrlAndIdBodySchema);
+    if (!parsed.ok) {
+      return parsed.response;
     }
+    const { imageUrl, imageId } = parsed.data;
 
     // ── Verify image ownership ──────────────────────────────────────────────
     const image = await prisma.image.findFirst({

@@ -10,6 +10,7 @@ import {
 } from "@/lib/kv";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
+import { imageUrlOnlyBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor. Analyze this image and return optimal tone adjustments only. " +
@@ -19,11 +20,6 @@ const SYSTEM_PROMPT =
 
 function toThumbnailUrl(url: string): string {
   return url.replace("/upload/", "/upload/w_400,q_70,f_jpg/");
-}
-
-interface RequestBody {
-  imageUrl: string;
-  currentAdjustments?: Record<AdjustmentKey, number>;
 }
 
 export async function POST(request: Request) {
@@ -57,11 +53,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json()) as RequestBody;
-  const { imageUrl } = body;
-  if (!imageUrl) {
-    return NextResponse.json({ error: "imageUrl is required" }, { status: 400 });
+  const parsed = await parseJsonRequest(request, imageUrlOnlyBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
   }
+  const { imageUrl } = parsed.data;
 
   const ownedImage = await assertUserOwnsImageUrl(user.id, imageUrl);
   if (!ownedImage) {

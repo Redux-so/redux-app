@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
+import { checkoutBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 function logCheckoutError(label: string, err: unknown) {
   console.error(`[credits/checkout] ${label}:`, err);
@@ -36,18 +37,12 @@ export async function POST(request: Request) {
       );
     }
 
-    let bundleId: string | undefined;
-    try {
-      const body = (await request.json()) as { bundleId?: string };
-      bundleId = body.bundleId;
-    } catch (parseErr) {
-      logCheckoutError("Invalid JSON body", parseErr);
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    const parsed = await parseJsonRequest(request, checkoutBodySchema);
+    if (!parsed.ok) {
+      logCheckoutError("Invalid request body", parsed.response);
+      return parsed.response;
     }
-
-    if (!bundleId) {
-      return NextResponse.json({ error: "bundleId is required" }, { status: 400 });
-    }
+    const { bundleId } = parsed.data;
 
     const bundle = await prisma.creditBundle.findFirst({
       where: { id: bundleId, isActive: true },

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import type { AlbumRecord } from "@/types/album";
+import { albumNameBodySchema, parseJsonRequest } from "@/lib/api-validation";
 
 function serializeAlbum(album: {
   id: string;
@@ -47,17 +48,11 @@ export async function POST(request: NextRequest) {
   }
   const { user } = authResult;
 
-  const body = (await request.json()) as { name?: string };
-  const name = body.name?.trim() ?? "";
-  if (!name) {
-    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  const parsed = await parseJsonRequest(request, albumNameBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
   }
-  if (name.length > 80) {
-    return NextResponse.json(
-      { error: "name must be at most 80 characters" },
-      { status: 400 },
-    );
-  }
+  const { name } = parsed.data;
 
   const album = await prisma.album.create({
     data: {
