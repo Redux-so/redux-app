@@ -11,6 +11,10 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import {
+  fetchReplicateDeliveryBuffer,
+  fetchTrustedMediaBuffer,
+} from "@/lib/safe-remote-fetch";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -129,11 +133,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      const imageRes = await fetch(imageUrl);
-      if (!imageRes.ok) {
-        throw new Error(`Failed to fetch source image: ${imageRes.status} ${imageRes.statusText}`);
-      }
-      const sourceImageBuffer = Buffer.from(await imageRes.arrayBuffer());
+      const { buffer: sourceImageBuffer } = await fetchTrustedMediaBuffer(imageUrl);
       const imageMeta = await sharp(sourceImageBuffer).metadata();
       const iw = imageMeta.width ?? 512;
       const ih = imageMeta.height ?? 512;
@@ -168,11 +168,7 @@ export async function POST(request: Request) {
 
       const resultUrl = extractOutputUrl(output);
 
-      const resultRes = await fetch(resultUrl);
-      if (!resultRes.ok) {
-        throw new Error(`Failed to download heal result: ${resultRes.status}`);
-      }
-      const resultBuffer = Buffer.from(await resultRes.arrayBuffer());
+      const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
       const uploaded = await uploadToCloudinary(
         resultBuffer,

@@ -13,6 +13,7 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { parseJsonRequest, styleMatchBodySchema } from "@/lib/api-validation";
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const STYLE_MATCH_COST = 3;
@@ -106,12 +107,8 @@ export async function POST(request: Request) {
 
   try {
     const thumbnailUrl = toThumbnailUrl(imageUrl);
-    const imageRes = await fetch(thumbnailUrl);
-    if (!imageRes.ok) {
-      throw new Error(`Failed to fetch target image: ${imageRes.status}`);
-    }
-    const buffer = await imageRes.arrayBuffer();
-    const targetBase64 = Buffer.from(buffer).toString("base64");
+    const { buffer } = await fetchTrustedMediaBuffer(thumbnailUrl);
+    const targetBase64 = buffer.toString("base64");
 
     // Anthropic vision: PNG + max 1000px on longest side keeps payload under 5MB while
     // preserving enough detail for style analysis (Sharp accepts any common input format).

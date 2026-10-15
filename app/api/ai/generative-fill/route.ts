@@ -12,6 +12,10 @@ import {
 } from "@/lib/kv";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { generativeFillBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import {
+  fetchReplicateDeliveryBuffer,
+  fetchTrustedMediaBuffer,
+} from "@/lib/safe-remote-fetch";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -132,11 +136,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      const imageRes = await fetch(imageUrl);
-      if (!imageRes.ok) {
-        throw new Error(`Failed to fetch source image: ${imageRes.status} ${imageRes.statusText}`);
-      }
-      const sourceBuffer = Buffer.from(await imageRes.arrayBuffer());
+      const { buffer: sourceBuffer } = await fetchTrustedMediaBuffer(imageUrl);
       const meta = await sharp(sourceBuffer).metadata();
       const ow = meta.width ?? 1;
       const oh = meta.height ?? 1;
@@ -257,11 +257,7 @@ export async function POST(request: Request) {
 
       const resultUrl = extractOutputUrl(output);
 
-      const resultRes = await fetch(resultUrl);
-      if (!resultRes.ok) {
-        throw new Error(`Failed to download generative fill result: ${resultRes.status}`);
-      }
-      const resultBuffer = Buffer.from(await resultRes.arrayBuffer());
+      const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
       const uploaded = await uploadToCloudinary(
         resultBuffer,

@@ -1,3 +1,5 @@
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+
 const VALID_MEDIA_TYPES = [
   "image/jpeg",
   "image/png",
@@ -46,14 +48,9 @@ export async function fetchChatImageBase64(
   }
 
   const fetchUrl = toVisionThumbnailUrl(imageUrl);
-  const imageRes = await fetch(fetchUrl);
-  if (!imageRes.ok) {
-    throw new Error(`Failed to fetch image: ${imageRes.status}`);
-  }
-
-  const buffer = await imageRes.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString("base64");
-  const headerType = imageRes.headers.get("content-type")?.split(";")[0]?.trim();
+  const { buffer, contentType: headerTypeRaw } = await fetchTrustedMediaBuffer(fetchUrl);
+  const base64 = buffer.toString("base64");
+  const headerType = headerTypeRaw?.split(";")[0]?.trim();
   const mediaType =
     headerType && isChatImageMediaType(headerType) ? headerType : "image/jpeg";
 

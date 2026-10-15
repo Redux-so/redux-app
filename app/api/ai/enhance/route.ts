@@ -12,6 +12,7 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { imageUrlOnlyBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const SYSTEM_PROMPT =
@@ -88,12 +89,8 @@ export async function POST(request: Request) {
   try {
     // Fetch the thumbnail from Cloudinary
     const thumbnailUrl = toThumbnailUrl(imageUrl);
-    const imageRes = await fetch(thumbnailUrl);
-    if (!imageRes.ok) {
-      throw new Error(`Failed to fetch image: ${imageRes.status}`);
-    }
-    const buffer = await imageRes.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
+    const { buffer } = await fetchTrustedMediaBuffer(thumbnailUrl);
+    const base64 = buffer.toString("base64");
 
     const userContent: (ImageBlockParam | TextBlockParam)[] = [
       {
