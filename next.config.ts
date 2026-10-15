@@ -1,11 +1,8 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
-import {
-  buildContentSecurityPolicy,
-  SECURITY_HEADERS,
-} from "./lib/content-security-policy";
+import { buildSecurityHeaders } from "./lib/content-security-policy";
 
-const isDev = process.env.NODE_ENV === "development";
+const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["geist"],
@@ -30,7 +27,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    const csp = buildContentSecurityPolicy(isDev);
+    const securityHeaders = buildSecurityHeaders(isProduction);
 
     return [
       {
@@ -44,13 +41,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/:path*",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: csp,
-          },
-          ...SECURITY_HEADERS,
-        ],
+        headers: [...securityHeaders],
       },
     ];
   },

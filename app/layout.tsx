@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider appearance={reduxClerkProviderAppearance}>
+    <ClerkProvider appearance={reduxClerkProviderAppearance} dynamic>
       <html
         lang="en"
         className={`${geistSans.variable} h-full antialiased`}
