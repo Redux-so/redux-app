@@ -148,7 +148,14 @@ export default function ProfileMenu({
 
   useLayoutEffect(() => {
     if (!popoverOpen || !usePortaledPopover) return;
-    updateMenuPosition();
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      if (!cancelled) updateMenuPosition();
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
   }, [popoverOpen, usePortaledPopover, updateMenuPosition]);
 
   useEffect(() => {

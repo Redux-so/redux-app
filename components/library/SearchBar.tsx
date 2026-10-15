@@ -46,9 +46,14 @@ export default function SearchBar({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (filtersOpen) {
-      setDraftFilters(filters);
-    }
+    if (!filtersOpen) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setDraftFilters(filters);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [filtersOpen, filters]);
 
   async function handleSubmit(e: FormEvent) {
@@ -191,7 +196,12 @@ export default function SearchBar({
         />
         <button
           type="button"
-          onClick={() => setFiltersOpen((prev) => !prev)}
+          onClick={() => {
+            setFiltersOpen((prev) => {
+              if (!prev) setDraftFilters(filters);
+              return !prev;
+            });
+          }}
           aria-label="Filter photos"
           aria-expanded={filtersOpen}
           className={[

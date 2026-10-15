@@ -43,24 +43,38 @@ function UsageRingSvg({
   const hasInitializedRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!hasInitializedRef.current) {
       hasInitializedRef.current = true;
-      setDisplayOffset(RING_CIRCUMFERENCE);
-      if (reduceMotion) {
-        setTransitionEnabled(true);
-        setDisplayOffset(targetOffset);
-        return;
-      }
+      let innerFrame = 0;
       const frame = requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+        if (cancelled) return;
+        setDisplayOffset(RING_CIRCUMFERENCE);
+        if (reduceMotion) {
+          setTransitionEnabled(true);
+          setDisplayOffset(targetOffset);
+          return;
+        }
+        innerFrame = requestAnimationFrame(() => {
+          if (cancelled) return;
           setTransitionEnabled(true);
           setDisplayOffset(targetOffset);
         });
       });
-      return () => cancelAnimationFrame(frame);
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(frame);
+        cancelAnimationFrame(innerFrame);
+      };
     }
 
-    setDisplayOffset(targetOffset);
+    queueMicrotask(() => {
+      if (!cancelled) setDisplayOffset(targetOffset);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [fillProgress, targetOffset, reduceMotion]);
 
   const strokeTransition =
@@ -141,7 +155,11 @@ export default function UsageRing({
 
   const view = deriveUsageRingState(quota);
   const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+  const [isCoarsePointer, setIsCoarsePointer] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches,
+  );
   const [tooltipCoords, setTooltipCoords] = useState<{
     top: number;
     left: number;
@@ -177,7 +195,6 @@ export default function UsageRing({
 
   useEffect(() => {
     const mq = window.matchMedia("(pointer: coarse)");
-    setIsCoarsePointer(mq.matches);
     const onChange = () => setIsCoarsePointer(mq.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);

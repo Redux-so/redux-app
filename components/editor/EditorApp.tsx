@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
@@ -71,20 +71,30 @@ export default function EditorApp() {
   useEffect(() => {
     if (!imageId) return;
     canvasHydratedRef.current = false;
-    setBaseImageUrl(null);
-    setImageBase64(null);
-    setCanvasDimensions(null);
     pendingRestoreRef.current = null;
-    setSavedTransform({ ...DEFAULT_IMAGE_TRANSFORM });
     previewPixelsRef.current = { baseImageUrl: null, imageBase64: null };
-    setLoadingImage(true);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setBaseImageUrl(null);
+      setImageBase64(null);
+      setCanvasDimensions(null);
+      setSavedTransform({ ...DEFAULT_IMAGE_TRANSFORM });
+      setLoadingImage(true);
+    });
     fetch(`/api/images/${imageId}`)
       .then((res) => res.json())
       .then((data: { image?: ImageRecord }) => {
+        if (cancelled) return;
         if (data.image) setImage(data.image);
       })
       .catch(console.error)
-      .finally(() => setLoadingImage(false));
+      .finally(() => {
+        if (!cancelled) setLoadingImage(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [imageId]);
 
   const applyPersistedRestore = useCallback((state: PersistedEditorState) => {
@@ -189,51 +199,73 @@ export default function EditorApp() {
     getTransformSnapshot,
   } = useCanvas(canvasSourceUrl, adjustments, savedTransform);
 
-  getCanvasSnapshotRef.current = () => {
-    if (authoritativeStateRef.current) {
-      const auth = authoritativeStateRef.current;
+  useLayoutEffect(() => {
+    getCanvasSnapshotRef.current = () => {
+      if (authoritativeStateRef.current) {
+        const auth = authoritativeStateRef.current;
+        return {
+          transform: { ...auth.transform },
+          workingImageUrl: auth.workingImageUrl,
+          imageBase64: null,
+          originalUrl: imageOriginalUrlRef.current,
+          workingWidth: auth.workingWidth,
+          workingHeight: auth.workingHeight,
+        };
+      }
       return {
-        transform: { ...auth.transform },
-        workingImageUrl: auth.workingImageUrl,
-        imageBase64: null,
+        transform: getTransformSnapshot(),
+        workingImageUrl: resolveWorkingImageUrl(
+          imageOriginalUrlRef.current,
+          previewPixelsRef.current.baseImageUrl ?? baseImageUrl,
+          image?.previewUrl ?? null,
+        ),
+        imageBase64: previewPixelsRef.current.imageBase64 ?? imageBase64,
         originalUrl: imageOriginalUrlRef.current,
-        workingWidth: auth.workingWidth,
-        workingHeight: auth.workingHeight,
+        workingWidth: canvasDimensions?.width ?? null,
+        workingHeight: canvasDimensions?.height ?? null,
       };
-    }
-    return {
-      transform: getTransformSnapshot(),
-      workingImageUrl: resolveWorkingImageUrl(
-        imageOriginalUrlRef.current,
-        previewPixelsRef.current.baseImageUrl ?? baseImageUrl,
-        image?.previewUrl ?? null,
-      ),
-      imageBase64: previewPixelsRef.current.imageBase64 ?? imageBase64,
-      originalUrl: imageOriginalUrlRef.current,
-      workingWidth: canvasDimensions?.width ?? null,
-      workingHeight: canvasDimensions?.height ?? null,
     };
-  };
+  }, [
+    baseImageUrl,
+    canvasDimensions?.height,
+    canvasDimensions?.width,
+    getTransformSnapshot,
+    image?.previewUrl,
+    imageBase64,
+  ]);
 
   useEffect(() => {
     if (!activeImageUrl) return;
+    let cancelled = false;
+
     if (activeImageUrl.startsWith("data:")) {
       const b64 = stripDataUrlBase64(activeImageUrl);
-      setImageBase64(b64);
       previewPixelsRef.current.imageBase64 = b64;
-      return;
+      queueMicrotask(() => {
+        if (!cancelled) setImageBase64(b64);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
     if (
       activeImageUrl.startsWith("https://") &&
       !isStoredPreviewUrl(activeImageUrl, image?.previewUrl)
     ) {
-      setBaseImageUrl(activeImageUrl);
-      setImageBase64(null);
       previewPixelsRef.current = {
         baseImageUrl: activeImageUrl,
         imageBase64: null,
       };
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setBaseImageUrl(activeImageUrl);
+          setImageBase64(null);
+        }
+      });
     }
+    return () => {
+      cancelled = true;
+    };
   }, [activeImageUrl, image?.previewUrl]);
 
   useEffect(() => {

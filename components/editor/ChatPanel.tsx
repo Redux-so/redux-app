@@ -196,7 +196,14 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
 
   useLayoutEffect(() => {
     if (!open) return;
-    updateMenuPosition();
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      if (!cancelled) updateMenuPosition();
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
   }, [open, updateMenuPosition, selectedModelId]);
 
   useEffect(() => {

@@ -48,8 +48,15 @@ export default function FilterDateField({
   const [viewMonth, setViewMonth] = useState(() => selected ?? new Date());
 
   useEffect(() => {
-    if (selected) setViewMonth(selected);
-  }, [value]);
+    if (!selected) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setViewMonth(selected);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [value, selected]);
 
   useEffect(() => {
     if (!open) return;
