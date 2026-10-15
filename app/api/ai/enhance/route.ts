@@ -12,6 +12,7 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { imageUrlOnlyBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor. Analyze this image and return optimal adjustment values " +
@@ -122,7 +123,10 @@ export async function POST(request: Request) {
     try {
       adjustments = JSON.parse(cleaned) as Partial<Record<AdjustmentKey, number>>;
     } catch {
-      console.error("[/api/ai/enhance] Failed to parse JSON response:", rawText);
+      console.error(
+        "[/api/ai/enhance] Failed to parse JSON response:",
+        logSnippetForDiagnostics(rawText),
+      );
       // Refund on parse failure
       await prisma.user.update({
         where: { id: user.id },

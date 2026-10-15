@@ -16,6 +16,7 @@ import {
   shouldApplyChatAdjustments,
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
+import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 import {
   fetchChatImageBase64,
   isChatImageMediaType,
@@ -294,12 +295,15 @@ export async function POST(request: Request) {
             );
             controller.enqueue(encodeEvent({ type: "adjustments", adjustments: parsed }));
           } catch {
-            console.error("[/api/ai/chat] Failed to parse [adjustments] JSON:", adjMatch[1]);
+            console.error(
+              "[/api/ai/chat] Failed to parse [adjustments] JSON:",
+              logSnippetForDiagnostics(adjMatch[1]),
+            );
           }
         } else if (adjMatch && !allowAdjustments) {
           console.warn(
-            "[/api/ai/chat] Ignored [adjustments] block for non-edit intent:",
-            userMessage.slice(0, 80),
+            "[/api/ai/chat] Ignored [adjustments] block for non-edit intent (messageLen=%d)",
+            userMessage.length,
           );
         }
       } catch (err) {

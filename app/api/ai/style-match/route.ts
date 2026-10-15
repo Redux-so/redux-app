@@ -13,6 +13,7 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { parseJsonRequest, styleMatchBodySchema } from "@/lib/api-validation";
+import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const STYLE_MATCH_COST = 3;
 
@@ -158,7 +159,10 @@ export async function POST(request: Request) {
     try {
       adjustments = JSON.parse(cleaned) as Partial<Record<AdjustmentKey, number>>;
     } catch {
-      console.error("[/api/ai/style-match] Failed to parse JSON:", rawText);
+      console.error(
+        "[/api/ai/style-match] Failed to parse JSON:",
+        logSnippetForDiagnostics(rawText),
+      );
       await refundCredits("Refund: style match parse failure");
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }

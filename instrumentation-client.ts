@@ -3,29 +3,32 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import {
+  parseSentrySampleRate,
+  sharedSentryInitOptions,
+} from "@/lib/sentry/shared-init-options";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 Sentry.init({
-  dsn: "https://92b5a52968b433712b8c47993e9fcc3a@o4511497206300672.ingest.us.sentry.io/4511497209643008",
-
-  // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
-
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
-
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1,
-
-  // Define how likely Replay events are sampled when an error occurs.
-  replaysOnErrorSampleRate: 1.0,
-
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  ...sharedSentryInitOptions("client"),
+  integrations: [
+    Sentry.replayIntegration({
+      maskAllText: true,
+      maskAllInputs: true,
+      blockAllMedia: true,
+    }),
+  ],
+  replaysSessionSampleRate: parseSentrySampleRate(
+    process.env.NEXT_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE ??
+      process.env.SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
+    isProduction ? 0 : 0.1,
+  ),
+  replaysOnErrorSampleRate: parseSentrySampleRate(
+    process.env.NEXT_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE ??
+      process.env.SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE,
+    isProduction ? 0.25 : 1,
+  ),
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
