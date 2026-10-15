@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { DEFAULT_ADJUSTMENTS } from "@/constants/adjustments";
+import { isTrustedMediaHttpUrl } from "@/lib/trusted-media-url";
 
 /** Shared limits for API request validation (SEC-05). */
 export const API_LIMITS = {
@@ -68,7 +69,11 @@ export const httpImageUrlSchema = z
   .trim()
   .min(1)
   .max(API_LIMITS.URL_MAX_LEN)
-  .refine(isHttpOrHttpsUrl, "imageUrl must be a valid http(s) URL");
+  .refine(isHttpOrHttpsUrl, "imageUrl must be a valid http(s) URL")
+  .refine(
+    isTrustedMediaHttpUrl,
+    "imageUrl must be a trusted Cloudinary or UploadThing HTTPS URL",
+  );
 
 export const dataImageUrlSchema = z
   .string()

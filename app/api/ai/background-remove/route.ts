@@ -10,6 +10,7 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { imageUrlAndIdBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { fetchReplicateDeliveryBuffer } from "@/lib/safe-remote-fetch";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -107,11 +108,7 @@ export async function POST(request: Request) {
       }
 
       // ── Download result PNG ───────────────────────────────────────────────
-      const resultRes = await fetch(resultUrl);
-      if (!resultRes.ok) {
-        throw new Error(`Failed to download result PNG: ${resultRes.status} ${resultRes.statusText}`);
-      }
-      const buffer = Buffer.from(await resultRes.arrayBuffer());
+      const { buffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
       // ── Upload to Cloudinary ──────────────────────────────────────────────
       const uploaded = await uploadToCloudinary(

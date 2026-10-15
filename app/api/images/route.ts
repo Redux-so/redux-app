@@ -10,6 +10,7 @@ import {
   deleteImageBodySchema,
   parseJsonRequest,
 } from "@/lib/api-validation";
+import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 
 const IMAGE_SELECT = {
   id: true,
@@ -108,9 +109,17 @@ export async function POST(request: NextRequest) {
   }
   const { ufsUrl, utKey, name, size } = parsed.data;
 
-  const response = await fetch(ufsUrl);
-  const arrayBuffer = await response.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  let buffer: Buffer;
+  try {
+    const fetched = await fetchTrustedMediaBuffer(ufsUrl);
+    buffer = fetched.buffer;
+  } catch (err) {
+    if (err instanceof SafeFetchError && err.code === "UNTRUSTED_URL") {
+      return NextResponse.json({ error: "Untrusted upload URL" }, { status: 400 });
+    }
+    console.error("[POST /api/images] Failed to fetch upload:", err);
+    return NextResponse.json({ error: "Failed to fetch upload" }, { status: 502 });
+  }
 
   const { uploadToCloudinary } = await import("@/lib/cloudinary");
   const { secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name);
