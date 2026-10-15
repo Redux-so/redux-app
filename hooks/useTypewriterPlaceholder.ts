@@ -43,14 +43,15 @@ export function useTypewriterPlaceholder(
   const phaseRef = useRef<TypewriterPhase>("typing");
 
   useEffect(() => {
-    if (!active) {
-      setDisplayText("");
-      indexRef.current = 0;
-      phaseRef.current = "typing";
-      return;
-    }
+    if (!active) return;
+
+    indexRef.current = 0;
+    phaseRef.current = "typing";
 
     let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setDisplayText("");
+    });
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const schedule = (delay: number, fn: () => void) => {
@@ -113,10 +114,7 @@ export function useTypewriterPlaceholder(
   }, [active, text, typeMs, eraseMs, pauseFullMs, pauseEmptyMs]);
 
   useEffect(() => {
-    if (!active) {
-      setCursorVisible(true);
-      return;
-    }
+    if (!active) return;
 
     const intervalId = setInterval(() => {
       setCursorVisible((visible) => !visible);
@@ -125,5 +123,8 @@ export function useTypewriterPlaceholder(
     return () => clearInterval(intervalId);
   }, [active]);
 
-  return { displayText, cursorVisible };
+  return {
+    displayText: active ? displayText : "",
+    cursorVisible: active ? cursorVisible : true,
+  };
 }

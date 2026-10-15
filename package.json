@@ -40,7 +40,6 @@
     "framer-motion": "^12.38.0",
     "geist": "^1.7.2",
     "immer": "^11.1.4",
-    "inngest": "^4.0.5",
     "next": "16.2.1",
     "next-cloudinary": "^6.17.5",
     "posthog-js": "^1.363.4",

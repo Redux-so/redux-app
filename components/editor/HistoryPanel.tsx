@@ -46,14 +46,23 @@ export function HistoryVersionList({
 
   useEffect(() => {
     if (!enabled || !imageId) return;
-    setLoading(true);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
     fetch(`/api/images/versions?imageId=${imageId}`)
       .then((res) => res.json())
       .then((data: { versions?: ImageVersion[] }) => {
+        if (cancelled) return;
         setVersions(data.versions ?? []);
       })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [enabled, imageId]);
 
   function handleRestore(version: ImageVersion) {
