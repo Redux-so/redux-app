@@ -25,7 +25,7 @@ export const REDUX_CSP_DIRECTIVES = {
     "https://*.ufs.sh",
     "https://utfs.io",
   ],
-  "font-src": ["data:", "https://fonts.gstatic.com"],
+  "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
   "style-src": ["https://fonts.googleapis.com"],
   "connect-src": [
     "https://res.cloudinary.com",
