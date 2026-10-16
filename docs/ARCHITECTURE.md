@@ -12,8 +12,8 @@ Verified from the repository unless marked **uncertain**.
 | Auth | **Clerk** (`proxy.ts`, `@clerk/nextjs`) |
 | Database | **PostgreSQL** (Neon) via **Prisma 5** |
 | Vector search | **pgvector** on `Image.embedding` (768-d); raw SQL via `lib/pgvector.ts` |
-| Uploads | **UploadThing** (`app/api/uploadthing/`) |
-| Media storage / transforms | **Cloudinary** (`lib/cloudinary.ts`) |
+| Uploads | Authenticated **multipart POST** `app/api/images` → **Cloudinary** |
+| Media storage / transforms | **Cloudinary** (`lib/cloudinary.ts`) — source of truth for originals, previews, and AI outputs |
 | Canvas | **Fabric.js** (`components/editor/Canvas.tsx`, `hooks/useCanvas.ts`) |
 | AI chat / vision | **Anthropic** (`lib/anthropic.ts`, model `claude-sonnet-4-5` in chat UI) |
 | AI inpainting / CLIP / some models | **Replicate** (`lib/replicate.ts`, various routes) |
@@ -21,8 +21,6 @@ Verified from the repository unless marked **uncertain**.
 | Rate limiting | **Vercel KV** when `KV_REST_API_URL` is set (`lib/kv.ts`) |
 | Errors | **Sentry** (`withSentryConfig` in `next.config.ts`, instrumentation) |
 | Icons | **@untitledui/icons** via `components/shared/Icon.tsx` only |
-
-**Uncertain / not wired in app code (present in `package.json` only):** `posthog-js` — no imports found in application source at documentation time.
 
 ## Authentication
 
@@ -46,7 +44,7 @@ Schema: `prisma/schema.prisma`
 | `CreditTransaction` | Purchases and deductions |
 | `CreditBundle` | Catalog for Stripe prices |
 
-Prisma client singleton: `lib/prisma.ts`. Neon adapter package is listed in dependencies; confirm adapter usage in `lib/prisma.ts` when changing DB setup.
+Prisma client singleton: `lib/prisma.ts` (`@prisma/client` is a runtime dependency; `postinstall` runs `prisma generate`).
 
 ## API / backend
 
@@ -66,16 +64,17 @@ Representative routes:
 
 - **Routes:** `app/(dashboard)/*` (library, editor, settings), `app/(auth)/*`, marketing `app/page.tsx`
 - **Editor shell:** client `EditorApp.tsx` composes Toolbar, AdjustmentPanel, Canvas, ChatPanel
-- **State:** React hooks — `useEditor`, `useCanvas`, `use-undo`, `use-immer`; preview refresh via `EditorPreviewContext`
+- **State:** React hooks — `useEditor`, `useCanvas`, `use-undo`; preview refresh via `EditorPreviewContext`
 - **No global Redux store** — name is product brand only
 
 ## Media and image pipeline
 
-1. Upload → UploadThing → record in DB + Cloudinary public id
-2. Editor loads `previewUrl ?? originalUrl`
-3. Adjustments: CSS filters on canvas; export composes via Sharp (`lib/apply-image-adjustments.ts`, color overlays)
-4. AI ops update Cloudinary / `previewUrl` and may create versions
-5. Embeddings: `lib/image-vector-pipeline.ts`, `pnpm run embed:all` script
+1. Upload → `POST /api/images` (multipart) → Cloudinary `redux/` folder → `Image` row (`originalUrl`, `publicId`)
+2. Legacy rows may still have `utKey` (UploadThing); permanent delete removes both Cloudinary assets and any remaining UploadThing keys
+3. Editor loads `previewUrl ?? originalUrl`
+4. Adjustments: CSS filters on canvas; export composes via Sharp (`lib/apply-image-adjustments.ts`, color overlays)
+5. AI ops update Cloudinary / `previewUrl` and may create versions
+6. Embeddings: `lib/image-vector-pipeline.ts`, `pnpm run embed:all` script
 
 Cloudinary folder name **redux** (documented in decisions).
 
@@ -102,7 +101,7 @@ docs/                Project documentation (this tree)
 ## Major data flows
 
 ```text
-Upload → DB Image → Library grid
+Upload → Cloudinary + DB Image → Library grid
 Library → Editor (imageId) → useEditor loads versions/adjustments
 Slider change → canvas preview → auto-save → ImageVersion
 AI button → POST /api/ai/* → credits + Cloudinary → previewUrl update

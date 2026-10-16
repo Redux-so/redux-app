@@ -35,15 +35,28 @@ function findTestFiles(dir, acc = []) {
   return acc;
 }
 
+const VERIFY_NODE_SCRIPTS = ["scripts/verify-icon-registry.mjs"];
+
 const VERIFY_SCRIPTS = [
   "scripts/verify-api-validation.ts",
   "scripts/verify-ssrf-guards.ts",
   "scripts/verify-atomic-credits.ts",
   "scripts/verify-media-ownership.ts",
   "scripts/verify-background-embedding.ts",
+  "scripts/verify-image-upload.ts",
 ];
 
 function runVerifyScripts() {
+  for (const script of VERIFY_NODE_SCRIPTS) {
+    if (!existsSync(script)) continue;
+    const result = spawnSync("node", [script], {
+      stdio: "inherit",
+      env: process.env,
+    });
+    if (result.status !== 0) {
+      process.exit(result.status ?? 1);
+    }
+  }
   for (const script of VERIFY_SCRIPTS) {
     if (!existsSync(script)) continue;
     const result = spawnSync("pnpm", ["exec", "tsx", script], {

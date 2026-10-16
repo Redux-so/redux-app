@@ -82,6 +82,16 @@ Reason: Documented in dev notes.
 
 ---
 
+## Decision: Cloudinary-only upload pipeline (PERF-02)
+
+Context: Each library upload previously went client → UploadThing → server fetch → Cloudinary, storing bytes in both providers.
+
+Decision: **Cloudinary** is the media source of truth. New uploads use authenticated `POST /api/images` with multipart `file`; the server streams to Cloudinary and persists `originalUrl` / `publicId`. UploadThing is no longer used for ingest. `utKey` remains on the schema for legacy rows; permanent delete still clears UploadThing when present.
+
+Reason: Removes duplicate storage and an extra network hop while keeping transforms, SSRF allowlists, and deletion behavior unchanged.
+
+---
+
 ## Decision: Export modal download-only
 
 Context: Save vs export UX.
@@ -106,9 +116,9 @@ Reason: Documented in dev notes and `lib/button-styles.ts`.
 
 Context: Icon consistency.
 
-Decision: Only `components/shared/Icon.tsx` imports `@untitledui/icons`; lucide removed.
+Decision: Only `components/shared/icon-registry.ts` imports `@untitledui/icons` (subpath per icon); `Icon.tsx` reads the registry. Lucide removed.
 
-Reason: Documented in dev notes.
+Reason: Avoids Turbopack dev importing the full ~2.3k-icon package barrel (see [PERF-DEV-MEMORY.md](./PERF-DEV-MEMORY.md)).
 
 ---
 

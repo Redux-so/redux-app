@@ -49,53 +49,65 @@ export async function POST(request: Request) {
       const height = meta.height ?? 512;
 
       const sigma = intensityToSigma(blurIntensity);
-
-      // Blur the full image
-      const blurredBuffer = await sharp(sourceBuffer)
-        .blur(sigma)
-        .png()
-        .toBuffer();
-
-      // Resize mask to match source
       const maskBuffer = Buffer.from(maskBase64, "base64");
-      const maskResized = await sharp(maskBuffer)
-        .resize(width, height, { fit: "fill" })
-        .grayscale()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
 
-      // Get the blurred image as raw RGBA pixels
-      const blurredRGBA = await sharp(blurredBuffer)
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
+      const [blurredRgb, maskResized] = await Promise.all([
+        sharp(sourceBuffer)
+          .blur(sigma)
+          .removeAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true }),
+        sharp(maskBuffer)
+          .resize(width, height, { fit: "fill" })
+          .grayscale()
+          .raw()
+          .toBuffer({ resolveWithObject: true }),
+      ]);
 
-      // Replace blurred image's alpha channel with the mask values
-      // so only painted (white) areas remain visible in the blurred layer
-      const { data: blurData, info } = blurredRGBA;
-      const { data: maskData } = maskResized;
-      for (let i = 0; i < info.width * info.height; i++) {
-        (blurData as Buffer)[i * 4 + 3] = (maskData as Buffer)[i];
-      }
-
-      // Reconstruct the masked-blurred layer as PNG
-      const maskedBlurred = await sharp(blurData as Buffer, {
-        raw: { width: info.width, height: info.height, channels: 4 },
+      const maskedRgba = await sharp(blurredRgb.data, {
+        raw: {
+          width: blurredRgb.info.width,
+          height: blurredRgb.info.height,
+          channels: 3,
+        },
       })
-        .png()
-        .toBuffer();
+        .joinChannel(maskResized.data, {
+          raw: {
+            width: maskResized.info.width,
+            height: maskResized.info.height,
+            channels: 1,
+          },
+        })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
 
-      // Composite the masked blur over the original — only painted areas are blurred
-      const resultBuffer = await sharp(sourceBuffer)
-        .composite([{ input: maskedBlurred, blend: "over" }])
-        .png()
-        .toBuffer();
+      const composed = await sharp(sourceBuffer)
+        .composite([
+          {
+            input: maskedRgba.data,
+            raw: {
+              width: maskedRgba.info.width,
+              height: maskedRgba.info.height,
+              channels: maskedRgba.info.channels,
+            },
+            blend: "over",
+          },
+        ])
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
 
       // Adaptive JPEG quality loop — guarantees under 9MB for any image size
       let outputBuffer: Buffer;
       let quality = 92;
       do {
-        outputBuffer = await sharp(resultBuffer)
+        outputBuffer = await sharp(composed.data, {
+          raw: {
+            width: composed.info.width,
+            height: composed.info.height,
+            channels: composed.info.channels,
+          },
+        })
           .jpeg({ quality })
           .toBuffer();
         quality -= 10;

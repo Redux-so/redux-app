@@ -1,7 +1,8 @@
 "use client";
 
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
-import { getColorOverlays, type CanvasAdjustments, type ImageBounds } from "@/hooks/useCanvas";
+import type { CanvasAdjustments, ImageBounds } from "@/hooks/useCanvas";
+import { getColorOverlays } from "@/lib/color-overlays";
 
 interface CanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;

@@ -1,71 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { hasNonDefaultAdjustments } from "@/lib/library-filters";
-import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
-import { isImageFavorite } from "@/lib/image-metadata";
+import { ACTIVE_IMAGE_WHERE } from "@/lib/image-query";
+import { listUserImages } from "@/lib/list-user-images";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { scheduleImageEmbeddingAfterResponse } from "@/lib/schedule-image-embedding";
-import {
-  createImageBodySchema,
-  deleteImageBodySchema,
-  parseJsonRequest,
-} from "@/lib/api-validation";
-import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
-import { verifyUserUploadThingFile } from "@/lib/uploadthing-ownership";
+import { deleteImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import { parseImageUploadFormData } from "@/lib/image-upload";
+import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 
 /** Replicate CLIP + pgvector write run in `after()`; needs headroom on serverless. */
 export const maxDuration = 60;
-
-const IMAGE_SELECT = {
-  id: true,
-  filename: true,
-  originalUrl: true,
-  previewUrl: true,
-  publicId: true,
-  utKey: true,
-  width: true,
-  height: true,
-  size: true,
-  format: true,
-  createdAt: true,
-  deletedAt: true,
-  userId: true,
-  metadata: true,
-  versions: {
-    orderBy: { createdAt: "desc" as const },
-    take: 1,
-    select: { adjustments: true },
-  },
-};
-
-type ImageListRow = {
-  id: string;
-  filename: string;
-  originalUrl: string;
-  previewUrl: string | null;
-  publicId: string;
-  utKey: string | null;
-  width: number;
-  height: number;
-  size: number;
-  format: string;
-  createdAt: Date;
-  deletedAt: Date | null;
-  userId: string;
-  metadata: unknown;
-  versions: { adjustments: unknown }[];
-};
-
-function mapImageRow({ versions, metadata, ...image }: ImageListRow) {
-  return {
-    ...image,
-    isEdited: versions[0]
-      ? hasNonDefaultAdjustments(versions[0].adjustments)
-      : false,
-    isFavorite: isImageFavorite(metadata),
-  };
-}
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuthUser();
@@ -76,29 +22,17 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const trash = searchParams.get("trash") === "1";
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50")));
-  const skip = (page - 1) * limit;
+  const page = parseInt(searchParams.get("page") ?? "1", 10);
+  const limit = parseInt(searchParams.get("limit") ?? String(LIBRARY_PAGE_SIZE), 10);
 
-  const where = {
+  const result = await listUserImages({
     userId: user.id,
-    ...(trash ? TRASHED_IMAGE_WHERE : ACTIVE_IMAGE_WHERE),
-  };
+    trash,
+    page,
+    limit,
+  });
 
-  const [imagesRaw, total] = await Promise.all([
-    prisma.image.findMany({
-      where,
-      orderBy: trash ? { deletedAt: "desc" } : { createdAt: "desc" },
-      skip,
-      take: limit,
-      select: IMAGE_SELECT,
-    }),
-    prisma.image.count({ where }),
-  ]);
-
-  const images = imagesRaw.map(mapImageRow);
-
-  return NextResponse.json({ images, total, page, limit });
+  return NextResponse.json(result);
 }
 
 export async function POST(request: NextRequest) {
@@ -113,43 +47,24 @@ export async function POST(request: NextRequest) {
     return rateLimited;
   }
 
-  const parsed = await parseJsonRequest(request, createImageBodySchema);
+  const formData = await request.formData();
+  const parsed = await parseImageUploadFormData(formData);
   if (!parsed.ok) {
-    return parsed.response;
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status });
   }
-  const { ufsUrl, name, size, utKey: clientUtKey } = parsed.data;
+  const { buffer, name, size } = parsed;
 
-  const ownership = await verifyUserUploadThingFile(user.id, ufsUrl, clientUtKey);
-  if (!ownership.ok) {
-    const status =
-      ownership.reason === "missing_token"
-        ? 503
-        : ownership.reason === "not_owned"
-          ? 403
-          : 400;
-    const message =
-      ownership.reason === "missing_token"
-        ? "Upload verification is unavailable"
-        : ownership.reason === "not_owned"
-          ? "Upload is not owned by this account"
-          : "Invalid or unverified upload";
-    return NextResponse.json({ error: message }, { status });
-  }
-
-  let buffer: Buffer;
+  let secureUrl: string;
+  let publicId: string;
+  let width: number;
+  let height: number;
+  let format: string;
   try {
-    const fetched = await fetchTrustedMediaBuffer(ufsUrl);
-    buffer = fetched.buffer;
+    ({ secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name));
   } catch (err) {
-    if (err instanceof SafeFetchError && err.code === "UNTRUSTED_URL") {
-      return NextResponse.json({ error: "Untrusted upload URL" }, { status: 400 });
-    }
-    console.error("[POST /api/images] Failed to fetch upload:", err);
-    return NextResponse.json({ error: "Failed to fetch upload" }, { status: 502 });
+    console.error("[POST /api/images] Cloudinary upload failed:", err);
+    return NextResponse.json({ error: "Failed to store image" }, { status: 502 });
   }
-
-  const { uploadToCloudinary } = await import("@/lib/cloudinary");
-  const { secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name);
 
   const image = await prisma.image.create({
     data: {
@@ -157,7 +72,7 @@ export async function POST(request: NextRequest) {
       filename: name,
       originalUrl: secureUrl,
       publicId,
-      utKey: ownership.fileKey,
+      utKey: null,
       width,
       height,
       size,
