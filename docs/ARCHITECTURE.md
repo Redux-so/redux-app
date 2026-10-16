@@ -12,8 +12,8 @@ Verified from the repository unless marked **uncertain**.
 | Auth | **Clerk** (`proxy.ts`, `@clerk/nextjs`) |
 | Database | **PostgreSQL** (Neon) via **Prisma 5** |
 | Vector search | **pgvector** on `Image.embedding` (768-d); raw SQL via `lib/pgvector.ts` |
-| Uploads | **UploadThing** (`app/api/uploadthing/`) |
-| Media storage / transforms | **Cloudinary** (`lib/cloudinary.ts`) |
+| Uploads | Authenticated **multipart POST** `app/api/images` → **Cloudinary** |
+| Media storage / transforms | **Cloudinary** (`lib/cloudinary.ts`) — source of truth for originals, previews, and AI outputs |
 | Canvas | **Fabric.js** (`components/editor/Canvas.tsx`, `hooks/useCanvas.ts`) |
 | AI chat / vision | **Anthropic** (`lib/anthropic.ts`, model `claude-sonnet-4-5` in chat UI) |
 | AI inpainting / CLIP / some models | **Replicate** (`lib/replicate.ts`, various routes) |
@@ -69,11 +69,12 @@ Representative routes:
 
 ## Media and image pipeline
 
-1. Upload → UploadThing → record in DB + Cloudinary public id
-2. Editor loads `previewUrl ?? originalUrl`
-3. Adjustments: CSS filters on canvas; export composes via Sharp (`lib/apply-image-adjustments.ts`, color overlays)
-4. AI ops update Cloudinary / `previewUrl` and may create versions
-5. Embeddings: `lib/image-vector-pipeline.ts`, `pnpm run embed:all` script
+1. Upload → `POST /api/images` (multipart) → Cloudinary `redux/` folder → `Image` row (`originalUrl`, `publicId`)
+2. Legacy rows may still have `utKey` (UploadThing); permanent delete removes both Cloudinary assets and any remaining UploadThing keys
+3. Editor loads `previewUrl ?? originalUrl`
+4. Adjustments: CSS filters on canvas; export composes via Sharp (`lib/apply-image-adjustments.ts`, color overlays)
+5. AI ops update Cloudinary / `previewUrl` and may create versions
+6. Embeddings: `lib/image-vector-pipeline.ts`, `pnpm run embed:all` script
 
 Cloudinary folder name **redux** (documented in decisions).
 
@@ -100,7 +101,7 @@ docs/                Project documentation (this tree)
 ## Major data flows
 
 ```text
-Upload → DB Image → Library grid
+Upload → Cloudinary + DB Image → Library grid
 Library → Editor (imageId) → useEditor loads versions/adjustments
 Slider change → canvas preview → auto-save → ImageVersion
 AI button → POST /api/ai/* → credits + Cloudinary → previewUrl update
