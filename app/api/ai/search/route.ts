@@ -12,11 +12,16 @@ import { embedSearchQueryText } from "@/lib/search-clip";
 import { CLIP_VECTOR_DIM, vectorToPgLiteral } from "@/lib/pgvector";
 import type { ImageRecord } from "@/types/image";
 import { parseSearchQueryParam } from "@/lib/api-validation";
+import {
+  chargeCreditFeature,
+  insufficientCreditsResponse,
+  refundCreditFeature,
+} from "@/lib/atomic-credits";
+import { CREDIT_COSTS } from "@/constants/credits";
 
 /** GET must stay uncached so clients always get fresh hits (not a stale empty payload). */
 export const dynamic = "force-dynamic";
 
-const SEMANTIC_SEARCH_COST = 3;
 const SEARCH_LIMIT = 20;
 /**
  * After taking the top {@link SEARCH_LIMIT} by similarity, keep rows within this margin
@@ -68,8 +73,8 @@ export async function GET(request: Request) {
     }
     const rawQuery = queryResult.data;
 
-    if (user.creditBalance < SEMANTIC_SEARCH_COST) {
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+    if (user.creditBalance < CREDIT_COSTS.semantic_search) {
+      return insufficientCreditsResponse();
     }
 
     const minuteLimit = await checkRateLimitPerMinute(
@@ -84,36 +89,15 @@ export async function GET(request: Request) {
     const hourlyDenied = rateLimitDeniedResponse(rateLimit);
     if (hourlyDenied) return hourlyDenied;
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { creditBalance: { decrement: SEMANTIC_SEARCH_COST } },
+    const charge = await chargeCreditFeature({
+      userId: user.id,
+      feature: "semantic_search",
     });
-    await prisma.creditTransaction.create({
-      data: {
-        userId: user.id,
-        type: "DEDUCTION",
-        amount: -SEMANTIC_SEARCH_COST,
-        feature: "semantic_search",
-      },
-    });
+    if (!charge.ok) {
+      return insufficientCreditsResponse();
+    }
 
     const userId = user.id;
-
-    async function refundCredits(reason: string) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { creditBalance: { increment: SEMANTIC_SEARCH_COST } },
-      });
-      await prisma.creditTransaction.create({
-        data: {
-          userId,
-          type: "REFUND",
-          amount: SEMANTIC_SEARCH_COST,
-          feature: "semantic_search",
-          description: reason,
-        },
-      });
-    }
 
     try {
       const queryVector = await embedSearchQueryText(rawQuery);
@@ -298,7 +282,11 @@ export async function GET(request: Request) {
         },
       );
     } catch (innerErr) {
-      await refundCredits("Refund: semantic search failed");
+      await refundCreditFeature({
+        userId: user.id,
+        feature: "semantic_search",
+        description: "Refund: semantic search failed",
+      });
       return apiInternalErrorResponse("GET /api/ai/search", innerErr, "Search failed");
     }
   } catch (outerErr) {

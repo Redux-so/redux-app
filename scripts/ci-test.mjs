@@ -38,6 +38,7 @@ function findTestFiles(dir, acc = []) {
 const VERIFY_SCRIPTS = [
   "scripts/verify-api-validation.ts",
   "scripts/verify-ssrf-guards.ts",
+  "scripts/verify-atomic-credits.ts",
 ];
 
 function runVerifyScripts() {

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic } from "@/lib/anthropic";
-import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import {
   checkRateLimit,
@@ -14,10 +13,14 @@ import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { parseJsonRequest, styleMatchBodySchema } from "@/lib/api-validation";
+import {
+  chargeCreditFeature,
+  insufficientCreditsResponse,
+  refundCreditFeature,
+} from "@/lib/atomic-credits";
+import { CREDIT_COSTS } from "@/constants/credits";
 import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
-
-const STYLE_MATCH_COST = 3;
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor specializing in color grading and style transfer. " +
@@ -40,8 +43,8 @@ export async function POST(request: Request) {
   }
   const { user } = authResult;
 
-  if (user.creditBalance < STYLE_MATCH_COST) {
-    return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
+  if (user.creditBalance < CREDIT_COSTS.style_match) {
+    return insufficientCreditsResponse();
   }
 
   const minuteLimit = await checkRateLimitPerMinute(
@@ -67,35 +70,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { creditBalance: { decrement: STYLE_MATCH_COST } },
+  const charge = await chargeCreditFeature({
+    userId: user.id,
+    feature: "style_match",
   });
-  await prisma.creditTransaction.create({
-    data: {
-      userId: user.id,
-      type: "DEDUCTION",
-      amount: -STYLE_MATCH_COST,
-      feature: "style_match",
-    },
-  });
-
-  const userId = user.id;
-
-  async function refundCredits(reason: string) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { creditBalance: { increment: STYLE_MATCH_COST } },
-    });
-    await prisma.creditTransaction.create({
-      data: {
-        userId,
-        type: "REFUND",
-        amount: STYLE_MATCH_COST,
-        feature: "style_match",
-        description: reason,
-      },
-    });
+  if (!charge.ok) {
+    return insufficientCreditsResponse();
   }
 
   try {
@@ -153,7 +133,11 @@ export async function POST(request: Request) {
         "[/api/ai/style-match] Failed to parse JSON:",
         logSnippetForDiagnostics(rawText),
       );
-      await refundCredits("Refund: style match parse failure");
+      await refundCreditFeature({
+        userId: user.id,
+        feature: "style_match",
+        description: "Refund: style match parse failure",
+      });
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
 
@@ -164,7 +148,11 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("[/api/ai/style-match]", err);
-    await refundCredits("Refund: style match failed");
+    await refundCreditFeature({
+      userId: user.id,
+      feature: "style_match",
+      description: "Refund: style match failed",
+    });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
