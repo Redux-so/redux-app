@@ -124,4 +124,6 @@ Optional Agent plugin for planning/debugging/verification workflows. Install and
 ## Brand assets
 
 - In-app logo: `assets/brand/redux-mark.png`, `constants/brand.ts`
+- Auth hero: `scripts/process-auth-hero.mjs` → `assets/brand/auth-hero.jpg`
 - Favicons: `scripts/process-favicons.mjs` → `public/favicon.png`
+- Mutable stable URLs (`/logo.png`, favicons): short `Cache-Control` in `next.config.ts`; hashed imports skip stale cache.

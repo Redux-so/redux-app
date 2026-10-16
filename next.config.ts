@@ -29,7 +29,31 @@ const nextConfig: NextConfig = {
   async headers() {
     const securityHeaders = buildSecurityHeaders(isProduction);
 
+    /** Stable URLs that change when brand art is reprocessed (not content-hashed). */
+    const mutablePublicAssetCache = [
+      {
+        key: "Cache-Control",
+        value: "public, max-age=3600, must-revalidate",
+      },
+    ] as const;
+
     return [
+      {
+        source: "/favicon.png",
+        headers: [...mutablePublicAssetCache],
+      },
+      {
+        source: "/apple-touch-icon.png",
+        headers: [...mutablePublicAssetCache],
+      },
+      {
+        source: "/logo.png",
+        headers: [...mutablePublicAssetCache],
+      },
+      {
+        source: "/favicon.ico",
+        headers: [...mutablePublicAssetCache],
+      },
       {
         source: "/:path*\\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)",
         headers: [
