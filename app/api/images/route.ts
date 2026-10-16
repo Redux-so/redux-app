@@ -5,7 +5,7 @@ import { isImageFavorite } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
-import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
+import { scheduleImageEmbeddingAfterResponse } from "@/lib/schedule-image-embedding";
 import {
   createImageBodySchema,
   deleteImageBodySchema,
@@ -13,6 +13,9 @@ import {
 } from "@/lib/api-validation";
 import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 import { verifyUserUploadThingFile } from "@/lib/uploadthing-ownership";
+
+/** Replicate CLIP + pgvector write run in `after()`; needs headroom on serverless. */
+export const maxDuration = 60;
 
 const IMAGE_SELECT = {
   id: true,
@@ -162,9 +165,12 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  void generateAndPersistImageEmbedding(image.id, image.originalUrl, user.id).catch((e) => {
-    console.error("[POST /api/images] Background embedding failed:", e);
-  });
+  scheduleImageEmbeddingAfterResponse(
+    "POST /api/images",
+    image.id,
+    image.originalUrl,
+    user.id,
+  );
 
   return NextResponse.json({ image });
 }
