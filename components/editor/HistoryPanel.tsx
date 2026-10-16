@@ -85,7 +85,7 @@ export function HistoryVersionList({
           className="h-32 px-6"
           icon="ClockRewind"
           message="No saved versions yet"
-          description="Versions are saved automatically every 30 seconds when changes are made."
+          description="Named checkpoints appear here after AI and retouch operations."
         />
       )}
 
