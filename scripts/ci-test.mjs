@@ -39,6 +39,7 @@ const VERIFY_SCRIPTS = [
   "scripts/verify-api-validation.ts",
   "scripts/verify-ssrf-guards.ts",
   "scripts/verify-atomic-credits.ts",
+  "scripts/verify-media-ownership.ts",
 ];
 
 function runVerifyScripts() {

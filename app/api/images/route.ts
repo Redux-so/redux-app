@@ -12,6 +12,7 @@ import {
   parseJsonRequest,
 } from "@/lib/api-validation";
 import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { verifyUserUploadThingFile } from "@/lib/uploadthing-ownership";
 
 const IMAGE_SELECT = {
   id: true,
@@ -113,7 +114,24 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) {
     return parsed.response;
   }
-  const { ufsUrl, utKey, name, size } = parsed.data;
+  const { ufsUrl, name, size, utKey: clientUtKey } = parsed.data;
+
+  const ownership = await verifyUserUploadThingFile(user.id, ufsUrl, clientUtKey);
+  if (!ownership.ok) {
+    const status =
+      ownership.reason === "missing_token"
+        ? 503
+        : ownership.reason === "not_owned"
+          ? 403
+          : 400;
+    const message =
+      ownership.reason === "missing_token"
+        ? "Upload verification is unavailable"
+        : ownership.reason === "not_owned"
+          ? "Upload is not owned by this account"
+          : "Invalid or unverified upload";
+    return NextResponse.json({ error: message }, { status });
+  }
 
   let buffer: Buffer;
   try {
@@ -136,7 +154,7 @@ export async function POST(request: NextRequest) {
       filename: name,
       originalUrl: secureUrl,
       publicId,
-      utKey: utKey ?? null,
+      utKey: ownership.fileKey,
       width,
       height,
       size,

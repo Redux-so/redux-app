@@ -13,7 +13,7 @@ export async function DELETE() {
 
   const images = await prisma.image.findMany({
     where: { userId: user.id },
-    select: { id: true, publicId: true, utKey: true, userId: true },
+    select: { id: true, userId: true },
   });
 
   if (images.length === 0) {

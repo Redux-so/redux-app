@@ -21,7 +21,7 @@ export async function assertUserOwnsImageUrl(
         { previewUrl: imageUrl },
         { previewUrl: base },
         { versions: { some: { url: imageUrl } } },
-        { versions: { some: { url: { startsWith: base } } } },
+        { versions: { some: { url: base } } },
       ],
     },
   });
