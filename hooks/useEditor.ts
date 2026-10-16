@@ -64,16 +64,21 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     setVersionLoaded(false);
     fetch(`/api/images/versions?imageId=${imageId}`)
       .then((res) => res.json())
-      .then((data: { versions?: Array<{ adjustments: unknown }> }) => {
-        const latest = data.versions?.[0];
-        const restored = latest
-          ? parseVersionAdjustments(latest.adjustments)
-          : defaultPersistedEditorState();
-        reset(restored.sliders as Adjustments);
-        lastSavedRef.current = { ...restored.sliders } as Adjustments;
-        lastPersistedRef.current = restored;
-        onPersistedRestoreRef.current?.(restored);
-      })
+      .then(
+        (data: {
+          autosave?: { adjustments: unknown } | null;
+          versions?: Array<{ adjustments: unknown }>;
+        }) => {
+          const latest = data.autosave ?? data.versions?.[0];
+          const restored = latest
+            ? parseVersionAdjustments(latest.adjustments)
+            : defaultPersistedEditorState();
+          reset(restored.sliders as Adjustments);
+          lastSavedRef.current = { ...restored.sliders } as Adjustments;
+          lastPersistedRef.current = restored;
+          onPersistedRestoreRef.current?.(restored);
+        },
+      )
       .catch((err) => {
         console.error("[useEditor] Failed to load saved editor state:", err);
         const fallback = defaultPersistedEditorState();

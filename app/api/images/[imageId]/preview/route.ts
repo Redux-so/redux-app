@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { previewImagePublicId } from "@/lib/autosave-version";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
@@ -38,7 +39,8 @@ export async function POST(
   const buffer = Buffer.from(await file.arrayBuffer());
   const uploaded = await uploadToCloudinary(
     buffer,
-    `preview_${imageId}_${Date.now()}.jpeg`,
+    `${previewImagePublicId(imageId)}.jpeg`,
+    { overwrite: true, uniqueFilename: false },
   );
 
   await prisma.image.update({

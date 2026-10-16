@@ -15,17 +15,26 @@ export interface CloudinaryUploadResult {
   format: string;
 }
 
+export interface CloudinaryUploadOptions {
+  /** Replace an existing asset at the same public_id (requires uniqueFilename: false). */
+  overwrite?: boolean;
+  uniqueFilename?: boolean;
+}
+
 export function uploadToCloudinary(
   buffer: Buffer,
-  filename: string
+  filename: string,
+  options: CloudinaryUploadOptions = {},
 ): Promise<CloudinaryUploadResult> {
+  const uniqueFilename = options.uniqueFilename ?? !options.overwrite;
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "redux",
         public_id: filename.replace(/\.[^/.]+$/, ""),
         use_filename: true,
-        unique_filename: true,
+        unique_filename: uniqueFilename,
+        overwrite: options.overwrite ?? false,
         resource_type: "auto",
       },
       (error, result: UploadApiResponse | undefined) => {
