@@ -22,8 +22,6 @@ Verified from the repository unless marked **uncertain**.
 | Errors | **Sentry** (`withSentryConfig` in `next.config.ts`, instrumentation) |
 | Icons | **@untitledui/icons** via `components/shared/Icon.tsx` only |
 
-**Uncertain / not wired in app code (present in `package.json` only):** `posthog-js` — no imports found in application source at documentation time.
-
 ## Authentication
 
 - `proxy.ts` (Next.js 16 replacement for `middleware.ts`): `clerkMiddleware` + `auth.protect()` for non-public routes
@@ -46,7 +44,7 @@ Schema: `prisma/schema.prisma`
 | `CreditTransaction` | Purchases and deductions |
 | `CreditBundle` | Catalog for Stripe prices |
 
-Prisma client singleton: `lib/prisma.ts`. Neon adapter package is listed in dependencies; confirm adapter usage in `lib/prisma.ts` when changing DB setup.
+Prisma client singleton: `lib/prisma.ts` (`@prisma/client` is a runtime dependency; `postinstall` runs `prisma generate`).
 
 ## API / backend
 
@@ -66,7 +64,7 @@ Representative routes:
 
 - **Routes:** `app/(dashboard)/*` (library, editor, settings), `app/(auth)/*`, marketing `app/page.tsx`
 - **Editor shell:** client `EditorApp.tsx` composes Toolbar, AdjustmentPanel, Canvas, ChatPanel
-- **State:** React hooks — `useEditor`, `useCanvas`, `use-undo`, `use-immer`; preview refresh via `EditorPreviewContext`
+- **State:** React hooks — `useEditor`, `useCanvas`, `use-undo`; preview refresh via `EditorPreviewContext`
 - **No global Redux store** — name is product brand only
 
 ## Media and image pipeline
