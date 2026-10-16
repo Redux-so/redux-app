@@ -1,4 +1,5 @@
-import { createUploadthing, type FileRouter } from "uploadthing/next";
+import { randomUUID } from "node:crypto";
+import { createUploadthing, type FileRouter, UTFiles } from "uploadthing/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { upsertPrismaUser } from "@/lib/ensure-prisma-user";
@@ -19,7 +20,7 @@ export const ourFileRouter = {
     },
     { awaitServerData: false },
   )
-    .middleware(async () => {
+    .middleware(async ({ files }) => {
       const { userId: clerkId } = await auth();
       if (!clerkId) throw new Error("Unauthorized");
 
@@ -37,7 +38,13 @@ export const ourFileRouter = {
         throw new Error(body.error ?? "Upload rate limit exceeded");
       }
 
-      return { userId: user.id };
+      return {
+        userId: user.id,
+        [UTFiles]: files.map((file) => ({
+          ...file,
+          customId: `${user.id}:${randomUUID()}`,
+        })),
+      };
     })
     .onUploadComplete(() => {
       // Row creation + Cloudinary happen in POST /api/images (client, after upload).

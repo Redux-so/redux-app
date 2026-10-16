@@ -1,4 +1,5 @@
 import { UTApi } from "uploadthing/server";
+import { collectImageRemoteAssets } from "@/lib/collect-image-remote-assets";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 
@@ -6,8 +7,6 @@ const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
 
 interface ImageDeleteTarget {
   id: string;
-  publicId: string;
-  utKey: string | null;
   userId: string;
 }
 
@@ -16,19 +15,34 @@ export async function permanentlyDeleteImages(
 ): Promise<void> {
   if (images.length === 0) return;
 
-  await Promise.allSettled(
-    images.map((image) => deleteFromCloudinary(image.publicId)),
+  const userId = images[0]!.userId;
+
+  const assetSets = await Promise.all(
+    images.map((image) => collectImageRemoteAssets(image.id, image.userId)),
   );
 
-  const utKeys = images
-    .map((image) => image.utKey)
-    .filter((key): key is string => key !== null);
+  const cloudinaryPublicIds = new Set<string>();
+  const utKeys: string[] = [];
+
+  for (const assets of assetSets) {
+    if (!assets) continue;
+    for (const publicId of assets.cloudinaryPublicIds) {
+      cloudinaryPublicIds.add(publicId);
+    }
+    if (assets.utKey) {
+      utKeys.push(assets.utKey);
+    }
+  }
+
+  await Promise.allSettled(
+    [...cloudinaryPublicIds].map((publicId) => deleteFromCloudinary(publicId)),
+  );
+
   if (utKeys.length > 0) {
     await utapi.deleteFiles(utKeys);
   }
 
   const imageIds = images.map((image) => image.id);
-  const userId = images[0]!.userId;
 
   await prisma.imageVersion.deleteMany({
     where: { imageId: { in: imageIds }, image: { userId } },
@@ -44,7 +58,7 @@ export async function permanentlyDeleteImageById(
 ): Promise<boolean> {
   const image = await prisma.image.findFirst({
     where: { id: imageId, userId },
-    select: { id: true, publicId: true, utKey: true, userId: true },
+    select: { id: true, userId: true },
   });
   if (!image) return false;
 

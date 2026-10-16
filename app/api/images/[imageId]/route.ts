@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
+import { patchImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
 import { isImageFavorite, mergeImageMetadata } from "@/lib/image-metadata";
 import { permanentlyDeleteImageById } from "@/lib/permanently-delete-image";
@@ -61,19 +62,11 @@ export async function PATCH(
 
   const { imageId } = await params;
 
-  const body = (await request.json()) as {
-    previewUrl?: string;
-    isFavorite?: boolean;
-    restore?: boolean;
-  };
-  const { previewUrl, isFavorite, restore } = body;
-
-  if (previewUrl === undefined && isFavorite === undefined && restore !== true) {
-    return NextResponse.json(
-      { error: "previewUrl, isFavorite, or restore is required" },
-      { status: 400 },
-    );
+  const parsed = await parseJsonRequest(request, patchImageBodySchema);
+  if (!parsed.ok) {
+    return parsed.response;
   }
+  const { isFavorite, restore } = parsed.data;
 
   if (restore === true) {
     const trashed = await prisma.image.findFirst({
@@ -101,13 +94,8 @@ export async function PATCH(
   }
 
   const data: {
-    previewUrl?: string;
     metadata?: Prisma.InputJsonValue;
   } = {};
-
-  if (previewUrl !== undefined) {
-    data.previewUrl = previewUrl;
-  }
 
   if (isFavorite !== undefined) {
     data.metadata = mergeImageMetadata(image.metadata, {
@@ -122,7 +110,6 @@ export async function PATCH(
 
   return NextResponse.json({
     success: true,
-    ...(previewUrl !== undefined ? { previewUrl } : {}),
     ...(isFavorite !== undefined ? { isFavorite } : {}),
   });
 }

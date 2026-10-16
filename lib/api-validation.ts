@@ -286,6 +286,17 @@ export const deleteImageBodySchema = z.object({
   imageId: resourceIdSchema,
 });
 
+/** Library / trash mutations — preview URLs are server-generated only. */
+export const patchImageBodySchema = z
+  .object({
+    isFavorite: z.boolean().optional(),
+    restore: z.literal(true).optional(),
+  })
+  .refine(
+    (body) => body.isFavorite !== undefined || body.restore === true,
+    "isFavorite or restore is required",
+  );
+
 export const createImageBodySchema = z.object({
   ufsUrl: httpImageUrlSchema,
   utKey: z.string().trim().max(512).optional(),
