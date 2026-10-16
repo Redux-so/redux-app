@@ -1,5 +1,6 @@
 "use client";
 
+import type { RefObject } from "react";
 import type { AlbumRecord } from "@/types/album";
 import type { ImageGroup, ImageRecord } from "@/types/image";
 import PhotoCard from "./PhotoCard";
@@ -31,6 +32,31 @@ interface PhotoGridProps {
   albumMembershipByImageId?: Map<string, Set<string>>;
   libraryEmptyMessage?: string;
   searchEmptyMessage?: string;
+  loadMoreSentinelRef?: RefObject<HTMLDivElement | null>;
+  loadingMore?: boolean;
+  hasMore?: boolean;
+}
+
+function LibraryScrollFooter({
+  loadMoreSentinelRef,
+  loadingMore,
+  hasMore,
+}: {
+  loadMoreSentinelRef?: RefObject<HTMLDivElement | null>;
+  loadingMore: boolean;
+  hasMore: boolean;
+}) {
+  if (!loadMoreSentinelRef && !loadingMore) return null;
+
+  return (
+    <div className="flex flex-col items-center gap-2 py-4">
+      {loadingMore ? (
+        <p className="text-[12px] text-[#888888]">Loading more photos…</p>
+      ) : hasMore ? (
+        <div ref={loadMoreSentinelRef} className="h-1 w-full" aria-hidden />
+      ) : null}
+    </div>
+  );
 }
 
 function AnimatedPhotoGrid({
@@ -125,6 +151,9 @@ export default function PhotoGrid({
   albumMembershipByImageId = new Map(),
   libraryEmptyMessage = "Upload your first photo",
   searchEmptyMessage = "No photos found matching your search",
+  loadMoreSentinelRef,
+  loadingMore = false,
+  hasMore = false,
 }: PhotoGridProps) {
   if (search) {
     if (search.loading) {
@@ -208,6 +237,11 @@ export default function PhotoGrid({
           </div>
         ),
       )}
+      <LibraryScrollFooter
+        loadMoreSentinelRef={loadMoreSentinelRef}
+        loadingMore={loadingMore}
+        hasMore={hasMore}
+      />
     </div>
   );
 }
