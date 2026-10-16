@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -28,7 +29,6 @@ import { BRAND_BORDER_CLASS } from "@/lib/brand-colors";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 import { ChatMarkdown } from "@/lib/chat-markdown";
-import CreditShopModal from "@/components/shared/CreditShopModal";
 import UsageRing from "@/components/shared/UsageRing";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
 import {
@@ -41,6 +41,10 @@ import {
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
 
+
+const CreditShopModal = dynamic(() => import("@/components/shared/CreditShopModal"), {
+  ssr: false,
+});
 
 const BTN_SECONDARY =
   "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#262626] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#2e2e2e] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
@@ -1102,13 +1106,15 @@ export default function ChatPanel({
         </div>
       )}
 
-      <CreditShopModal
-        open={creditShopOpen}
-        onClose={() => {
-          setCreditShopOpen(false);
-          refreshChatQuota();
-        }}
-      />
+      {creditShopOpen && (
+        <CreditShopModal
+          open={creditShopOpen}
+          onClose={() => {
+            setCreditShopOpen(false);
+            refreshChatQuota();
+          }}
+        />
+      )}
     </div>
   );
 }

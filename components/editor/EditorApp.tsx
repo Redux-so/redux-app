@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEditor } from "@/hooks/useEditor";
@@ -31,11 +32,31 @@ function resolveWorkingImageUrl(
 import Toolbar from "@/components/editor/Toolbar";
 import AdjustmentPanel from "@/components/editor/AdjustmentPanel";
 import Canvas from "@/components/editor/Canvas";
-import ChatPanel from "@/components/editor/ChatPanel";
-import ExportModal from "@/components/editor/ExportModal";
 import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
 import EditorErrorBoundary from "@/components/shared/EditorErrorBoundary";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
+import { CHAT_PANEL_WIDTH_PX } from "@/constants/chat-panel";
+import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
+
+const ChatPanel = dynamic(() => import("@/components/editor/ChatPanel"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="flex flex-col shrink-0 h-full min-w-0 overflow-hidden bg-[#121212] border-l border-[#212121] rounded-l-2xl"
+      style={{ width: CHAT_PANEL_WIDTH_PX }}
+      aria-busy
+      aria-label="Loading chat"
+    >
+      <div className={`${PANEL_HEADER} px-8`}>
+        <span className={PANEL_TITLE}>Chat</span>
+      </div>
+    </div>
+  ),
+});
+
+const ExportModal = dynamic(() => import("@/components/editor/ExportModal"), {
+  ssr: false,
+});
 
 export default function EditorApp() {
   const searchParams = useSearchParams();
@@ -703,18 +724,20 @@ export default function EditorApp() {
           </EditorErrorBoundary>
         </div>
 
-        <ExportModal
-          open={showExport}
-          onClose={() => setShowExport(false)}
-          imageId={imageId}
-          filename={image?.filename}
-          adjustments={adjustments}
-          activeImageUrl={activeImageUrl ?? baseImageUrl}
-          imageBase64={imageBase64}
-          transform={getTransformSnapshot()}
-          originalUrl={image?.originalUrl ?? null}
-          storedPreviewUrl={image?.previewUrl ?? null}
-        />
+        {showExport && (
+          <ExportModal
+            open={showExport}
+            onClose={() => setShowExport(false)}
+            imageId={imageId}
+            filename={image?.filename}
+            adjustments={adjustments}
+            activeImageUrl={activeImageUrl ?? baseImageUrl}
+            imageBase64={imageBase64}
+            transform={getTransformSnapshot()}
+            originalUrl={image?.originalUrl ?? null}
+            storedPreviewUrl={image?.previewUrl ?? null}
+          />
+        )}
       </div>
     </EditorPreviewProvider>
   );
