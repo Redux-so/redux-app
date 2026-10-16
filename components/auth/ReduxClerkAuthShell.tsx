@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import BrandLogo from "@/components/shared/BrandLogo";
+import { AUTH_HERO_IMAGE } from "@/constants/brand";
 
 import {
   EXTERNAL_LINK_PROPS,
@@ -130,11 +131,11 @@ export default function ReduxClerkAuthShell({
       {/* Right — full-bleed photo (exactly 50% on lg+) */}
       <div className="relative hidden h-full w-full min-w-0 lg:block">
         <Image
-          src="/sign-in-hero.jpg"
+          src={AUTH_HERO_IMAGE}
           alt=""
           fill
           priority
-          quality={92}
+          quality={85}
           sizes="50vw"
           className="object-cover"
         />

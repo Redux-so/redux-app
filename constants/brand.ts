@@ -1,9 +1,13 @@
 import type { StaticImageData } from "next/image";
 
+import authHero from "@/assets/brand/auth-hero.jpg";
 import reduxMark from "@/assets/brand/redux-mark.png";
 
 /** Bundled logo — content hash updates when the PNG changes (avoids stale `/logo.png` cache). */
 export const BRAND_LOGO_IMAGE: StaticImageData = reduxMark;
+
+/** Auth shell hero — hashed URL via bundler (see scripts/process-auth-hero.mjs). */
+export const AUTH_HERO_IMAGE: StaticImageData = authHero;
 
 /** Same artwork at a stable URL (Open Graph, etc.). */
 export const BRAND_LOGO_PUBLIC_PATH = "/logo.png";
