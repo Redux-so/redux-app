@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { hasNonDefaultAdjustments } from "@/lib/library-filters";
-import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
-import { isImageFavorite } from "@/lib/image-metadata";
+import { ACTIVE_IMAGE_WHERE } from "@/lib/image-query";
+import { listUserImages } from "@/lib/list-user-images";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
@@ -13,56 +12,7 @@ import {
 } from "@/lib/api-validation";
 import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 import { verifyUserUploadThingFile } from "@/lib/uploadthing-ownership";
-
-const IMAGE_SELECT = {
-  id: true,
-  filename: true,
-  originalUrl: true,
-  previewUrl: true,
-  publicId: true,
-  utKey: true,
-  width: true,
-  height: true,
-  size: true,
-  format: true,
-  createdAt: true,
-  deletedAt: true,
-  userId: true,
-  metadata: true,
-  versions: {
-    orderBy: { createdAt: "desc" as const },
-    take: 1,
-    select: { adjustments: true },
-  },
-};
-
-type ImageListRow = {
-  id: string;
-  filename: string;
-  originalUrl: string;
-  previewUrl: string | null;
-  publicId: string;
-  utKey: string | null;
-  width: number;
-  height: number;
-  size: number;
-  format: string;
-  createdAt: Date;
-  deletedAt: Date | null;
-  userId: string;
-  metadata: unknown;
-  versions: { adjustments: unknown }[];
-};
-
-function mapImageRow({ versions, metadata, ...image }: ImageListRow) {
-  return {
-    ...image,
-    isEdited: versions[0]
-      ? hasNonDefaultAdjustments(versions[0].adjustments)
-      : false,
-    isFavorite: isImageFavorite(metadata),
-  };
-}
+import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuthUser();
@@ -73,29 +23,17 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const trash = searchParams.get("trash") === "1";
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50")));
-  const skip = (page - 1) * limit;
+  const page = parseInt(searchParams.get("page") ?? "1", 10);
+  const limit = parseInt(searchParams.get("limit") ?? String(LIBRARY_PAGE_SIZE), 10);
 
-  const where = {
+  const result = await listUserImages({
     userId: user.id,
-    ...(trash ? TRASHED_IMAGE_WHERE : ACTIVE_IMAGE_WHERE),
-  };
+    trash,
+    page,
+    limit,
+  });
 
-  const [imagesRaw, total] = await Promise.all([
-    prisma.image.findMany({
-      where,
-      orderBy: trash ? { deletedAt: "desc" } : { createdAt: "desc" },
-      skip,
-      take: limit,
-      select: IMAGE_SELECT,
-    }),
-    prisma.image.count({ where }),
-  ]);
-
-  const images = imagesRaw.map(mapImageRow);
-
-  return NextResponse.json({ images, total, page, limit });
+  return NextResponse.json(result);
 }
 
 export async function POST(request: NextRequest) {
