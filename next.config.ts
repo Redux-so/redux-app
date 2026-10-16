@@ -51,9 +51,9 @@ export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "redux-xn",
+  org: process.env.SENTRY_ORG ?? "redux-xn",
 
-  project: "javascript-nextjs",
+  project: process.env.SENTRY_PROJECT ?? "javascript-nextjs",
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,

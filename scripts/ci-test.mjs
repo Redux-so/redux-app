@@ -1,8 +1,9 @@
 /**
  * CI test entrypoint — no unit/e2e runner is configured yet.
- * Exits 0 when no *.test.* / *.spec.* files exist.
- * Exits 1 if test files exist but no runner is wired (prevents silent gaps).
+ * Runs lightweight verification scripts; exits 1 if *.test.* exist without a runner.
  */
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -34,12 +35,32 @@ function findTestFiles(dir, acc = []) {
   return acc;
 }
 
+const VERIFY_SCRIPTS = [
+  "scripts/verify-api-validation.ts",
+  "scripts/verify-ssrf-guards.ts",
+  "scripts/verify-atomic-credits.ts",
+];
+
+function runVerifyScripts() {
+  for (const script of VERIFY_SCRIPTS) {
+    if (!existsSync(script)) continue;
+    const result = spawnSync("pnpm", ["exec", "tsx", script], {
+      stdio: "inherit",
+      env: process.env,
+    });
+    if (result.status !== 0) {
+      process.exit(result.status ?? 1);
+    }
+  }
+}
+
 const found = findTestFiles(process.cwd());
 
 if (found.length === 0) {
   console.log(
-    "ci-test: No *.test.* or *.spec.* files — skipping (add a runner before adding tests).",
+    "ci-test: No *.test.* or *.spec.* files — running verification scripts.",
   );
+  runVerifyScripts();
   process.exit(0);
 }
 

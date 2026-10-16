@@ -7,6 +7,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { imageUrlOnlyBodySchema, parseJsonRequest } from "@/lib/api-validation";
@@ -16,6 +17,8 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor. Analyze this image and return optimal tone adjustments only. " +
@@ -43,20 +46,12 @@ export async function POST(request: Request) {
     "tone",
     RATE_LIMIT_MINUTE.tone,
   );
-  if (!minuteLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please slow down." },
-      { status: 429 },
-    );
-  }
+  const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+  if (minuteDenied) return minuteDenied;
 
   const rateLimit = await checkRateLimit(user.id, "tone", 40);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please slow down." },
-      { status: 429 },
-    );
-  }
+  const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+  if (hourlyDenied) return hourlyDenied;
 
   const parsed = await parseJsonRequest(request, imageUrlOnlyBodySchema);
   if (!parsed.ok) {
@@ -79,12 +74,8 @@ export async function POST(request: Request) {
 
   try {
     const thumbnailUrl = toThumbnailUrl(imageUrl);
-    const imageRes = await fetch(thumbnailUrl);
-    if (!imageRes.ok) {
-      throw new Error(`Failed to fetch image: ${imageRes.status}`);
-    }
-    const buffer = await imageRes.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString("base64");
+    const { buffer } = await fetchTrustedMediaBuffer(thumbnailUrl);
+    const base64 = buffer.toString("base64");
 
     const userContent: (ImageBlockParam | TextBlockParam)[] = [
       {
@@ -113,7 +104,10 @@ export async function POST(request: Request) {
     try {
       adjustments = JSON.parse(cleaned) as Partial<Record<AdjustmentKey, number>>;
     } catch {
-      console.error("[/api/ai/tone] Failed to parse JSON response:", rawText);
+      console.error(
+        "[/api/ai/tone] Failed to parse JSON response:",
+        logSnippetForDiagnostics(rawText),
+      );
       await refundCreditFeature({
         userId: user.id,
         feature: "auto_tone_balance",

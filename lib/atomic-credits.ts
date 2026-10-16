@@ -15,7 +15,8 @@ function assertPositiveIntegerAmount(amount: number, label: string): void {
   }
 }
 
-async function deductCreditsAtomicInTx(
+/** @internal Exported for verify-atomic-credits.ts (in-memory tx mock). */
+export async function deductCreditsAtomicInTx(
   tx: TransactionClient,
   params: { userId: string; amount: number; feature: string },
 ): Promise<AtomicCreditChargeResult> {
@@ -60,6 +61,33 @@ export async function deductCreditsAtomic(params: {
   return prisma.$transaction((tx) => deductCreditsAtomicInTx(tx, params));
 }
 
+/** @internal Exported for verify-atomic-credits.ts (in-memory tx mock). */
+export async function refundCreditsAtomicInTx(
+  tx: TransactionClient,
+  params: { userId: string; amount: number; feature: string; description: string },
+): Promise<{ balanceAfter: number }> {
+  const { userId, amount, feature, description } = params;
+  assertPositiveIntegerAmount(amount, "refundCreditsAtomic");
+
+  const user = await tx.user.update({
+    where: { id: userId },
+    data: { creditBalance: { increment: amount } },
+    select: { creditBalance: true },
+  });
+
+  await tx.creditTransaction.create({
+    data: {
+      userId,
+      type: "REFUND",
+      amount,
+      feature,
+      description,
+    },
+  });
+
+  return { balanceAfter: user.creditBalance };
+}
+
 /**
  * Refund credits and record a ledger entry (paired with a prior deduction).
  */
@@ -69,28 +97,7 @@ export async function refundCreditsAtomic(params: {
   feature: string;
   description: string;
 }): Promise<{ balanceAfter: number }> {
-  const { userId, amount, feature, description } = params;
-  assertPositiveIntegerAmount(amount, "refundCreditsAtomic");
-
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.update({
-      where: { id: userId },
-      data: { creditBalance: { increment: amount } },
-      select: { creditBalance: true },
-    });
-
-    await tx.creditTransaction.create({
-      data: {
-        userId,
-        type: "REFUND",
-        amount,
-        feature,
-        description,
-      },
-    });
-
-    return { balanceAfter: user.creditBalance };
-  });
+  return prisma.$transaction((tx) => refundCreditsAtomicInTx(tx, params));
 }
 
 export function insufficientCreditsResponse(): NextResponse {

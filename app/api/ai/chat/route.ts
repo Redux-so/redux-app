@@ -8,6 +8,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
@@ -16,6 +17,7 @@ import {
   shouldApplyChatAdjustments,
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
+import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 import {
   fetchChatImageBase64,
   isChatImageMediaType,
@@ -147,40 +149,24 @@ export async function POST(request: Request) {
       "chat_free",
       RATE_LIMIT_MINUTE.chat_free,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const hourly = await checkRateLimit(user.id, "chat_free", FREE_HOURLY_LIMIT);
-    if (!hourly.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(hourly);
+    if (hourlyDenied) return hourlyDenied;
   } else {
     const minuteLimit = await checkRateLimitPerMinute(
       user.id,
       "chat_credit",
       RATE_LIMIT_MINUTE.chat_credit,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const hourly = await checkRateLimit(user.id, "chat_credit", CREDIT_HOURLY_LIMIT);
-    if (!hourly.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(hourly);
+    if (hourlyDenied) return hourlyDenied;
   }
 
   // ── Consume free message or credit ───────────────────────────────────────
@@ -297,12 +283,15 @@ export async function POST(request: Request) {
             );
             controller.enqueue(encodeEvent({ type: "adjustments", adjustments: parsed }));
           } catch {
-            console.error("[/api/ai/chat] Failed to parse [adjustments] JSON:", adjMatch[1]);
+            console.error(
+              "[/api/ai/chat] Failed to parse [adjustments] JSON:",
+              logSnippetForDiagnostics(adjMatch[1]),
+            );
           }
         } else if (adjMatch && !allowAdjustments) {
           console.warn(
-            "[/api/ai/chat] Ignored [adjustments] block for non-edit intent:",
-            userMessage.slice(0, 80),
+            "[/api/ai/chat] Ignored [adjustments] block for non-edit intent (messageLen=%d)",
+            userMessage.length,
           );
         }
       } catch (err) {

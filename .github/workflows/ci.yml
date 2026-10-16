@@ -21,6 +21,8 @@ jobs:
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci_placeholder
       CLERK_SECRET_KEY: sk_test_ci_placeholder
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      SENTRY_DSN: https://ci@o0.ingest.sentry.io/0
+      NEXT_PUBLIC_SENTRY_DSN: https://ci@o0.ingest.sentry.io/0
       CI: true
 
     steps:

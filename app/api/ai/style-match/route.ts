@@ -8,6 +8,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
@@ -18,6 +19,8 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor specializing in color grading and style transfer. " +
@@ -49,20 +52,12 @@ export async function POST(request: Request) {
     "style_match",
     RATE_LIMIT_MINUTE.style_match,
   );
-  if (!minuteLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please slow down." },
-      { status: 429 },
-    );
-  }
+  const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+  if (minuteDenied) return minuteDenied;
 
   const rateLimit = await checkRateLimit(user.id, "style_match", 20);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests. Please slow down." },
-      { status: 429 },
-    );
-  }
+  const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+  if (hourlyDenied) return hourlyDenied;
 
   const parsed = await parseJsonRequest(request, styleMatchBodySchema);
   if (!parsed.ok) {
@@ -85,12 +80,8 @@ export async function POST(request: Request) {
 
   try {
     const thumbnailUrl = toThumbnailUrl(imageUrl);
-    const imageRes = await fetch(thumbnailUrl);
-    if (!imageRes.ok) {
-      throw new Error(`Failed to fetch target image: ${imageRes.status}`);
-    }
-    const buffer = await imageRes.arrayBuffer();
-    const targetBase64 = Buffer.from(buffer).toString("base64");
+    const { buffer } = await fetchTrustedMediaBuffer(thumbnailUrl);
+    const targetBase64 = buffer.toString("base64");
 
     // Anthropic vision: PNG + max 1000px on longest side keeps payload under 5MB while
     // preserving enough detail for style analysis (Sharp accepts any common input format).
@@ -138,7 +129,10 @@ export async function POST(request: Request) {
     try {
       adjustments = JSON.parse(cleaned) as Partial<Record<AdjustmentKey, number>>;
     } catch {
-      console.error("[/api/ai/style-match] Failed to parse JSON:", rawText);
+      console.error(
+        "[/api/ai/style-match] Failed to parse JSON:",
+        logSnippetForDiagnostics(rawText),
+      );
       await refundCreditFeature({
         userId: user.id,
         feature: "style_match",

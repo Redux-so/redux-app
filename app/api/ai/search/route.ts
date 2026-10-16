@@ -7,6 +7,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { embedSearchQueryText } from "@/lib/search-clip";
 import { CLIP_VECTOR_DIM, vectorToPgLiteral } from "@/lib/pgvector";
 import type { ImageRecord } from "@/types/image";
@@ -81,20 +82,12 @@ export async function GET(request: Request) {
       "semantic_search",
       RATE_LIMIT_MINUTE.semantic_search,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const rateLimit = await checkRateLimit(user.id, "semantic_search", 20);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+    if (hourlyDenied) return hourlyDenied;
 
     const charge = await chargeCreditFeature({
       userId: user.id,
@@ -143,16 +136,18 @@ export async function GET(request: Request) {
       const globalMaxDim =
         globalDimRow?.max_dim == null ? null : Number(globalDimRow.max_dim);
 
-      console.log(
-        "[GET /api/ai/search] embeddingDiagnostics userId=%s embeddedCountForUser=%d storedVectorDims(userSample)=%s globalStoredDims(min,max)=(%s,%s) queryEmbeddingLength=%d appExpectedDim=%d",
-        userId,
-        embeddedForUser,
-        storedDimForUser == null ? "n/a" : String(storedDimForUser),
-        globalMinDim == null ? "n/a" : String(globalMinDim),
-        globalMaxDim == null ? "n/a" : String(globalMaxDim),
-        queryDim,
-        dim,
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          "[GET /api/ai/search] embeddingDiagnostics embeddedCountForUser=%d storedVectorDims(userSample)=%s globalStoredDims(min,max)=(%s,%s) queryEmbeddingLength=%d appExpectedDim=%d queryLength=%d",
+          embeddedForUser,
+          storedDimForUser == null ? "n/a" : String(storedDimForUser),
+          globalMinDim == null ? "n/a" : String(globalMinDim),
+          globalMaxDim == null ? "n/a" : String(globalMaxDim),
+          queryDim,
+          dim,
+          rawQuery.length,
+        );
+      }
 
       if (storedDimForUser != null && storedDimForUser !== dim) {
         console.error(
@@ -186,11 +181,9 @@ export async function GET(request: Request) {
         `'${vecLiteral}'`,
         `'<<VECTOR_LITERAL len=${vecLiteral.length} dim=${dim}>>'`,
       );
-      console.log("[GET /api/ai/search] executingSql=%s", sqlForLog);
-      console.log(
-        "[GET /api/ai/search] bindParams userId=$1 (%s)",
-        userId,
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[GET /api/ai/search] executingSql=%s", sqlForLog);
+      }
 
       const topRows = await prisma.$queryRawUnsafe<SearchRow[]>(
         searchSql,
@@ -198,11 +191,13 @@ export async function GET(request: Request) {
       );
 
       if (topRows.length === 0) {
-        console.log(
-          "[GET /api/ai/search] relativeSimilarity topPool=0 returned=0 withEmbedding=%d query=%s",
-          embeddedForUser,
-          JSON.stringify(rawQuery),
-        );
+        if (process.env.NODE_ENV !== "production") {
+          console.log(
+            "[GET /api/ai/search] relativeSimilarity topPool=0 returned=0 withEmbedding=%d queryLength=%d",
+            embeddedForUser,
+            rawQuery.length,
+          );
+        }
         return NextResponse.json(
           { images: [], query: rawQuery },
           {
@@ -215,11 +210,13 @@ export async function GET(request: Request) {
 
       const baseline = rowSimilarity(topRows[0]!);
       if (!Number.isFinite(baseline)) {
-        console.log(
-          "[GET /api/ai/search] relativeSimilarity invalid baseline withEmbedding=%d query=%s",
-          embeddedForUser,
-          JSON.stringify(rawQuery),
-        );
+        if (process.env.NODE_ENV !== "production") {
+          console.log(
+            "[GET /api/ai/search] relativeSimilarity invalid baseline withEmbedding=%d queryLength=%d",
+            embeddedForUser,
+            rawQuery.length,
+          );
+        }
         return NextResponse.json(
           { images: [], query: rawQuery },
           {
@@ -239,22 +236,24 @@ export async function GET(request: Request) {
         id: r.id,
         similarity: rowSimilarity(r),
       }));
-      console.log(
-        "[GET /api/ai/search] relativeSimilarity baseline=%s floor=%s margin=%s topPool=%d passedRelative=%d cap=%d withEmbedding=%d query=%s",
-        baseline.toFixed(4),
-        minScore.toFixed(4),
-        SIMILARITY_RELATIVE_MARGIN.toFixed(2),
-        topRows.length,
-        rows.length,
-        SEARCH_LIMIT,
-        embeddedForUser,
-        JSON.stringify(rawQuery),
-      );
-      console.log(
-        "[GET /api/ai/search] scores=%s ids=%s",
-        JSON.stringify(scoreRows.map((s) => s.similarity.toFixed(4))),
-        JSON.stringify(scoreRows.map((s) => s.id)),
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          "[GET /api/ai/search] relativeSimilarity baseline=%s floor=%s margin=%s topPool=%d passedRelative=%d cap=%d withEmbedding=%d queryLength=%d",
+          baseline.toFixed(4),
+          minScore.toFixed(4),
+          SIMILARITY_RELATIVE_MARGIN.toFixed(2),
+          topRows.length,
+          rows.length,
+          SEARCH_LIMIT,
+          embeddedForUser,
+          rawQuery.length,
+        );
+        console.log(
+          "[GET /api/ai/search] scores=%s resultCount=%d",
+          JSON.stringify(scoreRows.map((s) => s.similarity.toFixed(4))),
+          scoreRows.length,
+        );
+      }
       const images: ImageRecord[] = rows.map((r) => ({
         id: String(r.id),
         originalUrl: String(r.originalUrl),

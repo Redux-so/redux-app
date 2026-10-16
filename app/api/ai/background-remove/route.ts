@@ -9,6 +9,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { imageUrlAndIdBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import {
   chargeCreditFeature,
@@ -16,6 +17,7 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
+import { fetchReplicateDeliveryBuffer } from "@/lib/safe-remote-fetch";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -44,20 +46,12 @@ export async function POST(request: Request) {
       "background_remove",
       RATE_LIMIT_MINUTE.background_remove,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const rateLimit = await checkRateLimit(user.id, "background_remove", 20);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+    if (hourlyDenied) return hourlyDenied;
 
     // ── Body ────────────────────────────────────────────────────────────────
     const parsed = await parseJsonRequest(request, imageUrlAndIdBodySchema);
@@ -107,11 +101,7 @@ export async function POST(request: Request) {
       }
 
       // ── Download result PNG ───────────────────────────────────────────────
-      const resultRes = await fetch(resultUrl);
-      if (!resultRes.ok) {
-        throw new Error(`Failed to download result PNG: ${resultRes.status} ${resultRes.statusText}`);
-      }
-      const buffer = Buffer.from(await resultRes.arrayBuffer());
+      const { buffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
       // ── Upload to Cloudinary ──────────────────────────────────────────────
       const uploaded = await uploadToCloudinary(

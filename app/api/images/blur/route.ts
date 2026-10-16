@@ -3,8 +3,10 @@ import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { apiInternalErrorResponse } from "@/lib/api-error";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { blurImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 
 // blurIntensity 1–100 maps sigma to ~1–30 for Sharp's Gaussian blur
 function intensityToSigma(intensity: number): number {
@@ -22,6 +24,11 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
+    const rateLimited = await enforceFeatureRateLimits(user.id, "blur");
+    if (rateLimited) {
+      return rateLimited;
+    }
+
     const parsed = await parseJsonRequest(request, blurImageBodySchema);
     if (!parsed.ok) {
       return parsed.response;
@@ -36,11 +43,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      const imageRes = await fetch(imageUrl);
-      if (!imageRes.ok) {
-        throw new Error(`Failed to fetch source image: ${imageRes.status} ${imageRes.statusText}`);
-      }
-      const sourceBuffer = Buffer.from(await imageRes.arrayBuffer());
+      const { buffer: sourceBuffer } = await fetchTrustedMediaBuffer(imageUrl);
       const meta = await sharp(sourceBuffer).metadata();
       const width = meta.width ?? 512;
       const height = meta.height ?? 512;

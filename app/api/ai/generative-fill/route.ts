@@ -10,6 +10,7 @@ import {
   checkRateLimitPerMinute,
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
+import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { generativeFillBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import {
@@ -18,6 +19,10 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
+import {
+  fetchReplicateDeliveryBuffer,
+  fetchTrustedMediaBuffer,
+} from "@/lib/safe-remote-fetch";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -76,20 +81,12 @@ export async function POST(request: Request) {
       "generative_fill",
       RATE_LIMIT_MINUTE.generative_fill,
     );
-    if (!minuteLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
+    if (minuteDenied) return minuteDenied;
 
     const rateLimit = await checkRateLimit(user.id, "generative_fill", 20);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please slow down." },
-        { status: 429 },
-      );
-    }
+    const hourlyDenied = rateLimitDeniedResponse(rateLimit);
+    if (hourlyDenied) return hourlyDenied;
 
     const parsed = await parseJsonRequest(request, generativeFillBodySchema);
     if (!parsed.ok) {
@@ -113,11 +110,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      const imageRes = await fetch(imageUrl);
-      if (!imageRes.ok) {
-        throw new Error(`Failed to fetch source image: ${imageRes.status} ${imageRes.statusText}`);
-      }
-      const sourceBuffer = Buffer.from(await imageRes.arrayBuffer());
+      const { buffer: sourceBuffer } = await fetchTrustedMediaBuffer(imageUrl);
       const meta = await sharp(sourceBuffer).metadata();
       const ow = meta.width ?? 1;
       const oh = meta.height ?? 1;
@@ -238,11 +231,7 @@ export async function POST(request: Request) {
 
       const resultUrl = extractOutputUrl(output);
 
-      const resultRes = await fetch(resultUrl);
-      if (!resultRes.ok) {
-        throw new Error(`Failed to download generative fill result: ${resultRes.status}`);
-      }
-      const resultBuffer = Buffer.from(await resultRes.arrayBuffer());
+      const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
       const uploaded = await uploadToCloudinary(
         resultBuffer,

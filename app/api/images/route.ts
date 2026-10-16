@@ -3,6 +3,7 @@ import { hasNonDefaultAdjustments } from "@/lib/library-filters";
 import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
 import { isImageFavorite } from "@/lib/image-metadata";
 import { prisma } from "@/lib/prisma";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
 import {
@@ -10,6 +11,7 @@ import {
   deleteImageBodySchema,
   parseJsonRequest,
 } from "@/lib/api-validation";
+import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 
 const IMAGE_SELECT = {
   id: true,
@@ -102,15 +104,28 @@ export async function POST(request: NextRequest) {
   }
   const { user } = authResult;
 
+  const rateLimited = await enforceFeatureRateLimits(user.id, "image_upload");
+  if (rateLimited) {
+    return rateLimited;
+  }
+
   const parsed = await parseJsonRequest(request, createImageBodySchema);
   if (!parsed.ok) {
     return parsed.response;
   }
   const { ufsUrl, utKey, name, size } = parsed.data;
 
-  const response = await fetch(ufsUrl);
-  const arrayBuffer = await response.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  let buffer: Buffer;
+  try {
+    const fetched = await fetchTrustedMediaBuffer(ufsUrl);
+    buffer = fetched.buffer;
+  } catch (err) {
+    if (err instanceof SafeFetchError && err.code === "UNTRUSTED_URL") {
+      return NextResponse.json({ error: "Untrusted upload URL" }, { status: 400 });
+    }
+    console.error("[POST /api/images] Failed to fetch upload:", err);
+    return NextResponse.json({ error: "Failed to fetch upload" }, { status: 502 });
+  }
 
   const { uploadToCloudinary } = await import("@/lib/cloudinary");
   const { secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name);

@@ -25,6 +25,8 @@ function expectOk<T>(schema: Parameters<typeof parseRequestBody<T>>[0], raw: unk
 
 const validImageId = "cltest1234567890";
 const validUrl = "https://res.cloudinary.com/demo/image/upload/sample.jpg";
+const untrustedUrl = "https://example.com/image.jpg";
+const uploadthingUrl = "https://utfs.io/f/test-file";
 const tinyBase64 = Buffer.from("hello").toString("base64");
 
 // Valid export request
@@ -46,6 +48,18 @@ expectFail(exportBodySchema, {
 expectFail(exportBodySchema, {
   imageId: validImageId,
   imageUrl: "not-a-url",
+});
+
+// Untrusted remote URL (SSRF guard)
+expectFail(exportBodySchema, {
+  imageId: validImageId,
+  imageUrl: untrustedUrl,
+});
+
+// Trusted UploadThing URL
+expectOk(exportBodySchema, {
+  imageId: validImageId,
+  imageUrl: uploadthingUrl,
 });
 
 // Invalid enum

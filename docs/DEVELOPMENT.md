@@ -67,7 +67,12 @@ Never commit secrets. Names referenced in code:
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe |
 | `NEXT_PUBLIC_APP_URL` | Checkout redirect URLs |
 | `KV_REST_API_URL` (+ related KV vars per Vercel) | Rate limiting |
-| `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Sentry (token for CI/source maps) |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (public DSN for browser; set both or only `NEXT_PUBLIC_SENTRY_DSN` if shared) |
+| `SENTRY_AUTH_TOKEN` | Sentry source map upload (CI/build) |
+| `SENTRY_ORG`, `SENTRY_PROJECT` | Sentry webpack plugin (optional; defaults match current project) |
+| `SENTRY_TRACES_SAMPLE_RATE` | Trace sampling 0–1 (default `0.1` production, `1` development) |
+| `SENTRY_REPLAYS_SESSION_SAMPLE_RATE`, `SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE` | Session Replay sampling (client; lower defaults in production) |
+| `SENTRY_ENABLE_LOGS` | Send console logs to Sentry (`true` / `false`; default off in production) |
 
 Optional script vars: `REEMBED_BETWEEN_REPLICATE_MS`, `REEMBED_ALL`.
 

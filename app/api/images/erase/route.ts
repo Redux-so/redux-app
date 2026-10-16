@@ -3,9 +3,21 @@ import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { CREDIT_COSTS } from "@/constants/credits";
 import { apiInternalErrorResponse } from "@/lib/api-error";
+import { deductCredits, refundCredits } from "@/lib/credit-ledger";
+import {
+  enforceFeatureRateLimits,
+  insufficientCreditsResponse,
+} from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import {
+  fetchReplicateDeliveryBuffer,
+  fetchTrustedMediaBuffer,
+} from "@/lib/safe-remote-fetch";
+
+const ERASE_COST = CREDIT_COSTS.erase;
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -53,6 +65,15 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
+    if (user.creditBalance < ERASE_COST) {
+      return insufficientCreditsResponse();
+    }
+
+    const rateLimited = await enforceFeatureRateLimits(user.id, "erase");
+    if (rateLimited) {
+      return rateLimited;
+    }
+
     const parsed = await parseJsonRequest(request, maskImageOperationBodySchema);
     if (!parsed.ok) {
       return parsed.response;
@@ -66,12 +87,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
+    await deductCredits(user.id, "erase");
+
     try {
-      const imageRes = await fetch(imageUrl);
-      if (!imageRes.ok) {
-        throw new Error(`Failed to fetch source image: ${imageRes.status} ${imageRes.statusText}`);
-      }
-      const sourceImageBuffer = Buffer.from(await imageRes.arrayBuffer());
+      const { buffer: sourceImageBuffer } = await fetchTrustedMediaBuffer(imageUrl);
       const imageMeta = await sharp(sourceImageBuffer).metadata();
       const iw = imageMeta.width ?? 512;
       const ih = imageMeta.height ?? 512;
@@ -115,11 +134,7 @@ export async function POST(request: Request) {
 
       const resultUrl = extractOutputUrl(output);
 
-      const resultRes = await fetch(resultUrl);
-      if (!resultRes.ok) {
-        throw new Error(`Failed to download erase result: ${resultRes.status}`);
-      }
-      const resultBuffer = Buffer.from(await resultRes.arrayBuffer());
+      const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
       // Scale result back to original dimensions; adaptive JPEG quality ensures < 9MB for any resolution
       const CLOUDINARY_MAX_BYTES = 9 * 1024 * 1024;
@@ -150,6 +165,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
+      await refundCredits(user.id, "erase", ERASE_COST, "Erase failed");
       return apiInternalErrorResponse("/api/images/erase", innerErr, "Erase failed");
     }
   } catch (outerErr) {

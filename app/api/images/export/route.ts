@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import { prisma } from "@/lib/prisma";
+import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { resolvePreviewSourceUrl } from "@/lib/resolve-preview-source";
 import { exportBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
 
@@ -19,6 +21,11 @@ export async function POST(request: NextRequest) {
     return authResult.error;
   }
   const { user } = authResult;
+
+  const rateLimited = await enforceFeatureRateLimits(user.id, "export");
+  if (rateLimited) {
+    return rateLimited;
+  }
 
   const parsed = await parseJsonRequest(request, exportBodySchema);
   if (!parsed.ok) {
@@ -54,14 +61,15 @@ export async function POST(request: NextRequest) {
     if (source.kind === "base64") {
       inputBuffer = Buffer.from(source.base64, "base64");
     } else {
-      const imgResponse = await fetch(source.url);
-      if (!imgResponse.ok) {
-        return NextResponse.json(
-          { error: "Failed to fetch image" },
-          { status: 502 },
-        );
+      try {
+        const fetched = await fetchTrustedMediaBuffer(source.url);
+        inputBuffer = fetched.buffer;
+      } catch (fetchErr) {
+        if (fetchErr instanceof SafeFetchError && fetchErr.code === "UNTRUSTED_URL") {
+          return NextResponse.json({ error: "Untrusted image URL" }, { status: 400 });
+        }
+        return NextResponse.json({ error: "Failed to fetch image" }, { status: 502 });
       }
-      inputBuffer = Buffer.from(await imgResponse.arrayBuffer());
     }
   } catch (err) {
     console.error("[export] Failed to resolve image source:", err);
