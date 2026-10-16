@@ -18,7 +18,7 @@ Photographers and creators who want quick AI-assisted edits and organization wit
 
 ### Library (`/library`)
 
-- Upload via dropzone (UploadThing)
+- Upload via dropzone → server → Cloudinary
 - Browse grid with favorites, recents, albums, trash
 - Semantic search (CLIP embeddings + pgvector)
 - Open editor for an image
@@ -73,7 +73,7 @@ Photographers and creators who want quick AI-assisted edits and organization wit
 | Image version | Saved edit state (`ImageVersion`) with adjustments JSON |
 | Preview URL | `Image.previewUrl` — result after destructive/AI ops; thumbnails prefer preview over original |
 | Public ID | Cloudinary asset id |
-| utKey | UploadThing file key |
+| utKey | Legacy UploadThing file key (optional; new uploads omit) |
 
 ## Product constraints (documented)
 

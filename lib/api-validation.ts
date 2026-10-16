@@ -297,17 +297,6 @@ export const patchImageBodySchema = z
     "isFavorite or restore is required",
   );
 
-export const createImageBodySchema = z.object({
-  ufsUrl: httpImageUrlSchema,
-  utKey: z.string().trim().max(512).optional(),
-  name: z.string().trim().min(1).max(API_LIMITS.UPLOAD_NAME_MAX),
-  size: z
-    .number()
-    .int()
-    .nonnegative()
-    .max(API_LIMITS.UPLOAD_SIZE_MAX),
-});
-
 export const saveVersionBodySchema = z.object({
   imageId: resourceIdSchema,
   adjustments: z.record(z.string(), z.unknown()),

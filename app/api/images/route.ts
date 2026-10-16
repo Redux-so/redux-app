@@ -5,13 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
-import {
-  createImageBodySchema,
-  deleteImageBodySchema,
-  parseJsonRequest,
-} from "@/lib/api-validation";
-import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
-import { verifyUserUploadThingFile } from "@/lib/uploadthing-ownership";
+import { deleteImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import { parseImageUploadFormData } from "@/lib/image-upload";
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 
 export async function GET(request: NextRequest) {
@@ -48,43 +44,24 @@ export async function POST(request: NextRequest) {
     return rateLimited;
   }
 
-  const parsed = await parseJsonRequest(request, createImageBodySchema);
+  const formData = await request.formData();
+  const parsed = await parseImageUploadFormData(formData);
   if (!parsed.ok) {
-    return parsed.response;
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status });
   }
-  const { ufsUrl, name, size, utKey: clientUtKey } = parsed.data;
+  const { buffer, name, size } = parsed;
 
-  const ownership = await verifyUserUploadThingFile(user.id, ufsUrl, clientUtKey);
-  if (!ownership.ok) {
-    const status =
-      ownership.reason === "missing_token"
-        ? 503
-        : ownership.reason === "not_owned"
-          ? 403
-          : 400;
-    const message =
-      ownership.reason === "missing_token"
-        ? "Upload verification is unavailable"
-        : ownership.reason === "not_owned"
-          ? "Upload is not owned by this account"
-          : "Invalid or unverified upload";
-    return NextResponse.json({ error: message }, { status });
-  }
-
-  let buffer: Buffer;
+  let secureUrl: string;
+  let publicId: string;
+  let width: number;
+  let height: number;
+  let format: string;
   try {
-    const fetched = await fetchTrustedMediaBuffer(ufsUrl);
-    buffer = fetched.buffer;
+    ({ secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name));
   } catch (err) {
-    if (err instanceof SafeFetchError && err.code === "UNTRUSTED_URL") {
-      return NextResponse.json({ error: "Untrusted upload URL" }, { status: 400 });
-    }
-    console.error("[POST /api/images] Failed to fetch upload:", err);
-    return NextResponse.json({ error: "Failed to fetch upload" }, { status: 502 });
+    console.error("[POST /api/images] Cloudinary upload failed:", err);
+    return NextResponse.json({ error: "Failed to store image" }, { status: 502 });
   }
-
-  const { uploadToCloudinary } = await import("@/lib/cloudinary");
-  const { secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name);
 
   const image = await prisma.image.create({
     data: {
@@ -92,7 +69,7 @@ export async function POST(request: NextRequest) {
       filename: name,
       originalUrl: secureUrl,
       publicId,
-      utKey: ownership.fileKey,
+      utKey: null,
       width,
       height,
       size,

@@ -61,7 +61,7 @@ Never commit secrets. Names referenced in code:
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk (standard Clerk setup) |
 | `CLERK_WEBHOOK_SECRET` | Clerk webhook Svix verification |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary |
-| `UPLOADTHING_TOKEN` | UploadThing |
+| `UPLOADTHING_TOKEN` | Legacy UploadThing cleanup on permanent delete (optional for new-only dev) |
 | `ANTHROPIC_API_KEY` | Chat / vision AI |
 | `REPLICATE_API_TOKEN` | Replicate models (heal, CLIP, etc.) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe |
@@ -82,7 +82,7 @@ There is no committed `.env.example` in the repository; obtain values from team 
 
 - **PostgreSQL (Neon)** — required for auth-linked data and library
 - **Clerk** — required for sign-in and protected routes
-- **Cloudinary, UploadThing, Stripe, Anthropic, Replicate** — required for full feature testing
+- **Cloudinary, Stripe, Anthropic, Replicate** — required for full feature testing; **UploadThing** only if testing purge of legacy `utKey` assets
 - **Vercel KV** — optional locally; rate limits may no-op if unset (`lib/kv.ts`)
 - **ngrok** — only for local Stripe webhook testing (see scratch notes)
 
