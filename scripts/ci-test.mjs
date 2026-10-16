@@ -42,6 +42,7 @@ const VERIFY_SCRIPTS = [
   "scripts/verify-ssrf-guards.ts",
   "scripts/verify-atomic-credits.ts",
   "scripts/verify-media-ownership.ts",
+  "scripts/verify-background-embedding.ts",
   "scripts/verify-image-upload.ts",
 ];
 

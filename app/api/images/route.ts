@@ -4,11 +4,14 @@ import { listUserImages } from "@/lib/list-user-images";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
-import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
+import { scheduleImageEmbeddingAfterResponse } from "@/lib/schedule-image-embedding";
 import { deleteImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { parseImageUploadFormData } from "@/lib/image-upload";
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
+
+/** Replicate CLIP + pgvector write run in `after()`; needs headroom on serverless. */
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const authResult = await requireAuthUser();
@@ -77,9 +80,12 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  void generateAndPersistImageEmbedding(image.id, image.originalUrl, user.id).catch((e) => {
-    console.error("[POST /api/images] Background embedding failed:", e);
-  });
+  scheduleImageEmbeddingAfterResponse(
+    "POST /api/images",
+    image.id,
+    image.originalUrl,
+    user.id,
+  );
 
   return NextResponse.json({ image });
 }
