@@ -8,7 +8,7 @@ alwaysApply: false
 
 - Read [docs/DESIGN.md](../../docs/DESIGN.md) before editor, library, or settings layout changes.
 - Reuse components under `components/shared/`, `components/editor/`, `components/library/`.
-- Import icons only via `components/shared/Icon.tsx`.
+- Import icons only via `components/shared/Icon.tsx`; register new names in `icon-registry.ts`.
 - Use tokens from `lib/surface-colors.ts`, `lib/button-styles.ts`, `lib/panel-chrome.ts` — avoid one-off hex values.
 - Prefer Server Components; add `"use client"` only for interactivity, Fabric.js, or browser APIs.
 - Preserve accessibility: labels, `aria-*`, keyboard behavior on menus and dialogs.

@@ -106,9 +106,9 @@ Reason: Documented in dev notes and `lib/button-styles.ts`.
 
 Context: Icon consistency.
 
-Decision: Only `components/shared/Icon.tsx` imports `@untitledui/icons`; lucide removed.
+Decision: Only `components/shared/icon-registry.ts` imports `@untitledui/icons` (subpath per icon); `Icon.tsx` reads the registry. Lucide removed.
 
-Reason: Documented in dev notes.
+Reason: Avoids Turbopack dev importing the full ~2.3k-icon package barrel (see [PERF-DEV-MEMORY.md](./PERF-DEV-MEMORY.md)).
 
 ---
 
