@@ -39,6 +39,16 @@ const nextConfig: NextConfig = {
 
     return [
       {
+        source: "/:path*\\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Later rules override earlier ones for the same path (Next.js headers merge).
+      {
         source: "/favicon.png",
         headers: [...mutablePublicAssetCache],
       },
@@ -53,15 +63,6 @@ const nextConfig: NextConfig = {
       {
         source: "/favicon.ico",
         headers: [...mutablePublicAssetCache],
-      },
-      {
-        source: "/:path*\\.(png|jpg|jpeg|gif|webp|svg|ico|woff|woff2)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
       },
       {
         source: "/:path*",
