@@ -15,7 +15,7 @@ Verified from the repository unless marked **uncertain**.
 | Uploads | Authenticated **multipart POST** `app/api/images` → **Cloudinary** |
 | Media storage / transforms | **Cloudinary** (`lib/cloudinary.ts`) — source of truth for originals, previews, and AI outputs |
 | Canvas | **Fabric.js** (`components/editor/Canvas.tsx`, `hooks/useCanvas.ts`) |
-| AI chat / vision | **Anthropic** (`lib/anthropic.ts`, model `claude-sonnet-4-5` in chat UI) |
+| AI chat / vision | **Anthropic** (`lib/anthropic.ts`, model id in `constants/ai-models.ts`) |
 | AI inpainting / CLIP / some models | **Replicate** (`lib/replicate.ts`, various routes) |
 | Payments | **Stripe** (checkout, portal, webhook) |
 | Rate limiting | **Vercel KV** when `KV_REST_API_URL` is set (`lib/kv.ts`) |

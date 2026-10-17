@@ -13,6 +13,7 @@ import { ShimmerText } from "@/components/shared/ShimmerText";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
+import { CHAT_AVAILABLE_MODELS } from "@/constants/ai-models";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import {
   CHAT_ASSISTANT_LOADING_LABEL,
@@ -49,9 +50,7 @@ const CreditShopModal = dynamic(() => import("@/components/shared/CreditShopModa
 const BTN_SECONDARY =
   "inline-flex items-center justify-center h-8 px-3.5 rounded-md border border-[#262626] bg-[#1d1d1d] text-[12px] font-semibold text-white/90 hover:border-[#2e2e2e] transition-colors cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed";
 
-const AVAILABLE_MODELS = [
-  { id: "claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
-] as const;
+const AVAILABLE_MODELS = CHAT_AVAILABLE_MODELS;
 
 const COMING_SOON_MODEL_ROW = {
   id: "coming-soon",
