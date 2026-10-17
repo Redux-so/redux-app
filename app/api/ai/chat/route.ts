@@ -34,6 +34,7 @@ import {
   insufficientCreditsResponse,
   refundCreditFeature,
 } from "@/lib/atomic-credits";
+import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { CREDIT_COSTS } from "@/constants/credits";
 
 // ---------------------------------------------------------------------------
@@ -257,7 +258,7 @@ export async function POST(request: Request) {
 
       try {
         const claudeStream = anthropic.messages.stream({
-          model: "claude-sonnet-4-5",
+          model: ANTHROPIC_DEFAULT_MODEL,
           max_tokens: 1024,
           system: CHAT_SYSTEM_PROMPT,
           messages: anthropicMessages,

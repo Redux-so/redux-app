@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
+import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { anthropic } from "@/lib/anthropic";
 import { requireAuthUser } from "@/lib/require-user";
 import {
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
     ];
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: ANTHROPIC_DEFAULT_MODEL,
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
