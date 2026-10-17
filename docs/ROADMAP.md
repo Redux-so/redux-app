@@ -23,9 +23,7 @@ From dev notes — **Phase 10: Deployment**
 
 From known issues (scratch notes):
 
-- Hydration mismatch warning in console — treated as non-fatal
 - Editor rail icon size 26px vs Icon type restriction 16|20|24 — known TS flag in notes
-- `TransformPanel.tsx` marked legacy/unused — transform UI lives in `AdjustmentPanel`
 - Turbopack occasional panics in dev (environment-specific; not tracked as product bug in docs)
 
 ## Future ideas
