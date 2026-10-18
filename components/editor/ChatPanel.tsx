@@ -31,7 +31,6 @@ import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chro
 import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
 import { ChatMarkdown } from "@/lib/chat-markdown";
 import UsageRing from "@/components/shared/UsageRing";
-import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
 import {
   isChatQuotaBlocked,
   quotaFromApi,

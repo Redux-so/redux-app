@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
-import toast from "react-hot-toast";
 
 interface TrashViewToolbarProps {
   count: number;

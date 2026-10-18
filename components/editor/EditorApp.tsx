@@ -193,8 +193,6 @@ export default function EditorApp() {
     resetZoom,
     toggleBefore,
     rotateCW,
-    flipH,
-    flipV,
     straightenImage,
     startCrop,
     confirmCrop,
@@ -512,18 +510,6 @@ export default function EditorApp() {
     persistTransformNow();
   }, [rotateCW, persistTransformNow]);
 
-  const handleFlipH = useCallback(() => {
-    undoRedoOrderRef.current = [];
-    flipH();
-    persistTransformNow();
-  }, [flipH, persistTransformNow]);
-
-  const handleFlipV = useCallback(() => {
-    undoRedoOrderRef.current = [];
-    flipV();
-    persistTransformNow();
-  }, [flipV, persistTransformNow]);
-
   const handleStraightenPreview = useCallback(
     (degrees: number) => {
       undoRedoOrderRef.current = [];
@@ -628,8 +614,9 @@ export default function EditorApp() {
   ]);
 
   useEffect(() => {
+    const savePreview = savePreviewRef.current;
     return () => {
-      void savePreviewRef.current?.();
+      void savePreview?.();
     };
   }, [imageId]);
 
