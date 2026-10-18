@@ -74,9 +74,9 @@ Never commit secrets. Names referenced in code:
 | `SENTRY_REPLAYS_SESSION_SAMPLE_RATE`, `SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE` | Session Replay sampling (client; lower defaults in production) |
 | `SENTRY_ENABLE_LOGS` | Send console logs to Sentry (`true` / `false`; default off in production) |
 
-Optional script vars: `REEMBED_BETWEEN_REPLICATE_MS`, `REEMBED_ALL`.
+Optional script vars: `REEMBED_BETWEEN_REPLICATE_MS`, `REEMBED_ALL`, `DEV_MEMORY_ROUTES`.
 
-There is no committed `.env.example` in the repository; obtain values from team secrets or service dashboards.
+Copy [`.env.example`](../.env.example) to `.env` / `.env.local` and replace placeholders. Real env files stay gitignored.
 
 ## Local services
 
