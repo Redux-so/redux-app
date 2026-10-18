@@ -14,7 +14,7 @@
 | `pnpm run start` | Run production server locally |
 | `pnpm run lint` | ESLint (`eslint .`) |
 | `pnpm run typecheck` | TypeScript (`tsc --noEmit`) |
-| `pnpm run test` | CI test gate — skips when no test files; fails if tests exist without a runner |
+| `pnpm run test` | CI test gate — runs static `scripts/verify-*.ts` checks (no DB/network); fails if `*.test.*` / `*.spec.*` exist without a runner |
 | `pnpm run embed:all` | Regenerate CLIP embeddings (`scripts/reembed-images.ts`) |
 
 **Tests:** there is no unit/e2e runner yet. `pnpm run test` only verifies that test files are not added without wiring a runner. Add Vitest/Jest (or similar) before introducing `*.test.*` / `*.spec.*` files.
