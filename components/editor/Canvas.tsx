@@ -26,7 +26,6 @@ interface CanvasProps {
 export default function Canvas({
   canvasRef,
   containerRef,
-  imageUrl,
   adjustments,
   imageBounds,
   viewportTransform,

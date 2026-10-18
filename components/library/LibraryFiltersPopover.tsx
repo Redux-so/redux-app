@@ -10,10 +10,8 @@ import { LIBRARY_CHOICE_SELECTED_CLASS } from "@/lib/brand-colors";
 import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 import {
   countActiveLibraryFilters,
-  DEFAULT_LIBRARY_FILTERS,
   LIBRARY_RECENTLY_ADDED_DATE_PRESET,
   type DateFilterPreset,
-  type EditStatusFilter,
   type LibraryFilters,
   type OrientationFilter,
 } from "@/lib/library-filters";

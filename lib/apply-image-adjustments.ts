@@ -102,7 +102,7 @@ function getSharpBlend(ol: ColorOverlay): Blend {
 }
 
 /** Boost overlay strength on small preview thumbnails (matches canvas visibility). */
-function getOverlayOpacityScale(_ol: ColorOverlay): number {
+function getOverlayOpacityScale(): number {
   return 1.75;
 }
 
@@ -242,7 +242,7 @@ export async function renderAdjustedImage(
         width,
         height,
         ol,
-        getOverlayOpacityScale(ol),
+        getOverlayOpacityScale(),
       );
       work = await compositeAndFlatten(work, overlayBuffer, getSharpBlend(ol));
       ({ width, height } = await flattenPipeline(work));

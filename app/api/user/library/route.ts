@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { ACTIVE_IMAGE_WHERE } from "@/lib/image-query";
 import { permanentlyDeleteImages } from "@/lib/permanently-delete-image";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
