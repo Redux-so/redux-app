@@ -112,100 +112,6 @@ body {
   display: none !important;
 }
 
-/* Clerk auth — full-width pill CTAs; avoid clipping button shadows */
-.auth-clerk-root,
-.auth-clerk-root :is(
-  .cl-rootBox,
-  .cl-cardBox,
-  .cl-card,
-  .cl-main,
-  .cl-form,
-  .cl-formButtonRow,
-  .cl-socialButtons
-) {
-  width: 100% !important;
-  max-width: none !important;
-  overflow: visible !important;
-}
-
-.auth-clerk-root .cl-socialButtons {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.75rem !important;
-}
-
-.auth-clerk-root .cl-socialButtonsIconButton {
-  display: none !important;
-}
-
-.auth-clerk-root :is(
-  .cl-socialButtonsBlockButton,
-  .cl-alternativeMethodsBlockButton
-) {
-  box-sizing: border-box !important;
-  display: flex !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-height: 3rem !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 6px !important;
-}
-
-.auth-clerk-root .cl-formButtonPrimary {
-  box-sizing: border-box !important;
-  display: flex !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-height: 2.5rem !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 6px !important;
-}
-
-.auth-clerk-root .cl-formButtonPrimary::after {
-  content: "›";
-  margin-left: 0.35rem;
-  font-size: 1.125rem;
-  line-height: 1;
-  font-weight: 500;
-}
-
-/* Sign-in card — form → Or → Google (Clerk socialButtonsPlacement: bottom) */
-.auth-clerk-root--sign-in .cl-main {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 1rem !important;
-}
-
-.auth-clerk-root--sign-in .cl-form {
-  order: 1 !important;
-}
-
-.auth-clerk-root--sign-in .cl-dividerRow {
-  order: 2 !important;
-}
-
-.auth-clerk-root--sign-in .cl-socialButtons {
-  order: 3 !important;
-}
-
-.auth-clerk-root--sign-in .cl-footer {
-  order: 4 !important;
-}
-
-.auth-clerk-root--sign-in .cl-formFieldRow__password {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-}
-
-.auth-clerk-root--sign-in .cl-formFieldRow__password .cl-formFieldLabel {
-  margin-bottom: 0 !important;
-}
-
 /* Clerk UserProfile modal — portaled to body; reinforce dark Redux palette */
 .cl-modalBackdrop {
   background: rgba(0, 0, 0, 0.7) !important;
@@ -415,29 +321,6 @@ body {
     flex-shrink: 0;
     transform: translateY(-1px);
   }
-}
-
-/* Clerk auth primary — enforce pill chrome over theme defaults */
-.auth-clerk-root .cl-formButtonPrimary.brand-cta {
-  border: 1px solid var(--brand-cta-border) !important;
-  background: #3a6fff !important;
-  box-shadow:
-    var(--shadow-btn-primary),
-    inset 0 1px 0 var(--brand-cta-inset-top),
-    inset 0 -1px 0 var(--brand-cta-inset-bottom) !important;
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease !important;
-}
-
-.auth-clerk-root .cl-formButtonPrimary.brand-cta:hover:not(:disabled) {
-  border-color: var(--brand-cta-border-hover) !important;
-  background: #5285ff !important;
-  box-shadow:
-    var(--shadow-btn-primary-hover),
-    inset 0 1px 0 var(--brand-cta-inset-top-hover),
-    inset 0 -1px 0 var(--brand-cta-inset-bottom) !important;
 }
 
 /* Toast notifications — react-hot-toast goober defaults are white/grey; force brand CTA pill. */

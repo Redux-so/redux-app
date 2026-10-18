@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
+import { useIsClient } from "@/hooks/useIsClient";
 
 import SearchBar from "@/components/library/SearchBar";
 import UploadDropzone from "@/components/library/UploadDropzone";
@@ -35,8 +36,14 @@ export default function LibraryHeader({
   onFiltersChange,
 }: LibraryHeaderProps) {
   const { user } = useUser();
-  const firstName = user?.firstName?.trim() || "there";
-  const greeting = getTimeGreeting(new Date().getHours());
+  const isClient = useIsClient();
+
+  const firstName = isClient
+    ? user?.firstName?.trim() || "there"
+    : "there";
+  const greeting = isClient
+    ? getTimeGreeting(new Date().getHours())
+    : "Welcome";
 
   return (
     <header className="flex shrink-0 flex-col gap-5 px-6 pt-8 pb-8">

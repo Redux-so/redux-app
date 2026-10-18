@@ -119,8 +119,6 @@ Optional Agent plugin for planning/debugging/verification workflows. Install and
 - Full app behavior requires external services and env vars; agents may be blocked on auth or missing keys.
 - Read `/docs` before large changes; editor layout details are in [DESIGN.md](DESIGN.md).
 - Next.js **16** — check `node_modules/next/dist/docs/` when APIs differ from training data.
-- Known local quirk: hydration mismatch warning in console (documented as non-fatal in `.devnotes`).
-
 ## Brand assets
 
 - In-app logo: `assets/brand/redux-mark.png`, `constants/brand.ts`

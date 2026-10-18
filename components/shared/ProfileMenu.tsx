@@ -19,6 +19,7 @@ import CreditShopModal from "@/components/shared/CreditShopModal";
 import {
   buildSettingsHref,
 } from "@/lib/settings-navigation";
+import { useIsClient } from "@/hooks/useIsClient";
 
 const POPOVER_ESTIMATED_HEIGHT = 168;
 
@@ -95,6 +96,7 @@ export default function ProfileMenu({
   const pathname = usePathname();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const isClient = useIsClient();
   const [credits, setCredits] = useState<number | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [creditShopOpen, setCreditShopOpen] = useState(false);
@@ -199,7 +201,9 @@ export default function ProfileMenu({
     router.push("/sign-in");
   }
 
-  const userName = user?.fullName ?? user?.firstName ?? "";
+  const userName = isClient
+    ? (user?.fullName ?? user?.firstName ?? "")
+    : "";
   const resolvedSettingsReturnPath =
     settingsReturnPath ??
     (pathname === "/editor" ? "/editor" : "/library");
