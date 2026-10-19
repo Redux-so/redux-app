@@ -56,7 +56,15 @@ const COMING_SOON_MODEL_ROW = {
   badge: "More coming soon",
 } as const;
 
-const MODEL_MENU_ESTIMATED_HEIGHT = 72;
+/** Fits “More coming soon” badge; menu is at least as wide as the trigger chip. */
+const MODEL_MENU_MIN_WIDTH_PX = 140;
+const MODEL_MENU_ESTIMATED_HEIGHT = 80;
+const MODEL_MENU_ROW_CLASS =
+  "flex w-full min-w-0 items-center justify-between gap-2 px-1.5 py-1.5 text-left leading-none";
+
+function modelMenuWidthPx(triggerWidth: number) {
+  return Math.max(triggerWidth, MODEL_MENU_MIN_WIDTH_PX);
+}
 
 /** Reference-matched surfaces — Redux dark palette, Adam proportions/weight. */
 const CHAT_SURFACE_SHADOW =
@@ -169,7 +177,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
   const [menuCoords, setMenuCoords] = useState<{
     top: number;
     left: number;
-    width: number;
+    triggerWidth: number;
   } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -192,7 +200,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
     setMenuCoords({
       left: rect.left,
       top: openBelow ? rect.bottom + 6 : rect.top - menuHeight - 6,
-      width: rect.width,
+      triggerWidth: rect.width,
     });
   }, []);
 
@@ -200,7 +208,11 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
     if (!open) return;
     let cancelled = false;
     const frame = requestAnimationFrame(() => {
-      if (!cancelled) updateMenuPosition();
+      if (cancelled) return;
+      updateMenuPosition();
+      requestAnimationFrame(() => {
+        if (!cancelled) updateMenuPosition();
+      });
     });
     return () => {
       cancelled = true;
@@ -251,7 +263,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
         top: openBelow
           ? rect.bottom + 6
           : rect.top - MODEL_MENU_ESTIMATED_HEIGHT - 6,
-        width: rect.width,
+        triggerWidth: rect.width,
       });
     }
     setOpen((prev) => !prev);
@@ -273,7 +285,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                 ref={menuRef}
                 key="model-menu"
                 role="menu"
-                aria-label="Chat models"
+                aria-label="Model options"
                 initial={{ opacity: 0, y: menuOffsetY }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: menuOffsetY }}
@@ -281,10 +293,10 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                 style={{
                   top: menuCoords.top,
                   left: menuCoords.left,
-                  width: menuCoords.width,
+                  width: modelMenuWidthPx(menuCoords.triggerWidth),
                 }}
                 className={[
-                  "fixed z-[100] rounded-md py-1",
+                  "fixed z-[100] box-border overflow-hidden rounded-md px-1 py-1",
                   CHAT_POPOVER_CHROME,
                   CHAT_SURFACE_SHADOW,
                 ].join(" ")}
@@ -299,22 +311,23 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                       aria-checked={isSelected}
                       onClick={() => handleSelectModel(model.id)}
                       className={[
-                        "flex w-full min-w-0 items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors cursor-pointer",
+                        MODEL_MENU_ROW_CLASS,
+                        "text-[12px] transition-colors cursor-pointer",
                         isSelected
                           ? "text-[#cccccc]"
                           : "text-[#888888] hover:bg-[#252525] hover:text-[#cccccc]",
                       ].join(" ")}
                     >
-                      <span className="min-w-0 flex-1 truncate text-[10px] leading-snug">
-                        {model.label}
-                      </span>
-                      {isSelected && (
+                      <span className="min-w-0 shrink-0 font-medium">{model.label}</span>
+                      {isSelected ? (
                         <Icon
                           name="Check"
                           size={16}
                           className="shrink-0 text-[#888888]"
                           aria-hidden
                         />
+                      ) : (
+                        <span className="size-4 shrink-0" aria-hidden />
                       )}
                     </button>
                   );
@@ -323,11 +336,12 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                 <div
                   role="menuitem"
                   aria-disabled="true"
-                  className="flex items-center justify-end gap-2 px-3 py-1.5 text-[12px] text-[#555555] opacity-60 cursor-default select-none"
+                  className={`${MODEL_MENU_ROW_CLASS} cursor-default select-none text-[#555555] opacity-60`}
                 >
-                  <span className="shrink-0 rounded-full border border-[#212121] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-[#555555]">
+                  <span className="min-w-0 shrink-0 rounded-full border border-[#212121] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#555555]">
                     {COMING_SOON_MODEL_ROW.badge}
                   </span>
+                  <span className="size-4 shrink-0" aria-hidden />
                 </div>
               </motion.div>
             )}
@@ -343,27 +357,27 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Select model"
+        aria-label={`Model: ${selectedModel.label}`}
         disabled={disabled}
         onClick={handleToggle}
         className={[
           TOOLBAR_CHIP,
           "inline-flex",
           TOOLBAR_CHIP_H,
-          "shrink-0 items-center gap-0.5 px-1.5 text-[12px] transition-colors",
+          "shrink-0 items-center justify-center gap-0.5 pl-2 pr-1.5 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
             : "cursor-pointer hover:border-[#2e2e2e]",
         ].join(" ")}
       >
-        <span className="whitespace-nowrap font-semibold text-[#888888]">
+        <span className="whitespace-nowrap font-semibold leading-none text-[#888888]">
           {selectedModel.label}
         </span>
         <Icon
           name="ChevronDown"
           size={16}
           className={[
-            "shrink-0 text-[#888888] transition-transform duration-150",
+            "size-4 shrink-0 -me-px text-[#888888] transition-transform duration-150",
             open ? "rotate-180" : "",
           ].join(" ")}
           aria-hidden
