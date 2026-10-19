@@ -20,7 +20,7 @@ export const CHAT_INTERACTION_MODES = [
     id: "ask" as const,
     label: "Ask",
     description: "Get advice and answers without changing your photo.",
-    icon: "MessageChatCircle" satisfies IconName,
+    icon: "MessageSquare01" satisfies IconName,
   },
 ] as const;
 

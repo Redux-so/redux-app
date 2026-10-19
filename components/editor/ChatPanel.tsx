@@ -392,13 +392,13 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
         disabled={disabled}
         onClick={handleToggle}
         className={[
-          TOOLBAR_CHIP,
           "inline-flex",
           TOOLBAR_CHIP_H,
-          "shrink-0 items-center justify-center gap-0.5 pl-2 pr-1.5 text-[12px] transition-colors",
+          "shrink-0 items-center justify-center gap-0.5 rounded-md pl-2 pr-1.5 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
-            : "cursor-pointer hover:border-[#2e2e2e]",
+            : "cursor-pointer hover:bg-white/[0.06]",
+          open && !disabled ? "bg-white/[0.06]" : "",
         ].join(" ")}
       >
         <span className="whitespace-nowrap font-semibold leading-none text-[#888888]">

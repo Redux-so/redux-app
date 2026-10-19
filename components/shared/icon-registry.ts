@@ -32,7 +32,7 @@ import { Lock01 } from "@untitledui/icons/Lock01";
 import { LockUnlocked01 } from "@untitledui/icons/LockUnlocked01";
 import { LogOut01 } from "@untitledui/icons/LogOut01";
 import { Mail01 } from "@untitledui/icons/Mail01";
-import { MessageChatCircle } from "@untitledui/icons/MessageChatCircle";
+import { MessageSquare01 } from "@untitledui/icons/MessageSquare01";
 import { Minus } from "@untitledui/icons/Minus";
 import { Paperclip } from "@untitledui/icons/Paperclip";
 import { Plus } from "@untitledui/icons/Plus";
@@ -90,7 +90,7 @@ export const ICON_COMPONENTS = {
   LockUnlocked01,
   LogOut01,
   Mail01,
-  MessageChatCircle,
+  MessageSquare01,
   Minus,
   Paperclip,
   Plus,
@@ -113,4 +113,4 @@ export const ICON_COMPONENTS = {
 export type IconName = keyof typeof ICON_COMPONENTS;
 
 /** @internal Used by scripts/verify-icon-registry.mjs */
-export const ICON_NAMES = ["AlertTriangle","Brush01","Calendar","Check","ChevronDown","ChevronLeft","ChevronRight","Clock","ClockRewind","Coins01","Colors","Columns02","Crop01","CpuChip01","Database01","DotsHorizontal","Download01","Edit01","Expand01","FilterFunnel02","FlipBackward","FlipForward","Folder","Grid01","Heart","Image01","Image05","Lightbulb03","LinkExternal01","Lock01","LockUnlocked01","LogOut01","Mail01","MessageChatCircle","Minus","Paperclip","Plus","Reflect01","Reflect02","RefreshCcw01","RefreshCw01","SearchMd","Send01","Settings01","Sliders04","Star01","Star04","Stop","Sun","Trash04","XClose"] as const;
+export const ICON_NAMES = ["AlertTriangle","Brush01","Calendar","Check","ChevronDown","ChevronLeft","ChevronRight","Clock","ClockRewind","Coins01","Colors","Columns02","Crop01","CpuChip01","Database01","DotsHorizontal","Download01","Edit01","Expand01","FilterFunnel02","FlipBackward","FlipForward","Folder","Grid01","Heart","Image01","Image05","Lightbulb03","LinkExternal01","Lock01","LockUnlocked01","LogOut01","Mail01","MessageSquare01","Minus","Paperclip","Plus","Reflect01","Reflect02","RefreshCcw01","RefreshCw01","SearchMd","Send01","Settings01","Sliders04","Star01","Star04","Stop","Sun","Trash04","XClose"] as const;
