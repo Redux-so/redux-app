@@ -16,6 +16,12 @@ export {
 
 export type CanvasAdjustments = Record<AdjustmentKey, number>;
 
+export interface CanvasMasks {
+  heal: FabricObject[];
+  eraser: FabricObject[];
+  blur: FabricObject[];
+}
+
 export interface ImageBounds {
   left: number;
   top: number;
@@ -83,7 +89,16 @@ export function useCanvas(
   imageUrl: string | null,
   adjustments: CanvasAdjustments,
   savedTransform?: ImageTransform | null,
+  onMasksChanged?: (masks: CanvasMasks, checkpoint?: boolean) => void,
+  onTransformChanged?: (transform: ImageTransform, checkpoint?: boolean) => void,
 ) {
+  const onTransformChangedRef = useRef(onTransformChanged);
+  onTransformChangedRef.current = onTransformChanged;
+  const onMasksChangedRef = useRef(onMasksChanged);
+  onMasksChangedRef.current = onMasksChanged;
+  const loadGenerationRef = useRef(0);
+  const brushGenerationRef = useRef(0);
+  const cropGenerationRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // containerRef is attached to the outer wrapper div in Canvas.tsx so we can
   // read the available dimensions before Fabric sets them on the canvas element.
@@ -120,63 +135,6 @@ export function useCanvas(
   // prop but can diverge after AI operations (e.g. background removal) that
   // replace the canvas image with a new URL via loadImageUrl().
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(imageUrl);
-  const [imageHistory, setImageHistory] = useState<{ url: string; transform: TransformState }[]>([]);
-  const [imageFuture, setImageFuture] = useState<{ url: string; transform: TransformState }[]>([]);
-  // Ref so undoLastCanvas can call loadImageUrl without a forward-reference TDZ
-  const loadImageUrlRef = useRef<((url: string) => Promise<void>) | null>(null);
-
-  // ---------------------------------------------------------------------------
-  // Canvas image undo history — declared early so rotate/flip/crop can reference
-  // ---------------------------------------------------------------------------
-  const pushImageHistory = useCallback((url: string, transform: TransformState) => {
-    setImageHistory(prev => [...prev, { url, transform }]);
-    setImageFuture([]);
-  }, []);
-
-  const undoLastCanvas = useCallback(async () => {
-    const currentUrl = activeImageUrl;
-    const currentTransform = { ...transformRef.current };
-    if (!currentUrl) return;
-
-    let entry: { url: string; transform: TransformState } | undefined;
-    setImageHistory(prev => {
-      if (prev.length === 0) return prev;
-      const next = [...prev];
-      entry = next.pop();
-      return next;
-    });
-    await Promise.resolve();
-    if (!entry) return;
-
-    setImageFuture(prev => [{ url: currentUrl, transform: currentTransform }, ...prev]);
-    transformRef.current = { ...entry.transform };
-    await loadImageUrlRef.current?.(entry.url);
-  }, [activeImageUrl]);
-
-  const redoLastCanvas = useCallback(async () => {
-    const currentUrl = activeImageUrl;
-    const currentTransform = { ...transformRef.current };
-    if (!currentUrl) return;
-
-    let entry: { url: string; transform: TransformState } | undefined;
-    setImageFuture(prev => {
-      if (prev.length === 0) return prev;
-      const next = [...prev];
-      entry = next.shift();
-      return next;
-    });
-    await Promise.resolve();
-    if (!entry) return;
-
-    setImageHistory(prev => [...prev, { url: currentUrl, transform: currentTransform }]);
-    transformRef.current = { ...entry.transform };
-    await loadImageUrlRef.current?.(entry.url);
-  }, [activeImageUrl]);
-
-  // Derived — reactive because imageHistory / imageFuture are useState
-  const canUndoCanvas = imageHistory.length > 0;
-  const canRedoCanvas = imageFuture.length > 0;
-
   // ---------------------------------------------------------------------------
   // Compute the image's rendered bounds from the current FabricImage state.
   // Must be called after any operation that moves/scales/rotates the image.
@@ -456,13 +414,14 @@ export function useCanvas(
 
     const canvas = fabricRef.current;
     let cancelled = false;
+    const generation = ++loadGenerationRef.current;
 
     (async () => {
       const { FabricImage } = await import("fabric");
       if (cancelled) return;
 
       const img = await FabricImage.fromURL(imageUrl, { crossOrigin: "anonymous" });
-      if (cancelled) return;
+      if (cancelled || generation !== loadGenerationRef.current) return;
 
       const w = canvas.getWidth();
       const h = canvas.getHeight();
@@ -568,40 +527,40 @@ export function useCanvas(
   // Rotate (multiples of 90°)
   // ---------------------------------------------------------------------------
   const rotateCW = useCallback(() => {
-    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.rotation = (transformRef.current.rotation + 90) % 360;
     applyTransform();
-  }, [applyTransform, activeImageUrl, pushImageHistory]);
+    onTransformChangedRef.current?.({ ...transformRef.current });
+  }, [applyTransform]);
 
   const rotateCCW = useCallback(() => {
-    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.rotation = ((transformRef.current.rotation - 90) + 360) % 360;
     applyTransform();
-  }, [applyTransform, activeImageUrl, pushImageHistory]);
+    onTransformChangedRef.current?.({ ...transformRef.current });
+  }, [applyTransform]);
 
   // ---------------------------------------------------------------------------
   // Flip
   // ---------------------------------------------------------------------------
   const flipH = useCallback(() => {
-    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.flipX = !transformRef.current.flipX;
     applyTransform();
-  }, [applyTransform, activeImageUrl, pushImageHistory]);
+    onTransformChangedRef.current?.({ ...transformRef.current });
+  }, [applyTransform]);
 
   const flipV = useCallback(() => {
-    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
     transformRef.current.flipY = !transformRef.current.flipY;
     applyTransform();
-  }, [applyTransform, activeImageUrl, pushImageHistory]);
+    onTransformChangedRef.current?.({ ...transformRef.current });
+  }, [applyTransform]);
 
   // ---------------------------------------------------------------------------
   // Straighten
   // ---------------------------------------------------------------------------
-  const straightenImage = useCallback((degrees: number) => {
-    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
+  const straightenImage = useCallback((degrees: number, checkpoint = true) => {
     transformRef.current.straighten = degrees;
     applyTransform();
-  }, [applyTransform, activeImageUrl, pushImageHistory]);
+    onTransformChangedRef.current?.({ ...transformRef.current }, checkpoint);
+  }, [applyTransform]);
 
   // ---------------------------------------------------------------------------
   // Crop
@@ -613,7 +572,9 @@ export function useCanvas(
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     setZoom(1);
 
+    const generation = ++cropGenerationRef.current;
     const { Rect } = await import("fabric");
+    if (canvas !== fabricRef.current || generation !== cropGenerationRef.current) return;
     const w = canvas.getWidth();
     const h = canvas.getHeight();
     const inset = Math.min(w, h) * 0.05;
@@ -645,11 +606,12 @@ export function useCanvas(
     setIsCropping(true);
   }, [isCropping]);
 
-  const confirmCrop = useCallback(async (): Promise<string | null> => {
+  const confirmCrop = useCallback(async (isCurrent: () => boolean = () => true): Promise<string | null> => {
     const canvas = fabricRef.current;
     const rect = cropRectRef.current;
     const bgImg = bgImageRef.current;
     if (!canvas || !rect || !bgImg) return null;
+    const generation = ++cropGenerationRef.current;
 
     // Remove crop rect and force a clean render to clear selection handles (Bug 2)
     canvas.remove(rect);
@@ -657,8 +619,6 @@ export function useCanvas(
     canvas.renderAll();
     canvas.selection = false;
     cropRectRef.current = null;
-
-    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
 
     // Use getBoundingRect() for reliable canvas-space positions — accounts for
     // all Fabric transforms (origin, scale, position) without manual math.
@@ -701,6 +661,10 @@ export function useCanvas(
     const dataUrl = offscreen.toDataURL("image/png");
     const { FabricImage } = await import("fabric");
     const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+    if (!isCurrent() || canvas !== fabricRef.current || generation !== cropGenerationRef.current) {
+      setIsCropping(false);
+      return null;
+    }
 
     // Fit the cropped image into the existing canvas (keep canvas dimensions stable)
     const cW = canvas.getWidth();
@@ -726,9 +690,10 @@ export function useCanvas(
     setActiveImageUrl(dataUrl);
     setIsCropping(false);
     return dataUrl;
-  }, [updateImageBounds, activeImageUrl, pushImageHistory]);
+  }, [updateImageBounds]);
 
   const cancelCrop = useCallback(() => {
+    cropGenerationRef.current++;
     const canvas = fabricRef.current;
     if (!canvas) return;
     if (cropRectRef.current) {
@@ -747,12 +712,14 @@ export function useCanvas(
   // Mirrors the prop-driven useEffect but works on demand without waiting
   // for React to re-render with a new imageUrl prop.
   // ---------------------------------------------------------------------------
-  const loadImageUrl = useCallback(async (url: string) => {
+  const loadImageUrl = useCallback(async (url: string, isCurrent: () => boolean = () => true) => {
     const canvas = fabricRef.current;
-    if (!canvas) return;
+    if (!canvas) return false;
+    const generation = ++loadGenerationRef.current;
 
     const { FabricImage } = await import("fabric");
     const img = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
+    if (!isCurrent() || generation !== loadGenerationRef.current || canvas !== fabricRef.current) return false;
 
     const w = canvas.getWidth();
     const h = canvas.getHeight();
@@ -776,19 +743,16 @@ export function useCanvas(
     canvas.renderAll();
     updateImageBounds();
     setActiveImageUrl(url);
+    return true;
   }, [updateImageBounds]);
-  // Keep ref in sync so undoLastCanvas can call loadImageUrl without a forward ref
-  loadImageUrlRef.current = loadImageUrl;
 
   // ---------------------------------------------------------------------------
   // Resize canvas + re-fit background image
   // ---------------------------------------------------------------------------
-  const resizeCanvas = useCallback(async (newW: number, newH: number): Promise<string | null> => {
+  const resizeCanvas = useCallback(async (newW: number, newH: number, isCurrent: () => boolean = () => true): Promise<string | null> => {
     const canvas = fabricRef.current;
     const img = bgImageRef.current;
     if (!canvas || !img) return null;
-
-    if (activeImageUrl) pushImageHistory(activeImageUrl, { ...transformRef.current });
 
     // Pure center crop at native pixel resolution — no resampling
     const srcEl = img.getElement() as HTMLImageElement;
@@ -815,6 +779,7 @@ export function useCanvas(
     const dataUrl = offscreen.toDataURL("image/png");
     const { FabricImage } = await import("fabric");
     const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+    if (!isCurrent() || canvas !== fabricRef.current) return null;
 
     // Fit the cropped image into the existing Fabric canvas (don't resize canvas element)
     const cW = canvas.getWidth();
@@ -839,7 +804,7 @@ export function useCanvas(
     updateImageBounds();
     setActiveImageUrl(dataUrl);
     return dataUrl;
-  }, [updateImageBounds, activeImageUrl, pushImageHistory]);
+  }, [updateImageBounds]);
 
   // ---------------------------------------------------------------------------
   // Heal brush — free drawing in red; export mask aligned to image pixels
@@ -848,7 +813,9 @@ export function useCanvas(
     const canvas = fabricRef.current;
     if (!canvas || !bgImageRef.current) return;
 
+    const generation = ++brushGenerationRef.current;
     const { PencilBrush } = await import("fabric");
+    if (canvas !== fabricRef.current || generation !== brushGenerationRef.current) return;
 
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     canvas.requestRenderAll();
@@ -859,17 +826,9 @@ export function useCanvas(
       canvas.off("path:created", healPathHandlerRef.current);
       healPathHandlerRef.current = null;
     }
-    for (const p of healPathsRef.current) {
-      try {
-        canvas.remove(p);
-      } catch {
-        /* ignore */
-      }
-    }
-    healPathsRef.current = [];
-
     const onPathCreated = (e: { path: FabricObject }) => {
-      healPathsRef.current.push(e.path);
+      healPathsRef.current = [...healPathsRef.current, e.path];
+      onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current });
     };
     canvas.on("path:created", onPathCreated);
     healPathHandlerRef.current = onPathCreated;
@@ -886,6 +845,7 @@ export function useCanvas(
   }, []);
 
   const disableHealBrush = useCallback(() => {
+    brushGenerationRef.current++;
     const canvas = fabricRef.current;
     if (!canvas) return;
 
@@ -902,6 +862,7 @@ export function useCanvas(
       }
     }
     healPathsRef.current = [];
+    onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current }, false);
     canvas.requestRenderAll();
     setIsHealBrush(false);
   }, []);
@@ -913,7 +874,9 @@ export function useCanvas(
     const canvas = fabricRef.current;
     if (!canvas || !bgImageRef.current) return;
 
+    const generation = ++brushGenerationRef.current;
     const { PencilBrush } = await import("fabric");
+    if (canvas !== fabricRef.current || generation !== brushGenerationRef.current) return;
 
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     canvas.requestRenderAll();
@@ -924,13 +887,9 @@ export function useCanvas(
       canvas.off("path:created", eraserPathHandlerRef.current);
       eraserPathHandlerRef.current = null;
     }
-    for (const p of eraserPathsRef.current) {
-      try { canvas.remove(p); } catch { /* ignore */ }
-    }
-    eraserPathsRef.current = [];
-
     const onPathCreated = (e: { path: FabricObject }) => {
-      eraserPathsRef.current.push(e.path);
+      eraserPathsRef.current = [...eraserPathsRef.current, e.path];
+      onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current });
     };
     canvas.on("path:created", onPathCreated);
     eraserPathHandlerRef.current = onPathCreated;
@@ -946,6 +905,7 @@ export function useCanvas(
   }, []);
 
   const disableEraserBrush = useCallback(() => {
+    brushGenerationRef.current++;
     const canvas = fabricRef.current;
     if (!canvas) return;
 
@@ -958,6 +918,7 @@ export function useCanvas(
       try { canvas.remove(p); } catch { /* ignore */ }
     }
     eraserPathsRef.current = [];
+    onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current }, false);
     canvas.requestRenderAll();
   }, []);
 
@@ -1014,7 +975,9 @@ export function useCanvas(
     const canvas = fabricRef.current;
     if (!canvas || !bgImageRef.current) return;
 
+    const generation = ++brushGenerationRef.current;
     const { PencilBrush } = await import("fabric");
+    if (canvas !== fabricRef.current || generation !== brushGenerationRef.current) return;
 
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
     canvas.requestRenderAll();
@@ -1025,13 +988,9 @@ export function useCanvas(
       canvas.off("path:created", blurPathHandlerRef.current);
       blurPathHandlerRef.current = null;
     }
-    for (const p of blurPathsRef.current) {
-      try { canvas.remove(p); } catch { /* ignore */ }
-    }
-    blurPathsRef.current = [];
-
     const onPathCreated = (e: { path: FabricObject }) => {
-      blurPathsRef.current.push(e.path);
+      blurPathsRef.current = [...blurPathsRef.current, e.path];
+      onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current });
     };
     canvas.on("path:created", onPathCreated);
     blurPathHandlerRef.current = onPathCreated;
@@ -1047,6 +1006,7 @@ export function useCanvas(
   }, []);
 
   const disableBlurBrush = useCallback(() => {
+    brushGenerationRef.current++;
     const canvas = fabricRef.current;
     if (!canvas) return;
 
@@ -1059,6 +1019,7 @@ export function useCanvas(
       try { canvas.remove(p); } catch { /* ignore */ }
     }
     blurPathsRef.current = [];
+    onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current }, false);
     canvas.requestRenderAll();
   }, []);
 
@@ -1170,13 +1131,22 @@ export function useCanvas(
     return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
   }, []);
 
-  const clearCanvasHistory = useCallback(() => {
-    setImageHistory([]);
-    setImageFuture([]);
+
+  const restoreMasks = useCallback((masks?: CanvasMasks) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const previous = [...healPathsRef.current, ...eraserPathsRef.current, ...blurPathsRef.current];
+    previous.forEach((path) => canvas.remove(path));
+    healPathsRef.current = masks?.heal ?? [];
+    eraserPathsRef.current = masks?.eraser ?? [];
+    blurPathsRef.current = masks?.blur ?? [];
+    [...healPathsRef.current, ...eraserPathsRef.current, ...blurPathsRef.current].forEach((path) => canvas.add(path));
+    canvas.requestRenderAll();
   }, []);
 
   return {
     canvasRef,
+    restoreMasks,
     containerRef,
     zoom,
     showBefore,
@@ -1208,12 +1178,7 @@ export function useCanvas(
     enableBlurBrush,
     disableBlurBrush,
     exportBlurMask,
-    pushImageHistory,
-    undoLastCanvas,
-    redoLastCanvas,
-    canUndoCanvas,
-    canRedoCanvas,
-    clearCanvasHistory,
     getTransformSnapshot: () => ({ ...transformRef.current }),
+    getPixelDimensions: () => ({ width: bgImageRef.current?.width ?? null, height: bgImageRef.current?.height ?? null }),
   };
 }

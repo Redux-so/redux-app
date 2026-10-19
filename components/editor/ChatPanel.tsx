@@ -158,7 +158,10 @@ type SseEvent =
 
 interface ChatPanelProps {
   adjustments: Adjustments;
-  onPatch: (patch: Partial<Record<string, number>>) => void;
+  onPatch: (patch: Partial<Record<string, number>>) => boolean;
+  createEditGuard: () => () => boolean;
+  createChatEditGuard: () => () => boolean;
+  onUndo: () => void;
   imageId?: string;
   /** Current canvas photo — sent to the model as already-available context. */
   canvasImageUrl?: string | null;
@@ -717,6 +720,9 @@ function ChatMessageAvatar({
 export default function ChatPanel({
   adjustments,
   onPatch,
+  createEditGuard,
+  createChatEditGuard,
+  onUndo,
   imageId,
   canvasImageUrl,
 }: ChatPanelProps) {
@@ -732,6 +738,7 @@ export default function ChatPanel({
   const messageDuration = prefersReducedMotion ? 0 : 0.2;
   const messageInitialY = prefersReducedMotion ? 0 : 6;
 
+  const canUndoChatRef = useRef<(() => boolean) | null>(null);
   const changeSnapshotRef = useRef<Adjustments | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const adjustmentsRef = useRef(adjustments);
@@ -792,7 +799,7 @@ export default function ChatPanel({
   function applyAiAdjustments(rawPatch: Partial<Record<string, number>>) {
     const patch = normalizeAdjustmentPatch(rawPatch);
     const keys = Object.keys(patch) as AdjustmentKey[];
-    if (keys.length === 0) return;
+    if (keys.length === 0 || !onPatch(patch)) return;
 
     if (!changeSnapshotRef.current) {
       changeSnapshotRef.current = { ...adjustmentsRef.current };
@@ -814,13 +821,12 @@ export default function ChatPanel({
       return next;
     });
 
-    onPatch(patch);
+    canUndoChatRef.current = createEditGuard();
   }
 
   function handleUndoAllChanges() {
-    if (changeSnapshotRef.current) {
-      onPatch(changeSnapshotRef.current);
-    }
+    if (canUndoChatRef.current?.()) onUndo();
+    canUndoChatRef.current = null;
     setPendingChanges([]);
     setChangesExpanded(false);
     changeSnapshotRef.current = null;
@@ -925,6 +931,9 @@ export default function ChatPanel({
     };
     setMessages((prev) => [...prev, assistantPlaceholder]);
 
+    const isCurrent = createChatEditGuard();
+    const turnPatch: Partial<Record<AdjustmentKey, number>> = {};
+    let completed = false;
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -1009,9 +1018,11 @@ export default function ChatPanel({
                     : m,
                 ),
               );
+            } else if (event.type === "done") {
+              completed = true;
             } else if (event.type === "adjustments") {
               if (allowAdjustments) {
-                applyAiAdjustments(event.adjustments);
+                Object.assign(turnPatch, event.adjustments);
               }
             }
           }
@@ -1020,6 +1031,12 @@ export default function ChatPanel({
         void reader.cancel().catch(() => {
           /* already closed / lock released — ignore */
         });
+      }
+
+      if (completed && !controller.signal.aborted && isCurrent() && Object.keys(turnPatch).length > 0) {
+        changeSnapshotRef.current = null;
+        setPendingChanges([]);
+        applyAiAdjustments(turnPatch);
       }
 
       if (shouldAppendAskNudge) {

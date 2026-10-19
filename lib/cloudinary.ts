@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { v2 as cloudinary } from "cloudinary";
 import type { UploadApiResponse } from "cloudinary";
 
@@ -27,11 +28,15 @@ export function uploadToCloudinary(
   options: CloudinaryUploadOptions = {},
 ): Promise<CloudinaryUploadResult> {
   const uniqueFilename = options.uniqueFilename ?? !options.overwrite;
+  const basePublicId = filename.replace(/\.[^/.]+$/, "");
+  // unique_filename does not add a suffix when public_id is explicitly supplied.
+  // Give each edit immutable pixels so repeat operations and undo keep their own sources.
+  const publicId = uniqueFilename ? `${basePublicId}_${randomUUID()}` : basePublicId;
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "redux",
-        public_id: filename.replace(/\.[^/.]+$/, ""),
+        public_id: publicId,
         use_filename: true,
         unique_filename: uniqueFilename,
         overwrite: options.overwrite ?? false,

@@ -35,7 +35,7 @@ function findTestFiles(dir, acc = []) {
   return acc;
 }
 
-const VERIFY_NODE_SCRIPTS = ["scripts/verify-icon-registry.mjs"];
+const VERIFY_NODE_SCRIPTS = ["scripts/verify-icon-registry.mjs", "scripts/verify-editor-history.mjs", "scripts/verify-cloudinary-image-history.mjs"];
 
 const VERIFY_SCRIPTS = [
   "scripts/verify-api-validation.ts",

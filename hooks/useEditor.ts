@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import useUndo from "use-undo";
-import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustments";
+import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey, type Adjustments as SliderAdjustments } from "@/constants/adjustments";
 import {
   defaultPersistedEditorState,
   parseVersionAdjustments,
@@ -10,47 +10,56 @@ import {
   serializePersistedEditorState,
   type PersistedEditorState,
 } from "@/lib/editor-state";
-import type { ImageTransform } from "@/lib/image-transform";
+import type { CanvasMasks } from "@/hooks/useCanvas";
 
-export type Adjustments = typeof DEFAULT_ADJUSTMENTS;
-
-export interface EditorCanvasSnapshot {
-  transform: ImageTransform;
-  workingImageUrl: string | null;
-  imageBase64: string | null;
-  originalUrl: string | null;
-  workingWidth: number | null;
-  workingHeight: number | null;
-}
+export type Adjustments = SliderAdjustments;
 
 export interface UseEditorOptions {
-  getCanvasSnapshot?: () => EditorCanvasSnapshot;
-  onPersistedRestore?: (state: PersistedEditorState) => void;
-  onVersionLoaded?: () => void;
   canAutoSave?: () => boolean;
 }
 
-function adjustmentsEqual(a: Adjustments, b: Adjustments): boolean {
-  return (Object.keys(DEFAULT_ADJUSTMENTS) as AdjustmentKey[]).every(
-    (key) => a[key] === b[key],
-  );
+export interface EditorHistoryState extends PersistedEditorState {
+  masks?: CanvasMasks;
 }
 
 export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
-  const { getCanvasSnapshot, onPersistedRestore, onVersionLoaded, canAutoSave } = options;
-  const getCanvasSnapshotRef = useRef(getCanvasSnapshot);
-  const onPersistedRestoreRef = useRef(onPersistedRestore);
-  const onVersionLoadedRef = useRef(onVersionLoaded);
-  const canAutoSaveRef = useRef(canAutoSave);
-  getCanvasSnapshotRef.current = getCanvasSnapshot;
-  onPersistedRestoreRef.current = onPersistedRestore;
-  onVersionLoadedRef.current = onVersionLoaded;
-  canAutoSaveRef.current = canAutoSave;
+  const canAutoSaveRef = useRef(options.canAutoSave);
+  canAutoSaveRef.current = options.canAutoSave;
 
-  const [state, { set, undo, redo, reset, canUndo, canRedo }] = useUndo<Adjustments>(
-    { ...DEFAULT_ADJUSTMENTS },
+  const [state, { set, undo, redo, reset, canUndo, canRedo }] = useUndo<EditorHistoryState>(
+    defaultPersistedEditorState(),
     { useCheckpoints: true },
   );
+
+  const currentRef = useRef(state.present);
+  const revisionRef = useRef(0);
+  const mountedRef = useRef(true);
+  const requestRef = useRef(0);
+  const chatRequestRef = useRef(0);
+  // Agent patches merge into the latest state rather than restoring their request snapshot.
+  const createChatEditGuard = useCallback(() => {
+    const request = ++chatRequestRef.current;
+    return () => mountedRef.current && request === chatRequestRef.current;
+  }, []);
+  const createEditGuard = useCallback(() => {
+    const revision = revisionRef.current;
+    const request = ++requestRef.current;
+    return () => mountedRef.current && revision === revisionRef.current && request === requestRef.current;
+  }, []);
+  const commitState = useCallback((patch: Partial<EditorHistoryState>, checkpoint = true) => {
+    const next = { ...currentRef.current, ...patch };
+    const previousMasks = currentRef.current.masks;
+    const masksEqual = (["heal", "eraser", "blur"] as const).every((tool) => {
+      const before = previousMasks?.[tool] ?? [];
+      const after = next.masks?.[tool] ?? [];
+      return before.length === after.length && before.every((path, index) => path === after[index]);
+    });
+    if (persistedStatesEqual(next, currentRef.current) && masksEqual) return false;
+    currentRef.current = next;
+    revisionRef.current++;
+    set(next, checkpoint);
+    return true;
+  }, [set]);
 
   const [versionLoaded, setVersionLoaded] = useState(!imageId);
 
@@ -62,6 +71,9 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     }
 
     setVersionLoaded(false);
+    let cancelled = false;
+    const revision = revisionRef;
+    revision.current++;
     fetch(`/api/images/versions?imageId=${imageId}`)
       .then((res) => res.json())
       .then(
@@ -69,64 +81,50 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
           autosave?: { adjustments: unknown } | null;
           versions?: Array<{ adjustments: unknown }>;
         }) => {
+          if (cancelled) return;
           const latest = data.autosave ?? data.versions?.[0];
           const restored = latest
             ? parseVersionAdjustments(latest.adjustments)
             : defaultPersistedEditorState();
-          reset(restored.sliders as Adjustments);
-          lastSavedRef.current = { ...restored.sliders } as Adjustments;
+          currentRef.current = restored;
+          reset(restored);
           lastPersistedRef.current = restored;
-          onPersistedRestoreRef.current?.(restored);
         },
       )
       .catch((err) => {
+        if (cancelled) return;
         console.error("[useEditor] Failed to load saved editor state:", err);
         const fallback = defaultPersistedEditorState();
-        onPersistedRestoreRef.current?.(fallback);
+        currentRef.current = fallback;
+        reset(fallback);
       })
       .finally(() => {
+        if (cancelled) return;
         setVersionLoaded(true);
-        onVersionLoadedRef.current?.();
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageId]);
+    return () => { cancelled = true; };
+  }, [imageId, reset]);
 
-  const adjustments = state.present;
-  const lastSavedRef = useRef<Adjustments>({ ...DEFAULT_ADJUSTMENTS });
+  const adjustments = state.present.sliders;
   const lastPersistedRef = useRef<PersistedEditorState>(defaultPersistedEditorState());
 
   const isFirstPreviewRef = useRef(true);
 
   const setAdjustments = useCallback(
-    (next: Adjustments, checkpoint?: boolean) => {
-      if (adjustmentsEqual(next, state.present)) return;
-      set(next, checkpoint);
-    },
-    [set, state.present],
+    (next: Adjustments, checkpoint = true) => commitState({ sliders: next }, checkpoint),
+    [commitState],
   );
 
   const isDirtyRef = useRef(false);
-  const adjustmentsRef = useRef<Adjustments>({ ...DEFAULT_ADJUSTMENTS });
   const imageIdRef = useRef(imageId);
 
   function buildCurrentPersistedState(): PersistedEditorState {
-    const canvas = getCanvasSnapshotRef.current?.();
-    return {
-      sliders: { ...adjustmentsRef.current },
-      transform: canvas?.transform ?? defaultPersistedEditorState().transform,
-      workingImageUrl: canvas?.workingImageUrl ?? null,
-      workingWidth: canvas?.workingWidth ?? null,
-      workingHeight: canvas?.workingHeight ?? null,
-    };
+    const current = currentRef.current;
+    return { ...current, sliders: { ...current.sliders }, transform: { ...current.transform } };
   }
 
-  isDirtyRef.current = !persistedStatesEqual(
-    buildCurrentPersistedState(),
-    lastPersistedRef.current,
-  );
-  adjustmentsRef.current = adjustments;
   imageIdRef.current = imageId;
-
+  isDirtyRef.current = !persistedStatesEqual(buildCurrentPersistedState(), lastPersistedRef.current);
   const isDirty = isDirtyRef.current;
 
   const [justSaved, setJustSaved] = useState(false);
@@ -134,53 +132,55 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
 
   const previewAdjustment = useCallback(
     (key: AdjustmentKey, value: number) => {
+      if (currentRef.current.sliders[key] === value) return;
       const checkpoint = isFirstPreviewRef.current;
       isFirstPreviewRef.current = false;
-      setAdjustments({ ...state.present, [key]: value } as Adjustments, checkpoint);
+      setAdjustments({ ...currentRef.current.sliders, [key]: value } as Adjustments, checkpoint);
     },
-    [setAdjustments, state.present],
+    [setAdjustments],
   );
 
   const updateAdjustment = useCallback(
     (key: AdjustmentKey, value: number) => {
+      const checkpoint = isFirstPreviewRef.current;
       isFirstPreviewRef.current = true;
-      setAdjustments({ ...state.present, [key]: value } as Adjustments, false);
+      setAdjustments({ ...currentRef.current.sliders, [key]: value } as Adjustments, checkpoint);
     },
-    [setAdjustments, state.present],
+    [setAdjustments],
   );
 
   const patchAdjustments = useCallback(
     (patch: Partial<Adjustments> & Partial<Record<string, number>>) => {
       isFirstPreviewRef.current = true;
-      setAdjustments(normalizeAdjustments({ ...state.present, ...patch }) as Adjustments, true);
+      return setAdjustments(normalizeAdjustments({ ...currentRef.current.sliders, ...patch }) as Adjustments, true);
     },
-    [setAdjustments, state.present],
+    [setAdjustments],
   );
 
   const resetAdjustments = useCallback(() => {
     const defaults = { ...DEFAULT_ADJUSTMENTS } as Adjustments;
-    reset(defaults);
-    lastSavedRef.current = defaults;
+    commitState({ sliders: defaults });
     isFirstPreviewRef.current = true;
-  }, [reset]);
+  }, [commitState]);
 
-  /** Apply a restored v2 snapshot to slider state without updating the saved baseline. */
+  /** Restoring a saved version is an undoable edit, not a history reset. */
   const restorePersistedState = useCallback(
     (state: PersistedEditorState) => {
       isFirstPreviewRef.current = true;
-      reset(state.sliders as Adjustments);
-      lastSavedRef.current = { ...state.sliders } as Adjustments;
+      commitState({ ...state, masks: undefined });
     },
-    [reset],
+    [commitState],
   );
+
+  const saveQueueRef = useRef<Promise<unknown>>(Promise.resolve());
 
   const saveVersion = useCallback(async (force = false): Promise<PersistedEditorState | null> => {
     const imgId = imageIdRef.current;
     if (!imgId) return null;
     if (!force && !canAutoSaveRef.current?.()) return null;
 
-    const canvas = getCanvasSnapshotRef.current?.();
     const persisted = buildCurrentPersistedState();
+    const revision = revisionRef.current;
     if (!force && persistedStatesEqual(persisted, lastPersistedRef.current)) {
       return null;
     }
@@ -194,35 +194,43 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
       adjustments: serializePersistedEditorState(persisted),
     };
 
-    if (canvas?.imageBase64) {
-      payload.imageBase64 = canvas.imageBase64;
+    if (persisted.workingImageUrl?.startsWith("data:")) {
+      payload.imageBase64 = persisted.workingImageUrl.split(",")[1];
+      payload.adjustments.workingImageUrl = null;
     }
 
-    try {
-      const res = await fetch("/api/images/versions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        keepalive: !payload.imageBase64,
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+    const save = async () => {
+      if (imgId !== imageIdRef.current || revision !== revisionRef.current) return null;
+      try {
+        const res = await fetch("/api/images/versions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: !payload.imageBase64,
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = (await res.json()) as { version?: { adjustments: unknown } };
+        const saved = data.version
+          ? parseVersionAdjustments(data.version.adjustments)
+          : persisted;
+        if (revision !== revisionRef.current || imgId !== imageIdRef.current) return null;
+        if (!mountedRef.current) return saved;
+        lastPersistedRef.current = persisted;
+
+        if (justSavedTimerRef.current) clearTimeout(justSavedTimerRef.current);
+        setJustSaved(true);
+        justSavedTimerRef.current = setTimeout(() => setJustSaved(false), 2000);
+        return saved;
+      } catch (err) {
+        console.error("[useEditor] Auto-save failed:", err);
+        return null;
       }
-      const data = (await res.json()) as { version?: { adjustments: unknown } };
-      const saved = data.version
-        ? parseVersionAdjustments(data.version.adjustments)
-        : persisted;
-      lastSavedRef.current = { ...saved.sliders } as Adjustments;
-      lastPersistedRef.current = saved;
-
-      if (justSavedTimerRef.current) clearTimeout(justSavedTimerRef.current);
-      setJustSaved(true);
-      justSavedTimerRef.current = setTimeout(() => setJustSaved(false), 2000);
-      return saved;
-    } catch (err) {
-      console.error("[useEditor] Auto-save failed:", err);
-      return null;
-    }
+    };
+    const pending = saveQueueRef.current.then(save, save);
+    saveQueueRef.current = pending;
+    return pending;
   }, []);
 
   useEffect(() => {
@@ -235,23 +243,33 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
   }, [imageId, saveVersion]);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (justSavedTimerRef.current) clearTimeout(justSavedTimerRef.current);
     };
   }, []);
 
   const undoAdjustments = useCallback(() => {
     isFirstPreviewRef.current = true;
+    revisionRef.current++;
+    currentRef.current = state.past.at(-1) ?? currentRef.current;
     undo();
-  }, [undo]);
+  }, [undo, state.past]);
 
   const redoAdjustments = useCallback(() => {
     isFirstPreviewRef.current = true;
+    revisionRef.current++;
+    currentRef.current = state.future[0] ?? currentRef.current;
     redo();
-  }, [redo]);
+  }, [redo, state.future]);
 
   return {
     adjustments,
+    editorState: state.present,
+    commitState,
+    createEditGuard,
+    createChatEditGuard,
     updateAdjustment,
     previewAdjustment,
     patchAdjustments,

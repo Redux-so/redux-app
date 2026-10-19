@@ -49,31 +49,37 @@ export function EditorPreviewProvider({
 }: EditorPreviewProviderProps) {
   const [isSavingPreview, setIsSavingPreview] = useState(false);
   const [isSavingEditorState, setIsSavingEditorState] = useState(false);
+  const previewQueueRef = useRef<Promise<unknown>>(Promise.resolve());
   const getPayloadRef = useRef(getPayload);
   getPayloadRef.current = getPayload;
 
   const savePreview = useCallback(async (): Promise<string | null> => {
     if (!imageId) return null;
-    setIsSavingPreview(true);
-    try {
-      const body = buildPreviewRequestBody(getPayloadRef.current());
-      const res = await fetch(`/api/images/${imageId}/generate-preview`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        console.error("[EditorPreview] generate-preview failed:", res.status);
+    const body = buildPreviewRequestBody(getPayloadRef.current());
+    const save = async () => {
+      setIsSavingPreview(true);
+      try {
+        const res = await fetch(`/api/images/${imageId}/generate-preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          console.error("[EditorPreview] generate-preview failed:", res.status);
+          return null;
+        }
+        const data = (await res.json()) as { previewUrl?: string };
+        return data.previewUrl ?? null;
+      } catch (err) {
+        console.error("[EditorPreview] generate-preview error:", err);
         return null;
+      } finally {
+        setIsSavingPreview(false);
       }
-      const data = (await res.json()) as { previewUrl?: string };
-      return data.previewUrl ?? null;
-    } catch (err) {
-      console.error("[EditorPreview] generate-preview error:", err);
-      return null;
-    } finally {
-      setIsSavingPreview(false);
-    }
+    };
+    const pending = previewQueueRef.current.then(save, save);
+    previewQueueRef.current = pending;
+    return pending;
   }, [imageId]);
 
   useEffect(() => {

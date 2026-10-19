@@ -43,7 +43,9 @@ interface AdjustmentPanelProps {
   straightenDegrees?: number;
   onResize?: (width: number, height: number) => void | Promise<void>;
   /** Called with the new URL after an AI operation replaces the canvas image. */
-  onReloadCanvas?: (url: string) => void | Promise<void>;
+  restoredMaskTool: ActiveTool;
+  createEditGuard: () => () => boolean;
+  onReloadCanvas?: (url: string, isCurrent?: () => boolean) => boolean | Promise<boolean>;
   /** Active canvas image URL (may differ from library original after AI edits). */
   canvasImageUrl?: string | null;
   enableHealBrush?: () => void | Promise<void>;
@@ -312,6 +314,8 @@ export default function AdjustmentPanel({
   straightenDegrees = 0,
   onResize,
   onReloadCanvas,
+  createEditGuard,
+  restoredMaskTool,
   canvasImageUrl,
   enableHealBrush,
   disableHealBrush,
@@ -327,6 +331,9 @@ export default function AdjustmentPanel({
   const [activeSection, setActiveSection] = useState<ToolSection | null>(null);
   const panelInnerRef = useRef<HTMLDivElement>(null);
   const [activeTool, setActiveTool] = useState<ActiveTool>(null);
+  useEffect(() => {
+    setActiveTool(restoredMaskTool);
+  }, [restoredMaskTool]);
 
   // Straighten inline slider
   const [showStraighten, setShowStraighten] = useState(false);
@@ -399,24 +406,12 @@ export default function AdjustmentPanel({
   const prevActiveToolRef = useRef<ActiveTool>(null);
   useEffect(() => {
     const prev = prevActiveToolRef.current;
-    if (activeTool === "heal" && prev !== "heal") {
-      void enableHealBrush?.();
-    }
-    if (activeTool !== "heal" && prev === "heal") {
-      disableHealBrush?.();
-    }
-    if (activeTool === "eraser" && prev !== "eraser") {
-      void enableEraserBrush?.();
-    }
-    if (activeTool !== "eraser" && prev === "eraser") {
-      disableEraserBrush?.();
-    }
-    if (activeTool === "blur" && prev !== "blur") {
-      void enableBlurBrush?.();
-    }
-    if (activeTool !== "blur" && prev === "blur") {
-      disableBlurBrush?.();
-    }
+    if (activeTool !== "heal" && prev === "heal") disableHealBrush?.();
+    if (activeTool !== "eraser" && prev === "eraser") disableEraserBrush?.();
+    if (activeTool !== "blur" && prev === "blur") disableBlurBrush?.();
+    if (activeTool === "heal" && prev !== "heal") void enableHealBrush?.();
+    if (activeTool === "eraser" && prev !== "eraser") void enableEraserBrush?.();
+    if (activeTool === "blur" && prev !== "blur") void enableBlurBrush?.();
     prevActiveToolRef.current = activeTool;
   }, [activeTool, enableHealBrush, disableHealBrush, enableEraserBrush, disableEraserBrush, enableBlurBrush, disableBlurBrush]);
 
@@ -461,6 +456,7 @@ export default function AdjustmentPanel({
   async function runAutoEnhance() {
     if (!aiImageUrl) return;
     setLoadingEnhance(true);
+    const isCurrent = createEditGuard();
     try {
       const res = await fetch("/api/ai/enhance", {
         method: "POST",
@@ -470,6 +466,7 @@ export default function AdjustmentPanel({
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
+      if (!isCurrent()) return;
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
@@ -486,6 +483,7 @@ export default function AdjustmentPanel({
   async function runAutoToneBalance() {
     if (!aiImageUrl) return;
     setLoadingToneBalance(true);
+    const isCurrent = createEditGuard();
     try {
       const res = await fetch("/api/ai/tone", {
         method: "POST",
@@ -495,6 +493,7 @@ export default function AdjustmentPanel({
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
+      if (!isCurrent()) return;
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
@@ -511,6 +510,7 @@ export default function AdjustmentPanel({
   async function runSmartColorBalance() {
     if (!aiImageUrl) return;
     setLoadingSmartColor(true);
+    const isCurrent = createEditGuard();
     try {
       const res = await fetch("/api/ai/color-balance", {
         method: "POST",
@@ -520,6 +520,7 @@ export default function AdjustmentPanel({
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
+      if (!isCurrent()) return;
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
@@ -538,6 +539,7 @@ export default function AdjustmentPanel({
     e.target.value = "";
     if (!file || !aiImageUrl) return;
 
+    const isCurrent = createEditGuard();
     try {
       const { dataUrl, base64, mediaType } = await fileToBase64(file);
       setStyleMatchPreview(dataUrl);
@@ -568,6 +570,7 @@ export default function AdjustmentPanel({
       }
 
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
+      if (!isCurrent()) return;
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
@@ -586,6 +589,7 @@ export default function AdjustmentPanel({
   async function runRemoveBackground() {
     if (!aiImageUrl || !imageId) return;
     setLoadingRemoveBg(true);
+    const isCurrent = createEditGuard();
     try {
       const res = await fetch("/api/ai/background-remove", {
         method: "POST",
@@ -595,8 +599,9 @@ export default function AdjustmentPanel({
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { resultUrl?: string };
+      if (!isCurrent()) return;
       if (data.resultUrl) {
-        await onReloadCanvas?.(data.resultUrl);
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
       }
       toast.success("Background removed successfully");
     } catch (err) {
@@ -611,6 +616,7 @@ export default function AdjustmentPanel({
   async function confirmHeal() {
     if (!canvasImageUrl || !imageId || !exportHealMask) return;
     setLoadingHeal(true);
+    const isCurrent = createEditGuard();
     try {
       let maskBase64: string;
       try {
@@ -642,8 +648,9 @@ export default function AdjustmentPanel({
         throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
+      if (!isCurrent()) return;
       if (data.resultUrl) {
-        await onReloadCanvas?.(data.resultUrl);
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
       }
       toast.success("Heal applied successfully");
       disableHealBrush?.();
@@ -657,6 +664,7 @@ export default function AdjustmentPanel({
   }
 
   function cancelHeal() {
+    createEditGuard();
     setActiveTool(null);
   }
 
@@ -664,6 +672,7 @@ export default function AdjustmentPanel({
   async function confirmEraser() {
     if (!canvasImageUrl || !imageId || !exportEraserMask) return;
     setLoadingEraser(true);
+    const isCurrent = createEditGuard();
     try {
       let maskBase64: string;
       try {
@@ -692,8 +701,9 @@ export default function AdjustmentPanel({
         throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
+      if (!isCurrent()) return;
       if (data.resultUrl) {
-        await onReloadCanvas?.(data.resultUrl);
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
       }
       toast.success("Eraser applied successfully");
       disableEraserBrush?.();
@@ -707,6 +717,7 @@ export default function AdjustmentPanel({
   }
 
   function cancelEraser() {
+    createEditGuard();
     setActiveTool(null);
   }
 
@@ -714,6 +725,7 @@ export default function AdjustmentPanel({
   async function confirmBlur() {
     if (!canvasImageUrl || !imageId || !exportBlurMask) return;
     setLoadingBlur(true);
+    const isCurrent = createEditGuard();
     try {
       let maskBase64: string;
       try {
@@ -738,8 +750,9 @@ export default function AdjustmentPanel({
         throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
+      if (!isCurrent()) return;
       if (data.resultUrl) {
-        await onReloadCanvas?.(data.resultUrl);
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
       }
       toast.success("Blur applied successfully");
       disableBlurBrush?.();
@@ -753,6 +766,7 @@ export default function AdjustmentPanel({
   }
 
   function cancelBlur() {
+    createEditGuard();
     setActiveTool(null);
   }
 
@@ -1171,9 +1185,8 @@ export default function AdjustmentPanel({
           open={genFillModalOpen}
           onClose={() => setGenFillModalOpen(false)}
           canvasImageUrl={canvasImageUrl ?? null}
-          onApplied={async (url) => {
-            await onReloadCanvas?.(url);
-          }}
+          createEditGuard={createEditGuard}
+          onApplied={async (url, isCurrent) => (await onReloadCanvas?.(url, isCurrent)) ?? false}
         />
       )}
     </>

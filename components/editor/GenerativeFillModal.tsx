@@ -12,7 +12,8 @@ export interface GenerativeFillModalProps {
   open: boolean;
   onClose: () => void;
   canvasImageUrl: string | null;
-  onApplied: (resultUrl: string) => void | Promise<void>;
+  createEditGuard: () => () => boolean;
+  onApplied: (resultUrl: string, isCurrent: () => boolean) => boolean | Promise<boolean>;
 }
 
 export default function GenerativeFillModal({
@@ -20,6 +21,7 @@ export default function GenerativeFillModal({
   onClose,
   canvasImageUrl,
   onApplied,
+  createEditGuard,
 }: GenerativeFillModalProps) {
   const [direction, setDirection] = useState<ExpandDirection>("right");
   const [expandPixels, setExpandPixels] = useState("128");
@@ -90,6 +92,7 @@ export default function GenerativeFillModal({
       return;
     }
 
+    const isCurrent = createEditGuard();
     setLoading(true);
     try {
       const res = await fetch("/api/ai/generative-fill", {
@@ -116,8 +119,9 @@ export default function GenerativeFillModal({
         throw new Error(errBody.error ?? `HTTP ${res.status}`);
       }
       const data = (await res.json()) as { resultUrl?: string };
+      if (!isCurrent()) return;
       if (data.resultUrl) {
-        await onApplied(data.resultUrl);
+        if (!(await onApplied(data.resultUrl, isCurrent))) return;
       }
       toast.success("Generative Fill applied successfully");
       onClose();
