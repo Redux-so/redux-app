@@ -11,9 +11,14 @@ import {
 import { AUTH_PRIMARY_BTN_CLASS } from "@/lib/brand-colors";
 import { SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
 
+const LANDING_PRIMARY_BTN = [
+  AUTH_PRIMARY_BTN_CLASS,
+  "!h-11 text-[14px] sm:w-auto sm:min-w-[152px]",
+].join(" ");
+
 const LANDING_SECONDARY_BTN = [
-  "inline-flex h-10 w-full items-center justify-center rounded-md border border-solid px-4",
-  "text-[13px] font-medium leading-none text-white transition-colors sm:w-auto sm:min-w-[140px]",
+  "inline-flex h-11 w-full items-center justify-center rounded-md border border-solid px-5",
+  "text-[14px] font-medium leading-none text-white transition-colors sm:w-auto sm:min-w-[152px]",
   SURFACE_SECONDARY_BTN,
 ].join(" ");
 
@@ -24,28 +29,21 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col items-center justify-center bg-[#161616] px-6 py-16">
-      <main className="flex w-full max-w-lg flex-col items-center text-center">
+    <div className="flex min-h-full flex-1 flex-col items-center justify-center bg-[#161616] px-7 py-[4.5rem] sm:px-8">
+      <main className="flex w-full max-w-xl flex-col items-center text-center">
         <BrandLogo
           width={260}
           height={260}
-          className="h-[72px] w-auto object-contain sm:h-[84px]"
+          className="h-[80px] w-auto object-contain sm:h-[92px]"
           priority
         />
 
-        <h1 className="mt-8 text-[28px] font-semibold leading-tight tracking-tight text-white sm:text-[32px]">
-          AI-powered photo editing
+        <h1 className="mt-9 max-w-md text-[19px] leading-relaxed text-[#888888] sm:mt-10 sm:text-[20px]">
+          Agentic photo editing platform
         </h1>
-        <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#888888]">
-          Upload, organize, and edit in your browser — with real-time preview and
-          an assistant that helps you refine every shot.
-        </p>
 
-        <div className="mt-10 flex w-full max-w-xs flex-col gap-3 sm:max-w-none sm:flex-row sm:justify-center">
-          <Link
-            href={SIGN_IN_PATH}
-            className={`${AUTH_PRIMARY_BTN_CLASS} sm:w-auto sm:min-w-[140px]`}
-          >
+        <div className="mt-11 flex w-full max-w-sm flex-col gap-4 sm:mt-12 sm:max-w-none sm:flex-row sm:justify-center">
+          <Link href={SIGN_IN_PATH} className={LANDING_PRIMARY_BTN}>
             Log in
           </Link>
           <Link href={SIGN_UP_PATH} className={LANDING_SECONDARY_BTN}>
