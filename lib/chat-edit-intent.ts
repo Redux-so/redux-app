@@ -1,3 +1,5 @@
+import { ASK_SWITCH_TO_AGENT_NUDGE } from "@/constants/chat-interaction-mode";
+
 export interface ChatHistoryMessage {
   role: "user" | "assistant";
   content: string;
@@ -76,4 +78,25 @@ export function shouldApplyChatAdjustments(
   }
 
   return false;
+}
+
+/** Ask never applies; Agent always allows emit/apply when the model returns adjustments. */
+export function allowChatAdjustmentsForTurn(mode: "agent" | "ask"): boolean {
+  return mode === "agent";
+}
+
+/** Ask-mode nudge: user message looks like a request to change the photo. */
+export function isImageChangeRequestMessage(
+  userMessage: string,
+  conversationHistory: ChatHistoryMessage[] = [],
+): boolean {
+  return shouldApplyChatAdjustments(userMessage, conversationHistory);
+}
+
+export function askModeNudgeMissing(assistantText: string): boolean {
+  const normalized = assistantText.toLowerCase();
+  return (
+    !normalized.includes("switch to agent") &&
+    !normalized.includes(ASK_SWITCH_TO_AGENT_NUDGE.toLowerCase())
+  );
 }

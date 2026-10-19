@@ -1,17 +1,11 @@
 import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 
-const VALID_MEDIA_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-] as const;
+import {
+  type ChatImageMediaType,
+  isChatImageMediaType,
+} from "@/lib/chat-image-shared";
 
-export type ChatImageMediaType = (typeof VALID_MEDIA_TYPES)[number];
-
-export function isChatImageMediaType(value: string): value is ChatImageMediaType {
-  return VALID_MEDIA_TYPES.includes(value as ChatImageMediaType);
-}
+export { CHAT_VISION_MAX_PX, isChatImageMediaType, type ChatImageMediaType } from "@/lib/chat-image-shared";
 
 /** Small JPEG for Claude vision — same transform as other AI routes. */
 export function toVisionThumbnailUrl(url: string): string {

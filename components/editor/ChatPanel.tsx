@@ -14,6 +14,13 @@ import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { CHAT_AVAILABLE_MODELS } from "@/constants/ai-models";
+import {
+  ASK_SWITCH_TO_AGENT_NUDGE,
+  CHAT_INTERACTION_MODES,
+  DEFAULT_CHAT_INTERACTION_MODE,
+  getChatInteractionMode,
+  type ChatInteractionModeId,
+} from "@/constants/chat-interaction-mode";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import {
   CHAT_ASSISTANT_LOADING_LABEL,
@@ -37,7 +44,12 @@ import {
   type UsageQuotaSnapshot,
 } from "@/lib/usage-ring-state";
 import {
-  shouldApplyChatAdjustments,
+  CHAT_VISION_MAX_PX,
+  isChatImageMediaType,
+} from "@/lib/chat-image-shared";
+import {
+  allowChatAdjustmentsForTurn,
+  askModeNudgeMissing,
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
 
@@ -64,6 +76,13 @@ const MODEL_MENU_ROW_CLASS =
 
 function modelMenuWidthPx(triggerWidth: number) {
   return Math.max(triggerWidth, MODEL_MENU_MIN_WIDTH_PX);
+}
+
+const INTERACTION_MENU_MIN_WIDTH_PX = 112;
+const INTERACTION_MENU_ESTIMATED_HEIGHT = 64;
+
+function interactionMenuWidthPx(triggerWidth: number) {
+  return Math.max(triggerWidth, INTERACTION_MENU_MIN_WIDTH_PX);
 }
 
 /** Reference-matched surfaces — Redux dark palette, Adam proportions/weight. */
@@ -150,20 +169,32 @@ function cleanText(raw: string): string {
  * Convert a File to a base64 data-URL (for preview) and the raw base64 string
  * (for the API payload, without the `data:...;base64,` prefix).
  */
-async function fileToBase64(
+/** Downscale chat attachments before upload (smaller POST + reliable vision). */
+async function prepareChatAttachmentFile(
   file: File,
 ): Promise<{ dataUrl: string; base64: string; mediaType: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const [header, base64] = dataUrl.split(",");
-      const mediaType = header.replace("data:", "").replace(";base64", "");
-      resolve({ dataUrl, base64, mediaType });
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  const bitmap = await createImageBitmap(file);
+  const longest = Math.max(bitmap.width, bitmap.height);
+  const scale = longest > CHAT_VISION_MAX_PX ? CHAT_VISION_MAX_PX / longest : 1;
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    throw new Error("Canvas unavailable");
+  }
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+  const [header, base64] = dataUrl.split(",");
+  const rawType = header.replace("data:", "").replace(";base64", "");
+  const mediaType = isChatImageMediaType(rawType) ? rawType : "image/jpeg";
+  return { dataUrl, base64, mediaType };
 }
 
 // ---------------------------------------------------------------------------
@@ -388,6 +419,232 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
   );
 }
 
+function ChatInteractionModeSelector({
+  disabled,
+  mode,
+  onModeChange,
+}: {
+  disabled?: boolean;
+  mode: ChatInteractionModeId;
+  onModeChange: (mode: ChatInteractionModeId) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<"above" | "below">("above");
+  const [menuCoords, setMenuCoords] = useState<{
+    top: number;
+    left: number;
+    triggerWidth: number;
+  } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  const selectedMode = getChatInteractionMode(mode);
+
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const menuHeight = menuRef.current?.offsetHeight ?? INTERACTION_MENU_ESTIMATED_HEIGHT;
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openBelow = spaceBelow >= menuHeight && spaceBelow > spaceAbove;
+
+    setPlacement(openBelow ? "below" : "above");
+    setMenuCoords({
+      left: rect.left,
+      top: openBelow ? rect.bottom + 6 : rect.top - menuHeight - 6,
+      triggerWidth: rect.width,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const frame = requestAnimationFrame(() => {
+      if (cancelled) return;
+      updateMenuPosition();
+      requestAnimationFrame(() => {
+        if (!cancelled) updateMenuPosition();
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [open, updateMenuPosition, mode]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+
+    function onReposition() {
+      updateMenuPosition();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
+    };
+  }, [open, updateMenuPosition]);
+
+  function handleToggle() {
+    if (disabled) return;
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openBelow =
+        spaceBelow >= INTERACTION_MENU_ESTIMATED_HEIGHT && spaceBelow > spaceAbove;
+      setPlacement(openBelow ? "below" : "above");
+      setMenuCoords({
+        left: rect.left,
+        top: openBelow
+          ? rect.bottom + 6
+          : rect.top - INTERACTION_MENU_ESTIMATED_HEIGHT - 6,
+        triggerWidth: rect.width,
+      });
+    }
+    setOpen((prev) => !prev);
+  }
+
+  function handleSelect(nextMode: ChatInteractionModeId) {
+    onModeChange(nextMode);
+    setOpen(false);
+  }
+
+  const menuOffsetY = placement === "above" ? 4 : -4;
+
+  const menu =
+    typeof document !== "undefined"
+      ? createPortal(
+          <AnimatePresence>
+            {open && menuCoords && (
+              <motion.div
+                ref={menuRef}
+                key="interaction-mode-menu"
+                role="menu"
+                aria-label="Interaction mode options"
+                initial={{ opacity: 0, y: menuOffsetY }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: menuOffsetY }}
+                transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                style={{
+                  top: menuCoords.top,
+                  left: menuCoords.left,
+                  width: interactionMenuWidthPx(menuCoords.triggerWidth),
+                }}
+                className={[
+                  "fixed z-[100] box-border overflow-hidden rounded-md px-1 py-1",
+                  CHAT_POPOVER_CHROME,
+                  CHAT_SURFACE_SHADOW,
+                ].join(" ")}
+              >
+                {CHAT_INTERACTION_MODES.map((option) => {
+                  const isSelected = option.id === mode;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={isSelected}
+                      onClick={() => handleSelect(option.id)}
+                      className={[
+                        MODEL_MENU_ROW_CLASS,
+                        "text-[12px] transition-colors cursor-pointer",
+                        isSelected
+                          ? "text-[#cccccc]"
+                          : "text-[#888888] hover:bg-[#252525] hover:text-[#cccccc]",
+                      ].join(" ")}
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Icon
+                          name={option.icon}
+                          size={16}
+                          className="shrink-0 text-[#888888]"
+                          aria-hidden
+                        />
+                        <span className="shrink-0 font-medium">{option.label}</span>
+                      </span>
+                      {isSelected ? (
+                        <Icon
+                          name="Check"
+                          size={16}
+                          className="shrink-0 text-[#888888]"
+                          aria-hidden
+                        />
+                      ) : (
+                        <span className="size-4 shrink-0" aria-hidden />
+                      )}
+                    </button>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Interaction mode: ${selectedMode.label}`}
+        title={selectedMode.description}
+        disabled={disabled}
+        onClick={handleToggle}
+        className={[
+          TOOLBAR_CHIP,
+          "inline-flex",
+          TOOLBAR_CHIP_H,
+          "shrink-0 items-center justify-center gap-0.5 pl-2 pr-1.5 text-[12px] transition-colors",
+          disabled
+            ? "cursor-not-allowed opacity-50"
+            : "cursor-pointer hover:border-[#2e2e2e]",
+        ].join(" ")}
+      >
+        <Icon
+          name={selectedMode.icon}
+          size={16}
+          className="size-4 shrink-0 text-[#888888]"
+          aria-hidden
+        />
+        <Icon
+          name="ChevronDown"
+          size={16}
+          className={[
+            "size-4 shrink-0 -me-px text-[#888888] transition-transform duration-150",
+            open ? "rotate-180" : "",
+          ].join(" ")}
+          aria-hidden
+        />
+      </button>
+      {menu}
+    </div>
+  );
+}
+
 function ToolbarIconBtn({
   title,
   disabled,
@@ -484,6 +741,9 @@ export default function ChatPanel({
   /** Chat quota synced from GET /api/credits and live SSE meta events. */
   const [chatQuota, setChatQuota] = useState<UsageQuotaSnapshot | null>(null);
   const [creditShopOpen, setCreditShopOpen] = useState(false);
+  const [chatInteractionMode, setChatInteractionMode] = useState<ChatInteractionModeId>(
+    DEFAULT_CHAT_INTERACTION_MODE,
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -572,7 +832,7 @@ export default function ChatPanel({
 
     setAttachedFile(file);
     try {
-      const { dataUrl, base64, mediaType } = await fileToBase64(file);
+      const { dataUrl, base64, mediaType } = await prepareChatAttachmentFile(file);
       setAttachedPreview(dataUrl);
       setAttachedBase64(base64);
       setAttachedMediaType(mediaType);
@@ -633,7 +893,8 @@ export default function ChatPanel({
     const conversationHistory: ChatHistoryMessage[] = messages
       .filter((m) => m.content.trim())
       .map((m) => ({ role: m.role, content: m.content }));
-    const allowAdjustments = shouldApplyChatAdjustments(text, conversationHistory);
+    const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
+    const shouldAppendAskNudge = chatInteractionMode === "ask";
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -671,6 +932,7 @@ export default function ChatPanel({
           workspaceImageUrl: canvasImageUrl ?? undefined,
           imageBase64,
           imageMediaType,
+          chatInteractionMode,
         }),
         signal: controller.signal,
       });
@@ -687,7 +949,16 @@ export default function ChatPanel({
         return;
       }
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        let detail = `HTTP ${res.status}`;
+        try {
+          const errBody = (await res.json()) as { error?: string };
+          if (errBody.error) detail = errBody.error;
+        } catch {
+          /* non-JSON error body */
+        }
+        throw new Error(detail);
+      }
 
       const decoder = new TextDecoder();
       const reader = res.body?.getReader();
@@ -742,6 +1013,19 @@ export default function ChatPanel({
           /* already closed / lock released — ignore */
         });
       }
+
+      if (shouldAppendAskNudge) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== assistantId) return m;
+            if (!askModeNudgeMissing(m.content)) return m;
+            return {
+              ...m,
+              content: `${m.content.trimEnd()}\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`,
+            };
+          }),
+        );
+      }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setMessages((prev) =>
@@ -750,10 +1034,21 @@ export default function ChatPanel({
         return;
       }
       console.error("[ChatPanel] send error:", err);
+      const fallback = "Something went wrong. Please try again.";
+      const message =
+        err instanceof Error && err.message && !err.message.startsWith("HTTP")
+          ? err.message
+          : fallback;
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
-            ? { ...m, content: "Something went wrong. Please try again." }
+            ? {
+                ...m,
+                content:
+                  chatInteractionMode === "ask" && askModeNudgeMissing(message)
+                    ? `${message}\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`
+                    : message,
+              }
             : m,
         ),
       );
@@ -1074,6 +1369,12 @@ export default function ChatPanel({
                       onChange={(e) => { void handleFileChange(e); }}
                     />
                   </div>
+
+                  <ChatInteractionModeSelector
+                    disabled={chatBlocked}
+                    mode={chatInteractionMode}
+                    onModeChange={setChatInteractionMode}
+                  />
 
                   <ChatModelSelector disabled={chatBlocked} />
 

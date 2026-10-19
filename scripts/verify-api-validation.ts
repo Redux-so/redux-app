@@ -81,6 +81,12 @@ expectOk(chatRequestBodySchema, {
   conversationHistory: [{ role: "user", content: "Hi" }],
   imageBase64: tinyBase64,
   imageMediaType: "image/jpeg",
+  chatInteractionMode: "ask",
+});
+
+expectFail(chatRequestBodySchema, {
+  userMessage: "test",
+  chatInteractionMode: "invalid",
 });
 
 // Excessive chat history

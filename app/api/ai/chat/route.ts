@@ -12,9 +12,11 @@ import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
-import { CHAT_SYSTEM_PROMPT } from "@/lib/chat-system-prompt";
+import { buildChatSystemPrompt } from "@/lib/chat-system-prompt";
+import { ASK_SWITCH_TO_AGENT_NUDGE } from "@/constants/chat-interaction-mode";
 import {
-  shouldApplyChatAdjustments,
+  allowChatAdjustmentsForTurn,
+  askModeNudgeMissing,
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
@@ -23,6 +25,7 @@ import {
   isChatImageMediaType,
   type ChatImageMediaType,
 } from "@/lib/chat-image-context";
+import { prepareChatVisionBase64 } from "@/lib/chat-image-vision-server";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import {
   API_LIMITS,
@@ -130,6 +133,7 @@ export async function POST(request: Request) {
     workspaceImageUrl,
     imageBase64,
     imageMediaType,
+    chatInteractionMode,
   } = parsed.data;
 
   // ── Find user ─────────────────────────────────────────────────────────────
@@ -170,6 +174,50 @@ export async function POST(request: Request) {
     if (hourlyDenied) return hourlyDenied;
   }
 
+  // ── Build Anthropic message content (before billing — invalid attachments → 400) ──
+  const adjustmentsContext = formatAdjustmentsForPrompt(
+    adjustments as Record<AdjustmentKey, number>,
+  );
+
+  const userContent: (ImageBlockParam | TextBlockParam)[] = [];
+
+  if (workspaceImageUrl?.trim()) {
+    try {
+      const workspaceImage = await resolveWorkspaceImage(
+        user.id,
+        workspaceImageUrl.trim(),
+        imageId,
+      );
+      if (workspaceImage) {
+        const prepared = await prepareChatVisionBase64(workspaceImage.base64);
+        pushImageBlock(userContent, prepared.base64, prepared.mediaType);
+      }
+    } catch (err) {
+      console.error("[/api/ai/chat] Failed to load workspace image:", err);
+    }
+  }
+
+  if (imageBase64 && imageMediaType) {
+    try {
+      const prepared = await prepareChatVisionBase64(imageBase64);
+      pushImageBlock(userContent, prepared.base64, prepared.mediaType);
+    } catch (err) {
+      console.error("[/api/ai/chat] Failed to prepare attachment:", err);
+      return NextResponse.json(
+        { error: "Could not process the attached image. Try a smaller JPEG or PNG." },
+        { status: 400 },
+      );
+    }
+  }
+
+  userContent.push({
+    type: "text",
+    text: `${userMessage.trim()}\n\n${adjustmentsContext}`,
+  });
+
+  const anthropicMessages = buildAnthropicMessages(conversationHistory, userContent);
+  const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
+
   // ── Consume free message or credit ───────────────────────────────────────
   let lifetimeFreeRemaining: number;
   let lifetimeFreeUsed: number;
@@ -205,43 +253,6 @@ export async function POST(request: Request) {
     creditBalanceAfter = charge.balanceAfter;
   }
 
-  // ── Build Anthropic message content ───────────────────────────────────────
-  const adjustmentsContext = formatAdjustmentsForPrompt(
-    adjustments as Record<AdjustmentKey, number>,
-  );
-
-  const userContent: (ImageBlockParam | TextBlockParam)[] = [];
-
-  if (workspaceImageUrl?.trim()) {
-    try {
-      const workspaceImage = await resolveWorkspaceImage(
-        user.id,
-        workspaceImageUrl.trim(),
-        imageId,
-      );
-      if (workspaceImage) {
-        pushImageBlock(userContent, workspaceImage.base64, workspaceImage.mediaType);
-      }
-    } catch (err) {
-      console.error("[/api/ai/chat] Failed to load workspace image:", err);
-    }
-  }
-
-  if (imageBase64 && imageMediaType) {
-    pushImageBlock(userContent, imageBase64, imageMediaType);
-  }
-
-  userContent.push({
-    type: "text",
-    text: `${userMessage.trim()}\n\n${adjustmentsContext}`,
-  });
-
-  const anthropicMessages = buildAnthropicMessages(conversationHistory, userContent);
-  const allowAdjustments = shouldApplyChatAdjustments(
-    userMessage,
-    conversationHistory,
-  );
-
   // ── Stream response ───────────────────────────────────────────────────────
   const stream = new ReadableStream({
     async start(controller) {
@@ -260,7 +271,7 @@ export async function POST(request: Request) {
         const claudeStream = anthropic.messages.stream({
           model: ANTHROPIC_DEFAULT_MODEL,
           max_tokens: 1024,
-          system: CHAT_SYSTEM_PROMPT,
+          system: buildChatSystemPrompt(chatInteractionMode),
           messages: anthropicMessages,
         });
 
@@ -290,10 +301,18 @@ export async function POST(request: Request) {
             );
           }
         } else if (adjMatch && !allowAdjustments) {
-          console.warn(
-            "[/api/ai/chat] Ignored [adjustments] block for non-edit intent (messageLen=%d)",
-            userMessage.length,
-          );
+          if (process.env.NODE_ENV !== "production") {
+            console.warn(
+              "[/api/ai/chat] Ignored [adjustments] block in Ask mode (messageLen=%d)",
+              userMessage.length,
+            );
+          }
+        }
+
+        if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
+          const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;
+          fullText += suffix;
+          controller.enqueue(encodeEvent({ type: "text", text: suffix }));
         }
       } catch (err) {
         console.error("[/api/ai/chat] Anthropic stream error:", err);

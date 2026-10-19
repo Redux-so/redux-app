@@ -221,6 +221,7 @@ export const chatRequestBodySchema = z.object({
   workspaceImageUrl: workspaceImageUrlSchema.optional(),
   imageBase64: base64PayloadSchema.optional(),
   imageMediaType: chatImageMediaTypeSchema.optional(),
+  chatInteractionMode: z.enum(["agent", "ask"]).optional().default("agent"),
 });
 
 export const imageUrlOnlyBodySchema = z.object({
