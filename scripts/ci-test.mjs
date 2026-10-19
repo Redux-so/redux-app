@@ -44,6 +44,9 @@ const VERIFY_SCRIPTS = [
   "scripts/verify-media-ownership.ts",
   "scripts/verify-background-embedding.ts",
   "scripts/verify-image-upload.ts",
+  "scripts/verify-autosave-version.ts",
+  "scripts/verify-clerk-user-sync.ts",
+  "scripts/verify-rate-limit-kv.ts",
 ];
 
 function runVerifyScripts() {
