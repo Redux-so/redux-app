@@ -310,11 +310,12 @@ export default function UsageRing({
         ref={triggerRef}
         type="button"
         className={[
-          "relative inline-flex shrink-0 items-center justify-center rounded-md p-0.5",
+          "relative inline-flex h-8 w-8 shrink-0 items-center justify-center",
+          "border-0 bg-transparent p-0 shadow-none outline-none",
           "text-[#888888] transition-colors",
           view?.opensPurchaseOnClick
-            ? "cursor-pointer hover:text-[#f59e0b] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#f59e0b]/50"
-            : "cursor-default focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+            ? "cursor-pointer hover:text-[#f59e0b] focus-visible:ring-1 focus-visible:ring-[#f59e0b]/50"
+            : "cursor-default focus-visible:ring-1 focus-visible:ring-white/20",
         ].join(" ")}
         aria-label={ariaLabel}
         onMouseEnter={() => {

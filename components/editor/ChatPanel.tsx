@@ -91,6 +91,14 @@ const CHAT_SURFACE_SHADOW =
 const TOOLBAR_CHIP_H = "h-8";
 const TOOLBAR_CHIP =
   "rounded-md border border-[#262626] bg-[#1d1d1d] shadow-[0_1px_2px_rgba(0,0,0,0.26),0_2px_5px_rgba(0,0,0,0.12)]";
+/** Equal spacing between toolbar controls — gap is measured box-to-box on each flex item. */
+const CHAT_TOOLBAR_CONTROL_GAP = "gap-2";
+/** Bordered 32×32 icon control (paperclip only). */
+const CHAT_TOOLBAR_PAPERCLIP_CHIP = `${TOOLBAR_CHIP} inline-flex h-8 w-8 shrink-0 items-center justify-center`;
+/** Usage ring — no chip; fixed row height for alignment with gap-2 siblings. */
+const CHAT_TOOLBAR_RING_SLOT = "inline-flex h-8 w-8 shrink-0 items-center justify-center";
+/** Dropdown triggers (Agent/Ask, Auto) — shrink-wrap, no extra horizontal width. */
+const CHAT_TOOLBAR_TRIGGER_WRAP = "relative inline-flex h-8 shrink-0 items-center";
 
 const CHAT_PANEL_GUTTER_CLASS = "px-8";
 const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
@@ -382,7 +390,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
       : null;
 
   return (
-    <div className="relative shrink-0">
+    <div className={`${CHAT_TOOLBAR_TRIGGER_WRAP} -ml-2`}>
       <button
         ref={triggerRef}
         type="button"
@@ -394,7 +402,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
         className={[
           "inline-flex",
           TOOLBAR_CHIP_H,
-          "shrink-0 items-center justify-center gap-0.5 rounded-md pl-2 pr-1.5 text-[12px] transition-colors",
+          "shrink-0 items-center justify-center gap-0.5 rounded-md px-1 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
             : "cursor-pointer hover:bg-white/[0.06]",
@@ -604,7 +612,7 @@ function ChatInteractionModeSelector({
       : null;
 
   return (
-    <div className="relative shrink-0">
+    <div className={CHAT_TOOLBAR_TRIGGER_WRAP}>
       <button
         ref={triggerRef}
         type="button"
@@ -1352,8 +1360,10 @@ export default function ChatPanel({
 
               {/* Lower toolbar row */}
               <div className="flex items-center justify-between gap-2 border-t border-[#212121] px-4 pb-3 pt-3">
-                <div className="flex min-w-0 items-center gap-1.5 shrink-0">
-                  <div className={`${TOOLBAR_CHIP} flex ${TOOLBAR_CHIP_H} w-8 items-center justify-center`}>
+                <div
+                  className={`flex min-w-0 shrink-0 items-center ${CHAT_TOOLBAR_CONTROL_GAP}`}
+                >
+                  <div className={CHAT_TOOLBAR_PAPERCLIP_CHIP}>
                     <ToolbarIconBtn
                       title="Attach reference image"
                       disabled={chatBlocked}
@@ -1376,13 +1386,15 @@ export default function ChatPanel({
                     onModeChange={setChatInteractionMode}
                   />
 
-                  <ChatModelSelector disabled={chatBlocked} />
+                  <div className={CHAT_TOOLBAR_RING_SLOT}>
+                    <UsageRing
+                      quota={chatQuota}
+                      onPurchaseClick={openCreditShop}
+                      reduceMotion={!!prefersReducedMotion}
+                    />
+                  </div>
 
-                  <UsageRing
-                    quota={chatQuota}
-                    onPurchaseClick={openCreditShop}
-                    reduceMotion={!!prefersReducedMotion}
-                  />
+                  <ChatModelSelector disabled={chatBlocked} />
                 </div>
 
                 <div className="flex shrink-0 items-center">
