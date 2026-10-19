@@ -1,23 +1,12 @@
 "use client";
 
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
-import type { CanvasAdjustments, ImageBounds } from "@/hooks/useCanvas";
-import { getColorOverlays } from "@/lib/color-overlays";
 
 interface CanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   // Attached to the outer flex-1 container so useCanvas can measure it for
   // proper canvas sizing on init (the <canvas> element defaults to 300×150).
   containerRef: React.RefObject<HTMLDivElement | null>;
-  imageUrl: string | null;
-  adjustments: CanvasAdjustments;
-  // Rendered pixel bounds of the background image inside the Fabric canvas
-  // (canvas-space coordinates, before any viewport transform is applied).
-  imageBounds: ImageBounds | null;
-  // Fabric's current viewport transform [scaleX, skewY, skewX, scaleY, tx, ty].
-  // Applied as a CSS matrix() to the overlay container so vignette/grain stay
-  // perfectly aligned with the image at any zoom level or pan position.
-  viewportTransform: [number, number, number, number, number, number];
   isCropping?: boolean;
   onConfirmCrop?: () => void;
   onCancelCrop?: () => void;
@@ -26,30 +15,10 @@ interface CanvasProps {
 export default function Canvas({
   canvasRef,
   containerRef,
-  adjustments,
-  imageBounds,
-  viewportTransform,
   isCropping,
   onConfirmCrop,
   onCancelCrop,
 }: CanvasProps) {
-  const vignetteOpacity = Math.max(0, adjustments.vignette / 100);
-  const grainOpacity = Math.max(0, adjustments.grain / 100);
-  const { temperature: temperatureOverlay, tint: tintOverlay, hue: hueOverlay } =
-    getColorOverlays(adjustments);
-  const showImageOverlays =
-    imageBounds &&
-    (vignetteOpacity > 0 ||
-      grainOpacity > 0 ||
-      temperatureOverlay !== null ||
-      tintOverlay !== null ||
-      hueOverlay !== null);
-
-  // Build the CSS matrix string from Fabric's viewport transform so the
-  // overlay container transforms in lock-step with the canvas contents.
-  const [a, b, c, d, e, f] = viewportTransform;
-  const overlayMatrix = `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`;
-
   return (
     // containerRef is read by useCanvas to determine canvas dimensions.
     // This div must always be in the DOM — never conditionally render Canvas,
@@ -65,89 +34,7 @@ export default function Canvas({
         {/* Fabric canvas — always mounted so the hook can initialize */}
         <canvas ref={canvasRef} className="block" />
 
-        {/* Overlay container — covers the canvas element exactly and applies
-            Fabric's viewport transform as a CSS matrix so that child divs
-            positioned in canvas-space coordinates track the image at any
-            zoom level or pan position. overflow-hidden clips anything that
-            pans/zooms outside the canvas boundary. */}
-        {showImageOverlays && (
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div
-              style={{
-                position: "absolute",
-                transformOrigin: "0 0",
-                transform: overlayMatrix,
-              }}
-            >
-              {/* Color overlays — temperature, tint, hue (applied in order) */}
-              {[temperatureOverlay, tintOverlay, hueOverlay].map(
-                (ol, i) =>
-                  ol && (
-                    <div
-                      key={i}
-                      style={{
-                        position: "absolute",
-                        left: imageBounds.left,
-                        top: imageBounds.top,
-                        width: imageBounds.width,
-                        height: imageBounds.height,
-                        backgroundColor: ol.color,
-                        opacity: ol.opacity,
-                        mixBlendMode: ol.blendMode,
-                      }}
-                    />
-                  ),
-              )}
 
-              {/* Vignette — radial gradient clipped to the image bounds */}
-              {vignetteOpacity > 0 && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: imageBounds.left,
-                    top: imageBounds.top,
-                    width: imageBounds.width,
-                    height: imageBounds.height,
-                    background: `radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,${(vignetteOpacity * 0.9).toFixed(2)}) 100%)`,
-                  }}
-                />
-              )}
-
-              {/* Grain — SVG feTurbulence noise clipped to image bounds */}
-              {grainOpacity > 0 && (
-                <div
-                  className="mix-blend-overlay"
-                  style={{
-                    position: "absolute",
-                    left: imageBounds.left,
-                    top: imageBounds.top,
-                    width: imageBounds.width,
-                    height: imageBounds.height,
-                    opacity: grainOpacity * 0.6,
-                  }}
-                >
-                  <svg
-                    width="100%"
-                    height="100%"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-full h-full"
-                  >
-                    <filter id="grain-filter">
-                      <feTurbulence
-                        type="fractalNoise"
-                        baseFrequency="0.65"
-                        numOctaves="3"
-                        stitchTiles="stitch"
-                      />
-                      <feColorMatrix type="saturate" values="0" />
-                    </filter>
-                    <rect width="100%" height="100%" filter="url(#grain-filter)" />
-                  </svg>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Crop confirm / cancel — floats above the canvas at the bottom center */}

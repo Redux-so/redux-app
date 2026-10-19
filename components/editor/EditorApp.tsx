@@ -7,6 +7,7 @@ import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
 import type { ImageRecord } from "@/types/image";
 import { parseVersionAdjustments } from "@/lib/editor-state";
+import { renderEditorPayload } from "@/lib/interactive-image-preview";
 import { probeImageDimensions } from "@/lib/probe-image-dimensions";
 
 import Toolbar from "@/components/editor/Toolbar";
@@ -77,6 +78,8 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     commitState,
     createEditGuard,
     createChatEditGuard,
+    beginOperation,
+    prepareExportState,
     previewAdjustment,
     updateAdjustment,
     patchAdjustments,
@@ -108,8 +111,6 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     zoom,
     showBefore,
     isCropping,
-    imageBounds,
-    viewportTransform,
     zoomIn,
     zoomOut,
     resetZoom,
@@ -134,11 +135,15 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     restoreMasks,
     getTransformSnapshot,
     getPixelDimensions,
+    previewError,
   } = useCanvas(
     canvasSourceUrl, adjustments, savedTransform,
     (masks, checkpoint) => { commitState({ masks }, checkpoint); },
     (transform, checkpoint) => { commitState({ transform }, checkpoint); },
   );
+
+  const croppingRef = useRef(isCropping);
+  croppingRef.current = isCropping;
 
   useLayoutEffect(() => {
     restoreMasks(editorState.masks);
@@ -153,12 +158,15 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   }, [saveVersion]);
 
   const handleRestoreHistory = useCallback(async (raw: unknown) => {
-    const restored = parseVersionAdjustments(raw);
-    const isCurrent = createEditGuard();
-    const url = restored.workingImageUrl ?? image?.originalUrl;
-    if (!url || !(await loadImageUrl(url, isCurrent)) || !isCurrent()) return;
-    restorePersistedState(restored);
-  }, [restorePersistedState, createEditGuard, image?.originalUrl, loadImageUrl]);
+    const finishOperation = beginOperation();
+    try {
+      const restored = parseVersionAdjustments(raw);
+      const isCurrent = createEditGuard();
+      const url = restored.workingImageUrl ?? image?.originalUrl;
+      if (!url || !(await loadImageUrl(url, isCurrent)) || !isCurrent()) return;
+      restorePersistedState(restored);
+    } finally { finishOperation(); }
+  }, [beginOperation, restorePersistedState, createEditGuard, image?.originalUrl, loadImageUrl]);
 
   const reloadCanvas = useCallback(async (url: string, isCurrent: () => boolean = () => true) => {
     if (!isCurrent()) return false;
@@ -195,14 +203,20 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   }, [commitState, getTransformSnapshot, getPixelDimensions]);
 
   const handleConfirmCrop = useCallback(async () => {
-    const isCurrent = createEditGuard();
-    commitPixels(await confirmCrop(isCurrent), isCurrent);
-  }, [createEditGuard, confirmCrop, commitPixels]);
+    const finishOperation = beginOperation();
+    try {
+      const isCurrent = createEditGuard();
+      commitPixels(await confirmCrop(isCurrent), isCurrent);
+    } finally { finishOperation(); }
+  }, [beginOperation, createEditGuard, confirmCrop, commitPixels]);
 
   const handleResize = useCallback(async (width: number, height: number) => {
-    const isCurrent = createEditGuard();
-    commitPixels(await resizeCanvas(width, height, isCurrent), isCurrent);
-  }, [createEditGuard, resizeCanvas, commitPixels]);
+    const finishOperation = beginOperation();
+    try {
+      const isCurrent = createEditGuard();
+      commitPixels(await resizeCanvas(width, height, isCurrent), isCurrent);
+    } finally { finishOperation(); }
+  }, [beginOperation, createEditGuard, resizeCanvas, commitPixels]);
 
   const handlePreviewAdjustment = previewAdjustment;
   const handleCommitAdjustment = updateAdjustment;
@@ -276,6 +290,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
           onRedo={handleRedo}
           isDirty={isDirty}
           justSaved={justSaved}
+          exportReady={versionLoaded && !loadingImage && !!baseImageUrl}
           onExport={() => setShowExport(true)}
         />
 
@@ -300,6 +315,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
             onResize={handleResize}
             onReloadCanvas={reloadCanvas}
             createEditGuard={createEditGuard}
+            beginOperation={beginOperation}
             restoredMaskTool={restoredMaskTool}
             canvasImageUrl={baseImageUrl}
             enableHealBrush={enableHealBrush}
@@ -319,14 +335,15 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
               <Canvas
                 canvasRef={canvasRef}
                 containerRef={containerRef}
-                imageUrl={canvasSourceUrl}
-                adjustments={adjustments}
-                imageBounds={imageBounds}
-                viewportTransform={viewportTransform}
                 isCropping={isCropping}
                 onConfirmCrop={handleConfirmCrop}
                 onCancelCrop={cancelCrop}
               />
+              {previewError && (
+                <p role="status" className="absolute top-3 left-1/2 -translate-x-1/2 text-xs text-white bg-black/70 px-3 py-2 rounded-md pointer-events-none">
+                  {previewError}
+                </p>
+              )}
               {loadingImage && (
                 <LoadingOverlay
                   className="absolute inset-0 z-10 bg-[#161616]/80 pointer-events-none"
@@ -343,6 +360,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
               onPatch={handlePatchAdjustments}
               createEditGuard={createEditGuard}
               createChatEditGuard={createChatEditGuard}
+              beginOperation={beginOperation}
               onUndo={handleUndo}
               imageId={imageId}
               canvasImageUrl={baseImageUrl}
@@ -356,12 +374,18 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
             onClose={() => setShowExport(false)}
             imageId={imageId}
             filename={image?.filename}
-            adjustments={adjustments}
-            activeImageUrl={baseImageUrl}
-            imageBase64={imageBase64}
-            transform={savedTransform}
-            originalUrl={image?.originalUrl ?? null}
-            storedPreviewUrl={image?.previewUrl ?? null}
+            prepareExport={async () => {
+              const latest = await prepareExportState();
+              if (croppingRef.current) throw new Error("Confirm or cancel your crop before exporting.");
+              return renderEditorPayload({
+                adjustments: latest.sliders,
+                originalUrl: image?.originalUrl ?? null,
+                storedPreviewUrl: image?.previewUrl ?? null,
+                baseImageUrl: latest.workingImageUrl ?? image?.originalUrl ?? null,
+                imageBase64: null,
+                transform: latest.transform,
+              }, true);
+            }}
           />
         )}
       </div>

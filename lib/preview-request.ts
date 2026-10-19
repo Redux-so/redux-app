@@ -2,6 +2,7 @@ import type { ImageTransform } from "@/lib/image-transform";
 import { resolvePreviewSourceUrl } from "@/lib/resolve-preview-source";
 
 export interface PreviewPayload {
+  pixelsRendered?: boolean;
   adjustments: Record<string, number>;
   originalUrl: string | null;
   storedPreviewUrl: string | null;
@@ -11,6 +12,7 @@ export interface PreviewPayload {
 }
 
 export interface PreviewRequestBody {
+  pixelsRendered?: boolean;
   adjustments: Record<string, number>;
   imageUrl?: string;
   imageBase64?: string;
@@ -28,6 +30,7 @@ export function buildPreviewRequestBody(
   });
 
   const body: PreviewRequestBody = {
+    pixelsRendered: payload.pixelsRendered,
     adjustments: payload.adjustments,
     transform: payload.transform,
   };

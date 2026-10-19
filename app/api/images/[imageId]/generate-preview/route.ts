@@ -20,7 +20,10 @@ export async function POST(
   }
   const { user } = authResult;
 
-  const rateLimited = await enforceFeatureRateLimits(user.id, "preview");
+  const parsed = await parseJsonRequest(request, previewMutationBodySchema);
+  if (!parsed.ok) return parsed.response;
+  const { adjustments, imageUrl, imageBase64, transform, persist, pixelsRendered } = parsed.data;
+  const rateLimited = await enforceFeatureRateLimits(user.id, persist ? "preview" : "canvas_preview");
   if (rateLimited) {
     return rateLimited;
   }
@@ -38,12 +41,6 @@ export async function POST(
   if (!image) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
-
-  const parsed = await parseJsonRequest(request, previewMutationBodySchema);
-  if (!parsed.ok) {
-    return parsed.response;
-  }
-  const { adjustments, imageUrl, imageBase64, transform } = parsed.data;
 
   let inputBuffer: Buffer;
   try {
@@ -75,11 +72,19 @@ export async function POST(
   try {
     const previewBuffer = await renderAdjustedImage(inputBuffer, {
       adjustments,
-      format: "jpeg",
+      pixelsRendered,
+      format: persist ? "jpeg" : "png",
       quality: 80,
-      maxWidth: 512,
+      maxWidth: persist ? 512 : 2048,
+      pngCompressionLevel: persist ? 9 : 1,
       transform,
     });
+
+    if (!persist) {
+      return new NextResponse(previewBuffer as unknown as BodyInit, {
+        headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+      });
+    }
 
     const uploaded = await uploadToCloudinary(
       previewBuffer,

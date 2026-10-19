@@ -3,8 +3,7 @@ export function isStoredPreviewUrl(
   url: string,
   storedPreviewUrl?: string | null,
 ): boolean {
-  if (storedPreviewUrl && url === storedPreviewUrl) return true;
-  return url.includes("preview_");
+  return Boolean(storedPreviewUrl && url === storedPreviewUrl);
 }
 
 export type PreviewSource =

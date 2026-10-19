@@ -45,6 +45,7 @@ interface AdjustmentPanelProps {
   /** Called with the new URL after an AI operation replaces the canvas image. */
   restoredMaskTool: ActiveTool;
   createEditGuard: () => () => boolean;
+  beginOperation: () => () => void;
   onReloadCanvas?: (url: string, isCurrent?: () => boolean) => boolean | Promise<boolean>;
   /** Active canvas image URL (may differ from library original after AI edits). */
   canvasImageUrl?: string | null;
@@ -315,6 +316,7 @@ export default function AdjustmentPanel({
   onResize,
   onReloadCanvas,
   createEditGuard,
+  beginOperation,
   restoredMaskTool,
   canvasImageUrl,
   enableHealBrush,
@@ -457,6 +459,7 @@ export default function AdjustmentPanel({
     if (!aiImageUrl) return;
     setLoadingEnhance(true);
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       const res = await fetch("/api/ai/enhance", {
         method: "POST",
@@ -475,6 +478,7 @@ export default function AdjustmentPanel({
       console.error("[AdjustmentPanel] auto_enhance failed:", err);
       toast.error("Auto Enhance failed");
     } finally {
+      finishOperation();
       setLoadingEnhance(false);
     }
   }
@@ -484,6 +488,7 @@ export default function AdjustmentPanel({
     if (!aiImageUrl) return;
     setLoadingToneBalance(true);
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       const res = await fetch("/api/ai/tone", {
         method: "POST",
@@ -502,6 +507,7 @@ export default function AdjustmentPanel({
       console.error("[AdjustmentPanel] auto_tone_balance failed:", err);
       toast.error("Auto Tone Balance failed");
     } finally {
+      finishOperation();
       setLoadingToneBalance(false);
     }
   }
@@ -511,6 +517,7 @@ export default function AdjustmentPanel({
     if (!aiImageUrl) return;
     setLoadingSmartColor(true);
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       const res = await fetch("/api/ai/color-balance", {
         method: "POST",
@@ -529,6 +536,7 @@ export default function AdjustmentPanel({
       console.error("[AdjustmentPanel] smart_color_balance failed:", err);
       toast.error("Smart Color Balance failed");
     } finally {
+      finishOperation();
       setLoadingSmartColor(false);
     }
   }
@@ -540,6 +548,7 @@ export default function AdjustmentPanel({
     if (!file || !aiImageUrl) return;
 
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       const { dataUrl, base64, mediaType } = await fileToBase64(file);
       setStyleMatchPreview(dataUrl);
@@ -581,6 +590,7 @@ export default function AdjustmentPanel({
       toast.error("Style Match failed");
       setStyleMatchPreview(null);
     } finally {
+      finishOperation();
       setLoadingStyleMatch(false);
     }
   }
@@ -590,6 +600,7 @@ export default function AdjustmentPanel({
     if (!aiImageUrl || !imageId) return;
     setLoadingRemoveBg(true);
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       const res = await fetch("/api/ai/background-remove", {
         method: "POST",
@@ -608,6 +619,7 @@ export default function AdjustmentPanel({
       console.error("[AdjustmentPanel] remove_background failed:", err);
       toast.error("Background removal failed");
     } finally {
+      finishOperation();
       setLoadingRemoveBg(false);
     }
   }
@@ -617,6 +629,7 @@ export default function AdjustmentPanel({
     if (!canvasImageUrl || !imageId || !exportHealMask) return;
     setLoadingHeal(true);
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       let maskBase64: string;
       try {
@@ -659,6 +672,7 @@ export default function AdjustmentPanel({
       console.error("[AdjustmentPanel] heal failed:", err);
       toast.error("Heal failed");
     } finally {
+      finishOperation();
       setLoadingHeal(false);
     }
   }
@@ -673,6 +687,7 @@ export default function AdjustmentPanel({
     if (!canvasImageUrl || !imageId || !exportEraserMask) return;
     setLoadingEraser(true);
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       let maskBase64: string;
       try {
@@ -712,6 +727,7 @@ export default function AdjustmentPanel({
       console.error("[AdjustmentPanel] eraser failed:", err);
       toast.error("Eraser failed");
     } finally {
+      finishOperation();
       setLoadingEraser(false);
     }
   }
@@ -726,6 +742,7 @@ export default function AdjustmentPanel({
     if (!canvasImageUrl || !imageId || !exportBlurMask) return;
     setLoadingBlur(true);
     const isCurrent = createEditGuard();
+    const finishOperation = beginOperation();
     try {
       let maskBase64: string;
       try {
@@ -761,6 +778,7 @@ export default function AdjustmentPanel({
       console.error("[AdjustmentPanel] blur failed:", err);
       toast.error("Blur failed");
     } finally {
+      finishOperation();
       setLoadingBlur(false);
     }
   }
@@ -1186,6 +1204,7 @@ export default function AdjustmentPanel({
           onClose={() => setGenFillModalOpen(false)}
           canvasImageUrl={canvasImageUrl ?? null}
           createEditGuard={createEditGuard}
+          beginOperation={beginOperation}
           onApplied={async (url, isCurrent) => (await onReloadCanvas?.(url, isCurrent)) ?? false}
         />
       )}

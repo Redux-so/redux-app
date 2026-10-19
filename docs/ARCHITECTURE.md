@@ -72,7 +72,7 @@ Representative routes:
 1. Upload → `POST /api/images` (multipart) → Cloudinary `redux/` folder → `Image` row (`originalUrl`, `publicId`)
 2. Legacy rows may still have `utKey` (UploadThing); permanent delete removes both Cloudinary assets and any remaining UploadThing keys
 3. Editor loads `previewUrl ?? originalUrl`
-4. Adjustments: CSS filters on canvas; export composes via Sharp (`lib/apply-image-adjustments.ts`, color overlays)
+4. Adjustments: shared local Canvas 2D renderer updates canvas immediately and renders export pixels at native dimensions; Sharp only transforms/encodes those pixels (`lib/interactive-image-preview.ts`, `lib/apply-image-adjustments.ts`)
 5. AI ops update Cloudinary / `previewUrl` and may create versions
 6. Embeddings: `lib/image-vector-pipeline.ts`, `pnpm run embed:all` script
 
@@ -103,7 +103,7 @@ docs/                Project documentation (this tree)
 ```text
 Upload → Cloudinary + DB Image → Library grid
 Library → Editor (imageId) → useEditor loads versions/adjustments
-Slider change → canvas preview → auto-save → ImageVersion
+Slider change → local image render → canvas → auto-save → ImageVersion
 AI button → POST /api/ai/* → credits + Cloudinary → previewUrl update
 Chat → POST /api/ai/chat (SSE) → optional adjustment patches → canvas
 Search → POST /api/ai/search → pgvector similarity
@@ -119,3 +119,5 @@ See [docs/DEVELOPMENT.md](DEVELOPMENT.md) for variable names (no secret values).
 - Secrets only on server; Cloudinary secret, Stripe, Anthropic, Replicate, UploadThing tokens never exposed to client
 - Next.js 16 conventions — consult local `node_modules/next/dist/docs/` when unsure
 - Matcher in `proxy.ts` excludes static files (`.*\\..*`)
+
+Editor render contract, export synchronization, and color limitations: [EDITOR_RENDERING.md](EDITOR_RENDERING.md).

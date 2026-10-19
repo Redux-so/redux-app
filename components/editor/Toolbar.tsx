@@ -21,6 +21,7 @@ interface ToolbarProps {
   // true for ~2 s after a successful auto-save — triggers the pulse animation
   justSaved?: boolean;
   onExport: () => void;
+  exportReady?: boolean;
 }
 
 function ToolbarBtn({
@@ -69,6 +70,7 @@ export default function Toolbar({
   isDirty,
   justSaved = false,
   onExport,
+  exportReady = true,
 }: ToolbarProps) {
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
@@ -153,6 +155,7 @@ export default function Toolbar({
 
         <button
           onClick={onExport}
+          disabled={!exportReady}
           title="Export / share"
           className={`${BTN_BRAND_SOLID} shrink-0`}
         >

@@ -161,6 +161,7 @@ interface ChatPanelProps {
   onPatch: (patch: Partial<Record<string, number>>) => boolean;
   createEditGuard: () => () => boolean;
   createChatEditGuard: () => () => boolean;
+  beginOperation: () => () => void;
   onUndo: () => void;
   imageId?: string;
   /** Current canvas photo — sent to the model as already-available context. */
@@ -722,6 +723,7 @@ export default function ChatPanel({
   onPatch,
   createEditGuard,
   createChatEditGuard,
+  beginOperation,
   onUndo,
   imageId,
   canvasImageUrl,
@@ -932,6 +934,7 @@ export default function ChatPanel({
     setMessages((prev) => [...prev, assistantPlaceholder]);
 
     const isCurrent = createChatEditGuard();
+    const finishOperation = allowAdjustments ? beginOperation() : () => {};
     const turnPatch: Partial<Record<AdjustmentKey, number>> = {};
     let completed = false;
     const controller = new AbortController();
@@ -1078,6 +1081,7 @@ export default function ChatPanel({
         ),
       );
     } finally {
+      finishOperation();
       abortRef.current = null;
       setSending(false);
       refreshChatQuota();

@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
-import { normalizeAdjustments, type AdjustmentKey } from "@/constants/adjustments";
-import type { ImageTransform } from "@/lib/image-transform";
+import { type AdjustmentKey } from "@/constants/adjustments";
+import { transformedSource, drawSourceMask } from "@/lib/canvas-image-geometry";
+import { renderInteractiveImage } from "@/lib/interactive-image-preview";
+import { transformedDimensions, type ImageTransform } from "@/lib/image-transform";
 
 export {
   getTemperatureOverlay,
@@ -30,52 +32,6 @@ export interface ImageBounds {
 }
 
 export { createExpandedCanvas, type ExpandDirection } from "@/lib/canvas-expand";
-
-// ---------------------------------------------------------------------------
-// CSS filter builder — maps adjustment values to a browser CSS filter string.
-// Applied as a GPU-composited layer over the canvas element; zero cost to
-// re-render because it never touches Fabric's pixel buffer.
-// ---------------------------------------------------------------------------
-function buildCssFilter(adj: CanvasAdjustments): string {
-  const normalized = normalizeAdjustments(adj);
-
-  // Exposure + partial contributions from tonal controls → CSS brightness()
-  const brightness = Math.max(
-    0.05,
-    1 +
-      normalized.exposure / 100 +
-      normalized.shadows / 300 +
-      normalized.highlights / 300 +
-      normalized.whites / 300 +
-      -normalized.blacks / 300,
-  );
-
-  // Contrast: base + clarity approximation (clarity ≈ midtone contrast)
-  const contrast = Math.max(0.05, 1 + (normalized.contrast + normalized.clarity * 0.4) / 100);
-
-  // Saturation: saturation + vibrance at half weight
-  const saturate = Math.max(0, 1 + (normalized.saturation + normalized.vibrance * 0.5) / 100);
-
-  // Sharpen: approximate via contrast boost — real unsharp mask in Sharp on export
-  const sharpenedContrast = contrast * (1 + Math.max(0, normalized.sharpen) * 0.005);
-
-  // Temperature, tint, and hue all use separate color overlays — no hue-rotate
-  const parts = [
-    `brightness(${brightness.toFixed(3)})`,
-    `contrast(${sharpenedContrast.toFixed(3)})`,
-    `saturate(${saturate.toFixed(3)})`,
-  ];
-
-  // Noise reduction: CSS Gaussian blur is a valid real-time approximation.
-  // Slider left (negative) = more blur: noiseReduction=-100 → 2px, 0 → 0px.
-  // The real noise reduction (via Replicate) is applied server-side on export.
-  if (normalized.noiseReduction < 0) {
-    const blurPx = (Math.abs(normalized.noiseReduction) / 100) * 2;
-    parts.push(`blur(${blurPx.toFixed(2)}px)`);
-  }
-
-  return parts.join(" ");
-}
 
 // ---------------------------------------------------------------------------
 // Internal transform state — stored in a ref so mutations don't re-render
@@ -106,6 +62,10 @@ export function useCanvas(
   const fabricRef = useRef<Canvas | null>(null);
   const PointRef = useRef<typeof FabricPoint | null>(null);
   const bgImageRef = useRef<FabricImage | null>(null);
+  const sourceImageRef = useRef<FabricImage | null>(null);
+  const [sourceVersion, setSourceVersion] = useState(0);
+  const localPreviewCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cropRectRef = useRef<any>(null);
   const transformRef = useRef<TransformState>(
@@ -144,26 +104,8 @@ export function useCanvas(
     const img = bgImageRef.current;
     if (!canvas || !img) return;
 
-    const cw = canvas.getWidth();
-    const ch = canvas.getHeight();
-    const scaleX = img.scaleX ?? 1;
-    const scaleY = img.scaleY ?? 1;
-    const angle = ((img.angle ?? 0) + 360) % 360;
-
-    const naturalW = (img.width ?? cw) * scaleX;
-    const naturalH = (img.height ?? ch) * scaleY;
-
-    // For 90° / 270° rotations the bounding box swaps width ↔ height
-    const isOrthogonal = angle === 90 || angle === 270;
-    const renderedW = isOrthogonal ? naturalH : naturalW;
-    const renderedH = isOrthogonal ? naturalW : naturalH;
-
-    setImageBounds({
-      left: cw / 2 - renderedW / 2,
-      top: ch / 2 - renderedH / 2,
-      width: renderedW,
-      height: renderedH,
-    });
+    const bounds = img.getBoundingRect();
+    setImageBounds({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
   }, []);
 
   const relayoutCanvas = useCallback(() => {
@@ -178,8 +120,10 @@ export function useCanvas(
     canvas.setDimensions({ width: w, height: h });
 
     if (img) {
-      const scale = Math.min(w / (img.width ?? w), h / (img.height ?? h)) * 0.95;
-      const { rotation, flipX, flipY, straighten } = transformRef.current;
+      const displayTransform = transformRef.current;
+      const size = transformedDimensions(img.width ?? w, img.height ?? h, displayTransform);
+      const scale = Math.min(w / size.width, h / size.height) * 0.95;
+      const { rotation, flipX, flipY, straighten } = displayTransform;
       img.set({
         scaleX: scale,
         scaleY: scale,
@@ -191,6 +135,7 @@ export function useCanvas(
         flipX,
         flipY,
       });
+      img.setCoords();
       canvas.renderAll();
       updateImageBounds();
     }
@@ -198,14 +143,8 @@ export function useCanvas(
 
   // Apply the current transform ref values to the loaded background image
   const applyTransform = useCallback(() => {
-    const canvas = fabricRef.current;
-    const img = bgImageRef.current;
-    if (!canvas || !img) return;
-    const { rotation, flipX, flipY, straighten } = transformRef.current;
-    img.set({ angle: rotation + straighten, flipX, flipY });
-    canvas.renderAll();
-    updateImageBounds();
-  }, [updateImageBounds]);
+    relayoutCanvas();
+  }, [relayoutCanvas]);
 
   useEffect(() => {
     if (!savedTransform) return;
@@ -408,10 +347,6 @@ export function useCanvas(
   useEffect(() => {
     if (!canvasReady || !imageUrl || !fabricRef.current) return;
 
-    if (savedTransform) {
-      transformRef.current = { ...savedTransform };
-    }
-
     const canvas = fabricRef.current;
     let cancelled = false;
     const generation = ++loadGenerationRef.current;
@@ -425,7 +360,8 @@ export function useCanvas(
 
       const w = canvas.getWidth();
       const h = canvas.getHeight();
-      const scale = Math.min(w / (img.width ?? w), h / (img.height ?? h)) * 0.95;
+      const size = transformedDimensions(img.width ?? w, img.height ?? h, transformRef.current);
+      const scale = Math.min(w / size.width, h / size.height) * 0.95;
       const { rotation, flipX, flipY, straighten } = transformRef.current;
 
       img.set({
@@ -440,24 +376,17 @@ export function useCanvas(
         flipY,
       });
 
+      sourceImageRef.current = img;
+      setSourceVersion((v) => v + 1);
       bgImageRef.current = img;
       canvas.backgroundImage = img as unknown as import("fabric").FabricObject;
       canvas.renderAll();
 
-      // Calculate the rendered image bounds for the overlay positioning
-      const naturalW = (img.width ?? w) * scale;
-      const naturalH = (img.height ?? h) * scale;
-      const isOrthogonal = (rotation + 360) % 360 === 90 || (rotation + 360) % 360 === 270;
-      setImageBounds({
-        left: w / 2 - (isOrthogonal ? naturalH : naturalW) / 2,
-        top: h / 2 - (isOrthogonal ? naturalW : naturalH) / 2,
-        width: isOrthogonal ? naturalH : naturalW,
-        height: isOrthogonal ? naturalW : naturalH,
-      });
+      updateImageBounds();
     })();
 
     return () => { cancelled = true; };
-  }, [imageUrl, canvasReady, savedTransform]);
+  }, [imageUrl, canvasReady, updateImageBounds]);
 
   // Resize Fabric canvas when the container grows or shrinks (e.g. panel collapse).
   useEffect(() => {
@@ -472,14 +401,27 @@ export function useCanvas(
     return () => observer.disconnect();
   }, [canvasReady, relayoutCanvas]);
 
-  // ---------------------------------------------------------------------------
-  // Apply CSS filters in real time
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    const el = canvasRef.current;
-    if (!el) return;
-    el.style.filter = showBefore ? "none" : buildCssFilter(adjustments);
-  }, [adjustments, showBefore]);
+  // Feedback is local and painted before the browser's next frame. Never wait
+  // for debounce, network, image decoding, or a previous server render to finish.
+  useLayoutEffect(() => {
+    const canvas = fabricRef.current;
+    const source = sourceImageRef.current;
+    if (!canvasReady || !canvas || !source) return;
+    const pixels = source.getElement() as HTMLImageElement;
+    try {
+      const rendered = renderInteractiveImage(pixels, showBefore ? {} : adjustments,
+        localPreviewCanvasRef.current ?? undefined);
+      localPreviewCanvasRef.current = rendered;
+      const PreviewImage = source.constructor as typeof FabricImage;
+      const preview = new PreviewImage(rendered, { objectCaching: false });
+      bgImageRef.current = preview;
+      canvas.backgroundImage = preview;
+      setPreviewError(null);
+      relayoutCanvas();
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : "Preview failed");
+    }
+  }, [adjustments, showBefore, savedTransform, canvasReady, sourceVersion, relayoutCanvas]);
 
   // ---------------------------------------------------------------------------
   // Zoom — 10% increments, clamped to 10%–500%
@@ -626,9 +568,11 @@ export function useCanvas(
     const rectBounds = rect.getBoundingRect();
 
     // Get the image's natural pixel dimensions from the source element
-    const srcEl = bgImg.getElement() as HTMLImageElement;
-    const imgNatW = srcEl.naturalWidth || (bgImg.width ?? 1);
-    const imgNatH = srcEl.naturalHeight || (bgImg.height ?? 1);
+    const source = sourceImageRef.current?.getElement() as HTMLImageElement | undefined;
+    if (!source) return null;
+    const srcEl = transformedSource(source, transformRef.current);
+    const imgNatW = srcEl.width;
+    const imgNatH = srcEl.height;
 
     // Map crop rect from canvas space to image natural-pixel space
     let srcX = ((rectBounds.left - imgBounds.left) / imgBounds.width) * imgNatW;
@@ -636,11 +580,14 @@ export function useCanvas(
     let srcW = (rectBounds.width / imgBounds.width) * imgNatW;
     let srcH = (rectBounds.height / imgBounds.height) * imgNatH;
 
-    // Clamp to image natural bounds
+    // Intersect the selection with the full composition, including selections
+    // extending past the image's top/left edges.
+    const right = Math.min(imgNatW, srcX + srcW);
+    const bottom = Math.min(imgNatH, srcY + srcH);
     srcX = Math.max(0, srcX);
     srcY = Math.max(0, srcY);
-    srcW = Math.min(imgNatW - srcX, srcW);
-    srcH = Math.min(imgNatH - srcY, srcH);
+    srcW = right - srcX;
+    srcH = bottom - srcY;
 
     if (srcW <= 1 || srcH <= 1) {
       setIsCropping(false);
@@ -683,6 +630,8 @@ export function useCanvas(
     });
 
     transformRef.current = { rotation: 0, flipX: false, flipY: false, straighten: 0 };
+    sourceImageRef.current = newImg;
+    setSourceVersion((v) => v + 1);
     bgImageRef.current = newImg;
     canvas.backgroundImage = newImg as unknown as import("fabric").FabricObject;
     canvas.renderAll();
@@ -723,7 +672,8 @@ export function useCanvas(
 
     const w = canvas.getWidth();
     const h = canvas.getHeight();
-    const scale = Math.min(w / (img.width ?? w), h / (img.height ?? h)) * 0.95;
+    const size = transformedDimensions(img.width ?? w, img.height ?? h, transformRef.current);
+    const scale = Math.min(w / size.width, h / size.height) * 0.95;
     const { rotation, flipX, flipY, straighten } = transformRef.current;
 
     img.set({
@@ -738,6 +688,8 @@ export function useCanvas(
       flipY,
     });
 
+    sourceImageRef.current = img;
+    setSourceVersion((v) => v + 1);
     bgImageRef.current = img;
     canvas.backgroundImage = img as unknown as import("fabric").FabricObject;
     canvas.renderAll();
@@ -755,9 +707,11 @@ export function useCanvas(
     if (!canvas || !img) return null;
 
     // Pure center crop at native pixel resolution — no resampling
-    const srcEl = img.getElement() as HTMLImageElement;
-    const natW = srcEl.naturalWidth;
-    const natH = srcEl.naturalHeight;
+    const source = sourceImageRef.current?.getElement() as HTMLImageElement | undefined;
+    if (!source) return null;
+    const srcEl = transformedSource(source, transformRef.current);
+    const natW = srcEl.width;
+    const natH = srcEl.height;
 
     // Clamp target to source dimensions (can't crop to larger than source)
     const outW = Math.min(newW, natW);
@@ -798,6 +752,8 @@ export function useCanvas(
     });
 
     transformRef.current = { rotation: 0, flipX: false, flipY: false, straighten: 0 };
+    sourceImageRef.current = newImg;
+    setSourceVersion((v) => v + 1);
     bgImageRef.current = newImg;
     canvas.backgroundImage = newImg as unknown as import("fabric").FabricObject;
     canvas.renderAll();
@@ -929,8 +885,8 @@ export function useCanvas(
     const paths = eraserPathsRef.current;
     if (paths.length === 0) throw new Error("Paint over the area to erase first");
 
-    const nw = img.width ?? 1;
-    const nh = img.height ?? 1;
+    const nw = sourceImageRef.current?.width ?? img.width;
+    const nh = sourceImageRef.current?.height ?? img.height;
     const cw = canvas.getWidth();
     const ch = canvas.getHeight();
     const br = img.getBoundingRect();
@@ -964,7 +920,7 @@ export function useCanvas(
       bitmap.onerror = () => reject(new Error("Failed to load eraser mask bitmap"));
       bitmap.src = fullMaskDataUrl;
     });
-    ctx.drawImage(bitmap, br.left, br.top, br.width, br.height, 0, 0, nw, nh);
+    drawSourceMask(ctx, bitmap, br, nw, nh, transformRef.current);
 
     const dataUrl = maskCanvas.toDataURL("image/png");
     const comma = dataUrl.indexOf(",");
@@ -1030,8 +986,8 @@ export function useCanvas(
     const paths = blurPathsRef.current;
     if (paths.length === 0) throw new Error("Paint over the area to blur first");
 
-    const nw = img.width ?? 1;
-    const nh = img.height ?? 1;
+    const nw = sourceImageRef.current?.width ?? img.width;
+    const nh = sourceImageRef.current?.height ?? img.height;
     const cw = canvas.getWidth();
     const ch = canvas.getHeight();
     const br = img.getBoundingRect();
@@ -1065,7 +1021,7 @@ export function useCanvas(
       bitmap.onerror = () => reject(new Error("Failed to load blur mask bitmap"));
       bitmap.src = fullMaskDataUrl;
     });
-    ctx.drawImage(bitmap, br.left, br.top, br.width, br.height, 0, 0, nw, nh);
+    drawSourceMask(ctx, bitmap, br, nw, nh, transformRef.current);
 
     const dataUrl = maskCanvas.toDataURL("image/png");
     const comma = dataUrl.indexOf(",");
@@ -1083,8 +1039,8 @@ export function useCanvas(
       throw new Error("Paint over the area to heal first");
     }
 
-    const nw = img.width ?? 1;
-    const nh = img.height ?? 1;
+    const nw = sourceImageRef.current?.width ?? img.width;
+    const nh = sourceImageRef.current?.height ?? img.height;
     const cw = canvas.getWidth();
     const ch = canvas.getHeight();
     const br = img.getBoundingRect();
@@ -1124,7 +1080,7 @@ export function useCanvas(
       bitmap.onerror = () => reject(new Error("Failed to load mask bitmap"));
       bitmap.src = fullMaskDataUrl;
     });
-    ctx.drawImage(bitmap, br.left, br.top, br.width, br.height, 0, 0, nw, nh);
+    drawSourceMask(ctx, bitmap, br, nw, nh, transformRef.current);
 
     const dataUrl = maskCanvas.toDataURL("image/png");
     const comma = dataUrl.indexOf(",");
@@ -1147,6 +1103,7 @@ export function useCanvas(
   return {
     canvasRef,
     restoreMasks,
+    previewError,
     containerRef,
     zoom,
     showBefore,
@@ -1179,6 +1136,6 @@ export function useCanvas(
     disableBlurBrush,
     exportBlurMask,
     getTransformSnapshot: () => ({ ...transformRef.current }),
-    getPixelDimensions: () => ({ width: bgImageRef.current?.width ?? null, height: bgImageRef.current?.height ?? null }),
+    getPixelDimensions: () => ({ width: sourceImageRef.current?.width ?? null, height: sourceImageRef.current?.height ?? null }),
   };
 }

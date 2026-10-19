@@ -34,12 +34,15 @@ export async function POST(request: NextRequest) {
   const {
     imageId,
     adjustments,
+    pixelsRendered,
     format,
     quality,
     imageUrl,
     imageBase64,
     transform,
     maxWidth,
+    width,
+    height,
   } = parsed.data;
 
   const image = await prisma.image.findFirst({
@@ -79,9 +82,12 @@ export async function POST(request: NextRequest) {
   try {
     const outputBuffer = await renderAdjustedImage(inputBuffer, {
       adjustments,
+      pixelsRendered,
       format,
       quality,
       maxWidth,
+      width,
+      height,
       transform,
     });
 

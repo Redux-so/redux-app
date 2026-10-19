@@ -11,6 +11,7 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from "react";
+import { renderEditorPayload } from "@/lib/interactive-image-preview";
 import {
   buildPreviewRequestBody,
   type PreviewPayload,
@@ -55,10 +56,11 @@ export function EditorPreviewProvider({
 
   const savePreview = useCallback(async (): Promise<string | null> => {
     if (!imageId) return null;
-    const body = buildPreviewRequestBody(getPayloadRef.current());
+    const payload = getPayloadRef.current();
     const save = async () => {
       setIsSavingPreview(true);
       try {
+        const body = buildPreviewRequestBody(await renderEditorPayload(payload));
         const res = await fetch(`/api/images/${imageId}/generate-preview`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import useUndo from "use-undo";
+import { createEditorOperations } from "@/lib/editor-operations";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey, type Adjustments as SliderAdjustments } from "@/constants/adjustments";
 import {
   defaultPersistedEditorState,
@@ -32,6 +33,18 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
   );
 
   const currentRef = useRef(state.present);
+  const operationsRef = useRef<ReturnType<typeof createEditorOperations> | null>(null);
+  if (!operationsRef.current) operationsRef.current = createEditorOperations();
+  const beginOperation = useCallback(() => operationsRef.current!.begin(), []);
+  const prepareExportState = useCallback(async () => {
+    await operationsRef.current!.waitForIdle();
+    if (!mountedRef.current) throw new Error("The editor was closed.");
+    const current = currentRef.current;
+    if (current.masks && Object.values(current.masks).some((paths) => paths.length > 0)) {
+      throw new Error("Confirm or cancel your painted mask before exporting.");
+    }
+    return { ...current, sliders: { ...current.sliders }, transform: { ...current.transform } };
+  }, []);
   const revisionRef = useRef(0);
   const mountedRef = useRef(true);
   const requestRef = useRef(0);
@@ -267,6 +280,8 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
   return {
     adjustments,
     editorState: state.present,
+    beginOperation,
+    prepareExportState,
     commitState,
     createEditGuard,
     createChatEditGuard,

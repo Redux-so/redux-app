@@ -188,3 +188,20 @@ test("Agent edits merge into newer manual edits and undo restores the manual sta
   editor.createChatEditGuard();
   assert.equal(superseded(), false);
 });
+
+
+test("export reads the completed document after pending operations and rejects draft masks", async () => {
+  const render = editorHost();
+  let editor = render();
+  const finish = editor.beginOperation();
+  const exporting = editor.prepareExportState();
+  editor.commitState({ workingImageUrl: "https://example.com/completed.png", workingWidth: 10, workingHeight: 20 });
+  editor.patchAdjustments({ exposure: 19 });
+  finish();
+  const snapshot = await exporting;
+  assert.equal(snapshot.workingImageUrl, "https://example.com/completed.png");
+  assert.equal(snapshot.sliders.exposure, 19);
+  editor = render();
+  editor.commitState({ masks: { heal: [], eraser: [], blur: [{ path: "draft" }] } });
+  await assert.rejects(editor.prepareExportState(), /Confirm or cancel/);
+});

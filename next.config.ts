@@ -6,6 +6,10 @@ const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["geist"],
+  experimental: {
+    // A 50 MiB working PNG expands to ~67 MiB in a base64 JSON request.
+    proxyClientMaxBodySize: "70mb",
+  },
   images: {
     remotePatterns: [
       {

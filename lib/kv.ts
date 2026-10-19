@@ -25,6 +25,7 @@ export const RATE_LIMIT_MINUTE = {
   image_upload: 10,
   export: 15,
   preview: 20,
+  canvas_preview: 120,
   save_version: 10,
   list_versions: 30,
 } as const;
@@ -47,6 +48,7 @@ export const RATE_LIMIT_HOURLY = {
   image_upload: 30,
   export: 40,
   preview: 60,
+  canvas_preview: 1500,
   save_version: 30,
   list_versions: 120,
 } as const;

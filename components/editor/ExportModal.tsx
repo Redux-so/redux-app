@@ -11,9 +11,7 @@ import {
   BTN_MODAL_FORMAT_SELECTED,
 } from "@/lib/button-styles";
 import toast from "react-hot-toast";
-import type { Adjustments } from "@/hooks/useEditor";
-import type { ImageTransform } from "@/lib/image-transform";
-import { buildPreviewRequestBody } from "@/lib/preview-request";
+import { type PreviewPayload, buildPreviewRequestBody } from "@/lib/preview-request";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
 
@@ -22,14 +20,7 @@ interface ExportModalProps {
   onClose: () => void;
   imageId?: string;
   filename?: string;
-  adjustments: Adjustments;
-  /** The URL of the image currently on the canvas — may differ from the
-   *  original if an AI operation (e.g. background removal) replaced it. */
-  activeImageUrl?: string | null;
-  imageBase64?: string | null;
-  transform?: ImageTransform;
-  originalUrl?: string | null;
-  storedPreviewUrl?: string | null;
+  prepareExport: () => Promise<PreviewPayload>;
 }
 
 function formatBytes(bytes: number): string {
@@ -50,12 +41,7 @@ export default function ExportModal({
   onClose,
   imageId,
   filename,
-  adjustments,
-  activeImageUrl,
-  imageBase64,
-  transform,
-  originalUrl,
-  storedPreviewUrl,
+  prepareExport,
 }: ExportModalProps) {
   const titleId = useId();
   const [format, setFormat] = useState<ExportFormat>("jpeg");
@@ -81,25 +67,14 @@ export default function ExportModal({
     setError(null);
 
     try {
-      const previewBody = buildPreviewRequestBody({
-        adjustments,
-        originalUrl: originalUrl ?? null,
-        storedPreviewUrl: storedPreviewUrl ?? null,
-        baseImageUrl: activeImageUrl ?? null,
-        imageBase64: imageBase64 ?? null,
-        transform: transform ?? {
-          rotation: 0,
-          flipX: false,
-          flipY: false,
-          straighten: 0,
-        },
-      });
-
+      const latest = await prepareExport();
+      const previewBody = buildPreviewRequestBody(latest);
       const res = await fetch("/api/images/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageId,
+          pixelsRendered: previewBody.pixelsRendered,
           adjustments: previewBody.adjustments,
           format,
           quality,
@@ -179,6 +154,7 @@ export default function ExportModal({
                 <button
                   key={f}
                   type="button"
+                  disabled={loading}
                   onClick={() => setFormat(f)}
                   className={
                     format === f ? BTN_MODAL_FORMAT_SELECTED : BTN_FORMAT_IDLE

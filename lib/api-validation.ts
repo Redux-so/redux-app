@@ -120,6 +120,12 @@ export const base64PayloadSchema = createBase64PayloadSchema(
   API_LIMITS.BASE64_MAX_CHARS,
 );
 
+// Lossless working compositions can be larger than an uploaded JPEG.
+export const workingImageBase64Schema = createBase64PayloadSchema(
+  API_LIMITS.UPLOAD_SIZE_MAX,
+  Math.ceil(API_LIMITS.UPLOAD_SIZE_MAX / 3) * 4,
+);
+
 export const maskBase64Schema = createBase64PayloadSchema(
   API_LIMITS.MASK_BASE64_MAX_BYTES,
   API_LIMITS.MASK_BASE64_MAX_CHARS,
@@ -165,6 +171,7 @@ export const imageTransformSchema = z.object({
 export const exportFormatSchema = z.enum(["jpeg", "png", "tiff"]);
 
 export const exportBodySchema = z.object({
+  pixelsRendered: z.boolean().optional().default(false),
   imageId: resourceIdSchema,
   adjustments: adjustmentsRecordSchema.optional().default({}),
   format: exportFormatSchema.optional().default("jpeg"),
@@ -176,20 +183,25 @@ export const exportBodySchema = z.object({
     .optional()
     .default(90),
   imageUrl: workspaceImageUrlSchema.optional(),
-  imageBase64: base64PayloadSchema.optional(),
+  imageBase64: workingImageBase64Schema.optional(),
   transform: imageTransformSchema.optional(),
+  width: z.number().int().min(1).max(API_LIMITS.EXPORT_MAX_WIDTH_MAX).optional(),
+  height: z.number().int().min(1).max(API_LIMITS.EXPORT_MAX_WIDTH_MAX).optional(),
   maxWidth: z
     .number()
     .int()
     .min(API_LIMITS.EXPORT_MAX_WIDTH_MIN)
     .max(API_LIMITS.EXPORT_MAX_WIDTH_MAX)
     .optional(),
-});
+}).refine((body) => (body.width === undefined) === (body.height === undefined), "Width and height must be supplied together")
+  .refine((body) => !body.width || !body.height || body.width * body.height <= 64_000_000, "Output exceeds 64 megapixels");
 
 export const previewMutationBodySchema = z.object({
+  pixelsRendered: z.boolean().optional().default(false),
+  persist: z.boolean().optional().default(true),
   adjustments: adjustmentsRecordSchema.optional().default({}),
   imageUrl: workspaceImageUrlSchema.optional(),
-  imageBase64: base64PayloadSchema.optional(),
+  imageBase64: workingImageBase64Schema.optional(),
   transform: imageTransformSchema.optional(),
 });
 
@@ -301,7 +313,7 @@ export const patchImageBodySchema = z
 export const saveVersionBodySchema = z.object({
   imageId: resourceIdSchema,
   adjustments: z.record(z.string(), z.unknown()),
-  imageBase64: base64PayloadSchema.optional(),
+  imageBase64: workingImageBase64Schema.optional(),
   label: z.string().trim().max(API_LIMITS.VERSION_LABEL_MAX).optional(),
 });
 

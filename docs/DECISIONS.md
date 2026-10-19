@@ -199,3 +199,15 @@ Context: Browser tab icon.
 Decision: One squircle favicon (`public/favicon.png`) for all themes; generated via `scripts/process-favicons.mjs`.
 
 Reason: Recent product change in repository (post devnotes freeze).
+
+
+## Decision: Shared renderer for preview and export (2026-10-19)
+
+Canvas, library previews, and export use the same local Canvas 2D effect renderer
+(`renderInteractiveImage`). Sliders update before paint and the displayed image
+is never replaced by a delayed Sharp interpretation. Export renders the original
+working image at full dimensions using the same filters and blends, then sends
+already rendered PNG pixels for server-side transforms and JPEG/PNG/TIFF
+encoding with sRGB metadata. Fabric handles interaction and viewport geometry.
+Source pixels remain separate from effects so retouch and crop never bake
+adjustments twice. See [EDITOR_RENDERING.md](EDITOR_RENDERING.md).
