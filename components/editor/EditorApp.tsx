@@ -155,6 +155,8 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     resizeCanvas,
     loadImageUrl,
     activeImageUrl,
+    brushSizes,
+    setBrushSize,
     enableHealBrush,
     disableHealBrush,
     exportMask,
@@ -343,6 +345,8 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
             beginOperation={beginOperation}
             restoredMaskTool={restoredMaskTool}
             canvasImageUrl={baseImageUrl}
+            brushSizes={brushSizes}
+            setBrushSize={setBrushSize}
             enableHealBrush={enableHealBrush}
             disableHealBrush={disableHealBrush}
             exportHealMask={exportMask}

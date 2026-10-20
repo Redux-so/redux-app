@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
+import { normalizeBrushSize, type BrushSizes, type RetouchTool } from "@/lib/retouch-brush";
 import { constrainViewport, type ViewportTransform, type ViewportRect } from "@/lib/editor-viewport";
 import { type AdjustmentKey } from "@/constants/adjustments";
 import { transformedSource, drawSourceMask } from "@/lib/canvas-image-geometry";
@@ -85,6 +86,11 @@ export function useCanvas(
   // read the available dimensions before Fabric sets them on the canvas element.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fabricRef = useRef<Canvas | null>(null);
+  const [brushSizes, setBrushSizes] = useState<BrushSizes>({ heal: 20, eraser: 20, blur: 20 });
+  const brushSizesRef = useRef(brushSizes);
+  const activeBrushRef = useRef<RetouchTool | null>(null);
+  const brushCursorRef = useRef<HTMLDivElement | null>(null);
+  const brushPointerRef = useRef<{ x: number; y: number } | null>(null);
   const PointRef = useRef<typeof FabricPoint | null>(null);
   const bgImageRef = useRef<FabricImage | null>(null);
   const sourceImageRef = useRef<FabricImage | null>(null);
@@ -159,6 +165,42 @@ export function useCanvas(
     return originalNavigatorImage(originalElement, navigatorImage.viewportWidth, navigatorImage.viewportHeight, navigatorImage.workspaceWidth);
   }, [showBefore, originalElement, navigatorImage]);
 
+  const updateBrushCursor = useCallback(() => {
+    const canvas = fabricRef.current;
+    const cursor = brushCursorRef.current;
+    const pointer = brushPointerRef.current;
+    if (!canvas || !cursor) return;
+    const active = activeBrushRef.current;
+    const rect = canvas.upperCanvasEl.getBoundingClientRect();
+    const visible = active && canvas.isDrawingMode && !showBeforeRef.current && pointer &&
+      pointer.x >= rect.left && pointer.x <= rect.right && pointer.y >= rect.top && pointer.y <= rect.bottom;
+    cursor.style.display = visible ? "block" : "none";
+    canvas.freeDrawingCursor = visible ? "none" : "crosshair";
+    if (!visible) {
+      canvas.upperCanvasEl.style.cursor = canvas.isDrawingMode ? "crosshair" : canvas.defaultCursor;
+      return;
+    }
+    const parentRect = cursor.parentElement!.getBoundingClientRect();
+    const diameter = brushSizesRef.current[active] * canvas.getZoom() * rect.width / canvas.getWidth();
+    cursor.style.width = `${diameter}px`;
+    cursor.style.height = `${diameter}px`;
+    cursor.style.left = `${pointer.x - parentRect.left}px`;
+    cursor.style.top = `${pointer.y - parentRect.top}px`;
+    canvas.upperCanvasEl.style.cursor = "none";
+  }, []);
+
+  const setBrushSize = useCallback((tool: RetouchTool, size: number) => {
+    const width = normalizeBrushSize(size);
+    const next = { ...brushSizesRef.current, [tool]: width };
+    brushSizesRef.current = next;
+    setBrushSizes(next);
+    const canvas = fabricRef.current;
+    if (activeBrushRef.current === tool && canvas?.freeDrawingBrush) {
+      canvas.freeDrawingBrush.width = width;
+    }
+    updateBrushCursor();
+  }, [updateBrushCursor]);
+
   const syncViewport = useCallback(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -169,7 +211,8 @@ export function useCanvas(
     canvas.requestRenderAll();
     setZoom(parseFloat(canvas.getZoom().toFixed(2)));
     setViewportTransform(next);
-  }, [displayedBounds]);
+    updateBrushCursor();
+  }, [displayedBounds, updateBrushCursor]);
 
   useLayoutEffect(() => {
     syncViewport();
@@ -303,6 +346,20 @@ export function useCanvas(
         el;
       // Include the read-only original comparison layer beside Fabric's wrapper.
       const eventTarget = wrapper.parentElement ?? wrapper;
+      const brushCursor = document.createElement("div");
+      brushCursor.setAttribute("aria-hidden", "true");
+      brushCursor.dataset.brushCursor = "true";
+      Object.assign(brushCursor.style, {
+        position: "absolute", pointerEvents: "none", display: "none", zIndex: "10",
+        border: "1px solid white", boxShadow: "0 0 0 1px rgba(0,0,0,0.8)",
+        borderRadius: "50%", boxSizing: "border-box", transform: "translate(-50%, -50%)",
+      });
+      wrapper.appendChild(brushCursor);
+      brushCursorRef.current = brushCursor;
+      const handlePointerLeave = () => {
+        brushPointerRef.current = null;
+        updateBrushCursor();
+      };
 
       // ── Mouse wheel zoom ──────────────────────────────────────────────────
       // MUST use a native listener with { passive: false } so we can call
@@ -350,6 +407,8 @@ export function useCanvas(
       };
 
       const handlePointerMove = (e: PointerEvent) => {
+        brushPointerRef.current = { x: e.clientX, y: e.clientY };
+        updateBrushCursor();
         if (!isPanning) return;
         const dx = e.clientX - panLastX;
         const dy = e.clientY - panLastY;
@@ -370,6 +429,7 @@ export function useCanvas(
         syncViewport();
       };
 
+      eventTarget.addEventListener("pointerleave", handlePointerLeave);
       eventTarget.addEventListener("wheel", handleWheel, { passive: false });
       eventTarget.addEventListener("pointerdown", handlePointerDown);
       eventTarget.addEventListener("pointermove", handlePointerMove);
@@ -379,6 +439,11 @@ export function useCanvas(
       // Store teardown so the useEffect cleanup (below) can call it even
       // though it runs synchronously while this async block ran later.
       eventCleanupRef.current = () => {
+        eventTarget.removeEventListener("pointerleave", handlePointerLeave);
+        brushCursor.remove();
+        brushCursorRef.current = null;
+        brushPointerRef.current = null;
+        activeBrushRef.current = null;
         eventTarget.removeEventListener("wheel", handleWheel);
         eventTarget.removeEventListener("pointerdown", handlePointerDown);
         eventTarget.removeEventListener("pointermove", handlePointerMove);
@@ -425,7 +490,7 @@ export function useCanvas(
       layoutRef.current = null;
       setIsHealBrush(false);
     };
-  }, [syncViewport]);
+  }, [syncViewport, updateBrushCursor]);
 
   // ---------------------------------------------------------------------------
   // Keep activeImageUrl in sync with the imageUrl prop.
@@ -876,14 +941,16 @@ export function useCanvas(
 
     const brush = new PencilBrush(canvas);
     brush.color = "rgba(255, 0, 0, 0.5)";
-    brush.width = 20;
+    brush.width = brushSizesRef.current.heal;
+    activeBrushRef.current = "heal";
     canvas.freeDrawingBrush = brush;
     canvas.isDrawingMode = true;
+    updateBrushCursor();
     canvas.selection = false;
     canvas.discardActiveObject();
     canvas.requestRenderAll();
     setIsHealBrush(true);
-  }, []);
+  }, [updateBrushCursor]);
 
   const disableHealBrush = useCallback(() => {
     brushGenerationRef.current++;
@@ -891,6 +958,8 @@ export function useCanvas(
     if (!canvas) return;
 
     canvas.isDrawingMode = false;
+    activeBrushRef.current = null;
+    updateBrushCursor();
     if (healPathHandlerRef.current) {
       canvas.off("path:created", healPathHandlerRef.current);
       healPathHandlerRef.current = null;
@@ -906,7 +975,7 @@ export function useCanvas(
     onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current }, false);
     canvas.requestRenderAll();
     setIsHealBrush(false);
-  }, []);
+  }, [updateBrushCursor]);
 
   // ---------------------------------------------------------------------------
   // Eraser brush — same as heal brush but white stroke; same mask export format
@@ -937,13 +1006,15 @@ export function useCanvas(
 
     const brush = new PencilBrush(canvas);
     brush.color = "rgba(255, 255, 255, 0.7)";
-    brush.width = 20;
+    brush.width = brushSizesRef.current.eraser;
+    activeBrushRef.current = "eraser";
     canvas.freeDrawingBrush = brush;
     canvas.isDrawingMode = true;
+    updateBrushCursor();
     canvas.selection = false;
     canvas.discardActiveObject();
     canvas.requestRenderAll();
-  }, []);
+  }, [updateBrushCursor]);
 
   const disableEraserBrush = useCallback(() => {
     brushGenerationRef.current++;
@@ -951,6 +1022,8 @@ export function useCanvas(
     if (!canvas) return;
 
     canvas.isDrawingMode = false;
+    activeBrushRef.current = null;
+    updateBrushCursor();
     if (eraserPathHandlerRef.current) {
       canvas.off("path:created", eraserPathHandlerRef.current);
       eraserPathHandlerRef.current = null;
@@ -961,7 +1034,7 @@ export function useCanvas(
     eraserPathsRef.current = [];
     onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current }, false);
     canvas.requestRenderAll();
-  }, []);
+  }, [updateBrushCursor]);
 
   const exportEraserMask = useCallback(async (): Promise<string> => {
     const canvas = fabricRef.current;
@@ -1038,13 +1111,15 @@ export function useCanvas(
 
     const brush = new PencilBrush(canvas);
     brush.color = "rgba(255, 200, 50, 0.7)";
-    brush.width = 20;
+    brush.width = brushSizesRef.current.blur;
+    activeBrushRef.current = "blur";
     canvas.freeDrawingBrush = brush;
     canvas.isDrawingMode = true;
+    updateBrushCursor();
     canvas.selection = false;
     canvas.discardActiveObject();
     canvas.requestRenderAll();
-  }, []);
+  }, [updateBrushCursor]);
 
   const disableBlurBrush = useCallback(() => {
     brushGenerationRef.current++;
@@ -1052,6 +1127,8 @@ export function useCanvas(
     if (!canvas) return;
 
     canvas.isDrawingMode = false;
+    activeBrushRef.current = null;
+    updateBrushCursor();
     if (blurPathHandlerRef.current) {
       canvas.off("path:created", blurPathHandlerRef.current);
       blurPathHandlerRef.current = null;
@@ -1062,7 +1139,7 @@ export function useCanvas(
     blurPathsRef.current = [];
     onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current }, false);
     canvas.requestRenderAll();
-  }, []);
+  }, [updateBrushCursor]);
 
   const exportBlurMask = useCallback(async (): Promise<string> => {
     const canvas = fabricRef.current;
@@ -1214,6 +1291,8 @@ export function useCanvas(
     loadImageUrl,
     activeImageUrl,
     viewportTransform,
+    brushSizes,
+    setBrushSize,
     enableHealBrush,
     disableHealBrush,
     exportMask,

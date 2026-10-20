@@ -8,7 +8,11 @@ interface AdjustmentSliderProps {
   label: string;
   value: number;
   onChange: (value: number) => void;
-  onCommit: (value: number) => void;
+  onCommit?: (value: number) => void;
+  disabled?: boolean;
+  className?: string;
+  formatValue?: (value: number) => string;
+  resetValue?: number;
   min?: number;
   max?: number;
   step?: number;
@@ -94,19 +98,24 @@ export default function AdjustmentSlider({
   max = 100,
   step = 1,
   trackVariant = "neutral",
+  disabled = false,
+  className = "px-8 py-3.5",
+  formatValue = formatSignedAdjustmentValue,
+  resetValue = 0,
 }: AdjustmentSliderProps) {
-  const defaultValue = Math.max(min, Math.min(max, 0));
+  const defaultValue = Math.max(min, Math.min(max, resetValue));
   const isColorTrack = trackVariant !== "neutral";
   const trackGradient = getTrackGradient(trackVariant);
   const accentColor = getSliderAccentColor(trackVariant, value, min, max);
 
   function resetToDefault() {
+    if (disabled) return;
     onChange(defaultValue);
-    onCommit(defaultValue);
+    onCommit?.(defaultValue);
   }
 
   return (
-    <div className="flex flex-col gap-3 px-8 py-3.5">
+    <div className={`flex flex-col gap-3 ${className} ${disabled ? "opacity-40" : ""}`}>
       <div className="flex items-center justify-between">
         <span className="text-[15px] font-medium text-[#e5e5e5] leading-none select-none">
           {label}
@@ -115,7 +124,7 @@ export default function AdjustmentSlider({
           className="text-[15px] text-[#888888] leading-none tabular-nums cursor-default select-none"
           onDoubleClick={resetToDefault}
         >
-          {formatSignedAdjustmentValue(value)}
+          {formatValue(value)}
         </span>
       </div>
 
@@ -124,8 +133,9 @@ export default function AdjustmentSlider({
         max={max}
         step={step}
         value={[value]}
+        disabled={disabled}
         onValueChange={([v]) => onChange(v)}
-        onValueCommit={([v]) => onCommit(v)}
+        onValueCommit={([v]) => onCommit?.(v)}
         className="relative flex w-full touch-none select-none items-center"
       >
         <SliderPrimitive.Track
@@ -148,6 +158,7 @@ export default function AdjustmentSlider({
           )}
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
+          aria-label={label}
           title="Double-click to reset"
           className={[
             "block h-[14px] w-[14px] rounded-full outline-none cursor-pointer transition-transform hover:scale-110",

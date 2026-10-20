@@ -10,8 +10,9 @@ import toast from "react-hot-toast";
 import type { HistoryPanelProps } from "./HistoryPanel";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
-import { BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
-import { BRAND_ACCENT_CLASS } from "@/lib/brand-colors";
+import { BTN_PRIMARY_BLOCK, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
+import type { BrushSizes, RetouchTool } from "@/lib/retouch-brush";
+import RetouchBrushControls, { RetouchSlider } from "./RetouchBrushControls";
 import { PANEL_HEADER, PANEL_TITLE } from "@/lib/panel-chrome";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import {
@@ -59,6 +60,8 @@ interface AdjustmentPanelProps {
   enableBlurBrush?: () => void | Promise<void>;
   disableBlurBrush?: () => void;
   exportBlurMask?: () => Promise<string>;
+  brushSizes: BrushSizes;
+  setBrushSize: (tool: RetouchTool, size: number) => void;
   history: HistoryPanelProps;
 }
 
@@ -221,11 +224,13 @@ function RailLink({
 function AIButton({
   label,
   loading,
+  active,
   disabled,
   onClick,
 }: {
   label: string;
   loading: boolean;
+  active?: boolean;
   disabled?: boolean;
   onClick: () => void;
 }) {
@@ -234,9 +239,12 @@ function AIButton({
       type="button"
       onClick={onClick}
       disabled={loading || disabled}
+      aria-pressed={active}
       className={
         loading || disabled
           ? "flex w-full items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium rounded-md border border-[#262626] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
+          : active
+            ? `${BTN_PRIMARY_SOLID} w-full gap-1.5`
           : `flex w-full items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium rounded-md text-white/80 ${SURFACE_SECONDARY_BTN}`
       }
     >
@@ -330,6 +338,8 @@ export default function AdjustmentPanel({
   enableBlurBrush,
   disableBlurBrush,
   exportBlurMask,
+  brushSizes,
+  setBrushSize,
   history,
 }: AdjustmentPanelProps) {
   const [activeSection, setActiveSection] = useState<ToolSection | null>(null);
@@ -970,48 +980,16 @@ export default function AdjustmentPanel({
                         }}
                       />
                       {activeTool === "blur" && (
-                        <div className="flex flex-col gap-3 pt-1">
-                          <p className="text-[10px] text-[#555555] leading-snug">
-                            Paint over the area to blur in yellow, then confirm.
-                          </p>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-[11px] text-[#888888] shrink-0">Intensity</span>
-                            <input
-                              type="range"
-                              min={1}
-                              max={100}
-                              step={1}
-                              value={blurIntensity}
-                              onChange={(e) => setBlurIntensity(Number(e.target.value))}
-                              className={`flex-1 ${BRAND_ACCENT_CLASS} h-[3px] cursor-pointer`}
-                            />
-                            <span className="text-[11px] text-[#888888] w-[24px] text-right shrink-0">{blurIntensity}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={cancelBlur}
-                              className="flex-1 h-[34px] bg-[#1d1d1d] border border-[#262626] rounded-md text-[13px] text-white hover:border-[#2e2e2e] transition-colors cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void confirmBlur()}
-                              disabled={loadingBlur}
-                              className={BTN_PRIMARY_PANEL}
-                            >
-                              {loadingBlur ? (
-                                <LoadingSpinner size="sm" variant="default" label="Processing blur" />
-                              ) : (
-                                "Confirm"
-                              )}
-                            </button>
-                          </div>
-                        </div>
+                        <RetouchBrushControls tool="blur"
+                          instruction="Paint over the area to blur in yellow, then confirm."
+                          size={brushSizes.blur} onSizeChange={(size) => setBrushSize("blur", size)}
+                          loading={loadingBlur} onCancel={cancelBlur} onConfirm={confirmBlur}>
+                          <RetouchSlider label="Intensity" value={blurIntensity} max={100} resetValue={30} disabled={loadingBlur} onChange={setBlurIntensity} />
+                        </RetouchBrushControls>
                       )}
                       <ToolBtn
                         label="Eraser"
+                        disabled={loadingEraser}
                         active={activeTool === "eraser"}
                         onClick={() => {
                           if (isCropping) onToggleCrop?.();
@@ -1019,35 +997,14 @@ export default function AdjustmentPanel({
                         }}
                       />
                       {activeTool === "eraser" && (
-                        <div className="flex flex-col gap-3 pt-1">
-                          <p className="text-[12px] text-[#888888] leading-relaxed">
-                            Paint over the area to erase in white, then confirm.
-                          </p>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={cancelEraser}
-                              className="flex-1 h-[34px] bg-[#1d1d1d] border border-[#262626] rounded-md text-[13px] text-white hover:border-[#2e2e2e] transition-colors cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void confirmEraser()}
-                              disabled={loadingEraser}
-                              className={BTN_PRIMARY_PANEL}
-                            >
-                              {loadingEraser ? (
-                                <LoadingSpinner size="sm" variant="default" label="Processing eraser" />
-                              ) : (
-                                "Confirm"
-                              )}
-                            </button>
-                          </div>
-                        </div>
+                        <RetouchBrushControls tool="eraser"
+                          instruction="Paint over the area to erase in white, then confirm."
+                          size={brushSizes.eraser} onSizeChange={(size) => setBrushSize("eraser", size)}
+                          loading={loadingEraser} onCancel={cancelEraser} onConfirm={confirmEraser} />
                       )}
                       <AIButton
                         label="Heal"
+                        active={activeTool === "heal"}
                         loading={loadingHeal}
                         disabled={!canvasImageUrl || loadingHeal}
                         onClick={() => {
@@ -1056,33 +1013,10 @@ export default function AdjustmentPanel({
                         }}
                       />
                       {activeTool === "heal" && (
-                        <div className="flex flex-col gap-3">
-                          <p className="text-[10px] text-[#555555] leading-snug">
-                            Paint over the area to heal in red, then confirm.
-                          </p>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={cancelHeal}
-                              disabled={loadingHeal}
-                              className="flex-1 h-[34px] bg-[#1d1d1d] border border-[#262626] rounded-md text-[13px] text-white hover:border-[#2e2e2e] transition-colors cursor-pointer disabled:opacity-40"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void confirmHeal()}
-                              disabled={loadingHeal}
-                              className={BTN_PRIMARY_PANEL}
-                            >
-                              {loadingHeal ? (
-                                <LoadingSpinner size="sm" variant="default" label="Processing heal" />
-                              ) : (
-                                "Confirm"
-                              )}
-                            </button>
-                          </div>
-                        </div>
+                        <RetouchBrushControls tool="heal"
+                          instruction="Paint over the area to heal in red, then confirm."
+                          size={brushSizes.heal} onSizeChange={(size) => setBrushSize("heal", size)}
+                          loading={loadingHeal} onCancel={cancelHeal} onConfirm={confirmHeal} />
                       )}
                     </div>
                   )}
