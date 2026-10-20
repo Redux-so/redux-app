@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 function postImageUpload(
@@ -32,12 +32,14 @@ function postImageUpload(
 export function useImageUpload(onUploadComplete?: () => void) {
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const uploadInFlight = useRef(false);
 
   const uploadFiles = useCallback(
     async (files: File[]) => {
-      if (!files.length || isUploading) return;
+      if (!files.length || uploadInFlight.current) return;
 
       const file = files[0]!;
+      uploadInFlight.current = true;
       setIsUploading(true);
       setProgress(0);
 
@@ -54,11 +56,12 @@ export function useImageUpload(onUploadComplete?: () => void) {
         console.error("Upload error:", err);
         toast.error("Could not upload photo");
       } finally {
+        uploadInFlight.current = false;
         setIsUploading(false);
         setProgress(0);
       }
     },
-    [isUploading, onUploadComplete],
+    [onUploadComplete],
   );
 
   return {
@@ -69,3 +72,5 @@ export function useImageUpload(onUploadComplete?: () => void) {
     isBusy: isUploading,
   };
 }
+
+export type ImageUploadState = ReturnType<typeof useImageUpload>;

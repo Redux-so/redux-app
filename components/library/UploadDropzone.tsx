@@ -3,18 +3,17 @@
 import { useRef } from "react";
 
 import { Icon } from "@/components/shared/Icon";
-import { useImageUpload } from "@/hooks/useImageUpload";
+import type { ImageUploadState } from "@/hooks/useImageUpload";
 import { BRAND_BG_CLASS } from "@/lib/brand-colors";
 import { EMPTY_STATE_ICON_CLASS } from "@/lib/surface-colors";
 
 interface UploadDropzoneProps {
-  onUploadComplete?: () => void;
+  upload: ImageUploadState;
 }
 
-export default function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
+export default function UploadDropzone({ upload }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { uploadFiles, progress, isProcessing, isBusy } =
-    useImageUpload(onUploadComplete);
+  const { uploadFiles, progress, isProcessing, isBusy } = upload;
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
@@ -22,17 +21,9 @@ export default function UploadDropzone({ onUploadComplete }: UploadDropzoneProps
     e.target.value = "";
   }
 
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) void uploadFiles([dropped]);
-  }
-
   return (
     <div className="w-full">
       <div
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
         onClick={() => {
           if (!isBusy) inputRef.current?.click();
         }}

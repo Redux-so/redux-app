@@ -2,6 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useIsClient } from "@/hooks/useIsClient";
+import type { ImageUploadState } from "@/hooks/useImageUpload";
 
 import SearchBar from "@/components/library/SearchBar";
 import UploadDropzone from "@/components/library/UploadDropzone";
@@ -9,7 +10,7 @@ import type { LibraryFilters } from "@/lib/library-filters";
 import type { ImageRecord } from "@/types/image";
 
 interface LibraryHeaderProps {
-  onUploadComplete?: () => void;
+  upload: ImageUploadState;
   isSearching: boolean;
   onSearchStart: () => void;
   onSearchSuccess: (images: ImageRecord[]) => void;
@@ -26,7 +27,7 @@ function getTimeGreeting(hour: number): string {
 }
 
 export default function LibraryHeader({
-  onUploadComplete,
+  upload,
   isSearching,
   onSearchStart,
   onSearchSuccess,
@@ -64,7 +65,7 @@ export default function LibraryHeader({
         onFiltersChange={onFiltersChange}
       />
 
-      <UploadDropzone onUploadComplete={onUploadComplete} />
+      <UploadDropzone upload={upload} />
     </header>
   );
 }

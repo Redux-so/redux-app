@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 import { mergeImageRecords } from "@/lib/merge-image-records";
 import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel";
+import { useImageUpload } from "@/hooks/useImageUpload";
 import LibraryHeader from "@/components/library/LibraryHeader";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
 import PhotoGrid from "@/components/library/PhotoGrid";
@@ -452,6 +453,11 @@ export default function LibraryPageClient({
   }, [albums]);
 
   const isTrashView = sidebarView.kind === "trash";
+  const handleUploadComplete = useCallback(() => {
+    void fetchImages();
+    void fetchTrashedImages();
+  }, [fetchImages, fetchTrashedImages]);
+  const upload = useImageUpload(handleUploadComplete);
   const isSearchActive = searchOverlay.kind !== "none";
 
   const libraryHasMore = images.length < libraryTotal;
@@ -551,7 +557,19 @@ export default function LibraryPageClient({
   }
 
   return (
-    <div className="flex h-screen bg-[#161616] overflow-hidden">
+    <div
+      className="flex h-screen bg-[#161616] overflow-hidden"
+      onDragOver={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = upload.isBusy ? "none" : "copy";
+      }}
+      onDrop={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return;
+        event.preventDefault();
+        void upload.uploadFiles(Array.from(event.dataTransfer.files));
+      }}
+    >
       <LibrarySidebar
         sidebarView={sidebarView}
         onSidebarViewChange={setSidebarView}
@@ -566,10 +584,7 @@ export default function LibraryPageClient({
         >
           {!isTrashView && (
             <LibraryHeader
-              onUploadComplete={() => {
-                void fetchImages();
-                void fetchTrashedImages();
-              }}
+              upload={upload}
               isSearching={isSearching}
               onSearchStart={handleSearchStart}
               onSearchSuccess={handleSearchSuccess}
