@@ -542,7 +542,7 @@ export default function SettingsPage() {
               <p className="text-white text-[14px] font-medium">Redux</p>
               <p className="text-[#888888] text-[14px] mt-[2px]">Version 1.0.0</p>
               <p className="text-[#888888] text-[14px] mt-2 leading-relaxed">
-                Your AI agent for professional photo editing
+                Agentic photo editing platform
               </p>
             </div>
 

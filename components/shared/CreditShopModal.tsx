@@ -124,12 +124,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
             <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#121212] border border-[#212121] rounded-xl shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-[#212121] px-6 py-4">
-                <div>
-                  <h2 className="text-white text-[16px] font-medium">Purchase Credits</h2>
-                  <p className="text-[#888888] text-[12px] mt-[2px]">
-                    Credits power all AI features in Redux
-                  </p>
-                </div>
+                <h2 className="text-white text-[16px] font-medium">Purchase Credits</h2>
                 <button
                   onClick={onClose}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer"
