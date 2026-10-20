@@ -35,7 +35,7 @@ import {
 import { BTN_BRAND_ICON, BTN_PRIMARY_COMPACT } from "@/lib/button-styles";
 import { BRAND_BORDER_CLASS } from "@/lib/brand-colors";
 import { PANEL_HEADER, PANEL_TITLE, CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
-import { TOAST_SHELL_CLASS } from "@/lib/toast-styles";
+import { TOAST_SHELL_CLASS, toastAnimation } from "@/lib/toast-styles";
 import { ChatMarkdown } from "@/lib/chat-markdown";
 import UsageRing from "@/components/shared/UsageRing";
 import {
@@ -874,9 +874,11 @@ export default function ChatPanel({
     toast.custom(
       (t) => (
         <div
-          className={`transition-opacity ${TOAST_SHELL_CLASS} ${t.visible ? "opacity-100" : "opacity-0"}`}
+          {...t.ariaProps}
+          className={TOAST_SHELL_CLASS}
+          style={{ animation: toastAnimation(t.visible) }}
         >
-          <span>Purchase credits to continue chatting.</span>
+          <span>Purchase credits to continue chatting</span>
           <button
             type="button"
             className="underline underline-offset-2 font-medium whitespace-nowrap cursor-pointer"

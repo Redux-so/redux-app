@@ -34,3 +34,10 @@ export const defaultToastOptions: DefaultToastOptions = {
   success: sharedToastOptions,
   error: sharedToastOptions,
 };
+
+/** Opacity only: leave placement and stacking to the existing toaster. */
+export function toastAnimation(visible: boolean): string {
+  return visible
+    ? "redux-toast-appear 160ms ease-out both"
+    : "redux-toast-disappear 120ms ease-in both";
+}

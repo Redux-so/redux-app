@@ -52,7 +52,7 @@ Toolbar (h-16)
 | Brand logo | `BrandLogo`, `AppChromeLogo`, `constants/brand.ts` |
 | Profile | `ProfileMenu` — library footer + editor rail footer |
 | Modals | Portals to `document.body` (export, credits, upload, chat dropdowns) |
-| Toasts | `AppToaster` + `lib/toast-styles.ts` in dashboard layout |
+| Toasts | One `AppToaster` in dashboard layout; bottom-right with safe-area spacing, opacity-only entry/exit, and shared styles in `lib/toast-styles.ts`; omit sentence punctuation in toast copy (including API messages) |
 | Loading | `LoadingSpinner` / `LoadingOverlay` |
 | Clerk auth UI | `ReduxClerkAuthShell`, `lib/redux-clerk-appearance.ts` |
 

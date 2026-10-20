@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import toast from "react-hot-toast";
 
 function postImageUpload(
   file: File,
@@ -44,11 +45,14 @@ export function useImageUpload(onUploadComplete?: () => void) {
         const result = await postImageUpload(file, setProgress);
         if (!result.ok) {
           console.error("[useImageUpload] Server rejected upload:", result.status);
+          toast.error("Could not upload photo");
           return;
         }
+        toast.success("Photo uploaded");
         onUploadComplete?.();
       } catch (err) {
         console.error("Upload error:", err);
+        toast.error("Could not upload photo");
       } finally {
         setIsUploading(false);
         setProgress(0);
