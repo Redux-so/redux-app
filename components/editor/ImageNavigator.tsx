@@ -17,7 +17,7 @@ export default function ImageNavigator({ image, viewport, onCenter }: ImageNavig
   const { width, height } = navigatorPreviewSize(image.bounds, image.workspaceWidth, image.viewportHeight);
   const visible = visibleImageRect(image.bounds, viewport, image.viewportWidth, image.viewportHeight);
 
-  // This effect runs only for edited pixels / geometry, never for viewport panning.
+  // This effect runs only for preview pixels / geometry, never for viewport panning.
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;

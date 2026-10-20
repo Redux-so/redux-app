@@ -44,6 +44,19 @@ backgrounds behind transparency, or preview scaling. JPEG is lossy even at quali
 
 ## Verification
 
+Before/after compares the immutable `Image.originalUrl` upload against the current
+edited composition, including AI replacements, crops, and transforms. The original
+is preloaded into a display-only comparison layer using the existing viewport
+matrix; it never replaces Fabric's edited pixels or document state. Masks and crop
+handles are hidden during comparison. The navigator remains visible, reuses the
+loaded original image for the before preview, and switches back to the edited
+preview afterward. Its indicator and pan bounds follow the displayed composition.
+Autosave, library covers, and exports always use the edited document regardless of the toggle.
+
+Manual comparison QA: after slider, crop/rotation, retouch, or AI edits, toggle
+before to see the complete unedited source composition; toggle back to restore
+the current edits. Repeat after reopening the editor and during autosave.
+
 Run `node scripts/verify-export-rendering.mjs`,
 `node scripts/verify-editor-history.mjs`, lint, typecheck, and a production build.
 Encoding checks cover preservation of already rendered PNG/TIFF pixels, alpha,

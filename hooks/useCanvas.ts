@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
 import { constrainViewport, type ViewportTransform, type ViewportRect } from "@/lib/editor-viewport";
 import { type AdjustmentKey } from "@/constants/adjustments";
@@ -41,6 +41,19 @@ export interface NavigatorImage {
   viewportWidth: number;
   viewportHeight: number;
   workspaceWidth: number;
+}
+
+// Match the original comparison layer's centered 95% contain fit.
+function originalNavigatorImage(element: HTMLImageElement, width: number, height: number, workspaceWidth: number): NavigatorImage {
+  const scale = Math.min(width / element.naturalWidth, height / element.naturalHeight) * 0.95;
+  const imageWidth = element.naturalWidth * scale;
+  const imageHeight = element.naturalHeight * scale;
+  return {
+    element, matrix: [scale, 0, 0, scale, width / 2, height / 2],
+    bounds: { left: (width - imageWidth) / 2, top: (height - imageHeight) / 2, width: imageWidth, height: imageHeight },
+    width: element.naturalWidth, height: element.naturalHeight,
+    viewportWidth: width, viewportHeight: height, workspaceWidth,
+  };
 }
 
 export { createExpandedCanvas, type ExpandDirection } from "@/lib/canvas-expand";
@@ -96,7 +109,15 @@ export function useCanvas(
   const [viewportTransform, setViewportTransform] = useState<ViewportTransform>([1, 0, 0, 1, 0, 0]);
   const layoutRef = useRef<{ bounds: ViewportRect; width: number; height: number } | null>(null);
   const [navigatorImage, setNavigatorImage] = useState<NavigatorImage | null>(null);
+  const [originalElement, setOriginalElement] = useState<HTMLImageElement | null>(null);
+  const originalElementRef = useRef<HTMLImageElement | null>(null);
+  const onOriginalImageLoad = useCallback((element: HTMLImageElement) => {
+    originalElementRef.current = element;
+    setOriginalElement(element);
+  }, []);
   const [showBefore, setShowBefore] = useState(false);
+  const showBeforeRef = useRef(showBefore);
+  showBeforeRef.current = showBefore;
   const [canvasReady, setCanvasReady] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
   const [isHealBrush, setIsHealBrush] = useState(false);
@@ -125,29 +146,46 @@ export function useCanvas(
       workspaceWidth: containerRef.current?.clientWidth ?? canvas.getWidth() });
   }, []);
 
+  // Both previews use Fabric's single camera, with bounds for the displayed image.
+  const displayedBounds = useCallback((width: number, height: number) => {
+    if (showBeforeRef.current && originalElementRef.current) {
+      return originalNavigatorImage(originalElementRef.current, width, height, width).bounds;
+    }
+    return bgImageRef.current?.getBoundingRect();
+  }, []);
+
+  const displayedNavigator = useMemo(() => {
+    if (!showBefore || !originalElement || !navigatorImage) return navigatorImage;
+    return originalNavigatorImage(originalElement, navigatorImage.viewportWidth, navigatorImage.viewportHeight, navigatorImage.workspaceWidth);
+  }, [showBefore, originalElement, navigatorImage]);
+
   const syncViewport = useCallback(() => {
     const canvas = fabricRef.current;
-    const img = bgImageRef.current;
     if (!canvas) return;
+    const bounds = displayedBounds(canvas.getWidth(), canvas.getHeight());
     const current = [...canvas.viewportTransform] as ViewportTransform;
-    const next = img ? constrainViewport(current, img.getBoundingRect(), canvas.getWidth(), canvas.getHeight()) : current;
+    const next = bounds ? constrainViewport(current, bounds, canvas.getWidth(), canvas.getHeight()) : current;
     canvas.setViewportTransform(next);
     canvas.requestRenderAll();
     setZoom(parseFloat(canvas.getZoom().toFixed(2)));
     setViewportTransform(next);
-  }, []);
+  }, [displayedBounds]);
+
+  useLayoutEffect(() => {
+    syncViewport();
+  }, [showBefore, originalElement, syncViewport]);
 
   const centerNavigator = useCallback((x: number, y: number) => {
     const canvas = fabricRef.current;
-    const img = bgImageRef.current;
-    if (!canvas || !img) return;
-    const bounds = img.getBoundingRect();
+    if (!canvas) return;
+    const bounds = displayedBounds(canvas.getWidth(), canvas.getHeight());
+    if (!bounds) return;
     const vpt = [...canvas.viewportTransform] as ViewportTransform;
     vpt[4] = canvas.getWidth() / 2 - (bounds.left + x * bounds.width) * vpt[0];
     vpt[5] = canvas.getHeight() / 2 - (bounds.top + y * bounds.height) * vpt[3];
     canvas.setViewportTransform(vpt);
     syncViewport();
-  }, [syncViewport]);
+  }, [syncViewport, displayedBounds]);
 
   const relayoutCanvas = useCallback(() => {
     const canvas = fabricRef.current;
@@ -156,7 +194,9 @@ export function useCanvas(
     if (!canvas || !container) return;
 
     const previous = layoutRef.current;
-    const oldBounds = previous?.bounds ?? img?.getBoundingRect();
+    const oldBounds = showBeforeRef.current
+      ? displayedBounds(previous?.width ?? canvas.getWidth(), previous?.height ?? canvas.getHeight())
+      : previous?.bounds ?? img?.getBoundingRect();
     const vpt = [...canvas.viewportTransform] as ViewportTransform;
     const centerX = oldBounds ? (((previous?.width ?? canvas.getWidth()) / 2 - vpt[4]) / vpt[0] - oldBounds.left) / oldBounds.width : 0.5;
     const centerY = oldBounds ? (((previous?.height ?? canvas.getHeight()) / 2 - vpt[5]) / vpt[3] - oldBounds.top) / oldBounds.height : 0.5;
@@ -184,7 +224,7 @@ export function useCanvas(
         flipY,
       });
       img.setCoords();
-      const bounds = img.getBoundingRect();
+      const bounds = displayedBounds(w, h) ?? img.getBoundingRect();
       vpt[4] = w / 2 - (bounds.left + centerX * bounds.width) * vpt[0];
       vpt[5] = h / 2 - (bounds.top + centerY * bounds.height) * vpt[3];
       canvas.setViewportTransform(vpt);
@@ -195,7 +235,7 @@ export function useCanvas(
     // callbacks, so waiting for requestRenderAll would expose a blank frame.
     // Paint the final geometry now and cancel Fabric's queued duplicate render.
     canvas.renderAll();
-  }, [updateImageBounds, syncViewport]);
+  }, [updateImageBounds, syncViewport, displayedBounds]);
 
   // Apply the current transform ref values to the loaded background image
   const applyTransform = useCallback(() => {
@@ -261,6 +301,8 @@ export function useCanvas(
         (canvas as unknown as { wrapperEl?: HTMLElement }).wrapperEl ??
         el.parentElement ??
         el;
+      // Include the read-only original comparison layer beside Fabric's wrapper.
+      const eventTarget = wrapper.parentElement ?? wrapper;
 
       // ── Mouse wheel zoom ──────────────────────────────────────────────────
       // MUST use a native listener with { passive: false } so we can call
@@ -296,15 +338,15 @@ export function useCanvas(
 
       const handlePointerDown = (e: PointerEvent) => {
         // Crop mode: let Fabric handle its interactive rect
-        if (canvas.selection) return;
+        if (canvas.selection && !showBeforeRef.current) return;
         // Heal brush / free drawing: let Fabric handle strokes
-        if (canvas.isDrawingMode) return;
+        if (canvas.isDrawingMode && !showBeforeRef.current) return;
         if (e.button !== 0 && e.button !== 1) return;
         isPanning = true;
         panLastX = e.clientX;
         panLastY = e.clientY;
-        try { wrapper.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-        wrapper.style.cursor = "grabbing";
+        try { eventTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+        eventTarget.style.cursor = "grabbing";
       };
 
       const handlePointerMove = (e: PointerEvent) => {
@@ -323,25 +365,25 @@ export function useCanvas(
       const handlePointerUp = (e: PointerEvent) => {
         if (!isPanning) return;
         isPanning = false;
-        wrapper.style.cursor = "";
-        try { wrapper.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+        eventTarget.style.cursor = "";
+        try { eventTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
         syncViewport();
       };
 
-      wrapper.addEventListener("wheel", handleWheel, { passive: false });
-      wrapper.addEventListener("pointerdown", handlePointerDown);
-      wrapper.addEventListener("pointermove", handlePointerMove);
-      wrapper.addEventListener("pointerup", handlePointerUp);
-      wrapper.addEventListener("pointercancel", handlePointerUp);
+      eventTarget.addEventListener("wheel", handleWheel, { passive: false });
+      eventTarget.addEventListener("pointerdown", handlePointerDown);
+      eventTarget.addEventListener("pointermove", handlePointerMove);
+      eventTarget.addEventListener("pointerup", handlePointerUp);
+      eventTarget.addEventListener("pointercancel", handlePointerUp);
 
       // Store teardown so the useEffect cleanup (below) can call it even
       // though it runs synchronously while this async block ran later.
       eventCleanupRef.current = () => {
-        wrapper.removeEventListener("wheel", handleWheel);
-        wrapper.removeEventListener("pointerdown", handlePointerDown);
-        wrapper.removeEventListener("pointermove", handlePointerMove);
-        wrapper.removeEventListener("pointerup", handlePointerUp);
-        wrapper.removeEventListener("pointercancel", handlePointerUp);
+        eventTarget.removeEventListener("wheel", handleWheel);
+        eventTarget.removeEventListener("pointerdown", handlePointerDown);
+        eventTarget.removeEventListener("pointermove", handlePointerMove);
+        eventTarget.removeEventListener("pointerup", handlePointerUp);
+        eventTarget.removeEventListener("pointercancel", handlePointerUp);
       };
 
       if (disposed) {
@@ -461,7 +503,7 @@ export function useCanvas(
     if (!canvasReady || !canvas || !source) return;
     const pixels = source.getElement() as HTMLImageElement;
     try {
-      const rendered = renderInteractiveImage(pixels, showBefore ? {} : adjustments,
+      const rendered = renderInteractiveImage(pixels, adjustments,
         localPreviewCanvasRef.current ?? undefined);
       localPreviewCanvasRef.current = rendered;
       const PreviewImage = source.constructor as typeof FabricImage;
@@ -473,7 +515,7 @@ export function useCanvas(
     } catch (err) {
       setPreviewError(err instanceof Error ? err.message : "Preview failed");
     }
-  }, [adjustments, showBefore, savedTransform, canvasReady, sourceVersion, relayoutCanvas]);
+  }, [adjustments, savedTransform, canvasReady, sourceVersion, relayoutCanvas]);
 
   // ---------------------------------------------------------------------------
   // Zoom — 10% increments, clamped to 10%–500%
@@ -1147,7 +1189,8 @@ export function useCanvas(
     canvasRef,
     restoreMasks,
     previewError,
-    navigatorImage,
+    navigatorImage: displayedNavigator,
+    onOriginalImageLoad,
     centerNavigator,
     containerRef,
     zoom,

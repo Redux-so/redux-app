@@ -152,6 +152,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     getPixelDimensions,
     previewError,
     navigatorImage,
+    onOriginalImageLoad,
     viewportTransform,
     centerNavigator,
   } = useCanvas(
@@ -355,6 +356,10 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
               <Canvas
                 canvasRef={canvasRef}
                 containerRef={containerRef}
+                originalImageUrl={image?.originalUrl ?? null}
+                onOriginalImageLoad={onOriginalImageLoad}
+                showBefore={showBefore}
+                viewportTransform={viewportTransform}
                 isCropping={isCropping}
                 onConfirmCrop={handleConfirmCrop}
                 onCancelCrop={cancelCrop}
