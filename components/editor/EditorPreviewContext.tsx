@@ -4,31 +4,19 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
   useState,
   type MutableRefObject,
   type ReactNode,
 } from "react";
-import { renderEditorPayload } from "@/lib/interactive-image-preview";
-import {
-  buildPreviewRequestBody,
-  type PreviewPayload,
-} from "@/lib/preview-request";
-import { recordLibraryPreviewUpdate } from "@/lib/library-preview-sync";
 
 interface EditorPreviewContextValue {
   imageId?: string;
-  savePreview: () => Promise<string | null>;
   saveEditorState: () => Promise<void>;
-  isSavingPreview: boolean;
   isSavingEditorState: boolean;
 }
 
-const EditorPreviewContext = createContext<EditorPreviewContextValue | null>(
-  null,
-);
+const EditorPreviewContext = createContext<EditorPreviewContextValue | null>(null);
 
 export function useEditorPreview() {
   return useContext(EditorPreviewContext);
@@ -36,77 +24,18 @@ export function useEditorPreview() {
 
 interface EditorPreviewProviderProps {
   imageId?: string;
-  getPayload: () => PreviewPayload;
-  savePreviewRef?: MutableRefObject<(() => Promise<string | null>) | null>;
-  saveEditorStateRef?: MutableRefObject<(() => Promise<void>) | null>;
+  saveEditorStateRef: MutableRefObject<(() => Promise<void>) | null>;
   children: ReactNode;
 }
 
 export function EditorPreviewProvider({
   imageId,
-  getPayload,
-  savePreviewRef,
   saveEditorStateRef,
   children,
 }: EditorPreviewProviderProps) {
-  const [isSavingPreview, setIsSavingPreview] = useState(false);
   const [isSavingEditorState, setIsSavingEditorState] = useState(false);
-  const previewQueueRef = useRef<Promise<unknown>>(Promise.resolve());
-  const previewGenerationRef = useRef(0);
-  const getPayloadRef = useRef(getPayload);
-  getPayloadRef.current = getPayload;
-
-  const savePreview = useCallback(async (): Promise<string | null> => {
-    if (!imageId) return null;
-    const generation = ++previewGenerationRef.current;
-    const payload = getPayloadRef.current();
-    const save = async () => {
-      setIsSavingPreview(true);
-      try {
-        const rendered = await renderEditorPayload(payload);
-        const body = {
-          ...buildPreviewRequestBody(rendered),
-          persist: true,
-          previewGeneration: generation,
-        };
-        const res = await fetch(`/api/images/${imageId}/generate-preview`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-          console.error("[EditorPreview] generate-preview failed:", res.status);
-          return null;
-        }
-        const data = (await res.json()) as { previewUrl?: string };
-        const previewUrl = data.previewUrl ?? null;
-        if (!previewUrl || generation !== previewGenerationRef.current) {
-          return generation === previewGenerationRef.current ? previewUrl : null;
-        }
-        recordLibraryPreviewUpdate(imageId, previewUrl);
-        return previewUrl;
-      } catch (err) {
-        console.error("[EditorPreview] generate-preview error:", err);
-        return null;
-      } finally {
-        setIsSavingPreview(false);
-      }
-    };
-    const pending = previewQueueRef.current.then(save, save);
-    previewQueueRef.current = pending;
-    return pending;
-  }, [imageId]);
-
-  useEffect(() => {
-    if (!savePreviewRef) return;
-    savePreviewRef.current = savePreview;
-    return () => {
-      savePreviewRef.current = null;
-    };
-  }, [savePreview, savePreviewRef]);
-
-  const saveEditorState = useCallback(async (): Promise<void> => {
-    if (!saveEditorStateRef?.current) return;
+  const saveEditorState = useCallback(async () => {
+    if (!saveEditorStateRef.current) throw new Error("The editor is still loading.");
     setIsSavingEditorState(true);
     try {
       await saveEditorStateRef.current();
@@ -114,30 +43,7 @@ export function EditorPreviewProvider({
       setIsSavingEditorState(false);
     }
   }, [saveEditorStateRef]);
-
-  useEffect(() => {
-    return () => {
-      void (async () => {
-        await saveEditorState();
-        await savePreview();
-      })();
-    };
-  }, [savePreview, saveEditorState]);
-
-  const value = useMemo(
-    () => ({
-      imageId,
-      savePreview,
-      saveEditorState,
-      isSavingPreview,
-      isSavingEditorState,
-    }),
-    [imageId, savePreview, saveEditorState, isSavingPreview, isSavingEditorState],
-  );
-
-  return (
-    <EditorPreviewContext.Provider value={value}>
-      {children}
-    </EditorPreviewContext.Provider>
-  );
+  const value = useMemo(() => ({ imageId, saveEditorState, isSavingEditorState }),
+    [imageId, saveEditorState, isSavingEditorState]);
+  return <EditorPreviewContext.Provider value={value}>{children}</EditorPreviewContext.Provider>;
 }

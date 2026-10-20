@@ -11,19 +11,29 @@ import {
   serializePersistedEditorState,
   type PersistedEditorState,
 } from "@/lib/editor-state";
+import { recordLibraryPreviewUpdate } from "@/lib/library-preview-sync";
 import type { CanvasMasks } from "@/hooks/useCanvas";
 
 export type Adjustments = SliderAdjustments;
 
 export interface UseEditorOptions {
   canAutoSave?: () => boolean;
+  renderCover?: (state: PersistedEditorState) => Promise<string>;
 }
 
 export interface EditorHistoryState extends PersistedEditorState {
   masks?: CanvasMasks;
 }
 
+let lastSaveGeneration = 0;
+function nextSaveGeneration(): number {
+  lastSaveGeneration = Math.max(Date.now() * 1000, lastSaveGeneration + 1);
+  return lastSaveGeneration;
+}
+
 export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
+  const renderCoverRef = useRef(options.renderCover);
+  renderCoverRef.current = options.renderCover;
   const canAutoSaveRef = useRef(options.canAutoSave);
   canAutoSaveRef.current = options.canAutoSave;
 
@@ -190,7 +200,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
   const saveVersion = useCallback(async (force = false): Promise<PersistedEditorState | null> => {
     const imgId = imageIdRef.current;
     if (!imgId) return null;
-    if (!force && !canAutoSaveRef.current?.()) return null;
+    if (canAutoSaveRef.current && !canAutoSaveRef.current()) return null;
 
     const persisted = buildCurrentPersistedState();
     const revision = revisionRef.current;
@@ -202,8 +212,11 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
       imageId: string;
       adjustments: Record<string, unknown>;
       imageBase64?: string;
+      coverBase64?: string;
+      saveGeneration: number;
     } = {
       imageId: imgId,
+      saveGeneration: nextSaveGeneration(),
       adjustments: serializePersistedEditorState(persisted),
     };
 
@@ -215,16 +228,19 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     const save = async () => {
       if (imgId !== imageIdRef.current || revision !== revisionRef.current) return null;
       try {
+        if (renderCoverRef.current) payload.coverBase64 = await renderCoverRef.current(persisted);
         const res = await fetch("/api/images/versions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-          keepalive: !payload.imageBase64,
+          keepalive: !payload.imageBase64 && !payload.coverBase64,
         });
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        const data = (await res.json()) as { version?: { adjustments: unknown } };
+        const data = (await res.json()) as { version?: { adjustments: unknown }; previewUrl?: string; stale?: boolean };
+        if (data.stale) return null;
+        if (data.previewUrl) recordLibraryPreviewUpdate(imgId, data.previewUrl, payload.saveGeneration);
         const saved = data.version
           ? parseVersionAdjustments(data.version.adjustments)
           : persisted;

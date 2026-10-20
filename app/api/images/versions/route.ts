@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
-import { AUTOSAVE_VERSION_LABEL, workingImagePublicId } from "@/lib/autosave-version";
+import { AUTOSAVE_VERSION_LABEL, previewImagePublicId, workingImagePublicId } from "@/lib/autosave-version";
 import { parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) {
     return parsed.response;
   }
-  const { imageId, adjustments: rawAdjustments, imageBase64, label } = parsed.data;
+  const { imageId, adjustments: rawAdjustments, imageBase64, coverBase64, saveGeneration, label } = parsed.data;
 
   const isExplicitVersion = label !== undefined && label.length > 0;
 
@@ -109,7 +110,6 @@ export async function POST(request: NextRequest) {
     const uploaded = await uploadToCloudinary(
       buffer,
       `${workingImagePublicId(image.publicId)}.jpg`,
-      { overwrite: true, uniqueFilename: false },
     );
     editorState.workingImageUrl = uploaded.secureUrl;
   }
@@ -131,35 +131,58 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ version });
   }
 
-  const existingAutosave = await prisma.imageVersion.findFirst({
-    where: {
-      imageId,
-      image: { userId: user.id },
-      OR: [{ label: AUTOSAVE_VERSION_LABEL }, { label: null }],
-    },
-    orderBy: { createdAt: "desc" },
-    select: { id: true },
+  // Upload immutable assets before publishing either the state or its cover.
+  // Failed uploads/transactions leave the previous saved cover untouched.
+  let previewUrl: string | undefined;
+  if (coverBase64) {
+    const cover = await renderAdjustedImage(Buffer.from(coverBase64, "base64"), {
+      adjustments: {},
+      pixelsRendered: true,
+      transform: editorState.transform,
+      format: "png",
+      maxWidth: 512,
+    });
+    const uploaded = await uploadToCloudinary(cover, `${previewImagePublicId(imageId)}.png`);
+    previewUrl = uploaded.secureUrl;
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Lock the image so overlapping requests cannot publish older pixels after newer ones.
+    await tx.$queryRaw`SELECT id FROM "Image" WHERE id = ${imageId} AND "userId" = ${user.id} FOR UPDATE`;
+    const latest = await tx.image.findFirstOrThrow({ where: { id: imageId, userId: user.id } });
+    const metadata = latest.metadata && typeof latest.metadata === "object" && !Array.isArray(latest.metadata)
+      ? latest.metadata as Record<string, Prisma.InputJsonValue> : {};
+    const storedGeneration = typeof metadata.saveGeneration === "number" ? metadata.saveGeneration : 0;
+    if (saveGeneration !== undefined && saveGeneration <= storedGeneration) {
+      return { stale: true };
+    }
+    const existingAutosave = await tx.imageVersion.findFirst({
+      where: {
+        imageId,
+        image: { userId: user.id },
+        OR: [{ label: AUTOSAVE_VERSION_LABEL }, { label: null }],
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    const data = {
+      url: versionUrl,
+      publicId: image.publicId,
+      adjustments: adjustments as Prisma.InputJsonValue,
+      label: AUTOSAVE_VERSION_LABEL,
+    };
+    const version = existingAutosave
+      ? await tx.imageVersion.update({ where: { id: existingAutosave.id }, data })
+      : await tx.imageVersion.create({ data: { imageId, ...data } });
+    await tx.image.update({
+      where: { id: imageId },
+      data: {
+        ...(previewUrl ? { previewUrl } : {}),
+        metadata: { ...metadata, ...(saveGeneration !== undefined ? { saveGeneration } : {}) },
+      },
+    });
+    return { version, previewUrl };
   });
 
-  const version = existingAutosave
-    ? await prisma.imageVersion.update({
-        where: { id: existingAutosave.id },
-        data: {
-          url: versionUrl,
-          publicId: image.publicId,
-          adjustments: adjustments as Prisma.InputJsonValue,
-          label: AUTOSAVE_VERSION_LABEL,
-        },
-      })
-    : await prisma.imageVersion.create({
-        data: {
-          imageId,
-          url: versionUrl,
-          publicId: image.publicId,
-          adjustments: adjustments as Prisma.InputJsonValue,
-          label: AUTOSAVE_VERSION_LABEL,
-        },
-      });
-
-  return NextResponse.json({ version });
+  return NextResponse.json(result);
 }

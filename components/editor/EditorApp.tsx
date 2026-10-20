@@ -53,7 +53,6 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   const [imageMissing, setImageMissing] = useState(false);
   const [loadingImage, setLoadingImage] = useState(!!imageId);
   const [showExport, setShowExport] = useState(false);
-  const savePreviewRef = useRef<(() => Promise<string | null>) | null>(null);
   const saveEditorStateRef = useRef<(() => Promise<void>) | null>(null);
   const canvasHydratedRef = useRef(false);
 
@@ -107,11 +106,25 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     saveVersion,
     restorePersistedState,
     versionLoaded,
-  } = useEditor(imageId, { canAutoSave: () => canvasHydratedRef.current });
+  } = useEditor(imageId, {
+    canAutoSave: () => canvasHydratedRef.current,
+    renderCover: async (state) => {
+      if (!image?.originalUrl || !versionLoaded) throw new Error("The image is still loading.");
+      const rendered = await renderEditorPayload({
+        adjustments: state.sliders,
+        originalUrl: image.originalUrl,
+        storedPreviewUrl: image.previewUrl ?? null,
+        baseImageUrl: state.workingImageUrl ?? image.originalUrl,
+        imageBase64: null,
+        transform: state.transform,
+      });
+      if (!rendered.imageBase64) throw new Error("Could not render the library cover.");
+      return rendered.imageBase64;
+    },
+  });
 
   const savedTransform = editorState.transform;
   const baseImageUrl = editorState.workingImageUrl ?? image?.originalUrl ?? null;
-  const imageBase64 = baseImageUrl?.startsWith("data:") ? baseImageUrl.split(",")[1] : null;
   const canvasDimensions = {
     width: editorState.workingWidth ?? image?.width ?? undefined,
     height: editorState.workingHeight ?? image?.height ?? undefined,
@@ -173,8 +186,11 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   }, [versionLoaded, loadingImage, activeImageUrl]);
 
   useEffect(() => {
-    saveEditorStateRef.current = async () => { await saveVersion(true); };
-  }, [saveVersion]);
+    saveEditorStateRef.current = async () => {
+      await prepareExportState();
+      if (!(await saveVersion(true))) throw new Error("Could not save your edits. Please try again.");
+    };
+  }, [saveVersion, prepareExportState]);
 
   const handleRestoreHistory = useCallback(async (raw: unknown) => {
     const finishOperation = beginOperation();
@@ -264,20 +280,10 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     redo();
   }, [cancelCrop, redo]);
 
-  const getPreviewPayload = useCallback(() => ({
-    adjustments,
-    originalUrl: image?.originalUrl ?? null,
-    storedPreviewUrl: image?.previewUrl ?? null,
-    baseImageUrl,
-    imageBase64,
-    transform: savedTransform,
-  }), [adjustments, image?.originalUrl, image?.previewUrl, baseImageUrl, imageBase64, savedTransform]);
-
   useEffect(() => {
     if (!canvasHydratedRef.current) return;
     const timer = setTimeout(() => {
       void saveVersion();
-      void savePreviewRef.current?.();
     }, 2000);
     return () => clearTimeout(timer);
   }, [editorState, saveVersion, versionLoaded, loadingImage]);
@@ -287,8 +293,6 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   return (
     <EditorPreviewProvider
       imageId={imageId}
-      getPayload={getPreviewPayload}
-      savePreviewRef={savePreviewRef}
       saveEditorStateRef={saveEditorStateRef}
     >
       <div className="flex flex-col h-screen bg-[#161616] overflow-hidden">

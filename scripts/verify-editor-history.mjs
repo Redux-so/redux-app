@@ -9,7 +9,7 @@ import { require as tsxRequire } from "tsx/cjs/api";
 
 const { useEditor } = tsxRequire("../hooks/useEditor.ts", import.meta.url);
 
-function editorHost(imageId) {
+function editorHost(imageId, options = {}) {
   const slots = [];
   let cursor = 0;
   const dispatcher = {
@@ -36,7 +36,7 @@ function editorHost(imageId) {
     const internals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
     const previous = internals.H;
     internals.H = dispatcher;
-    try { return useEditor(imageId, { canAutoSave: () => true }); }
+    try { return useEditor(imageId, { canAutoSave: () => true, ...options }); }
     finally { internals.H = previous; }
   };
 }
@@ -204,4 +204,52 @@ test("export reads the completed document after pending operations and rejects d
   editor = render();
   editor.commitState({ masks: { heal: [], eraser: [], blur: [{ path: "draft" }] } });
   await assert.rejects(editor.prepareExportState(), /Confirm or cancel/);
+});
+
+
+test("saved covers use the exact persisted snapshot across editor reopenings", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (_url, options) => {
+    const body = JSON.parse(options.body);
+    requests.push(body);
+    return { ok: true, json: async () => ({}) };
+  };
+  try {
+    for (const temperature of [70, -50]) {
+      const render = editorHost("image-cover", {
+        renderCover: async (state) => Buffer.from(JSON.stringify(state)).toString("base64"),
+      });
+      let editor = render();
+      editor.patchAdjustments({ temperature, grain: 20 });
+      editor.commitState({ workingImageUrl: "data:image/png;base64,Y3JvcA==", workingWidth: 200, workingHeight: 100,
+        transform: { rotation: 90, straighten: 4, flipX: true, flipY: false } });
+      editor = render();
+      assert.ok(await editor.saveVersion(true));
+      const request = requests.at(-1);
+      const coverState = JSON.parse(Buffer.from(request.coverBase64, "base64").toString());
+      assert.deepEqual(coverState.sliders, request.adjustments.sliders);
+      assert.deepEqual(coverState.transform, request.adjustments.transform);
+      assert.equal(coverState.workingImageUrl, "data:image/png;base64,Y3JvcA==");
+      assert.equal(request.imageBase64, "Y3JvcA==");
+      assert.equal(request.adjustments.workingImageUrl, null);
+    }
+    assert.ok(requests[1].saveGeneration > requests[0].saveGeneration);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("failed cover rendering leaves edits dirty and does not publish a version", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalError = console.error;
+  let requests = 0;
+  globalThis.fetch = async () => { requests++; throw new Error("Unexpected request"); };
+  console.error = () => {};
+  try {
+    const render = editorHost("image-cover", { renderCover: async () => { throw new Error("render failed"); } });
+    let editor = render();
+    editor.patchAdjustments({ temperature: 80 }); editor = render();
+    assert.equal(await editor.saveVersion(true), null);
+    assert.equal(requests, 0);
+    assert.equal(render().isDirty, true);
+  } finally { globalThis.fetch = originalFetch; console.error = originalError; }
 });

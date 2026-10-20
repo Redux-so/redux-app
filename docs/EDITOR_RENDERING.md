@@ -77,3 +77,19 @@ Manual QA:
 Lossless working/export PNG requests use the existing 50 MiB ceiling. Next.js
 proxy buffering allows their base64 expansion (70 MiB JSON); deployment platforms
 must also support those request sizes.
+
+## Saved library covers
+
+Autosave and Back to Library render a cover from the same editor snapshot sent
+with the version save. The versions route transforms these already adjusted
+pixels and publishes the version and cover URL in one image-locked transaction.
+Working images and covers use immutable Cloudinary assets. A timestamp-based
+save generation survives editor remounts; older saves cannot replace a newer
+committed snapshot. Failed rendering, upload, or persistence preserves the
+previous saved cover. Successful saves notify the library, including saves that
+finish after navigation. Back to Library waits for pending operations and the
+complete save, and displays an error if saving fails.
+
+`node scripts/verify-cover-save.mjs` exercises out-of-order saves and upload
+failure using isolated route adapters. `verify-editor-history.mjs` also checks
+snapshot/cover agreement and save generations across editor remounts.

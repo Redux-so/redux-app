@@ -1,8 +1,12 @@
 import type { ImageRecord } from "@/types/image";
 
+export const LIBRARY_PREVIEW_UPDATED_EVENT = "redux:library-preview-updated";
+
 export const LIBRARY_PREVIEW_UPDATES_KEY = "redux:library-preview-updates";
 
 export type LibraryPreviewUpdates = Record<string, string>;
+
+const latestGenerations = new Map<string, number>();
 
 function readUpdates(): LibraryPreviewUpdates {
   if (typeof sessionStorage === "undefined") return {};
@@ -24,7 +28,9 @@ function readUpdates(): LibraryPreviewUpdates {
 }
 
 /** Persist a library thumbnail URL after a successful preview save (per tab). */
-export function recordLibraryPreviewUpdate(imageId: string, previewUrl: string): void {
+export function recordLibraryPreviewUpdate(imageId: string, previewUrl: string, generation: number): void {
+  if (generation <= (latestGenerations.get(imageId) ?? 0)) return;
+  latestGenerations.set(imageId, generation);
   if (typeof sessionStorage === "undefined") return;
   try {
     const updates = readUpdates();
@@ -33,6 +39,7 @@ export function recordLibraryPreviewUpdate(imageId: string, previewUrl: string):
   } catch {
     // Library still refetches from API when storage is unavailable.
   }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(LIBRARY_PREVIEW_UPDATED_EVENT));
 }
 
 /** Read and clear pending preview URLs (call when library mounts or refetches). */

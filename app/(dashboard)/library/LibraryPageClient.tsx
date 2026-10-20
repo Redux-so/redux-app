@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } fr
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 import { mergeImageRecords } from "@/lib/merge-image-records";
 import {
+  LIBRARY_PREVIEW_UPDATED_EVENT,
   applyLibraryPreviewUpdates,
   consumeLibraryPreviewUpdates,
   type LibraryPreviewUpdates,
@@ -275,6 +276,8 @@ export default function LibraryPageClient({
 
   // Backup refetch — catches previews that finish shortly after navigation.
   useEffect(() => {
+    const refresh = () => { void fetchImages(); void fetchTrashedImages(); };
+    window.addEventListener(LIBRARY_PREVIEW_UPDATED_EVENT, refresh);
     const timers = [500, 2500].map((delay) =>
       setTimeout(() => {
         void fetchImages();
@@ -282,6 +285,7 @@ export default function LibraryPageClient({
       }, delay),
     );
     return () => {
+      window.removeEventListener(LIBRARY_PREVIEW_UPDATED_EVENT, refresh);
       for (const timer of timers) clearTimeout(timer);
     };
   }, [fetchImages, fetchTrashedImages]);

@@ -313,6 +313,8 @@ export const patchImageBodySchema = z
   );
 
 export const saveVersionBodySchema = z.object({
+  coverBase64: workingImageBase64Schema.optional(),
+  saveGeneration: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   imageId: resourceIdSchema,
   adjustments: z.record(z.string(), z.unknown()),
   imageBase64: workingImageBase64Schema.optional(),

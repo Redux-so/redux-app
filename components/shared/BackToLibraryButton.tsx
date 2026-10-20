@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { useState } from "react";
 
 import { useEditorPreview } from "@/components/editor/EditorPreviewContext";
@@ -22,9 +23,10 @@ export default function BackToLibraryButton() {
     try {
       if (editorPreview?.imageId) {
         await editorPreview.saveEditorState();
-        await editorPreview.savePreview();
       }
       router.push("/library");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save your edits.");
     } finally {
       setNavigating(false);
     }
