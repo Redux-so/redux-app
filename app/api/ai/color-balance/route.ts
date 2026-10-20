@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       await refundCreditFeature({
         userId: user.id,
         feature: "smart_color_balance",
-        description: "Refund: smart color balance parse failure",
+        description: "Refund: color balance parse failure",
       });
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
     }
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     await refundCreditFeature({
       userId: user.id,
       feature: "smart_color_balance",
-      description: "Refund: smart color balance failed",
+      description: "Refund: color balance failed",
     });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

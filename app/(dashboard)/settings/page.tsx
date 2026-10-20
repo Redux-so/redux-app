@@ -68,6 +68,7 @@ function formatDate(iso: string): string {
 
 function formatFeature(feature: string | null): string {
   if (!feature) return "—";
+  if (feature === "smart_color_balance") return "Color Balance";
   return feature
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());

@@ -394,7 +394,7 @@ export default function AdjustmentPanel({
   // Loading flags per AI button
   const [loadingEnhance, setLoadingEnhance] = useState(false);
   const [loadingToneBalance, setLoadingToneBalance] = useState(false);
-  const [loadingSmartColor, setLoadingSmartColor] = useState(false);
+  const [loadingColorBalance, setLoadingColorBalance] = useState(false);
   const [loadingStyleMatch, setLoadingStyleMatch] = useState(false);
   const [styleMatchPreview, setStyleMatchPreview] = useState<string | null>(null);
   const styleMatchInputRef = useRef<HTMLInputElement>(null);
@@ -512,10 +512,10 @@ export default function AdjustmentPanel({
     }
   }
 
-  // ── Smart Color Balance ───────────────────────────────────────────────────
-  async function runSmartColorBalance() {
+  // ── Color Balance ───────────────────────────────────────────────────
+  async function runColorBalance() {
     if (!aiImageUrl) return;
-    setLoadingSmartColor(true);
+    setLoadingColorBalance(true);
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
@@ -531,13 +531,13 @@ export default function AdjustmentPanel({
       if (data.adjustments) {
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
       }
-      toast.success("Smart Color Balance applied");
+      toast.success("Color Balance applied");
     } catch (err) {
-      console.error("[AdjustmentPanel] smart_color_balance failed:", err);
-      toast.error("Smart Color Balance failed");
+      console.error("[AdjustmentPanel] color_balance failed:", err);
+      toast.error("Color Balance failed");
     } finally {
       finishOperation();
-      setLoadingSmartColor(false);
+      setLoadingColorBalance(false);
     }
   }
 
@@ -905,10 +905,10 @@ export default function AdjustmentPanel({
                       ))}
                       <div className="flex flex-col gap-3 px-8 pt-5 pb-3">
                         <AIButton
-                          label="Smart Color Balance"
-                          loading={loadingSmartColor}
+                          label="Color Balance"
+                          loading={loadingColorBalance}
                           disabled={!imageUrl}
-                          onClick={() => void runSmartColorBalance()}
+                          onClick={() => void runColorBalance()}
                         />
                         <input
                           ref={styleMatchInputRef}
