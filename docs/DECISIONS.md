@@ -211,3 +211,12 @@ already rendered PNG pixels for server-side transforms and JPEG/PNG/TIFF
 encoding with sRGB metadata. Fabric handles interaction and viewport geometry.
 Source pixels remain separate from effects so retouch and crop never bake
 adjustments twice. See [EDITOR_RENDERING.md](EDITOR_RENDERING.md).
+
+## Decision: Automatic version history (2026-10-20)
+
+History is one list of automatically recorded image versions, each with a Revert
+action. Reverting restores a complete document snapshot and retains the existing
+version line. Autosave persists the snapshots without creating visible versions.
+Original remains available, along with up to 999 recent changes. Existing saved
+checkpoints remain accessible in the same list. No manual naming or saving UI.
+See [EDITOR_RENDERING.md](EDITOR_RENDERING.md).

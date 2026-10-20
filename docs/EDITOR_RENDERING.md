@@ -93,3 +93,31 @@ complete save, and displays an error if saving fails.
 `node scripts/verify-cover-save.mjs` exercises out-of-order saves and upload
 failure using isolated route adapters. `verify-editor-history.mjs` also checks
 snapshot/cover agreement and save generations across editor remounts.
+
+## Version history
+
+The History panel is a single automatic version list with a Revert action.
+Each completed slider gesture, geometry change, AI patch, or destructive edit
+records a full editor snapshot. Original remains available. Painted selections
+and autosave requests do not create visible versions. Revert restores the whole
+document, including its working image, adjustments, dimensions, and transform,
+and records that result at the end of the version line. Existing versions remain
+available after reverting and making subsequent changes. There is no naming form
+or manual version-saving workflow.
+
+Autosave stores the snapshots and toolbar undo/redo cursor inside the existing
+v2 `ImageVersion.adjustments.history` JSON together with the current document
+and cover. Original plus the latest 999 changes are retained. Working sources
+are uploaded once per save and shared between snapshots by immutable URL.
+Large batches of native sources upload separately before the final atomic save.
+Failed history loading blocks saves rather than overwriting saved work.
+
+Existing saved checkpoints appear in the same version list. Legacy destructive
+checkpoints recover their pixels from `ImageVersion.url`; missing historical
+steps cannot be reconstructed. New AI result records remain hidden until their
+result is successfully applied to the editor. Historical sources retain their
+ownership records so retouching and permanent image cleanup still work.
+
+Regression coverage lives in `scripts/verify-editor-history.mjs` and
+`scripts/verify-cover-save.mjs`, including full-state reverts, version retention,
+legacy sources, persistent snapshots, and cover consistency.

@@ -106,6 +106,10 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     saveVersion,
     restorePersistedState,
     versionLoaded,
+    historyEntries,
+    currentHistoryId,
+    savedVersions,
+    historyError,
   } = useEditor(imageId, {
     canAutoSave: () => canvasHydratedRef.current,
     renderCover: async (state) => {
@@ -192,18 +196,19 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     };
   }, [saveVersion, prepareExportState]);
 
-  const handleRestoreHistory = useCallback(async (raw: unknown) => {
+  const handleRestoreHistory = useCallback(async (raw: unknown, label: string) => {
     const finishOperation = beginOperation();
     try {
       const restored = parseVersionAdjustments(raw);
       const isCurrent = createEditGuard();
       const url = restored.workingImageUrl ?? image?.originalUrl;
-      if (!url || !(await loadImageUrl(url, isCurrent)) || !isCurrent()) return;
-      restorePersistedState(restored);
+      cancelCrop();
+      if (!url || !(await loadImageUrl(url, isCurrent)) || !isCurrent()) throw new Error("Could not load this saved version");
+      restorePersistedState(restored, `Reverted to ${label}`);
     } finally { finishOperation(); }
-  }, [beginOperation, restorePersistedState, createEditGuard, image?.originalUrl, loadImageUrl]);
+  }, [beginOperation, restorePersistedState, createEditGuard, image?.originalUrl, loadImageUrl, cancelCrop]);
 
-  const reloadCanvas = useCallback(async (url: string, isCurrent: () => boolean = () => true) => {
+  const reloadCanvas = useCallback(async (url: string, isCurrent: () => boolean = () => true, label = "Image edited") => {
     if (!isCurrent()) return false;
     const dims = await probeImageDimensions(url);
     if (!isCurrent()) return false;
@@ -215,7 +220,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       workingWidth: dims.width,
       workingHeight: dims.height,
       masks: undefined,
-    });
+    }, true, label);
     return true;
   }, [loadImageUrl, commitState]);
 
@@ -224,7 +229,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     else void startCrop();
   }, [isCropping, cancelCrop, startCrop]);
 
-  const commitPixels = useCallback((dataUrl: string | null, isCurrent: () => boolean) => {
+  const commitPixels = useCallback((dataUrl: string | null, isCurrent: () => boolean, label: string) => {
     if (!dataUrl || !isCurrent()) return;
     const dims = getPixelDimensions();
     if (!dims.width || !dims.height) return;
@@ -234,14 +239,14 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       workingHeight: dims.height,
       transform: getTransformSnapshot(),
       masks: undefined,
-    });
+    }, true, label);
   }, [commitState, getTransformSnapshot, getPixelDimensions]);
 
   const handleConfirmCrop = useCallback(async () => {
     const finishOperation = beginOperation();
     try {
       const isCurrent = createEditGuard();
-      commitPixels(await confirmCrop(isCurrent), isCurrent);
+      commitPixels(await confirmCrop(isCurrent), isCurrent, "Crop applied");
     } finally { finishOperation(); }
   }, [beginOperation, createEditGuard, confirmCrop, commitPixels]);
 
@@ -249,7 +254,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     const finishOperation = beginOperation();
     try {
       const isCurrent = createEditGuard();
-      commitPixels(await resizeCanvas(width, height, isCurrent), isCurrent);
+      commitPixels(await resizeCanvas(width, height, isCurrent), isCurrent, "Image resized");
     } finally { finishOperation(); }
   }, [beginOperation, createEditGuard, resizeCanvas, commitPixels]);
 
@@ -347,7 +352,11 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
             enableBlurBrush={enableBlurBrush}
             disableBlurBrush={disableBlurBrush}
             exportBlurMask={exportBlurMask}
-            onRestoreHistory={handleRestoreHistory}
+            history={{
+              entries: historyEntries, currentId: currentHistoryId, versions: savedVersions,
+              ready: versionLoaded && !loadingImage, error: historyError,
+              onRevert: handleRestoreHistory,
+            }}
           />
 
           <EditorErrorBoundary label="canvas">
@@ -384,7 +393,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
           <EditorErrorBoundary label="chat">
             <ChatPanel
               adjustments={adjustments}
-              onPatch={handlePatchAdjustments}
+              onPatch={(patch) => patchAdjustments(patch, "Agent adjustments applied")}
               createEditGuard={createEditGuard}
               createChatEditGuard={createChatEditGuard}
               beginOperation={beginOperation}

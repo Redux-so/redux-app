@@ -123,7 +123,7 @@ export async function POST(request: Request) {
           imageId,
           url: uploaded.secureUrl,
           publicId: uploaded.publicId,
-          adjustments: {},
+          adjustments: { operationResult: true },
           label: "Blur",
         },
       });

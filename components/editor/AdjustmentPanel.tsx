@@ -7,6 +7,7 @@ import DiscordIcon from "@/components/shared/DiscordIcon";
 import GitHubIcon from "@/components/shared/GitHubIcon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
+import type { HistoryPanelProps } from "./HistoryPanel";
 import AdjustmentSlider, { type SliderTrackVariant } from "./AdjustmentSlider";
 import type { AdjustmentKey, Adjustments } from "@/constants/adjustments";
 import { BTN_PRIMARY_BLOCK, BTN_PRIMARY_PANEL, BTN_PRIMARY_SOLID } from "@/lib/button-styles";
@@ -25,7 +26,7 @@ interface AdjustmentPanelProps {
   onPreview: (key: AdjustmentKey, value: number) => void;
   onCommit: (key: AdjustmentKey, value: number) => void;
   /** Batch-apply AI adjustment patches with a single undo checkpoint. */
-  onPatch?: (patch: Partial<Record<string, number>>) => void;
+  onPatch?: (patch: Partial<Record<string, number>>, label?: string) => void;
   imageId?: string;
   imageUrl?: string | null;
   imageWidth?: number;
@@ -46,7 +47,7 @@ interface AdjustmentPanelProps {
   restoredMaskTool: ActiveTool;
   createEditGuard: () => () => boolean;
   beginOperation: () => () => void;
-  onReloadCanvas?: (url: string, isCurrent?: () => boolean) => boolean | Promise<boolean>;
+  onReloadCanvas?: (url: string, isCurrent?: () => boolean, label?: string) => boolean | Promise<boolean>;
   /** Active canvas image URL (may differ from library original after AI edits). */
   canvasImageUrl?: string | null;
   enableHealBrush?: () => void | Promise<void>;
@@ -58,7 +59,7 @@ interface AdjustmentPanelProps {
   enableBlurBrush?: () => void | Promise<void>;
   disableBlurBrush?: () => void;
   exportBlurMask?: () => Promise<string>;
-  onRestoreHistory?: (raw: unknown) => void | Promise<void>;
+  history: HistoryPanelProps;
 }
 
 type ToolSection = "light" | "color" | "effects" | "retouch" | "transform" | "history";
@@ -108,9 +109,10 @@ function RailGitHubIcon() {
 
 function applyAiAdjustments(
   patch: Partial<Record<string, number>>,
-  onPatch: (p: Partial<Record<string, number>>) => void,
+  onPatch: (p: Partial<Record<string, number>>, label?: string) => void,
+  label: string,
 ) {
-  onPatch(patch);
+  onPatch(patch, label);
 }
 
 const LIGHT_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
@@ -328,7 +330,7 @@ export default function AdjustmentPanel({
   enableBlurBrush,
   disableBlurBrush,
   exportBlurMask,
-  onRestoreHistory,
+  history,
 }: AdjustmentPanelProps) {
   const [activeSection, setActiveSection] = useState<ToolSection | null>(null);
   const panelInnerRef = useRef<HTMLDivElement>(null);
@@ -471,7 +473,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}), "Auto enhance applied");
       }
       toast.success("Auto Enhance applied");
     } catch (err) {
@@ -500,7 +502,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}), "Tone balance applied");
       }
       toast.success("Auto Tone Balance applied");
     } catch (err) {
@@ -529,7 +531,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}), "Color balance applied");
       }
       toast.success("Color Balance applied");
     } catch (err) {
@@ -581,7 +583,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
       if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}));
+        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}), "Style match applied");
       }
       toast.success("Style Match applied");
       setStyleMatchPreview(null);
@@ -612,7 +614,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { resultUrl?: string };
       if (!isCurrent()) return;
       if (data.resultUrl) {
-        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent, "Background removed"))) return;
       }
       toast.success("Background removed successfully");
     } catch (err) {
@@ -663,7 +665,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { resultUrl?: string };
       if (!isCurrent()) return;
       if (data.resultUrl) {
-        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent, "Heal applied"))) return;
       }
       toast.success("Heal applied successfully");
       disableHealBrush?.();
@@ -718,7 +720,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { resultUrl?: string };
       if (!isCurrent()) return;
       if (data.resultUrl) {
-        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent, "Eraser applied"))) return;
       }
       toast.success("Eraser applied successfully");
       disableEraserBrush?.();
@@ -769,7 +771,7 @@ export default function AdjustmentPanel({
       const data = (await res.json()) as { resultUrl?: string };
       if (!isCurrent()) return;
       if (data.resultUrl) {
-        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent))) return;
+        if (!(await onReloadCanvas?.(data.resultUrl, isCurrent, "Blur applied"))) return;
       }
       toast.success("Blur applied successfully");
       disableBlurBrush?.();
@@ -857,9 +859,7 @@ export default function AdjustmentPanel({
 
               {activeSection === "history" ? (
                 <HistoryVersionList
-                  imageId={imageId}
-                  enabled={activeSection === "history"}
-                  onRestore={onRestoreHistory ?? (() => {})}
+                  {...history}
                 />
               ) : (
                 <div className="flex-1 overflow-y-auto min-h-0" data-panel-scroll>
@@ -1205,7 +1205,7 @@ export default function AdjustmentPanel({
           canvasImageUrl={canvasImageUrl ?? null}
           createEditGuard={createEditGuard}
           beginOperation={beginOperation}
-          onApplied={async (url, isCurrent) => (await onReloadCanvas?.(url, isCurrent)) ?? false}
+          onApplied={async (url, isCurrent) => (await onReloadCanvas?.(url, isCurrent, "Generative fill applied")) ?? false}
         />
       )}
     </>

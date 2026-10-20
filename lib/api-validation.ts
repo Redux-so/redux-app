@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { EDITOR_HISTORY_LIMIT } from "@/lib/editor-history";
 import { DEFAULT_ADJUSTMENTS } from "@/constants/adjustments";
 import { isTrustedMediaHttpUrl } from "@/lib/trusted-media-url";
 
@@ -312,14 +313,39 @@ export const patchImageBodySchema = z
     "isFavorite or restore is required",
   );
 
+const editorHistoryStateSchema = z.object({
+  v: z.literal(2),
+  sliders: adjustmentsRecordSchema,
+  transform: imageTransformSchema,
+  workingImageUrl: z.union([httpImageUrlSchema, z.string().regex(/^history-image:\d+$/)]).nullable(),
+  workingWidth: z.number().int().positive().nullable(),
+  workingHeight: z.number().int().positive().nullable(),
+});
+
+const editorHistoryBodySchema = z.object({
+  v: z.literal(1),
+  cursor: z.number().int().nonnegative(),
+  entries: z.array(z.object({
+    id: z.string().min(1).max(128),
+    label: z.string().min(1).max(120),
+    createdAt: z.string().max(40),
+    state: editorHistoryStateSchema,
+  })).min(1).max(EDITOR_HISTORY_LIMIT),
+}).refine((history) => history.cursor < history.entries.length, "Invalid history position");
+
 export const saveVersionBodySchema = z.object({
+  sourceOnly: z.boolean().optional().default(false),
+  history: editorHistoryBodySchema.optional(),
+  historyImages: z.array(workingImageBase64Schema).max(EDITOR_HISTORY_LIMIT).optional()
+    .refine((images) => !images || images.reduce((size, image) => size + base64DecodedByteLength(image), 0) <= API_LIMITS.UPLOAD_SIZE_MAX,
+      "History images exceed the upload limit"),
   coverBase64: workingImageBase64Schema.optional(),
   saveGeneration: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
   imageId: resourceIdSchema,
   adjustments: z.record(z.string(), z.unknown()),
   imageBase64: workingImageBase64Schema.optional(),
-  label: z.string().trim().max(API_LIMITS.VERSION_LABEL_MAX).optional(),
-});
+  label: z.string().trim().max(API_LIMITS.VERSION_LABEL_MAX).refine((label) => !label.startsWith("__"), "This version name is reserved").optional(),
+}).refine((body) => !body.sourceOnly || !!body.imageBase64, "A working image is required");
 
 export const albumNameBodySchema = z.object({
   name: z.string().trim().min(1).max(API_LIMITS.ALBUM_NAME_MAX),

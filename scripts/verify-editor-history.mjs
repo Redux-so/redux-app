@@ -1,4 +1,4 @@
-/** Exercise the real useEditor/use-undo hooks without a DOM or external services.
+/** Exercise the real useEditor hook without a DOM or external services.
  * This minimal hook host retains React hook slots between explicit renders;
  * effects are intentionally omitted (network hydration and timers are separate).
  */
@@ -157,8 +157,8 @@ test("overlapping saves serialize and stale responses do not replace current pix
     assert.equal(await firstSave, null);
     await Promise.resolve();
     assert.equal(requests.length, 2);
-    assert.equal(requests[1].imageBase64, "YQ==");
-    assert.equal(requests[1].adjustments.workingImageUrl, null);
+    assert.deepEqual(requests[1].historyImages, ["YQ=="]);
+    assert.equal(requests[1].adjustments.workingImageUrl, "history-image:0");
     assert.equal(requests[1].adjustments.sliders.contrast, 40);
     releases.shift()(); await secondSave;
     editor = render();
@@ -231,8 +231,8 @@ test("saved covers use the exact persisted snapshot across editor reopenings", a
       assert.deepEqual(coverState.sliders, request.adjustments.sliders);
       assert.deepEqual(coverState.transform, request.adjustments.transform);
       assert.equal(coverState.workingImageUrl, "data:image/png;base64,Y3JvcA==");
-      assert.equal(request.imageBase64, "Y3JvcA==");
-      assert.equal(request.adjustments.workingImageUrl, null);
+      assert.deepEqual(request.historyImages, ["Y3JvcA=="]);
+      assert.equal(request.adjustments.workingImageUrl, "history-image:0");
     }
     assert.ok(requests[1].saveGeneration > requests[0].saveGeneration);
   } finally { globalThis.fetch = originalFetch; }
@@ -252,4 +252,74 @@ test("failed cover rendering leaves edits dirty and does not publish a version",
     assert.equal(requests, 0);
     assert.equal(render().isDirty, true);
   } finally { globalThis.fetch = originalFetch; console.error = originalError; }
+});
+
+
+test("reverting keeps the version line and later edits continue from the reverted pixels", () => {
+  const render = editorHost();
+  let editor = render();
+  editor.updateAdjustment("temperature", 45); editor = render();
+  const warm = editor.editorState;
+  const warmId = editor.currentHistoryId;
+  editor.updateAdjustment("contrast", 25); editor = render();
+  const contrast = editor.editorState;
+  const contrastId = editor.currentHistoryId;
+  editor.restorePersistedState(warm, "Reverted to Version 1"); editor = render();
+  assert.equal(editor.adjustments.contrast, 0);
+  assert.equal(editor.adjustments.temperature, 45);
+  assert.equal(editor.historyEntries.length, 4);
+  assert.ok(editor.historyEntries.some((entry) => entry.id === contrastId));
+  editor.updateAdjustment("grain", 15); editor = render();
+  const grainId = editor.currentHistoryId;
+  assert.ok(editor.historyEntries.some((entry) => entry.id === warmId));
+  assert.ok(editor.historyEntries.some((entry) => entry.id === contrastId));
+  // Reverting while toolbar undo is positioned earlier also keeps all versions.
+  editor.selectHistory(warmId); editor = render();
+  editor.restorePersistedState(contrast, "Reverted to Version 2"); editor = render();
+  assert.equal(editor.adjustments.contrast, 25);
+  assert.ok(editor.historyEntries.some((entry) => entry.id === grainId));
+  editor.undo(); editor = render();
+  assert.equal(editor.adjustments.grain, 15);
+});
+
+test("slider drags create one visible entry; masks stay out of saved actions", async () => {
+  const originalFetch = globalThis.fetch;
+  let payload;
+  globalThis.fetch = async (_url, options) => { payload = JSON.parse(options.body); return { ok: true, json: async () => ({}) }; };
+  try {
+    const render = editorHost("image-a");
+    let editor = render();
+    editor.previewAdjustment("temperature", 10); editor.previewAdjustment("temperature", 20);
+    editor.updateAdjustment("temperature", 30); editor = render();
+    assert.deepEqual(editor.historyEntries.map((entry) => entry.label), ["Original", "Temperature adjusted"]);
+    editor.commitState({ masks: { heal: [{ path: "draft" }], blur: [], eraser: [] } }); editor = render();
+    assert.equal(editor.historyEntries.length, 2);
+    await editor.saveVersion(true);
+    assert.equal(payload.history.entries.length, 2);
+    assert.equal(payload.history.entries[1].state.masks, undefined);
+    assert.equal(payload.history.entries[1].state.sliders.temperature, 30);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("legacy checkpoints restore their saved pixels; modern snapshots retain the original source", () => {
+  const { normalizeSavedVersion, parseEditorTimeline } = tsxRequire("../lib/editor-history.ts", import.meta.url);
+  const original = "https://example.com/original.png", result = "https://example.com/healed.png";
+  const recovered = normalizeSavedVersion({}, result, original);
+  assert.equal(recovered.workingImageUrl, result);
+  const timeline = parseEditorTimeline(recovered);
+  assert.deepEqual(timeline.entries.map((entry) => entry.label), ["Original", "Previous edits"]);
+  assert.equal(timeline.entries[1].state.workingImageUrl, result);
+  const modern = normalizeSavedVersion({ v: 2, sliders: {}, workingImageUrl: null }, result, original);
+  assert.equal(modern.workingImageUrl, null);
+});
+
+test("a slider gesture returning to its starting value leaves no action", () => {
+  const render = editorHost();
+  let editor = render();
+  editor.previewAdjustment("temperature", 50);
+  editor.previewAdjustment("temperature", 0);
+  editor.updateAdjustment("temperature", 0);
+  editor = render();
+  assert.equal(editor.historyEntries.length, 1);
+  assert.equal(editor.currentHistoryId, "original");
 });

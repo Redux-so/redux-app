@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import { AUTOSAVE_VERSION_LABEL } from "@/lib/autosave-version";
 import { hasNonDefaultAdjustments } from "@/lib/library-filters";
 import { ACTIVE_IMAGE_WHERE, TRASHED_IMAGE_WHERE } from "@/lib/image-query";
 import { isImageFavorite } from "@/lib/image-metadata";
@@ -21,11 +23,12 @@ const IMAGE_SELECT = {
   userId: true,
   metadata: true,
   versions: {
+    where: { OR: [{ label: AUTOSAVE_VERSION_LABEL }, { label: null }] },
     orderBy: { createdAt: "desc" as const },
     take: 1,
     select: { adjustments: true },
   },
-} as const;
+} satisfies Prisma.ImageSelect;
 
 type ImageListRow = {
   id: string;

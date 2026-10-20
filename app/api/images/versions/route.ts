@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { AUTOSAVE_VERSION_LABEL, previewImagePublicId, workingImagePublicId } from "@/lib/autosave-version";
-import { parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
+import { parseVersionAdjustments, persistedStatesEqual, serializePersistedEditorState } from "@/lib/editor-state";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { normalizeSavedVersion, parseEditorTimeline, serializeEditorTimeline } from "@/lib/editor-history";
 import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
@@ -15,6 +16,7 @@ import {
 
 const versionSelect = {
   id: true,
+  url: true,
   imageId: true,
   adjustments: true,
   label: true,
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
   // Verify the image belongs to this user before returning its versions
   const image = await prisma.image.findFirst({
     where: { id: imageId, userId: user.id },
-    select: { id: true },
+    select: { id: true, originalUrl: true },
   });
   if (!image) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
@@ -71,7 +73,15 @@ export async function GET(request: NextRequest) {
     }),
   ]);
 
-  return NextResponse.json({ autosave, versions });
+  const normalize = (version: (typeof versions)[number]) => ({
+    ...version,
+    adjustments: normalizeSavedVersion(version.adjustments, version.url, image.originalUrl),
+    legacy: !(version.adjustments && typeof version.adjustments === "object" && !Array.isArray(version.adjustments) && version.adjustments.namedVersion === true),
+  });
+  return NextResponse.json({
+    autosave: autosave ? normalize(autosave) : null,
+    versions: versions.filter((version) => !(version.adjustments && typeof version.adjustments === "object" && !Array.isArray(version.adjustments) && version.adjustments.operationResult === true)).map(normalize),
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -90,7 +100,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) {
     return parsed.response;
   }
-  const { imageId, adjustments: rawAdjustments, imageBase64, coverBase64, saveGeneration, label } = parsed.data;
+  const { imageId, adjustments: rawAdjustments, imageBase64, coverBase64, saveGeneration, label, history: rawHistory, historyImages, sourceOnly } = parsed.data;
 
   const isExplicitVersion = label !== undefined && label.length > 0;
 
@@ -104,6 +114,29 @@ export async function POST(request: NextRequest) {
   }
 
   const editorState = parseVersionAdjustments(rawAdjustments);
+  const timeline = rawHistory ? parseEditorTimeline({ ...rawAdjustments, history: rawHistory }) : null;
+  if (rawHistory && (!timeline || timeline.cursor !== rawHistory.cursor ||
+    timeline.entries.length !== rawHistory.entries.length ||
+    timeline.entries.some((entry, index) => entry.id !== rawHistory.entries[index].id ||
+      !persistedStatesEqual(entry.state, parseVersionAdjustments(rawHistory.entries[index].state))))) {
+    return NextResponse.json({ error: "Invalid editor history" }, { status: 400 });
+  }
+  const historySources: string[] = [];
+  const historyAssets: Array<{ secureUrl: string; publicId: string }> = [];
+  for (const source of historyImages ?? []) {
+    const uploaded = await uploadToCloudinary(Buffer.from(source, "base64"), `${workingImagePublicId(image.publicId)}.png`);
+    historySources.push(uploaded.secureUrl);
+    historyAssets.push(uploaded);
+  }
+  const resolveSource = (url: string | null): string | null => {
+    if (!url?.startsWith("history-image:")) return url;
+    return historySources[Number(url.slice("history-image:".length))] ?? null;
+  };
+  const states = [editorState, ...(timeline?.entries.map((entry) => entry.state) ?? [])];
+  if (states.some((state) => state.workingImageUrl?.startsWith("history-image:") && !resolveSource(state.workingImageUrl))) {
+    return NextResponse.json({ error: "Missing history image" }, { status: 400 });
+  }
+  for (const state of states) state.workingImageUrl = resolveSource(state.workingImageUrl);
 
   if (imageBase64) {
     const buffer = Buffer.from(imageBase64, "base64");
@@ -112,9 +145,20 @@ export async function POST(request: NextRequest) {
       `${workingImagePublicId(image.publicId)}.jpg`,
     );
     editorState.workingImageUrl = uploaded.secureUrl;
+    if (sourceOnly) {
+      await prisma.imageVersion.create({ data: {
+        imageId, url: uploaded.secureUrl, publicId: uploaded.publicId,
+        adjustments: { operationResult: true }, label: "History source",
+      } });
+      return NextResponse.json({ sourceUrl: uploaded.secureUrl });
+    }
   }
 
-  const adjustments = serializePersistedEditorState(editorState);
+  const adjustments = {
+    ...serializePersistedEditorState(editorState),
+    ...(timeline ? { history: serializeEditorTimeline(timeline) } : {}),
+    ...(isExplicitVersion ? { namedVersion: true } : {}),
+  };
   const versionUrl = editorState.workingImageUrl ?? image.originalUrl;
 
   if (isExplicitVersion) {
@@ -156,6 +200,13 @@ export async function POST(request: NextRequest) {
     if (saveGeneration !== undefined && saveGeneration <= storedGeneration) {
       return { stale: true };
     }
+    for (const asset of historyAssets) {
+      // Keep working sources owned and discoverable even after branching history.
+      await tx.imageVersion.create({ data: {
+        imageId, url: asset.secureUrl, publicId: asset.publicId,
+        adjustments: { operationResult: true }, label: "History source",
+      } });
+    }
     const existingAutosave = await tx.imageVersion.findFirst({
       where: {
         imageId,
@@ -181,7 +232,7 @@ export async function POST(request: NextRequest) {
         metadata: { ...metadata, ...(saveGeneration !== undefined ? { saveGeneration } : {}) },
       },
     });
-    return { version, previewUrl };
+    return { version, previewUrl, historySources };
   });
 
   return NextResponse.json(result);

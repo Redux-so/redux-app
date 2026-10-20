@@ -1,129 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Icon } from "@/components/shared/Icon";
-import EmptyState from "@/components/shared/EmptyState";
+import { useState } from "react";
+import toast from "react-hot-toast";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
-import { SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
+import { SURFACE_BORDER, SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
+import { serializePersistedEditorState } from "@/lib/editor-state";
+import type { EditorHistoryEntry, SavedEditorVersion } from "@/lib/editor-history";
 
-interface ImageVersion {
-  id: string;
-  imageId: string;
-  adjustments: unknown;
-  label: string | null;
-  createdAt: string;
+export interface HistoryPanelProps {
+  entries: EditorHistoryEntry[];
+  currentId: string;
+  versions: SavedEditorVersion[];
+  ready: boolean;
+  error: string | null;
+  onRevert: (adjustments: unknown, label: string) => Promise<void>;
 }
 
-interface HistoryVersionListProps {
-  imageId?: string;
-  enabled: boolean;
-  onRestore: (adjustments: unknown) => void | Promise<void>;
-}
+export function HistoryVersionList({ entries, currentId, versions, ready, error, onRevert }: HistoryPanelProps) {
+  const [revertingId, setRevertingId] = useState<string | null>(null);
+  if (error) return <p role="alert" className="px-6 py-5 text-sm text-white/60">{error}</p>;
+  if (!ready) return <div className="flex justify-center py-8"><LoadingSpinner size="sm" label="Loading history" /></div>;
 
-function formatRelative(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60_000);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHr / 24);
+  // Existing checkpoints and new automatic versions share one chronological list.
+  const rows = [
+    ...versions.map((version) => ({ ...version, id: `saved:${version.id}` })),
+    ...entries.filter((entry) => entry.id !== "original").map((entry) => ({
+      id: entry.id, createdAt: entry.createdAt, adjustments: serializePersistedEditorState(entry.state),
+    })),
+  ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const original = entries.find((entry) => entry.id === "original");
+  const numbered = rows.map((row, index) => ({ ...row, title: `Version ${index + 1}` }));
+  if (original) numbered.unshift({ id: original.id, createdAt: "", title: "Original", adjustments: serializePersistedEditorState(original.state) });
 
-  if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-export function HistoryVersionList({
-  imageId,
-  enabled,
-  onRestore,
-}: HistoryVersionListProps) {
-  const [versions, setVersions] = useState<ImageVersion[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [restoringId, setRestoringId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!enabled || !imageId) return;
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) setLoading(true);
-    });
-    fetch(`/api/images/versions?imageId=${imageId}`)
-      .then((res) => res.json())
-      .then((data: { versions?: ImageVersion[] }) => {
-        if (cancelled) return;
-        setVersions(data.versions ?? []);
-      })
-      .catch(console.error)
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, imageId]);
-
-  function handleRestore(version: ImageVersion) {
-    setRestoringId(version.id);
-    void Promise.resolve(onRestore(version.adjustments)).finally(() => {
-      setRestoringId(null);
-    });
+  async function revert(id: string, adjustments: unknown, title: string) {
+    if (revertingId) return;
+    setRevertingId(id);
+    try { await onRevert(adjustments, title); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Could not revert to this version"); }
+    finally { setRevertingId(null); }
   }
 
-  return (
-    <div className="min-h-0 flex-1 overflow-y-auto" data-panel-scroll>
-      {loading && (
-        <div className="flex h-24 items-center justify-center">
-          <LoadingSpinner size="sm" label="Loading version history" />
-        </div>
-      )}
-
-      {!loading && versions.length === 0 && (
-        <EmptyState
-          className="h-32 px-6"
-          icon="ClockRewind"
-          message="No saved versions yet"
-          description="Named checkpoints appear here after AI and retouch operations."
-        />
-      )}
-
-      {!loading &&
-        versions.map((version, idx) => (
-          <div
-            key={version.id}
-            className="group flex items-center justify-between border-b border-[#212121] px-6 py-3.5 transition-colors hover:bg-[#1d1d1d]"
-          >
-            <div className="flex min-w-0 flex-col gap-[2px]">
-              <span className="text-[14px] text-[#e5e5e5]">
-                {version.label ?? `Version ${versions.length - idx}`}
-              </span>
-              <span className="text-[12px] text-[#555555]">
-                {formatRelative(version.createdAt)}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleRestore(version)}
-              disabled={restoringId === version.id}
-              className={
-                restoringId === version.id
-                  ? "ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md border border-[#262626] bg-[#1d1d1d] text-white/20 opacity-40 cursor-not-allowed"
-                  : `ml-3 flex shrink-0 items-center justify-center gap-1.5 h-9 px-3 text-[13px] font-medium capitalize rounded-md text-white/80 ${SURFACE_SECONDARY_BTN}`
-              }
-            >
-              {restoringId === version.id ? (
-                <LoadingSpinner size="sm" variant="brand" label="Restoring version" />
-              ) : (
-                <>
-                  <Icon name="FlipBackward" size={16} aria-hidden />
-                  Restore
-                </>
-              )}
-            </button>
-          </div>
-        ))}
-    </div>
-  );
+  return <div className="min-h-0 flex-1 overflow-y-auto" data-panel-scroll>
+    <ol aria-label="Version history">{numbered.reverse().map((version) => <li key={version.id}
+      className={`flex items-center justify-between gap-3 border-b px-6 py-4 ${SURFACE_BORDER}`}>
+      <div className="min-w-0">
+        <span className="block text-sm text-white/90">{version.title}</span>
+        {version.createdAt && <time dateTime={version.createdAt} className="mt-1 block text-xs text-white/40">
+          {new Date(version.createdAt).toLocaleString()}
+        </time>}
+      </div>
+      {version.id === currentId ? <span className="text-xs text-white/40" aria-current="true">Current</span> :
+        <button type="button" disabled={!!revertingId}
+          onClick={() => void revert(version.id, version.adjustments, version.title)}
+          aria-label={`Revert to ${version.title}`}
+          className={`flex h-8 shrink-0 items-center justify-center rounded-md px-3 text-[13px] disabled:opacity-40 ${SURFACE_SECONDARY_BTN}`}>
+          {revertingId === version.id ? "Reverting…" : "Revert"}
+        </button>}
+    </li>)}</ol>
+  </div>;
 }

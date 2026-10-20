@@ -243,7 +243,7 @@ export async function POST(request: Request) {
           imageId: image.id,
           url: uploaded.secureUrl,
           publicId: uploaded.publicId,
-          adjustments: {},
+          adjustments: { operationResult: true },
           label: "Generative Fill",
         },
       });
