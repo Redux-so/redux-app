@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 import { mergeImageRecords } from "@/lib/merge-image-records";
+import {
+  applyLibraryPreviewUpdates,
+  consumeLibraryPreviewUpdates,
+  type LibraryPreviewUpdates,
+} from "@/lib/library-preview-sync";
 import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import LibraryHeader from "@/components/library/LibraryHeader";
@@ -124,6 +129,7 @@ export default function LibraryPageClient({
   initialTrash,
 }: LibraryPageClientProps) {
   const mainScrollRef = useRef<HTMLElement>(null);
+  const previewUpdatesRef = useRef<LibraryPreviewUpdates>({});
   const [images, setImages] = useState<ImageRecord[]>(initialLibrary.images);
   const [trashedImages, setTrashedImages] = useState<ImageRecord[]>(
     initialTrash.images,
@@ -156,19 +162,27 @@ export default function LibraryPageClient({
     }
   }, []);
 
+  const mergePendingPreviewUpdates = useCallback((list: ImageRecord[]) => {
+    const pending = consumeLibraryPreviewUpdates();
+    if (Object.keys(pending).length > 0) {
+      previewUpdatesRef.current = { ...previewUpdatesRef.current, ...pending };
+    }
+    return applyLibraryPreviewUpdates(list, previewUpdatesRef.current);
+  }, []);
+
   const fetchTrashedImages = useCallback(async () => {
     setTrashLoading(true);
     try {
       const res = await fetch(buildImagesListUrl(true, 1), { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as ImagesPageResponse;
-      setTrashedImages(data.images);
+      setTrashedImages(mergePendingPreviewUpdates(data.images));
       setTrashTotal(data.total);
       setTrashPage(data.page);
     } finally {
       setTrashLoading(false);
     }
-  }, []);
+  }, [mergePendingPreviewUpdates]);
 
   const fetchImages = useCallback(async () => {
     setLibraryLoading(true);
@@ -179,7 +193,7 @@ export default function LibraryPageClient({
         return;
       }
       const data = (await res.json()) as ImagesPageResponse;
-      setImages(data.images);
+      setImages(mergePendingPreviewUpdates(data.images));
       setLibraryTotal(data.total);
       setLibraryPage(data.page);
     } catch {
@@ -187,7 +201,7 @@ export default function LibraryPageClient({
     } finally {
       setLibraryLoading(false);
     }
-  }, []);
+  }, [mergePendingPreviewUpdates]);
 
   const loadMoreLibrary = useCallback(async () => {
     if (libraryLoadingMore || libraryLoading) return;
@@ -241,6 +255,14 @@ export default function LibraryPageClient({
     trashedImages.length,
   ]);
 
+  useLayoutEffect(() => {
+    const pending = consumeLibraryPreviewUpdates();
+    if (Object.keys(pending).length === 0) return;
+    previewUpdatesRef.current = { ...previewUpdatesRef.current, ...pending };
+    setImages((prev) => applyLibraryPreviewUpdates(prev, pending));
+    setTrashedImages((prev) => applyLibraryPreviewUpdates(prev, pending));
+  }, []);
+
   useEffect(() => {
     void fetchAlbums();
   }, [fetchAlbums]);
@@ -253,11 +275,15 @@ export default function LibraryPageClient({
 
   // Backup refetch — catches previews that finish shortly after navigation.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void fetchImages();
-      void fetchTrashedImages();
-    }, 500);
-    return () => clearTimeout(timer);
+    const timers = [500, 2500].map((delay) =>
+      setTimeout(() => {
+        void fetchImages();
+        void fetchTrashedImages();
+      }, delay),
+    );
+    return () => {
+      for (const timer of timers) clearTimeout(timer);
+    };
   }, [fetchImages, fetchTrashedImages]);
 
   const handleDeleteImage = useCallback((id: string) => {

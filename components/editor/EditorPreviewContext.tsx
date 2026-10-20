@@ -16,6 +16,7 @@ import {
   buildPreviewRequestBody,
   type PreviewPayload,
 } from "@/lib/preview-request";
+import { recordLibraryPreviewUpdate } from "@/lib/library-preview-sync";
 
 interface EditorPreviewContextValue {
   imageId?: string;
@@ -51,16 +52,23 @@ export function EditorPreviewProvider({
   const [isSavingPreview, setIsSavingPreview] = useState(false);
   const [isSavingEditorState, setIsSavingEditorState] = useState(false);
   const previewQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const previewGenerationRef = useRef(0);
   const getPayloadRef = useRef(getPayload);
   getPayloadRef.current = getPayload;
 
   const savePreview = useCallback(async (): Promise<string | null> => {
     if (!imageId) return null;
+    const generation = ++previewGenerationRef.current;
     const payload = getPayloadRef.current();
     const save = async () => {
       setIsSavingPreview(true);
       try {
-        const body = buildPreviewRequestBody(await renderEditorPayload(payload));
+        const rendered = await renderEditorPayload(payload);
+        const body = {
+          ...buildPreviewRequestBody(rendered),
+          persist: true,
+          previewGeneration: generation,
+        };
         const res = await fetch(`/api/images/${imageId}/generate-preview`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -71,7 +79,12 @@ export function EditorPreviewProvider({
           return null;
         }
         const data = (await res.json()) as { previewUrl?: string };
-        return data.previewUrl ?? null;
+        const previewUrl = data.previewUrl ?? null;
+        if (!previewUrl || generation !== previewGenerationRef.current) {
+          return generation === previewGenerationRef.current ? previewUrl : null;
+        }
+        recordLibraryPreviewUpdate(imageId, previewUrl);
+        return previewUrl;
       } catch (err) {
         console.error("[EditorPreview] generate-preview error:", err);
         return null;
@@ -101,6 +114,15 @@ export function EditorPreviewProvider({
       setIsSavingEditorState(false);
     }
   }, [saveEditorStateRef]);
+
+  useEffect(() => {
+    return () => {
+      void (async () => {
+        await saveEditorState();
+        await savePreview();
+      })();
+    };
+  }, [savePreview, saveEditorState]);
 
   const value = useMemo(
     () => ({

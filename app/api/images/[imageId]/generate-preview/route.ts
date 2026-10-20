@@ -22,7 +22,15 @@ export async function POST(
 
   const parsed = await parseJsonRequest(request, previewMutationBodySchema);
   if (!parsed.ok) return parsed.response;
-  const { adjustments, imageUrl, imageBase64, transform, persist, pixelsRendered } = parsed.data;
+  const {
+    adjustments,
+    imageUrl,
+    imageBase64,
+    transform,
+    persist,
+    pixelsRendered,
+    previewGeneration,
+  } = parsed.data;
   const rateLimited = await enforceFeatureRateLimits(user.id, persist ? "preview" : "canvas_preview");
   if (rateLimited) {
     return rateLimited;
@@ -40,6 +48,22 @@ export async function POST(
   });
   if (!image) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
+  }
+
+  const imageMetadata =
+    image.metadata && typeof image.metadata === "object" && !Array.isArray(image.metadata)
+      ? (image.metadata as Record<string, unknown>)
+      : {};
+  const storedPreviewGeneration =
+    typeof imageMetadata.previewGeneration === "number"
+      ? imageMetadata.previewGeneration
+      : 0;
+
+  if (
+    previewGeneration !== undefined &&
+    previewGeneration <= storedPreviewGeneration
+  ) {
+    return NextResponse.json({ previewUrl: image.previewUrl });
   }
 
   let inputBuffer: Buffer;
@@ -86,15 +110,47 @@ export async function POST(
       });
     }
 
+    const latest = await prisma.image.findFirst({
+      where: { id: imageId, userId: user.id },
+      select: { previewUrl: true, metadata: true },
+    });
+    if (!latest) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
+    const latestMetadata =
+      latest.metadata && typeof latest.metadata === "object" && !Array.isArray(latest.metadata)
+        ? (latest.metadata as Record<string, unknown>)
+        : {};
+    const latestGeneration =
+      typeof latestMetadata.previewGeneration === "number"
+        ? latestMetadata.previewGeneration
+        : 0;
+    if (
+      previewGeneration !== undefined &&
+      previewGeneration <= latestGeneration
+    ) {
+      return NextResponse.json({ previewUrl: latest.previewUrl });
+    }
+
     const uploaded = await uploadToCloudinary(
       previewBuffer,
       `${previewImagePublicId(imageId)}.jpeg`,
       { overwrite: true, uniqueFilename: false },
     );
 
+    const nextMetadata = {
+      ...latestMetadata,
+      ...(previewGeneration !== undefined
+        ? { previewGeneration }
+        : {}),
+    };
+
     await prisma.image.update({
       where: { id: imageId },
-      data: { previewUrl: uploaded.secureUrl },
+      data: {
+        previewUrl: uploaded.secureUrl,
+        metadata: nextMetadata,
+      },
     });
 
     return NextResponse.json({ previewUrl: uploaded.secureUrl });

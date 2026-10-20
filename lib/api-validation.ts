@@ -199,6 +199,8 @@ export const exportBodySchema = z.object({
 export const previewMutationBodySchema = z.object({
   pixelsRendered: z.boolean().optional().default(false),
   persist: z.boolean().optional().default(true),
+  /** Monotonic client generation — stale responses must not overwrite previewUrl. */
+  previewGeneration: z.number().int().min(1).optional(),
   adjustments: adjustmentsRecordSchema.optional().default({}),
   imageUrl: workspaceImageUrlSchema.optional(),
   imageBase64: workingImageBase64Schema.optional(),

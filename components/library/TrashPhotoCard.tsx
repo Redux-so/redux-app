@@ -72,6 +72,7 @@ export default function TrashPhotoCard({
     <>
       <div className="@container group relative aspect-square w-full min-w-0 overflow-hidden rounded-xl bg-white/[0.03]">
         <Image
+          key={`${image.id}:${image.previewUrl ?? image.originalUrl}`}
           src={cloudinaryThumbnailUrl(image.previewUrl ?? image.originalUrl)}
           alt={image.filename}
           fill

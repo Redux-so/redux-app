@@ -282,11 +282,6 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     return () => clearTimeout(timer);
   }, [editorState, saveVersion, versionLoaded, loadingImage]);
 
-  useEffect(() => {
-    const savePreview = savePreviewRef.current;
-    return () => { void savePreview?.(); };
-  }, []);
-
   if (imageMissing) return <ReturnToPreviousPage />;
 
   return (
