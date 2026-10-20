@@ -163,7 +163,9 @@ export function useCanvas(
     const PADDING = 64;
     const w = Math.max(1, container.clientWidth - PADDING);
     const h = Math.max(1, container.clientHeight - PADDING);
-    canvas.setDimensions({ width: w, height: h });
+    if (canvas.getWidth() !== w || canvas.getHeight() !== h) {
+      canvas.setDimensions({ width: w, height: h });
+    }
 
     if (img) {
       const displayTransform = transformRef.current;
@@ -189,6 +191,10 @@ export function useCanvas(
       syncViewport();
       updateImageBounds();
     }
+    // Resizing clears the backing canvas. ResizeObserver runs after animation
+    // callbacks, so waiting for requestRenderAll would expose a blank frame.
+    // Paint the final geometry now and cancel Fabric's queued duplicate render.
+    canvas.renderAll();
   }, [updateImageBounds, syncViewport]);
 
   // Apply the current transform ref values to the loaded background image
