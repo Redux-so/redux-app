@@ -13,6 +13,7 @@ import { probeImageDimensions } from "@/lib/probe-image-dimensions";
 import Toolbar from "@/components/editor/Toolbar";
 import AdjustmentPanel from "@/components/editor/AdjustmentPanel";
 import Canvas from "@/components/editor/Canvas";
+import ImageNavigator from "@/components/editor/ImageNavigator";
 import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
 import EditorErrorBoundary from "@/components/shared/EditorErrorBoundary";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
@@ -136,6 +137,9 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     getTransformSnapshot,
     getPixelDimensions,
     previewError,
+    navigatorImage,
+    viewportTransform,
+    centerNavigator,
   } = useCanvas(
     canvasSourceUrl, adjustments, savedTransform,
     (masks, checkpoint) => { commitState({ masks }, checkpoint); },
@@ -339,6 +343,9 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
                 onConfirmCrop={handleConfirmCrop}
                 onCancelCrop={cancelCrop}
               />
+              {navigatorImage && !loadingImage && (
+                <ImageNavigator image={navigatorImage} viewport={viewportTransform} onCenter={centerNavigator} />
+              )}
               {previewError && (
                 <p role="status" className="absolute top-3 left-1/2 -translate-x-1/2 text-xs text-white bg-black/70 px-3 py-2 rounded-md pointer-events-none">
                   {previewError}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
+import { constrainViewport, type ViewportTransform, type ViewportRect } from "@/lib/editor-viewport";
 import { type AdjustmentKey } from "@/constants/adjustments";
 import { transformedSource, drawSourceMask } from "@/lib/canvas-image-geometry";
 import { renderInteractiveImage } from "@/lib/interactive-image-preview";
@@ -29,6 +30,17 @@ export interface ImageBounds {
   top: number;
   width: number;
   height: number;
+}
+
+export interface NavigatorImage {
+  element: CanvasImageSource;
+  matrix: ViewportTransform;
+  bounds: ViewportRect;
+  width: number;
+  height: number;
+  viewportWidth: number;
+  viewportHeight: number;
+  workspaceWidth: number;
 }
 
 export { createExpandedCanvas, type ExpandDirection } from "@/lib/canvas-expand";
@@ -80,10 +92,10 @@ export function useCanvas(
   );
 
   const [zoom, setZoom] = useState(1);
-  // Mirrors Fabric's internal viewportTransform so CSS overlays (vignette/grain)
-  // can apply the same matrix() and stay perfectly aligned with the image at any
-  // zoom level or pan position.
-  const [viewportTransform, setViewportTransform] = useState<[number, number, number, number, number, number]>([1, 0, 0, 1, 0, 0]);
+  // The navigator observes Fabric's viewport; it never owns a second viewport.
+  const [viewportTransform, setViewportTransform] = useState<ViewportTransform>([1, 0, 0, 1, 0, 0]);
+  const layoutRef = useRef<{ bounds: ViewportRect; width: number; height: number } | null>(null);
+  const [navigatorImage, setNavigatorImage] = useState<NavigatorImage | null>(null);
   const [showBefore, setShowBefore] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
@@ -105,8 +117,37 @@ export function useCanvas(
     if (!canvas || !img) return;
 
     const bounds = img.getBoundingRect();
+    layoutRef.current = { bounds, width: canvas.getWidth(), height: canvas.getHeight() };
     setImageBounds({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height });
+    setNavigatorImage({ element: img.getElement(), matrix: [...img.calcTransformMatrix()],
+      bounds, width: img.width, height: img.height,
+      viewportWidth: canvas.getWidth(), viewportHeight: canvas.getHeight(),
+      workspaceWidth: containerRef.current?.clientWidth ?? canvas.getWidth() });
   }, []);
+
+  const syncViewport = useCallback(() => {
+    const canvas = fabricRef.current;
+    const img = bgImageRef.current;
+    if (!canvas) return;
+    const current = [...canvas.viewportTransform] as ViewportTransform;
+    const next = img ? constrainViewport(current, img.getBoundingRect(), canvas.getWidth(), canvas.getHeight()) : current;
+    canvas.setViewportTransform(next);
+    canvas.requestRenderAll();
+    setZoom(parseFloat(canvas.getZoom().toFixed(2)));
+    setViewportTransform(next);
+  }, []);
+
+  const centerNavigator = useCallback((x: number, y: number) => {
+    const canvas = fabricRef.current;
+    const img = bgImageRef.current;
+    if (!canvas || !img) return;
+    const bounds = img.getBoundingRect();
+    const vpt = [...canvas.viewportTransform] as ViewportTransform;
+    vpt[4] = canvas.getWidth() / 2 - (bounds.left + x * bounds.width) * vpt[0];
+    vpt[5] = canvas.getHeight() / 2 - (bounds.top + y * bounds.height) * vpt[3];
+    canvas.setViewportTransform(vpt);
+    syncViewport();
+  }, [syncViewport]);
 
   const relayoutCanvas = useCallback(() => {
     const canvas = fabricRef.current;
@@ -114,9 +155,14 @@ export function useCanvas(
     const img = bgImageRef.current;
     if (!canvas || !container) return;
 
+    const previous = layoutRef.current;
+    const oldBounds = previous?.bounds ?? img?.getBoundingRect();
+    const vpt = [...canvas.viewportTransform] as ViewportTransform;
+    const centerX = oldBounds ? (((previous?.width ?? canvas.getWidth()) / 2 - vpt[4]) / vpt[0] - oldBounds.left) / oldBounds.width : 0.5;
+    const centerY = oldBounds ? (((previous?.height ?? canvas.getHeight()) / 2 - vpt[5]) / vpt[3] - oldBounds.top) / oldBounds.height : 0.5;
     const PADDING = 64;
-    const w = Math.max(300, container.clientWidth - PADDING);
-    const h = Math.max(200, container.clientHeight - PADDING);
+    const w = Math.max(1, container.clientWidth - PADDING);
+    const h = Math.max(1, container.clientHeight - PADDING);
     canvas.setDimensions({ width: w, height: h });
 
     if (img) {
@@ -136,10 +182,14 @@ export function useCanvas(
         flipY,
       });
       img.setCoords();
-      canvas.renderAll();
+      const bounds = img.getBoundingRect();
+      vpt[4] = w / 2 - (bounds.left + centerX * bounds.width) * vpt[0];
+      vpt[5] = h / 2 - (bounds.top + centerY * bounds.height) * vpt[3];
+      canvas.setViewportTransform(vpt);
+      syncViewport();
       updateImageBounds();
     }
-  }, [updateImageBounds]);
+  }, [updateImageBounds, syncViewport]);
 
   // Apply the current transform ref values to the loaded background image
   const applyTransform = useCallback(() => {
@@ -194,8 +244,8 @@ export function useCanvas(
       // The canvas element defaults to 300×150 — do NOT use el.offsetWidth here.
       const container = containerRef.current;
       const PADDING = 64; // p-8 (32px) × 2 sides
-      const w = container ? Math.max(300, container.clientWidth - PADDING) : 800;
-      const h = container ? Math.max(200, container.clientHeight - PADDING) : 600;
+      const w = container ? Math.max(1, container.clientWidth - PADDING) : 800;
+      const h = container ? Math.max(1, container.clientHeight - PADDING) : 600;
       canvas.setDimensions({ width: w, height: h });
 
       // Fabric wraps the canvas element in a div (.canvas-container).
@@ -227,10 +277,7 @@ export function useCanvas(
           new Pt(e.clientX - rect.left, e.clientY - rect.top),
           z,
         );
-        canvas.requestRenderAll();
-        setZoom(parseFloat(z.toFixed(2)));
-        const vpt = canvas.viewportTransform;
-        setViewportTransform([vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]]);
+        syncViewport();
       };
 
       // ── Click-drag pan ────────────────────────────────────────────────────
@@ -264,8 +311,7 @@ export function useCanvas(
         vpt[4] += dx;
         vpt[5] += dy;
         canvas.setViewportTransform(vpt);
-        canvas.requestRenderAll();
-        setViewportTransform([vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]]);
+        syncViewport();
       };
 
       const handlePointerUp = (e: PointerEvent) => {
@@ -273,9 +319,7 @@ export function useCanvas(
         isPanning = false;
         wrapper.style.cursor = "";
         try { wrapper.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-        // Sync viewport transform so vignette/grain overlays snap to the new position.
-        const vpt = canvas.viewportTransform;
-        setViewportTransform([vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]]);
+        syncViewport();
       };
 
       wrapper.addEventListener("wheel", handleWheel, { passive: false });
@@ -329,9 +373,11 @@ export function useCanvas(
       bgImageRef.current = null;
       setCanvasReady(false);
       setImageBounds(null);
+      setNavigatorImage(null);
+      layoutRef.current = null;
       setIsHealBrush(false);
     };
-  }, []);
+  }, [syncViewport]);
 
   // ---------------------------------------------------------------------------
   // Keep activeImageUrl in sync with the imageUrl prop.
@@ -433,11 +479,8 @@ export function useCanvas(
     if (!canvas || !Point) return;
     const next = Math.min(parseFloat((canvas.getZoom() + 0.1).toFixed(2)), 5.0);
     canvas.zoomToPoint(new Point(canvas.getWidth() / 2, canvas.getHeight() / 2), next);
-    canvas.requestRenderAll();
-    setZoom(next);
-    const vpt = canvas.viewportTransform;
-    setViewportTransform([vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]]);
-  }, []);
+    syncViewport();
+  }, [syncViewport]);
 
   const zoomOut = useCallback(() => {
     const canvas = fabricRef.current;
@@ -445,20 +488,15 @@ export function useCanvas(
     if (!canvas || !Point) return;
     const next = Math.max(parseFloat((canvas.getZoom() - 0.1).toFixed(2)), 0.1);
     canvas.zoomToPoint(new Point(canvas.getWidth() / 2, canvas.getHeight() / 2), next);
-    canvas.requestRenderAll();
-    setZoom(next);
-    const vpt = canvas.viewportTransform;
-    setViewportTransform([vpt[0], vpt[1], vpt[2], vpt[3], vpt[4], vpt[5]]);
-  }, []);
+    syncViewport();
+  }, [syncViewport]);
 
   const resetZoom = useCallback(() => {
     const canvas = fabricRef.current;
     if (!canvas) return;
     canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-    canvas.requestRenderAll();
-    setZoom(1);
-    setViewportTransform([1, 0, 0, 1, 0, 0]);
-  }, []);
+    syncViewport();
+  }, [syncViewport]);
 
   // ---------------------------------------------------------------------------
   // Before / After toggle
@@ -511,8 +549,7 @@ export function useCanvas(
     const canvas = fabricRef.current;
     if (!canvas || isCropping) return;
 
-    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
-    setZoom(1);
+    resetZoom();
 
     const generation = ++cropGenerationRef.current;
     const { Rect } = await import("fabric");
@@ -546,7 +583,7 @@ export function useCanvas(
     cropRectRef.current = rect;
     canvas.renderAll();
     setIsCropping(true);
-  }, [isCropping]);
+  }, [isCropping, resetZoom]);
 
   const confirmCrop = useCallback(async (isCurrent: () => boolean = () => true): Promise<string | null> => {
     const canvas = fabricRef.current;
@@ -1104,6 +1141,8 @@ export function useCanvas(
     canvasRef,
     restoreMasks,
     previewError,
+    navigatorImage,
+    centerNavigator,
     containerRef,
     zoom,
     showBefore,
