@@ -12,14 +12,14 @@ export default function NotFound() {
   return (
     <div className={`flex min-h-svh flex-1 flex-col ${SURFACE_BG_MAIN}`}>
       <main className="flex flex-1 items-center justify-center px-6 py-12">
-        <div className="flex w-full max-w-[440px] flex-col items-center text-center">
+        <div className="flex w-full max-w-[440px] flex-col items-center gap-5 text-center">
           <h1 className="text-[32px] font-medium leading-none tracking-tight text-white sm:text-[36px]">
             404
           </h1>
-          <p className="mt-4 text-[15px] leading-6 text-[#888888]">
+          <p className="text-[15px] leading-6 text-[#888888]">
             This page couldn&apos;t be found
           </p>
-          <nav aria-label="Page navigation" className="mt-6 flex justify-center">
+          <nav aria-label="Page navigation" className="flex justify-center">
             <div className="min-w-[104px]">
               {isLoaded ? (
                 <Link
