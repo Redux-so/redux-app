@@ -14,6 +14,7 @@ interface AlbumSidebarRowProps {
   album: AlbumRecord;
   isActive: boolean;
   onSelect: () => void;
+  onRequestRename: (album: AlbumRecord) => void;
   onRequestDelete: (album: AlbumRecord) => void;
 }
 
@@ -21,6 +22,7 @@ export default function AlbumSidebarRow({
   album,
   isActive,
   onSelect,
+  onRequestRename,
   onRequestDelete,
 }: AlbumSidebarRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -100,6 +102,17 @@ export default function AlbumSidebarRow({
             transition={{ duration: 0.15, ease: "easeOut" }}
             className="absolute right-0 top-[calc(100%+4px)] z-30 min-w-[160px] rounded-lg border border-[#212121] bg-[#121212] p-1 shadow-2xl"
           >
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onRequestRename(album);
+              }}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-white/80 transition-colors cursor-pointer hover:bg-[#1d1d1d]"
+            >
+              <Icon name="Edit01" size={16} className="shrink-0" aria-hidden />
+              Rename album
+            </button>
             <button
               type="button"
               onClick={() => {

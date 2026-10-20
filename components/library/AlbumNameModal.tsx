@@ -4,17 +4,21 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 
-interface CreateAlbumModalProps {
+interface AlbumNameModalProps {
   open: boolean;
+  initialName?: string;
+  mode?: "create" | "rename";
   onClose: () => void;
-  onCreate: (name: string) => Promise<boolean>;
+  onSave: (name: string) => Promise<boolean>;
 }
 
-export default function CreateAlbumModal({
+export default function AlbumNameModal({
   open,
   onClose,
-  onCreate,
-}: CreateAlbumModalProps) {
+  onSave,
+  initialName = "",
+  mode = "create",
+}: AlbumNameModalProps) {
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,9 +29,13 @@ export default function CreateAlbumModal({
       setSubmitting(false);
       return;
     }
-    const timer = window.setTimeout(() => inputRef.current?.focus(), 0);
+    setName(initialName);
+    const timer = window.setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [open]);
+  }, [open, initialName]);
 
   useEffect(() => {
     if (!open) return;
@@ -45,7 +53,7 @@ export default function CreateAlbumModal({
 
     setSubmitting(true);
     try {
-      const ok = await onCreate(trimmed);
+      const ok = await onSave(trimmed);
       if (ok) onClose();
     } finally {
       setSubmitting(false);
@@ -57,7 +65,7 @@ export default function CreateAlbumModal({
       {open && (
         <>
           <motion.div
-            key="create-album-backdrop"
+            key="album-name-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -68,7 +76,7 @@ export default function CreateAlbumModal({
             }}
           />
           <motion.div
-            key="create-album-modal"
+            key="album-name-modal"
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -76,13 +84,16 @@ export default function CreateAlbumModal({
             className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none px-4"
           >
             <form
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="album-name-title"
               onSubmit={handleSubmit}
               className="pointer-events-auto w-full max-w-[300px] rounded-lg border border-[#212121] bg-[#121212] p-4 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-[14px] font-medium text-white">New album</h2>
+              <h2 id="album-name-title" className="text-[14px] font-medium text-white">{mode === "rename" ? "Rename album" : "New album"}</h2>
               <p className="mt-1 text-[12px] text-[#888888]">
-                Group photos into a named collection.
+                {mode === "rename" ? "Choose a new name for this album." : "Group photos into a named collection."}
               </p>
 
               <input
@@ -90,6 +101,7 @@ export default function CreateAlbumModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                aria-label="Album name"
                 placeholder="Album name"
                 maxLength={80}
                 disabled={submitting}
@@ -110,7 +122,7 @@ export default function CreateAlbumModal({
                   disabled={submitting || !name.trim()}
                   className={`${BTN_BRAND_SOLID} h-8 px-3 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {submitting ? "Creating..." : "Create"}
+                  {submitting ? (mode === "rename" ? "Saving..." : "Creating...") : (mode === "rename" ? "Save" : "Create")}
                 </button>
               </div>
             </form>

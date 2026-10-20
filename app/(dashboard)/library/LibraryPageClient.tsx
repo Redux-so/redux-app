@@ -441,6 +441,28 @@ export default function LibraryPageClient({
     }
   }, []);
 
+  const handleRenameAlbum = useCallback(async (albumId: string, name: string) => {
+    try {
+      const res = await fetch(`/api/albums/${albumId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = (await res.json()) as { album?: Pick<AlbumRecord, "id" | "name">; error?: string };
+      if (!res.ok || !data.album) {
+        toast.error(data.error ?? "Could not rename album.");
+        return false;
+      }
+      const renamed = data.album;
+      setAlbums((prev) => prev.map((album) => album.id === renamed.id ? { ...album, name: renamed.name } : album));
+      toast.success("Album renamed");
+      return true;
+    } catch {
+      toast.error("Could not rename album.");
+      return false;
+    }
+  }, []);
+
   const handleDeleteAlbum = useCallback(
     async (albumId: string) => {
       try {
@@ -605,6 +627,7 @@ export default function LibraryPageClient({
         onSidebarViewChange={setSidebarView}
         albums={albums}
         onCreateAlbum={handleCreateAlbum}
+        onRenameAlbum={handleRenameAlbum}
         onDeleteAlbum={handleDeleteAlbum}
       />
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden bg-[#161616]">

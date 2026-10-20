@@ -10,7 +10,7 @@ import GitHubIcon from "@/components/shared/GitHubIcon";
 import ProfileMenu from "@/components/shared/ProfileMenu";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import AlbumSidebarRow from "@/components/library/AlbumSidebarRow";
-import CreateAlbumModal from "@/components/library/CreateAlbumModal";
+import AlbumNameModal from "@/components/library/AlbumNameModal";
 import {
   DEFAULT_LIBRARY_SIDEBAR_VIEW,
   LIBRARY_QUICK_FILTER_OPTIONS,
@@ -41,6 +41,7 @@ interface LibrarySidebarProps {
   onSidebarViewChange: (view: LibrarySidebarView) => void;
   albums: AlbumRecord[];
   onCreateAlbum: (name: string) => Promise<boolean>;
+  onRenameAlbum: (albumId: string, name: string) => Promise<boolean>;
   onDeleteAlbum: (albumId: string) => Promise<boolean>;
 }
 
@@ -53,9 +54,11 @@ export default function LibrarySidebar({
   onSidebarViewChange,
   albums,
   onCreateAlbum,
+  onRenameAlbum,
   onDeleteAlbum,
 }: LibrarySidebarProps) {
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [albumToRename, setAlbumToRename] = useState<AlbumRecord | null>(null);
   const [albumToDelete, setAlbumToDelete] = useState<AlbumRecord | null>(null);
   const [deletingAlbum, setDeletingAlbum] = useState(false);
 
@@ -181,6 +184,7 @@ export default function LibrarySidebar({
                       sidebarView.albumId === album.id
                     }
                     onSelect={() => handleAlbumClick(album.id)}
+                    onRequestRename={setAlbumToRename}
                     onRequestDelete={setAlbumToDelete}
                   />
                 ))}
@@ -228,10 +232,19 @@ export default function LibrarySidebar({
         </div>
       </aside>
 
-      <CreateAlbumModal
+      <AlbumNameModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onCreate={onCreateAlbum}
+        onSave={onCreateAlbum}
+      />
+
+      <AlbumNameModal
+        key={albumToRename?.id ?? "rename-album"}
+        open={albumToRename !== null}
+        mode="rename"
+        initialName={albumToRename?.name ?? ""}
+        onClose={() => setAlbumToRename(null)}
+        onSave={(name) => albumToRename ? onRenameAlbum(albumToRename.id, name) : Promise.resolve(false)}
       />
 
       <ConfirmDialog
