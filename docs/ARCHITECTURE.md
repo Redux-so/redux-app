@@ -27,7 +27,7 @@ Verified from the repository unless marked **uncertain**.
 - `proxy.ts` (Next.js 16 replacement for `middleware.ts`): `clerkMiddleware` + `auth.protect()` for non-public routes
 - Public routes: `lib/public-routes.ts` (landing, sign-in/up, SSO callback, webhooks, Sentry tunnel)
 - API handlers resolve DB user via `lib/require-user.ts` (`clerkId` → `User`)
-- Unknown page URLs reach `app/not-found.tsx`, which replaces the URL with the last valid app page stored per tab (including query parameters); fresh tabs fall back to `/`. Keep `isAppPagePath` in `lib/last-visited-page.ts` synchronized with page routes so private pages retain proxy authentication. APIs retain their JSON error behavior.
+- Unknown page URLs reach the persistent 404 screen in `app/not-found.tsx`, with one account-aware action to sign in or open the library. Keep `isAppPagePath` in `lib/last-visited-page.ts` synchronized with page routes so private pages retain proxy authentication. APIs retain their JSON error behavior.
 - Editor URLs are remembered after their image loads successfully. Missing/empty image IDs and images returning 404 use the same recovery component without overwriting the previous URL; recovery to the current URL falls back to `/` to prevent loops.
 - Clerk webhook syncs users: `app/api/webhooks/clerk/route.ts` (Svix + `CLERK_WEBHOOK_SECRET`)
 

@@ -45,6 +45,13 @@ Toolbar (h-16)
 - Max width ~880px; tab nav 172px desktop; sections in `components/settings/settings-nav.ts`
 - Back navigation via `?returnTo=` (`lib/settings-navigation.ts`)
 
+## Layout — 404
+
+- Same `#161616` background and inherited Geist Sans as sign-in
+- Centered 404 heading with a muted "This page couldn't be found" description and no header
+- One centered brand button links to the library when signed in, or sign-in when signed out
+- Incomplete editor links retain their previous-image recovery behavior
+
 ## Components and patterns
 
 | Pattern | Where |
