@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
+import ReturnToPreviousPage from "@/components/shared/ReturnToPreviousPage";
 
 const EditorApp = dynamic(() => import("@/components/editor/EditorApp"), {
   ssr: false,
@@ -28,7 +29,7 @@ function EditorPageContent() {
   const searchParams = useSearchParams();
   const imageId = searchParams.get("imageId");
 
-  if (!imageId || imageId.trim() === "") return null;
+  if (!imageId || imageId.trim() === "") return <ReturnToPreviousPage />;
 
   return <EditorApp />;
 }

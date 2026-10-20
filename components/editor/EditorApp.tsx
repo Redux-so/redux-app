@@ -9,6 +9,8 @@ import type { ImageRecord } from "@/types/image";
 import { parseVersionAdjustments } from "@/lib/editor-state";
 import { renderEditorPayload } from "@/lib/interactive-image-preview";
 import { probeImageDimensions } from "@/lib/probe-image-dimensions";
+import { rememberVisitedPage } from "@/lib/last-visited-page";
+import ReturnToPreviousPage from "@/components/shared/ReturnToPreviousPage";
 
 import Toolbar from "@/components/editor/Toolbar";
 import AdjustmentPanel from "@/components/editor/AdjustmentPanel";
@@ -48,6 +50,7 @@ export default function EditorApp() {
 
 function EditorWorkspace({ imageId }: { imageId?: string }) {
   const [image, setImage] = useState<ImageRecord | null>(null);
+  const [imageMissing, setImageMissing] = useState(false);
   const [loadingImage, setLoadingImage] = useState(!!imageId);
   const [showExport, setShowExport] = useState(false);
   const savePreviewRef = useRef<(() => Promise<string | null>) | null>(null);
@@ -62,11 +65,22 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       if (cancelled) return;
       setLoadingImage(true);
       setImage(null);
+      setImageMissing(false);
     });
-    fetch(`/api/images/${imageId}`)
-      .then((res) => res.json())
+    fetch(`/api/images/${encodeURIComponent(imageId)}`)
+      .then((res) => {
+        if (res.status === 404) {
+          if (!cancelled) setImageMissing(true);
+          return {};
+        }
+        if (!res.ok) throw new Error(`Could not load image (${res.status})`);
+        return res.json();
+      })
       .then((data: { image?: ImageRecord }) => {
-        if (!cancelled && data.image) setImage(data.image);
+        if (!cancelled && data.image) {
+          setImage(data.image);
+          rememberVisitedPage(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+        }
       })
       .catch(console.error)
       .finally(() => { if (!cancelled) setLoadingImage(false); });
@@ -271,6 +285,8 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     const savePreview = savePreviewRef.current;
     return () => { void savePreview?.(); };
   }, []);
+
+  if (imageMissing) return <ReturnToPreviousPage />;
 
   return (
     <EditorPreviewProvider

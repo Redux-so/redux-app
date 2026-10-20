@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import { reduxClerkProviderAppearance } from "@/lib/redux-clerk-appearance";
 import { APPLE_TOUCH_ICON_PATH, FAVICON_PATH } from "@/constants/brand";
 import { geistSans } from "@/lib/fonts";
+import LastVisitedPage from "@/components/shared/LastVisitedPage";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,6 +28,7 @@ export default function RootLayout({
         className={`${geistSans.variable} h-full antialiased`}
       >
         <body className={`${geistSans.className} min-h-full flex flex-col`}>
+          <Suspense fallback={null}><LastVisitedPage /></Suspense>
           {children}
         </body>
       </html>
