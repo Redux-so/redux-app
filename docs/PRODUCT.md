@@ -18,7 +18,7 @@ Photographers and creators who want quick AI-assisted edits and organization wit
 
 ### Library (`/library`)
 
-- Upload via dropzone → server → Cloudinary
+- Upload up to 20 photos via browse or drop anywhere in the library → server → Cloudinary (3 concurrent uploads, 32 MB per photo, progress and retry for failed uploads)
 - Browse grid with favorites, recents, albums, trash
 - Semantic search (CLIP embeddings + pgvector)
 - Open editor for an image

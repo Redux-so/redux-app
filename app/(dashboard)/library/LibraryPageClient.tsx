@@ -453,10 +453,10 @@ export default function LibraryPageClient({
   }, [albums]);
 
   const isTrashView = sidebarView.kind === "trash";
-  const handleUploadComplete = useCallback(() => {
-    void fetchImages();
-    void fetchTrashedImages();
-  }, [fetchImages, fetchTrashedImages]);
+  const handleUploadComplete = useCallback((image: ImageRecord) => {
+    setImages((previous) => mergeImageRecords([image], previous));
+    setLibraryTotal((previous) => previous + 1);
+  }, []);
   const upload = useImageUpload(handleUploadComplete);
   const isSearchActive = searchOverlay.kind !== "none";
 

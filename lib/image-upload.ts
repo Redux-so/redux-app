@@ -1,14 +1,8 @@
 import { API_LIMITS } from "@/lib/api-validation";
+import { IMAGE_UPLOAD_MAX_BYTES, IMAGE_UPLOAD_MIME_TYPES } from "@/constants/image-upload";
+export { IMAGE_UPLOAD_MAX_BYTES, IMAGE_UPLOAD_MIME_TYPES } from "@/constants/image-upload";
 
 /** Matches library dropzone copy and former UploadThing router limits. */
-export const IMAGE_UPLOAD_MAX_BYTES = 32 * 1024 * 1024;
-
-export const IMAGE_UPLOAD_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/tiff",
-] as const;
-
 export type ImageUploadMimeType = (typeof IMAGE_UPLOAD_MIME_TYPES)[number];
 
 const MIME_SET = new Set<string>(IMAGE_UPLOAD_MIME_TYPES);

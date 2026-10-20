@@ -38,6 +38,7 @@ Toolbar (h-16)
 
 - Sidebar **260px** (`LIBRARY_SIDEBAR_WIDTH_PX`): logo, filters, albums, trash, docs/help, profile
 - Main: greeting + search + upload + grid (single scroll, `.scroll-stable`)
+- Upload box retains its dark dashed surface for batch progress; skipped/failed files and a compact retry control appear below it
 
 ## Layout — settings
 
