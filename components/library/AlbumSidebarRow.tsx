@@ -60,7 +60,7 @@ export default function AlbumSidebarRow({
         type="button"
         aria-current={isActive ? "page" : undefined}
         onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center gap-2.5 px-2.5 py-2 text-left text-[13px] font-medium cursor-pointer outline-none focus:outline-none"
+        className="flex min-w-0 flex-1 items-center gap-2.5 pr-8 text-left text-[13px] font-medium cursor-pointer outline-none focus:outline-none"
       >
         <Icon
           name="Folder"
@@ -83,7 +83,7 @@ export default function AlbumSidebarRow({
           setMenuOpen((prev) => !prev);
         }}
         className={[
-          "mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-opacity cursor-pointer outline-none focus:outline-none",
+          "absolute inset-y-0 right-1 flex w-7 items-center justify-center rounded-md transition-opacity cursor-pointer outline-none focus:outline-none",
           menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100",
         ].join(" ")}
       >
