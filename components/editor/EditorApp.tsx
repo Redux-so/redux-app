@@ -142,6 +142,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     containerRef,
     zoom,
     showBefore,
+    comparisonReady,
     isCropping,
     zoomIn,
     zoomOut,
@@ -307,6 +308,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
           filename={image?.filename}
           zoom={zoom}
           showBefore={showBefore}
+          comparisonReady={comparisonReady}
           zoomIn={zoomIn}
           zoomOut={zoomOut}
           resetZoom={resetZoom}

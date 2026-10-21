@@ -11,6 +11,7 @@ interface ToolbarProps {
   filename?: string;
   zoom: number;
   showBefore: boolean;
+  comparisonReady: boolean;
   zoomIn: () => void;
   zoomOut: () => void;
   resetZoom: () => void;
@@ -61,6 +62,7 @@ export default function Toolbar({
   filename,
   zoom,
   showBefore,
+  comparisonReady,
   zoomIn,
   zoomOut,
   resetZoom,
@@ -108,10 +110,11 @@ export default function Toolbar({
         <button
           type="button"
           onClick={toggleBefore}
-          title={showBefore ? "Show after" : "Show before"}
+          disabled={!comparisonReady}
+          title={!comparisonReady ? "Before view is not ready" : showBefore ? "Show after" : "Show before"}
           aria-pressed={showBefore}
           className={[
-            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors",
+            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
             showBefore
               ? `${SURFACE_BTN_ACTIVE} !text-white`
               : SURFACE_BTN_IDLE,

@@ -216,6 +216,9 @@ export function useCanvas(
 
   useLayoutEffect(() => {
     syncViewport();
+    // Comparison can reveal Fabric in this same commit. Finish its camera
+    // update before paint rather than revealing a frame queued for the next RAF.
+    fabricRef.current?.renderAll();
   }, [showBefore, originalElement, syncViewport]);
 
   const centerNavigator = useCallback((x: number, y: number) => {
@@ -614,7 +617,9 @@ export function useCanvas(
   // ---------------------------------------------------------------------------
   // Before / After toggle
   // ---------------------------------------------------------------------------
-  const toggleBefore = useCallback(() => setShowBefore((p) => !p), []);
+  const toggleBefore = useCallback(() => {
+    if (originalElementRef.current) setShowBefore((p) => !p);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Rotate (multiples of 90°)
@@ -1272,6 +1277,7 @@ export function useCanvas(
     containerRef,
     zoom,
     showBefore,
+    comparisonReady: canvasReady && !!originalElement,
     isCropping,
     isHealBrush,
     imageBounds,

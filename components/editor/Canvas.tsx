@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useState } from "react";
 import { BTN_PRIMARY_SOLID } from "@/lib/button-styles";
 import type { ViewportTransform } from "@/lib/editor-viewport";
-import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
 
 interface CanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -33,7 +32,8 @@ export default function Canvas({
 }: CanvasProps) {
   const [readyOriginal, setReadyOriginal] = useState<string | null>(null);
   const [failedOriginal, setFailedOriginal] = useState<string | null>(null);
-  const comparing = showBefore && !!originalImageUrl;
+  // Never cover the edited canvas until Next/Image has decoded the original.
+  const comparing = showBefore && !!originalImageUrl && readyOriginal === originalImageUrl;
 
   return (
     // containerRef is read by useCanvas to determine canvas dimensions.
@@ -45,12 +45,14 @@ export default function Canvas({
       className="relative flex-1 bg-[#161616] overflow-hidden flex items-center justify-center p-8"
     >
       {/* Canvas wrapper — positioned parent for the overlay divs */}
-      <div className={`relative inline-block ${comparing ? "[&_.canvas-container]:invisible" : ""}`}>
+      <div className="relative inline-block">
 
         {/* Fabric canvas — always mounted so the hook can initialize */}
         <canvas ref={canvasRef} className="block" />
+        {/* Keep Fabric visible beneath the predecoded comparison layer so
+            switching back never has to reveal a hidden canvas. */}
         {originalImageUrl && (
-          <div aria-hidden={!comparing} className={`absolute inset-0 overflow-hidden touch-none bg-[#161616] ${comparing ? "" : "invisible pointer-events-none"}`}>
+          <div aria-hidden={!comparing} className={`absolute inset-0 overflow-hidden touch-none bg-[#161616] ${comparing ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
             {/* Display only: never replace the edited Fabric pixels or export source. */}
             <div className="absolute inset-0" style={{ transform: `matrix(${viewportTransform.join(",")})`, transformOrigin: "0 0" }}>
               <div className="absolute inset-[2.5%]">
@@ -61,6 +63,7 @@ export default function Canvas({
                   fill
                   unoptimized
                   loading="eager"
+                  decoding="sync"
                   sizes="100vw"
                   draggable={false}
                   className="object-contain select-none"
@@ -74,8 +77,6 @@ export default function Canvas({
             </div>
             {failedOriginal === originalImageUrl ? (
               <p role="status" className="absolute inset-0 flex items-center justify-center text-[13px] text-[#888888]">Could not load the original image</p>
-            ) : readyOriginal !== originalImageUrl ? (
-              <LoadingOverlay className="absolute inset-0" message="Loading original image" />
             ) : null}
           </div>
         )}
