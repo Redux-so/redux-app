@@ -3,14 +3,16 @@
 import dynamic from "next/dynamic";
 import { useImageChatHistory } from "@/hooks/useImageChatHistory";
 import { cleanChatText as cleanText, type ChatMessage as Message } from "@/lib/chat-history-shared";
+import { CHAT_PROGRESS_LABELS, initialChatProgress } from "@/lib/chat-progress";
 import { useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import BrandLogo from "@/components/shared/BrandLogo";
 import { Icon } from "@/components/shared/Icon";
 import ChatEmptyState from "@/components/editor/ChatEmptyState";
+import { ShimmerText } from "@/components/shared/ShimmerText";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
@@ -31,6 +33,8 @@ import {
   CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX,
   CHAT_PANEL_COLLAPSED_WIDTH_PX,
   CHAT_PANEL_WIDTH_PX,
+  CHAT_STATUS_TEXT_CLASS,
+  CHAT_STATUS_TEXT_COLOR_CLASS,
 } from "@/constants/chat-panel";
 import { BTN_BRAND_ICON, BTN_PRIMARY_COMPACT } from "@/lib/button-styles";
 import { BRAND_BORDER_CLASS } from "@/lib/brand-colors";
@@ -144,6 +148,7 @@ type SseEvent =
       creditBalanceAfter: number;
     }
   | { type: "text"; text: string }
+  | { type: "progress"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
   | { type: "history_error" }
   | { type: "interrupted" }
@@ -722,6 +727,7 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [sending, setSending] = useState(false);
+  const [replyProgress, setReplyProgress] = useState<{ id: string; label: string } | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [changesExpanded, setChangesExpanded] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
@@ -931,6 +937,10 @@ export default function ChatPanel({
     setSending(true);
 
     const assistantId = `${turnId}:assistant`;
+    setReplyProgress({
+      id: assistantId,
+      label: initialChatProgress(chatInteractionMode, !!(canvasImageUrl || imageBase64)),
+    });
     const assistantPlaceholder: Message = {
       id: assistantId,
       role: "assistant",
@@ -943,6 +953,7 @@ export default function ChatPanel({
     const finishOperation = allowAdjustments ? beginOperation() : () => {};
     const turnPatch: Partial<Record<AdjustmentKey, number>> = {};
     let completed = false;
+    let interrupted = false;
     let receivedText = "";
     setHistorySaveError(false);
     const controller = new AbortController();
@@ -1024,17 +1035,20 @@ export default function ChatPanel({
               }));
             } else if (event.type === "history_error") {
               setHistorySaveError(true);
+            } else if (event.type === "progress") {
+              if (event.text.trim()) {
+                setReplyProgress((current) => current?.id === assistantId ? { id: assistantId, label: event.text.trim().slice(0, 180) } : current);
+              }
             } else if (event.type === "interrupted") {
+              interrupted = true;
+              setReplyProgress(null);
               setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, interrupted: true } : m));
             } else if (event.type === "text") {
+              setReplyProgress((current) => current?.id === assistantId && current.label === CHAT_PROGRESS_LABELS.waiting
+                ? { ...current, label: CHAT_PROGRESS_LABELS.thinking } : current);
+              // Keep the task summary in front while the complete result is prepared.
+              // Publish the answer only after completion and any edits are committed.
               receivedText += event.text;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? { ...m, content: cleanText(receivedText) }
-                    : m,
-                ),
-              );
             } else if (event.type === "done") {
               completed = true;
             } else if (event.type === "adjustments") {
@@ -1050,20 +1064,24 @@ export default function ChatPanel({
         });
       }
 
-      if (completed && !controller.signal.aborted && isCurrent() && Object.keys(turnPatch).length > 0) {
+      if (completed && !interrupted && !controller.signal.aborted && isCurrent() && Object.keys(turnPatch).length > 0) {
         changeSnapshotRef.current = null;
         setPendingChanges([]);
-        applyAiAdjustments(turnPatch);
+        flushSync(() => {
+          setReplyProgress({ id: assistantId, label: CHAT_PROGRESS_LABELS.applying });
+          applyAiAdjustments(turnPatch);
+        });
       }
 
-      if (!completed) {
-        setMessages((prev) => prev.map((message) => message.id === assistantId ? { ...message, interrupted: true } : message));
-      }
+      setMessages((prev) => prev.map((message) => message.id === assistantId ? {
+        ...message, content: cleanText(receivedText),
+        interrupted: interrupted || !completed || controller.signal.aborted,
+      } : message));
 
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setMessages((prev) =>
-          prev.map((m) => m.id === assistantId ? { ...m, interrupted: true } : m),
+          prev.map((m) => m.id === assistantId ? { ...m, content: cleanText(receivedText), interrupted: true } : m),
         );
         return;
       }
@@ -1088,6 +1106,7 @@ export default function ChatPanel({
         ),
       );
     } finally {
+      setReplyProgress(null);
       finishOperation();
       abortRef.current = null;
       setSending(false);
@@ -1187,7 +1206,7 @@ export default function ChatPanel({
 
             {messages.map((msg) => {
               const isAssistantLoading =
-                msg.role === "assistant" && msg.content === "" && !msg.interrupted;
+                msg.role === "assistant" && msg.content === "" && replyProgress?.id === msg.id && !msg.interrupted;
 
               return (
               <motion.div
@@ -1213,7 +1232,10 @@ export default function ChatPanel({
                           transition={{ duration: messageDuration }}
                           className="flex items-center py-2.5"
                         >
-                          <LoadingSpinner size="sm" label={CHAT_ASSISTANT_LOADING_LABEL} />
+                          <ShimmerText
+                            label={replyProgress?.label ?? CHAT_ASSISTANT_LOADING_LABEL}
+                            className={`${CHAT_STATUS_TEXT_CLASS} ${CHAT_STATUS_TEXT_COLOR_CLASS}`}
+                          />
                         </motion.div>
                       ) : (
                         <motion.div

@@ -12,14 +12,15 @@ const load = (path) => tsxRequire(path, import.meta.url);
 const { messagesFromTurns, cleanChatText } = load("../lib/chat-history-shared.ts");
 function compile(path, adapters) {
   const code = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const routeModule = { exports: {} };
   vm.runInNewContext(code, { module: routeModule, exports: routeModule.exports,
     Request, Response, URL, Buffer, TextEncoder, ReadableStream, AbortController,
     Date: adapters.__clock ?? Date,
+    ...adapters.__globals,
     console: { ...console, error() {} },
-    require: (id) => adapters[id] ?? (id.startsWith("@/") ? load(`../${id.slice(2)}.ts`) : nativeRequire(id)),
+    require: (id) => adapters[id] ?? (id.startsWith("@/") ? load(`../${id.slice(2)}`) : nativeRequire(id)),
   });
   return routeModule.exports;
 }
@@ -274,4 +275,173 @@ test("Ask replies restore the same nudge and cannot apply adjustments", async ()
   const live = cleanChatText(emitted.filter((event) => event.type === "text").map((event) => event.text).join(""));
   const stored = messagesFromTurns((await (await app.get()).json()).turns)[1].content;
   assert.equal(stored, live);
+});
+
+const { createChatProgressParser, CHAT_PROGRESS_LABELS } = load("../lib/chat-progress.ts");
+
+test("task-specific progress streams separately and never enters saved answers or model context", async () => {
+  const app = host({ chunks: ["[pro", "gress]I'll warm the colors and lift the shadows.", "[/pro", "gress]Warmer colors applied. ", '[adjustments]{"temperature":15}[/adjustments]'] });
+  const emitted = events(await (await app.send()).text());
+  const progress = emitted.filter((event) => event.type === "progress").map((event) => event.text);
+  assert.deepEqual(progress, [CHAT_PROGRESS_LABELS.waiting, "I'll warm the colors and lift the shadows."]);
+  assert.equal(emitted.filter((event) => event.type === "text").map((event) => event.text).join("").includes("[progress]"), false);
+  assert.equal(app.rows[0].assistantText, "Warmer colors applied.");
+  assert.equal(app.rows[0].status, "complete");
+  assert.equal(app.state.modelCalls, 1);
+  assert.equal(app.state.charges, 1);
+  const context = await app.history.readChatContext("photo-a", "user-a");
+  assert.equal(context[1].content, "Warmer colors applied.");
+  assert.ok(emitted.some((event) => event.type === "adjustments"));
+});
+
+test("progress parser handles every tag boundary while ordinary answers stream immediately", () => {
+  const source = "  [progress]I’ll review the lighting.[/progress]Here is my advice.";
+  for (let split = 0; split <= source.length; split++) {
+    const parser = createChatProgressParser();
+    const result = [...parser.push(source.slice(0, split)), ...parser.push(source.slice(split)), ...parser.finish()];
+    assert.equal(result.filter((event) => event.type === "progress")[0].text, "I’ll review the lighting.");
+    assert.equal(result.filter((event) => event.type === "text").map((event) => event.text).join(""), "Here is my advice.");
+  }
+  const parser = createChatProgressParser();
+  assert.deepEqual(parser.push("An ordinary answer."), [{ type: "text", text: "An ordinary answer." }]);
+  assert.deepEqual(parser.finish(), []);
+});
+
+test("incomplete or oversized progress cannot hang, expose protocol text or apply edits", async () => {
+  for (const chunks of [["[progress]unfinished"], ["[progress]" + "a".repeat(513)]]) {
+    const app = host({ chunks });
+    const emitted = events(await (await app.send()).text());
+    assert.equal(app.rows[0].status, "interrupted");
+    assert.ok(emitted.some((event) => event.type === "interrupted"));
+    assert.equal(emitted.some((event) => event.type === "adjustments"), false);
+    assert.equal(emitted.filter((event) => event.type === "text").some((event) => event.text.includes("[progress]")), false);
+  }
+});
+
+test("restoring saved transcripts strips progress from completed and interrupted messages", () => {
+  assert.equal(cleanChatText("[progress]I'll brighten the subject.[/progress]Done. [adjustments]{}[/adjustments]"), "Done.");
+  assert.equal(cleanChatText("[progress]An interrupted summary"), "");
+});
+
+test("Ask starts with waiting; photo preparation is exclusive to Agent mode", () => {
+  const { initialChatProgress } = load("../lib/chat-progress.ts");
+  assert.equal(initialChatProgress("ask", true), CHAT_PROGRESS_LABELS.waiting);
+  assert.equal(initialChatProgress("ask", false), CHAT_PROGRESS_LABELS.waiting);
+  assert.equal(initialChatProgress("agent", true), CHAT_PROGRESS_LABELS.preparingPhoto);
+  assert.equal(initialChatProgress("agent", false), CHAT_PROGRESS_LABELS.waiting);
+});
+
+/** Exercise the real chat component's event handlers without editing a real photo. */
+function chatPanelHost(mode) {
+  const React = nativeRequire("react");
+  const slots = [];
+  let cursor = 0;
+  let messages = [];
+  let network;
+  const edits = [];
+  const response = new Response(new ReadableStream({ start(controller) { network = controller; } }));
+  const constants = load("../constants/chat-interaction-mode.ts");
+  const historyHook = () => ({ messages,
+    setMessages(value) { messages = typeof value === "function" ? value(messages) : value; },
+    historyLoaded: true, historyLoading: false, historyError: null, beforeCursor: null, loadHistory: async () => true,
+  });
+  const component = compile("../components/editor/ChatPanel.tsx", {
+    "next/dynamic": { default: () => () => null },
+    "@/components/shared/BrandLogo": { default: () => null },
+    "@/components/editor/ChatEmptyState": { default: () => null },
+    "@clerk/nextjs": { useUser: () => ({ user: null }) },
+    "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => false },
+    "react-dom": { flushSync: (callback) => callback(), createPortal: (children) => children },
+    "@/hooks/useImageChatHistory": { useImageChatHistory: historyHook },
+    "@/constants/chat-interaction-mode": { ...constants, DEFAULT_CHAT_INTERACTION_MODE: mode },
+    __globals: { TextDecoder, DOMException, crypto: globalThis.crypto,
+      fetch: async (url) => url === "/api/ai/chat" ? response : Response.json({ lifetimeFreeAI: 0, creditBalance: 10 }) },
+  }).default;
+  const dispatcher = {
+    useState(initial) {
+      const index = cursor++;
+      if (!(index in slots)) slots[index] = typeof initial === "function" ? initial() : initial;
+      return [slots[index], (value) => { slots[index] = typeof value === "function" ? value(slots[index]) : value; }];
+    },
+    useRef(initial) { const index = cursor++; return slots[index] ??= { current: initial }; },
+    useCallback(callback) { cursor++; return callback; },
+    useEffect() { cursor++; }, useLayoutEffect() { cursor++; },
+  };
+  function render() {
+    cursor = 0;
+    const internals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+    const previous = internals.H;
+    internals.H = dispatcher;
+    try { return component({ adjustments: {}, imageId: "photo-a", canvasImageUrl: "https://example.com/photo.jpg",
+      onPatch(patch) { assert.equal(messages.at(-1).content, "", "explanation must stay hidden until edits commit"); edits.push(patch); return true; },
+      createEditGuard: () => () => true, createChatEditGuard: () => () => true,
+      beginOperation: () => () => {}, onUndo() {},
+    }); } finally { internals.H = previous; }
+  }
+  function find(predicate, ...nodes) {
+    const node = nodes.length ? nodes[0] : render();
+    if (!node || typeof node !== "object") return undefined;
+    if (Array.isArray(node)) { for (const child of node) { const found = find(predicate, child); if (found) return found; } return undefined; }
+    if (predicate(node)) return node;
+    return find(predicate, node.props?.children);
+  }
+  const label = () => find((node) => node.type?.name === "ShimmerText")?.props.label;
+  async function sendEvent(event) {
+    network.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`));
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  return { render, find, label, edits, messages: () => messages, sendEvent,
+    async submit() {
+      find((node) => node.type === "textarea").props.onChange({ target: { value: "Help with the lighting" } });
+      find((node) => node.type === "button" && node.props.title === "Send").props.onClick();
+      await new Promise((resolve) => setImmediate(resolve));
+    },
+    async finish() { await sendEvent({ type: "done" }); network.close(); await new Promise((resolve) => setImmediate(resolve)); },
+  };
+}
+
+test("task summary leads; Ask reveals the final advice only when ready and never edits", async () => {
+  const panel = chatPanelHost("ask");
+  await panel.submit();
+  assert.equal(panel.label(), CHAT_PROGRESS_LABELS.waiting);
+  await panel.sendEvent({ type: "progress", text: "Thinking..." });
+  assert.equal(panel.label(), "Thinking...");
+  await panel.sendEvent({ type: "progress", text: "I'll consider how to balance the lighting." });
+  await panel.sendEvent({ type: "text", text: "Try lifting the shadows." });
+  assert.equal(panel.messages().at(-1).content, "");
+  assert.equal(panel.label(), "I'll consider how to balance the lighting.");
+  await panel.sendEvent({ type: "adjustments", adjustments: { shadows: 20 } });
+  await panel.finish();
+  assert.equal(panel.messages().at(-1).content, "Try lifting the shadows.");
+  assert.equal(panel.label(), undefined, "progress must not sit below the final answer");
+  assert.equal(panel.edits.length, 0);
+});
+
+test("Agent commits changes before revealing the explanation and clears temporary progress", async () => {
+  const panel = chatPanelHost("agent");
+  await panel.submit();
+  assert.equal(panel.label(), CHAT_PROGRESS_LABELS.preparingPhoto);
+  await panel.sendEvent({ type: "progress", text: "I'll brighten the subject." });
+  await panel.sendEvent({ type: "text", text: "Lifted the shadows." });
+  await panel.sendEvent({ type: "adjustments", adjustments: { shadows: 20 } });
+  assert.equal(panel.messages().at(-1).content, "");
+  assert.equal(panel.edits.length, 0);
+  await panel.finish();
+  assert.equal(panel.edits.length, 1);
+  assert.equal(panel.messages().at(-1).content, "Lifted the shadows.");
+  assert.equal(panel.label(), undefined);
+});
+
+test("interrupted staged replies retain partial text without applying buffered edits", async () => {
+  const panel = chatPanelHost("agent");
+  await panel.submit();
+  await panel.sendEvent({ type: "progress", text: "I'll lift the shadows." });
+  await panel.sendEvent({ type: "text", text: "Partial explanation." });
+  await panel.sendEvent({ type: "adjustments", adjustments: { shadows: 20 } });
+  await panel.sendEvent({ type: "interrupted" });
+  await panel.finish();
+  assert.equal(panel.edits.length, 0);
+  assert.equal(panel.messages().at(-1).content, "Partial explanation.");
+  assert.equal(panel.messages().at(-1).interrupted, true);
+  assert.equal(panel.label(), undefined);
 });

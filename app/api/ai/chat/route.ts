@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic, formatAdjustmentsForPrompt } from "@/lib/anthropic";
 import { cleanChatText } from "@/lib/chat-history-shared";
+import { CHAT_PROGRESS_LABELS, createChatProgressParser } from "@/lib/chat-progress";
 import { ownsChatImage, readChatContext } from "@/lib/chat-history";
 import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
@@ -55,6 +56,7 @@ type SseEvent =
       creditBalanceAfter: number;
     }
   | { type: "text"; text: string }
+  | { type: "progress"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
   | { type: "interrupted" }
   | { type: "history_error" }
@@ -316,8 +318,10 @@ export async function POST(request: Request) {
         catch { onDisconnect(); }
       };
       emit({ type: "meta", lifetimeFreeRemaining, lifetimeFreeUsed, creditBalanceAfter });
+      emit({ type: "progress", text: CHAT_PROGRESS_LABELS.waiting });
 
       let fullText = "";
+      const progressParser = createChatProgressParser();
       let lastCheckpoint = Date.now();
       async function persist(status: "streaming" | "complete" | "interrupted") {
         if (!durableTurn) return;
@@ -339,13 +343,16 @@ export async function POST(request: Request) {
         generation = claudeStream;
         if (disconnected) claudeStream.abort();
         for await (const event of claudeStream) {
+          if (event.type === "message_start") {
+            emit({ type: "progress", text: CHAT_PROGRESS_LABELS.thinking });
+          }
           if (
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"
           ) {
             const chunk = event.delta.text;
             fullText += chunk;
-            emit({ type: "text", text: chunk });
+            for (const update of progressParser.push(chunk)) emit(update);
             if (Date.now() - lastCheckpoint >= 2000) {
               await persist("streaming");
               lastCheckpoint = Date.now();
@@ -354,6 +361,7 @@ export async function POST(request: Request) {
         }
 
         if (disconnected) throw new Error("Chat interrupted");
+        for (const update of progressParser.finish()) emit(update);
         if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
           const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;
           fullText += suffix;

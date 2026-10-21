@@ -24,7 +24,10 @@ export interface ChatMessage {
 
 /** Never expose model tool payloads in either the live thread or saved transcript. */
 export function cleanChatText(raw: string): string {
-  return raw.replace(/\[adjustments\][\s\S]*?(?:\[\/adjustments\]|$)/g, "").trim();
+  return raw
+    .replace(/\[progress\][\s\S]*?(?:\[\/progress\]|$)/g, "")
+    .replace(/\[adjustments\][\s\S]*?(?:\[\/adjustments\]|$)/g, "")
+    .trim();
 }
 
 export function messagesFromTurns(turns: SavedChatTurn[]): ChatMessage[] {
