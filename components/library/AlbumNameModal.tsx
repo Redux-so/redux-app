@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BTN_BRAND_SOLID } from "@/lib/button-styles";
@@ -122,7 +124,7 @@ export default function AlbumNameModal({
                   disabled={submitting || !name.trim()}
                   className={`${BTN_BRAND_SOLID} h-8 px-3 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {submitting ? (mode === "rename" ? "Saving..." : "Creating...") : (mode === "rename" ? "Save" : "Create")}
+                  {submitting ? <LoadingSpinner size="xs" label={mode === "rename" ? "Saving album" : "Creating album"} /> : (mode === "rename" ? "Save" : "Create")}
                 </button>
               </div>
             </form>

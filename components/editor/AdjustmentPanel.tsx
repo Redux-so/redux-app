@@ -249,11 +249,11 @@ function AIButton({
       }
     >
       {loading ? (
-        <LoadingSpinner size="sm" variant="muted" label={`${label} loading`} />
+        <LoadingSpinner size="sm" label={`${label} loading`} />
       ) : (
         <Icon name="Star01" size={16} className="shrink-0" aria-hidden />
       )}
-      {label}
+      {!loading && label}
     </button>
   );
 }
@@ -967,7 +967,7 @@ export default function AdjustmentPanel({
                       <ToolBtn
                         label={
                           loadingBlur ? (
-                            <LoadingSpinner size="sm" variant="default" label="Blur loading" />
+                            <LoadingSpinner size="sm" label="Blur loading" />
                           ) : (
                             "Blur"
                           )

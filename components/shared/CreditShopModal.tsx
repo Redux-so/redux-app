@@ -199,7 +199,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
                             className={`${BTN_MODAL_SOLID} shrink-0`}
                           >
                             {purchasing === bundle.id ? (
-                              <LoadingSpinner size="xs" variant="default" label="Processing purchase" />
+                              <LoadingSpinner size="xs" label="Processing purchase" />
                             ) : null}
                             {formatPrice(bundle.price)}
                           </button>

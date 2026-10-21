@@ -44,9 +44,7 @@ export default function BackToLibraryButton() {
       {navigating ? (
         <LoadingSpinner
           size="sm"
-          variant="muted"
           label="Returning to library"
-          className="[&>span:first-child]:border-white/25 [&>span:first-child]:border-t-white/85"
         />
       ) : (
         <Icon name="ChevronLeft" size={24} aria-hidden />

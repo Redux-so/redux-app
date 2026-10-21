@@ -56,7 +56,7 @@ export default function ConfirmDialog({
             }`}
           >
             {loading && <LoadingSpinner size="xs" label="Processing" />}
-            {confirmLabel}
+            {!loading && confirmLabel}
           </button>
         </div>
       </div>

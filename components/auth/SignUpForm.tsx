@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, useClerk, useSignUp } from "@clerk/nextjs";
@@ -400,10 +402,9 @@ export default function SignUpForm() {
           disabled={!isClerkReady || isBusy}
           className={AUTH_PRIMARY_BTN}
         >
-          {!isClerkReady ? "Loading…" : isBusy ? "Signing up…" : "Sign Up"}
-          <span aria-hidden className="text-base leading-none">
-            ›
-          </span>
+          {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Signing up"} /> : (
+            <>Sign Up<span aria-hidden className="text-base leading-none">›</span></>
+          )}
         </button>
       </form>
 
@@ -419,8 +420,9 @@ export default function SignUpForm() {
         disabled={!isClerkReady || isBusy}
         className={AUTH_GOOGLE_BTN}
       >
-        <GoogleIcon />
-        {!isClerkReady ? "Loading…" : isBusy ? "Redirecting…" : "Continue with Google"}
+        {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Redirecting"} /> : (
+          <><GoogleIcon />Continue with Google</>
+        )}
       </button>
 
       <ClerkFooter />

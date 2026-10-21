@@ -44,7 +44,7 @@ export default function RetouchBrushControls({ tool, instruction, size, onSizeCh
           Cancel
         </button>
         <button type="button" onClick={() => void onConfirm()} disabled={loading} className={BTN_PRIMARY_PANEL}>
-          {loading ? <LoadingSpinner size="sm" variant="default" label={`Processing ${tool}`} /> : "Confirm"}
+          {loading ? <LoadingSpinner size="sm" label={`Processing ${tool}`} /> : "Confirm"}
         </button>
       </div>
     </div>

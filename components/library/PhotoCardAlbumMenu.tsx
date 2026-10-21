@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/shared/Icon";
@@ -162,7 +164,7 @@ export default function PhotoCardAlbumMenu({
                         />
                         <span className="min-w-0 flex-1 truncate">{album.name}</span>
                         {isPending && (
-                          <span className="text-[11px] text-[#888888]">Saving...</span>
+                          <LoadingSpinner size="xs" label="Saving album membership" />
                         )}
                       </button>
                     </li>

@@ -1,49 +1,39 @@
 "use client";
 
 const SIZE_CLASSES = {
-  xs: "h-3 w-3 border",
-  sm: "h-3.5 w-3.5 border-[1.5px]",
-  md: "h-5 w-5 border-2",
-  lg: "h-8 w-8 border-2",
+  xs: "h-3 w-3",
+  sm: "h-3.5 w-3.5",
+  md: "h-5 w-5",
+  lg: "h-8 w-8",
 } as const;
 
-const VARIANT_CLASSES = {
-  default: "border-[#2a2a2a]/20 border-t-[#2a2a2a]",
-  muted: "border-white/10 border-t-[#555555]",
-  brand: "border-[#3A6FFF]/25 border-t-[#7CA8FF]",
-} as const;
+const SPINNER_STYLE = "rounded-full animate-spin border-[1.5px] border-solid border-[#333333] border-t-[#888888]";
 
 export type LoadingSpinnerSize = keyof typeof SIZE_CLASSES;
-export type LoadingSpinnerVariant = keyof typeof VARIANT_CLASSES;
 
 interface LoadingSpinnerProps {
   size?: LoadingSpinnerSize;
-  variant?: LoadingSpinnerVariant;
   className?: string;
   label?: string;
-  showLabel?: boolean;
 }
 
+/** Visible loading UI is always spinner-only; labels remain accessible. */
 export function LoadingSpinner({
   size = "sm",
-  variant = "default",
   className = "",
   label = "Loading",
-  showLabel = false,
 }: LoadingSpinnerProps) {
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-2 ${className}`}
       role="status"
       aria-label={label}
+      data-loading-spinner
     >
       <span
-        className={`rounded-full animate-spin ${SIZE_CLASSES[size]} ${VARIANT_CLASSES[variant]}`}
+        className={`${SPINNER_STYLE} ${SIZE_CLASSES[size]}`}
         aria-hidden
       />
-      {showLabel ? (
-        <span className="text-[13px] text-[#888888]">{label}</span>
-      ) : null}
     </span>
   );
 }
@@ -52,17 +42,12 @@ interface LoadingOverlayProps {
   message?: string;
   className?: string;
   size?: LoadingSpinnerSize;
-  variant?: LoadingSpinnerVariant;
-  /** When true, message is only used for aria-label (not shown visually). */
-  srOnlyMessage?: boolean;
 }
 
 export function LoadingOverlay({
   message,
   className = "",
   size = "md",
-  variant = "default",
-  srOnlyMessage = false,
 }: LoadingOverlayProps) {
   const label = message ?? "Loading";
 
@@ -72,10 +57,7 @@ export function LoadingOverlay({
       role="status"
       aria-label={label}
     >
-      <LoadingSpinner size={size} variant={variant} label={label} />
-      {message && !srOnlyMessage ? (
-        <span className="text-[14px] text-[#888888]">{message}</span>
-      ) : null}
+      <LoadingSpinner size={size} label={label} />
     </div>
   );
 }

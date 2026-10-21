@@ -248,7 +248,7 @@ export default function GenerativeFillModal({
             className={BTN_MODAL_PANEL}
           >
             {loading ? (
-              <LoadingSpinner size="sm" variant="default" label="Applying generative fill" />
+              <LoadingSpinner size="sm" label="Applying generative fill" />
             ) : (
               "Apply"
             )}

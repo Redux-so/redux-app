@@ -388,7 +388,6 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
                 <LoadingOverlay
                   className="absolute inset-0 z-10 bg-[#161616]/80 pointer-events-none"
                   message="Loading image"
-                  srOnlyMessage
                 />
               )}
             </div>

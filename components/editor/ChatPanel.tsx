@@ -11,7 +11,6 @@ import Image from "next/image";
 import BrandLogo from "@/components/shared/BrandLogo";
 import { Icon } from "@/components/shared/Icon";
 import ChatEmptyState from "@/components/editor/ChatEmptyState";
-import { ShimmerText } from "@/components/shared/ShimmerText";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
@@ -32,8 +31,6 @@ import {
   CHAT_MESSAGE_ATTACHMENT_MAX_WIDTH_PX,
   CHAT_PANEL_COLLAPSED_WIDTH_PX,
   CHAT_PANEL_WIDTH_PX,
-  CHAT_STATUS_TEXT_CLASS,
-  CHAT_STATUS_TEXT_COLOR_CLASS,
 } from "@/constants/chat-panel";
 import { BTN_BRAND_ICON, BTN_PRIMARY_COMPACT } from "@/lib/button-styles";
 import { BRAND_BORDER_CLASS } from "@/lib/brand-colors";
@@ -1162,7 +1159,7 @@ export default function ChatPanel({
           >
             {historyLoading && !historyLoaded && (
               <div className="flex flex-1 items-center justify-center">
-                <LoadingSpinner size="md" variant="muted" label="Loading chat history" />
+                <LoadingSpinner size="md" label="Loading chat history" />
               </div>
             )}
             {historyError && (
@@ -1175,7 +1172,7 @@ export default function ChatPanel({
             {beforeCursor !== null && !historyError && (
               <button type="button" onClick={() => void loadOlderMessages()} disabled={historyLoading || sending}
                 className="text-[12px] text-[#888888] hover:text-white cursor-pointer disabled:opacity-50">
-                {historyLoading ? "Loading..." : "Load older messages"}
+                {historyLoading ? <LoadingSpinner size="sm" label="Loading older messages" /> : "Load older messages"}
               </button>
             )}
             {historySaveError && <p role="alert" className="text-[12px] text-[#888888]">This response could not be saved. Your earlier messages are still stored.</p>}
@@ -1216,10 +1213,7 @@ export default function ChatPanel({
                           transition={{ duration: messageDuration }}
                           className="flex items-center py-2.5"
                         >
-                          <ShimmerText
-                            label={CHAT_ASSISTANT_LOADING_LABEL}
-                            className={`${CHAT_STATUS_TEXT_CLASS} ${CHAT_STATUS_TEXT_COLOR_CLASS}`}
-                          />
+                          <LoadingSpinner size="sm" label={CHAT_ASSISTANT_LOADING_LABEL} />
                         </motion.div>
                       ) : (
                         <motion.div

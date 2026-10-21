@@ -54,7 +54,7 @@ export function HistoryVersionList({ entries, currentId, versions, ready, error,
           onClick={() => void revert(version.id, version.adjustments, version.title)}
           aria-label={`Revert to ${version.title}`}
           className={`flex h-8 shrink-0 items-center justify-center rounded-md px-3 text-[13px] disabled:opacity-40 ${SURFACE_SECONDARY_BTN}`}>
-          {revertingId === version.id ? "Reverting…" : "Revert"}
+          {revertingId === version.id ? <LoadingSpinner size="xs" label="Reverting version" /> : "Revert"}
         </button>}
     </li>)}</ol>
   </div>;

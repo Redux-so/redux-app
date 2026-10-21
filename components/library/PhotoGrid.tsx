@@ -6,7 +6,7 @@ import type { ImageGroup, ImageRecord } from "@/types/image";
 import PhotoCard from "./PhotoCard";
 import TrashPhotoCard from "./TrashPhotoCard";
 import EmptyState from "@/components/shared/EmptyState";
-import { LoadingOverlay } from "@/components/shared/LoadingSpinner";
+import { LoadingOverlay, LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { resolveLibraryEmptyIcon } from "@/lib/resolve-empty-state-icon";
 import { motion, useReducedMotion } from "framer-motion";
 
@@ -51,7 +51,7 @@ function LibraryScrollFooter({
   return (
     <div className="flex flex-col items-center gap-2 py-4">
       {loadingMore ? (
-        <p className="text-[12px] text-[#888888]">Loading more photos…</p>
+        <LoadingSpinner size="sm" label="Loading more photos" />
       ) : hasMore ? (
         <div ref={loadMoreSentinelRef} className="h-1 w-full" aria-hidden />
       ) : null}

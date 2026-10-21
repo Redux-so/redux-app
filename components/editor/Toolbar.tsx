@@ -1,5 +1,7 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+
 import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 import BackToLibraryButton from "@/components/shared/BackToLibraryButton";
 import { Icon } from "@/components/shared/Icon";
@@ -141,16 +143,12 @@ export default function Toolbar({
         )}
 
         <div className="flex shrink-0 items-center gap-[5px]">
-          <span
-            className={[
-              "w-2 h-2 rounded-full shrink-0 transition-colors",
-              isDirty ? "bg-[#f59e0b]" : "bg-[#22c55e]",
-              justSaved ? "animate-pulse" : "",
-            ].join(" ")}
-          />
-          <span className="text-[13px] text-[#888888] whitespace-nowrap">
-            {isDirty ? "Unsaved" : justSaved ? "Saving…" : "Auto-saved"}
-          </span>
+          {!isDirty && justSaved ? <LoadingSpinner size="xs" label="Saving image" /> : (
+            <>
+              <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${isDirty ? "bg-[#f59e0b]" : "bg-[#22c55e]"}`} />
+              <span className="text-[13px] text-[#888888] whitespace-nowrap">{isDirty ? "Unsaved" : "Auto-saved"}</span>
+            </>
+          )}
         </div>
 
         <button

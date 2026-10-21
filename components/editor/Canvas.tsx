@@ -75,7 +75,7 @@ export default function Canvas({
             {failedOriginal === originalImageUrl ? (
               <p role="status" className="absolute inset-0 flex items-center justify-center text-[13px] text-[#888888]">Could not load the original image</p>
             ) : readyOriginal !== originalImageUrl ? (
-              <LoadingOverlay className="absolute inset-0" message="Loading original image" srOnlyMessage variant="muted" />
+              <LoadingOverlay className="absolute inset-0" message="Loading original image" />
             ) : null}
           </div>
         )}

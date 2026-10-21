@@ -1,10 +1,11 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+
 import { useRef } from "react";
 
 import { Icon } from "@/components/shared/Icon";
 import type { ImageUploadState } from "@/hooks/useImageUpload";
-import { BRAND_BG_CLASS } from "@/lib/brand-colors";
 import { EMPTY_STATE_ICON_CLASS, SURFACE_GHOST_BTN } from "@/lib/surface-colors";
 
 interface UploadDropzoneProps {
@@ -31,33 +32,16 @@ export default function UploadDropzone({ upload }: UploadDropzoneProps) {
         className={[
           "accent-glow-dropzone-left relative overflow-hidden flex min-h-[128px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed border-[#262626] bg-[#1d1d1d] transition-[border-color,background-color] duration-200",
           isBusy
-            ? "pointer-events-none opacity-80"
+            ? "pointer-events-none"
             : "hover:border-[#282828] hover:bg-white/[0.05]",
         ].join(" ")}
       >
         <div className="relative z-[1] flex w-full flex-col items-center justify-center gap-2.5">
         {isBusy ? (
           <>
-            <Icon name="Image05" size={24} className={EMPTY_STATE_ICON_CLASS} aria-hidden />
-            <p className="text-[14px] text-[#888888]">
-              {total === 1 ? "Uploading photo" : "Uploading photos"}
-            </p>
-            <div
-              role="progressbar"
-              aria-label="Photo upload progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress}
-              className="mt-1 h-[2px] w-full max-w-[280px] overflow-hidden rounded-full bg-white/[0.08]"
-            >
-              <div
-                className={`h-full rounded-full ${BRAND_BG_CLASS} transition-all duration-150`}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p role="status" className="text-[12px] text-[#888888]">
-              {total > 1 ? `${completed} of ${total} complete · ` : ""}{progress}%
-            </p>
+            <LoadingSpinner size="md" label={total === 1 ? "Uploading photo" : "Uploading photos"} />
+            <div role="progressbar" aria-label="Photo upload progress" aria-valuemin={0} aria-valuemax={100}
+              aria-valuenow={progress} aria-valuetext={`${completed} of ${total} complete, ${progress}%`} className="sr-only" />
           </>
         ) : (
           <>

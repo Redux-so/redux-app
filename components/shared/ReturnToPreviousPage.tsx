@@ -25,7 +25,7 @@ export default function ReturnToPreviousPage() {
 
   return (
     <div className="flex min-h-screen flex-1 items-center justify-center bg-[#161616]">
-      <LoadingOverlay message="Returning to your page" srOnlyMessage variant="muted" />
+      <LoadingOverlay message="Returning to your page" />
       <noscript><Link href="/">Return to Redux</Link></noscript>
     </div>
   );

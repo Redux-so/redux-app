@@ -217,14 +217,12 @@ export default function ExportModal({
             {pendingAction === "download" ? (
               <LoadingSpinner
                 size="sm"
-                variant="muted"
                 label="Exporting"
-                className="[&>span:first-child]:border-white/25 [&>span:first-child]:border-t-white/85"
               />
             ) : (
               <Icon name="Download01" size={16} strokeWidth={2} aria-hidden />
             )}
-            {pendingAction === "download" ? "Exporting…" : "Download"}
+            {pendingAction !== "download" && "Download"}
           </button>
         </div>
       </div>

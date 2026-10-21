@@ -346,6 +346,11 @@ body {
   overflow-wrap: break-word !important;
 }
 
+/* Disabled actions stay noninteractive without dimming their loading spinner. */
+button:disabled:has([data-loading-spinner]) {
+  opacity: 1 !important;
+}
+
 /* Retain react-hot-toast offsets/order, but never slide during entry or reflow. */
 .redux-toaster > div {
   transition: none !important;

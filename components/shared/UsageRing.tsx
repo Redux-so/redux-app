@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { useReducedMotion } from "framer-motion";
 import { CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { BRAND_LINK_TEXT_CLASS, BRAND_LINK_TEXT_HOVER_CLASS } from "@/lib/brand-colors";
@@ -115,22 +116,6 @@ function UsageRingSvg({
           className={progressClass}
         />
       </g>
-    </svg>
-  );
-}
-
-function UsageRingLoading() {
-  return (
-    <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0" aria-hidden>
-      <circle
-        cx="10"
-        cy="10"
-        r={RING_RADIUS}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className="text-[#444444]"
-      />
     </svg>
   );
 }
@@ -331,7 +316,7 @@ export default function UsageRing({
         onClick={handleTriggerClick}
       >
         {!view ? (
-          <UsageRingLoading />
+          <LoadingSpinner size="md" label="Loading usage" />
         ) : (
           <UsageRingSvg
             fillProgress={view.fillProgress}
