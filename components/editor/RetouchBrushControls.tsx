@@ -18,7 +18,7 @@ export function RetouchSlider({ label, value, max, unit = "", resetValue = 20, d
 }) {
   return (
     <AdjustmentSlider label={label} value={value} min={1} max={max}
-      disabled={disabled} onChange={onChange} className="py-3.5"
+      disabled={disabled} onChange={onChange} className="py-4"
       resetValue={resetValue} formatValue={(current) => `${current}${unit}`} />
   );
 }

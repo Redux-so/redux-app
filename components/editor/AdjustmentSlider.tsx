@@ -99,7 +99,7 @@ export default function AdjustmentSlider({
   step = 1,
   trackVariant = "neutral",
   disabled = false,
-  className = "px-8 py-3.5",
+  className = "px-8 py-4",
   formatValue = formatSignedAdjustmentValue,
   resetValue = 0,
 }: AdjustmentSliderProps) {
@@ -140,8 +140,8 @@ export default function AdjustmentSlider({
       >
         <SliderPrimitive.Track
           className={[
-            "relative w-full grow rounded-full",
-            isColorTrack ? "h-[5px]" : "h-[3px] bg-white/[0.08]",
+            "relative h-[3px] w-full grow rounded-full",
+            isColorTrack ? "" : "bg-white/[0.08]",
           ].join(" ")}
           style={trackGradient ? { background: trackGradient } : undefined}
         >

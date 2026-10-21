@@ -49,11 +49,11 @@ export function HistoryVersionList({ entries, currentId, versions, ready, error,
           {new Date(version.createdAt).toLocaleString()}
         </time>}
       </div>
-      {version.id === currentId ? <span className="text-xs text-white/40" aria-current="true">Current</span> :
+      {version.id === currentId ? <span className="flex h-8 w-16 shrink-0 items-center justify-center text-xs text-white/40" aria-current="true">Current</span> :
         <button type="button" disabled={!!revertingId}
           onClick={() => void revert(version.id, version.adjustments, version.title)}
           aria-label={`Revert to ${version.title}`}
-          className={`flex h-8 shrink-0 items-center justify-center rounded-md px-3 text-[13px] disabled:opacity-40 ${SURFACE_SECONDARY_BTN}`}>
+          className={`flex h-8 w-16 shrink-0 items-center justify-center rounded-md px-3 text-[13px] disabled:opacity-40 ${SURFACE_SECONDARY_BTN}`}>
           {revertingId === version.id ? <LoadingSpinner size="xs" label="Reverting version" /> : "Revert"}
         </button>}
     </li>)}</ol>
