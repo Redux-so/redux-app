@@ -221,6 +221,7 @@ export const chatHistoryMessageSchema = z.object({
 });
 
 export const chatRequestBodySchema = z.object({
+  turnId: z.string().uuid().optional(),
   userMessage: z
     .string()
     .trim()

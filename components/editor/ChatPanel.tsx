@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useImageChatHistory } from "@/hooks/useImageChatHistory";
+import { cleanChatText as cleanText, type ChatMessage as Message } from "@/lib/chat-history-shared";
 import { useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,6 +12,7 @@ import BrandLogo from "@/components/shared/BrandLogo";
 import { Icon } from "@/components/shared/Icon";
 import ChatEmptyState from "@/components/editor/ChatEmptyState";
 import { ShimmerText } from "@/components/shared/ShimmerText";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import toast from "react-hot-toast";
 import type { Adjustments } from "@/hooks/useEditor";
 import type { AdjustmentKey } from "@/constants/adjustments";
@@ -128,15 +131,6 @@ const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  /** Cleaned display text (adjustment tags stripped). */
-  content: string;
-  /** Base64 data-URL thumbnail for images sent by the user. */
-  imagePreview?: string;
-  timestamp: Date;
-}
 
 interface PendingChange {
   key: AdjustmentKey;
@@ -154,6 +148,8 @@ type SseEvent =
     }
   | { type: "text"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
+  | { type: "history_error" }
+  | { type: "interrupted" }
   | { type: "done" };
 
 interface ChatPanelProps {
@@ -171,11 +167,6 @@ interface ChatPanelProps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Strip [adjustments]...[/adjustments] from displayed text. */
-function cleanText(raw: string): string {
-  return raw.replace(/\[adjustments\][\s\S]*?\[\/adjustments\]/g, "").trim();
-}
 
 /**
  * Convert a File to a base64 data-URL (for preview) and the raw base64 string
@@ -729,7 +720,8 @@ export default function ChatPanel({
   canvasImageUrl,
 }: ChatPanelProps) {
   const { user } = useUser();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, setMessages, historyLoaded, historyLoading, historyError, beforeCursor, loadHistory } = useImageChatHistory(imageId);
+  const [historySaveError, setHistorySaveError] = useState(false);
   const [input, setInput] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [sending, setSending] = useState(false);
@@ -764,6 +756,7 @@ export default function ChatPanel({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const olderScrollRef = useRef<{ height: number; top: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const openCreditShop = useCallback(() => {
@@ -792,11 +785,24 @@ export default function ChatPanel({
   /** Hard block only when lifetime free is exhausted and balance is exactly zero. */
   const chatBlocked = isChatQuotaBlocked(chatQuota);
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
+  // Keep the reader in place when older messages are prepended.
+  useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    const older = olderScrollRef.current;
+    el.scrollTop = older ? older.top + el.scrollHeight - older.height : el.scrollHeight;
+    olderScrollRef.current = null;
   }, [messages]);
+
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  async function loadOlderMessages() {
+    if (!beforeCursor || historyLoading || sending) return;
+    const el = scrollRef.current;
+    if (el) olderScrollRef.current = { height: el.scrollHeight, top: el.scrollTop };
+    const loaded = await loadHistory(beforeCursor);
+    if (!loaded) olderScrollRef.current = null;
+  }
 
   function applyAiAdjustments(rawPatch: Partial<Record<string, number>>) {
     const patch = normalizeAdjustmentPatch(rawPatch);
@@ -898,7 +904,7 @@ export default function ChatPanel({
   // ── Send message ────────────────────────────────────────────────────────
   async function handleSend(overrideText?: string) {
     const text = (overrideText ?? input).trim();
-    if (!text || sending) return;
+    if (!text || sending || !historyLoaded) return;
     if (chatBlocked) {
       promptPurchaseCredits();
       return;
@@ -908,14 +914,15 @@ export default function ChatPanel({
     const imageBase64 = attachedBase64 ?? undefined;
     const imageMediaType = attachedMediaType ?? undefined;
 
-    const conversationHistory: ChatHistoryMessage[] = messages
+    const conversationHistory: ChatHistoryMessage[] = imageId ? [] : messages
       .filter((m) => m.content.trim())
-      .map((m) => ({ role: m.role, content: m.content }));
+      .slice(-20)
+      .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
     const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
-    const shouldAppendAskNudge = chatInteractionMode === "ask";
 
+    const turnId = crypto.randomUUID();
     const userMsg: Message = {
-      id: crypto.randomUUID(),
+      id: `${turnId}:user`,
       role: "user",
       content: text,
       imagePreview,
@@ -926,7 +933,7 @@ export default function ChatPanel({
     clearAttachment();
     setSending(true);
 
-    const assistantId = crypto.randomUUID();
+    const assistantId = `${turnId}:assistant`;
     const assistantPlaceholder: Message = {
       id: assistantId,
       role: "assistant",
@@ -939,6 +946,8 @@ export default function ChatPanel({
     const finishOperation = allowAdjustments ? beginOperation() : () => {};
     const turnPatch: Partial<Record<AdjustmentKey, number>> = {};
     let completed = false;
+    let receivedText = "";
+    setHistorySaveError(false);
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -948,6 +957,7 @@ export default function ChatPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userMessage: text,
+          turnId,
           adjustments,
           conversationHistory,
           imageId,
@@ -1015,11 +1025,16 @@ export default function ChatPanel({
                 totalPurchasedCredits: prev?.totalPurchasedCredits ?? 0,
                 hasPurchasedCredits: prev?.hasPurchasedCredits ?? false,
               }));
+            } else if (event.type === "history_error") {
+              setHistorySaveError(true);
+            } else if (event.type === "interrupted") {
+              setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, interrupted: true } : m));
             } else if (event.type === "text") {
+              receivedText += event.text;
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: cleanText(m.content + event.text) }
+                    ? { ...m, content: cleanText(receivedText) }
                     : m,
                 ),
               );
@@ -1044,22 +1059,14 @@ export default function ChatPanel({
         applyAiAdjustments(turnPatch);
       }
 
-      if (shouldAppendAskNudge) {
-        setMessages((prev) =>
-          prev.map((m) => {
-            if (m.id !== assistantId) return m;
-            if (!askModeNudgeMissing(m.content)) return m;
-            return {
-              ...m,
-              content: `${m.content.trimEnd()}\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`,
-            };
-          }),
-        );
+      if (!completed) {
+        setMessages((prev) => prev.map((message) => message.id === assistantId ? { ...message, interrupted: true } : message));
       }
+
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setMessages((prev) =>
-          prev.filter((m) => m.id !== assistantId || m.content.trim() !== ""),
+          prev.map((m) => m.id === assistantId ? { ...m, interrupted: true } : m),
         );
         return;
       }
@@ -1074,6 +1081,7 @@ export default function ChatPanel({
           m.id === assistantId
             ? {
                 ...m,
+                interrupted: true,
                 content:
                   chatInteractionMode === "ask" && askModeNudgeMissing(message)
                     ? `${message}\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`
@@ -1097,7 +1105,7 @@ export default function ChatPanel({
     }
   }
 
-  const canSend = !!input.trim() && !sending && !chatBlocked;
+  const canSend = !!input.trim() && !sending && !chatBlocked && historyLoaded;
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -1152,7 +1160,26 @@ export default function ChatPanel({
             data-chat-scroll
             className={`chat-panel-scroll flex-1 overflow-y-auto min-h-0 py-5 flex flex-col gap-10 ${CHAT_PANEL_GUTTER_CLASS}`}
           >
-            {messages.length === 0 && (
+            {historyLoading && !historyLoaded && (
+              <div className="flex flex-1 items-center justify-center">
+                <LoadingSpinner size="md" variant="muted" label="Loading chat history" />
+              </div>
+            )}
+            {historyError && (
+              <div className="text-[12px] text-[#888888]" role="alert">
+                {historyError}{" "}
+                <button type="button" className="underline cursor-pointer" disabled={historyLoading}
+                  onClick={() => { void (historyLoaded ? loadOlderMessages() : loadHistory()); }}>Retry</button>
+              </div>
+            )}
+            {beforeCursor !== null && !historyError && (
+              <button type="button" onClick={() => void loadOlderMessages()} disabled={historyLoading || sending}
+                className="text-[12px] text-[#888888] hover:text-white cursor-pointer disabled:opacity-50">
+                {historyLoading ? "Loading..." : "Load older messages"}
+              </button>
+            )}
+            {historySaveError && <p role="alert" className="text-[12px] text-[#888888]">This response could not be saved. Your earlier messages are still stored.</p>}
+            {messages.length === 0 && historyLoaded && (
               <ChatEmptyState
                 disabled={sending || chatBlocked}
                 onSelectSuggestion={(message) => {
@@ -1163,7 +1190,7 @@ export default function ChatPanel({
 
             {messages.map((msg) => {
               const isAssistantLoading =
-                msg.role === "assistant" && msg.content === "";
+                msg.role === "assistant" && msg.content === "" && !msg.interrupted;
 
               return (
               <motion.div
@@ -1222,11 +1249,12 @@ export default function ChatPanel({
                             }`}
                           >
                             {msg.role === "assistant" ? (
-                              <ChatMarkdown content={msg.content} />
+                              <ChatMarkdown content={msg.content || (msg.interrupted ? "Response interrupted. Send another message to continue." : "")} />
                             ) : (
                               msg.content
                             )}
                           </div>
+                          {msg.interrupted && msg.content && <p className="text-[11px] text-[#888888]">Response interrupted. Edits may not have been applied.</p>}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -1373,7 +1401,7 @@ export default function ChatPanel({
                         chatBlocked ? "" : "Describe the edit you want..."
                       }
                       rows={1}
-                      disabled={chatBlocked}
+                      disabled={chatBlocked || !historyLoaded}
                       className="w-full resize-none bg-transparent pt-0 text-[15px] font-normal text-white placeholder:text-[#666666] placeholder:font-normal outline-none leading-snug min-h-[24px] max-h-[80px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ fieldSizing: "content" } as React.CSSProperties}
                     />

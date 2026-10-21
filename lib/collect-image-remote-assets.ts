@@ -42,7 +42,14 @@ export async function collectImageRemoteAssets(
     },
   });
 
+  const attachments = await prisma.chatTurn.findMany({
+    where: { imageId, image: { userId } },
+    select: { attachmentPublicId: true },
+  });
   const publicIds = new Set<string>();
+  for (const attachment of attachments) {
+    if (attachment.attachmentPublicId) publicIds.add(attachment.attachmentPublicId);
+  }
   publicIds.add(image.publicId);
   addCloudinaryUrl(publicIds, image.previewUrl);
 

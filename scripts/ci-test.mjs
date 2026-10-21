@@ -35,7 +35,7 @@ function findTestFiles(dir, acc = []) {
   return acc;
 }
 
-const VERIFY_NODE_SCRIPTS = ["scripts/verify-album-rename.mjs", "scripts/verify-cover-save.mjs", "scripts/verify-icon-registry.mjs", "scripts/verify-editor-history.mjs", "scripts/verify-cloudinary-image-history.mjs", "scripts/verify-export-rendering.mjs", "scripts/verify-editor-navigator.mjs"];
+const VERIFY_NODE_SCRIPTS = ["scripts/verify-chat-history.mjs", "scripts/verify-album-rename.mjs", "scripts/verify-cover-save.mjs", "scripts/verify-icon-registry.mjs", "scripts/verify-editor-history.mjs", "scripts/verify-cloudinary-image-history.mjs", "scripts/verify-export-rendering.mjs", "scripts/verify-editor-navigator.mjs"];
 
 const VERIFY_SCRIPTS = [
   "scripts/verify-api-validation.ts",

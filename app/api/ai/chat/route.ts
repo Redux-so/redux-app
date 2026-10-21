@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import type { ImageBlockParam, MessageParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { anthropic, formatAdjustmentsForPrompt } from "@/lib/anthropic";
+import { cleanChatText } from "@/lib/chat-history-shared";
+import { ownsChatImage, readChatContext } from "@/lib/chat-history";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import {
@@ -52,6 +56,8 @@ type SseEvent =
     }
   | { type: "text"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
+  | { type: "interrupted" }
+  | { type: "history_error" }
   | { type: "done" };
 
 function encodeEvent(data: SseEvent): Uint8Array {
@@ -127,6 +133,7 @@ export async function POST(request: Request) {
   }
   const {
     userMessage,
+    turnId: requestedTurnId,
     adjustments,
     conversationHistory,
     imageId,
@@ -135,6 +142,10 @@ export async function POST(request: Request) {
     imageMediaType,
     chatInteractionMode,
   } = parsed.data;
+
+  if (imageId && !await ownsChatImage(imageId, user.id)) {
+    return NextResponse.json({ error: "Image not found" }, { status: 404 });
+  }
 
   // ── Find user ─────────────────────────────────────────────────────────────
   // ── Block only when lifetime free is used up AND there are no credits left.
@@ -197,9 +208,12 @@ export async function POST(request: Request) {
     }
   }
 
+  let attachment: { secureUrl: string; publicId: string } | undefined;
+  let preparedAttachment: Awaited<ReturnType<typeof prepareChatVisionBase64>> | undefined;
   if (imageBase64 && imageMediaType) {
     try {
       const prepared = await prepareChatVisionBase64(imageBase64);
+      preparedAttachment = prepared;
       pushImageBlock(userContent, prepared.base64, prepared.mediaType);
     } catch (err) {
       console.error("[/api/ai/chat] Failed to prepare attachment:", err);
@@ -215,7 +229,30 @@ export async function POST(request: Request) {
     text: `${userMessage.trim()}\n\n${adjustmentsContext}`,
   });
 
-  const anthropicMessages = buildAnthropicMessages(conversationHistory, userContent);
+  const turnId = requestedTurnId ?? randomUUID();
+  let durableTurn = false;
+  let context = conversationHistory;
+  if (imageId) {
+    try {
+      if (await prisma.chatTurn.findUnique({ where: { id: turnId }, select: { id: true } })) {
+        return NextResponse.json({ error: "This message was already submitted. Reopen the image to load its response." }, { status: 409 });
+      }
+      context = await readChatContext(imageId, user.id);
+      if (preparedAttachment) {
+        attachment = await uploadToCloudinary(Buffer.from(preparedAttachment.base64, "base64"), `chat_${imageId}_${turnId}.png`);
+      }
+      await prisma.chatTurn.create({ data: {
+        id: turnId, imageId, userText: userMessage, mode: chatInteractionMode,
+        attachmentUrl: attachment?.secureUrl, attachmentPublicId: attachment?.publicId,
+      } });
+      durableTurn = true;
+    } catch (error) {
+      if (attachment) await deleteFromCloudinary(attachment.publicId).catch(() => {});
+      console.error("[/api/ai/chat] Could not save user message:", error);
+      return NextResponse.json({ error: "Could not save your message. Please try again." }, { status: 503 });
+    }
+  }
+  const anthropicMessages = buildAnthropicMessages(context, userContent);
   const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
 
   // ── Consume free message or credit ───────────────────────────────────────
@@ -224,50 +261,74 @@ export async function POST(request: Request) {
   let creditBalanceAfter: number;
   let chatCreditCharged = false;
 
-  if (onFreeTier) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lifetimeFreeAI: { increment: 1 } },
-    });
-    lifetimeFreeUsed = user.lifetimeFreeAI + 1;
-    lifetimeFreeRemaining = Math.max(
-      0,
-      USAGE_RING_CONFIG.freeChatAllowance - lifetimeFreeUsed,
-    );
-    creditBalanceAfter = user.creditBalance;
-  } else {
-    // Paid path: lifetime free already exhausted — charge 1 credit per message.
-    if (user.creditBalance < CREDIT_COSTS.chat_message) {
-      return insufficientCreditsResponse();
+  try {
+    if (onFreeTier) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lifetimeFreeAI: { increment: 1 } },
+      });
+      lifetimeFreeUsed = user.lifetimeFreeAI + 1;
+      lifetimeFreeRemaining = Math.max(
+        0,
+        USAGE_RING_CONFIG.freeChatAllowance - lifetimeFreeUsed,
+      );
+      creditBalanceAfter = user.creditBalance;
+    } else {
+      // Paid path: lifetime free already exhausted — charge 1 credit per message.
+      if (user.creditBalance < CREDIT_COSTS.chat_message) {
+        if (durableTurn) await prisma.chatTurn.update({ where: { id: turnId }, data: { status: "interrupted" } });
+        return insufficientCreditsResponse();
+      }
+      const charge = await chargeCreditFeature({
+        userId: user.id,
+        feature: "chat_message",
+      });
+      if (!charge.ok) {
+        if (durableTurn) await prisma.chatTurn.update({ where: { id: turnId }, data: { status: "interrupted" } });
+        return insufficientCreditsResponse();
+      }
+      chatCreditCharged = true;
+      lifetimeFreeRemaining = 0;
+      lifetimeFreeUsed = user.lifetimeFreeAI;
+      creditBalanceAfter = charge.balanceAfter;
     }
-    const charge = await chargeCreditFeature({
-      userId: user.id,
-      feature: "chat_message",
-    });
-    if (!charge.ok) {
-      return insufficientCreditsResponse();
-    }
-    chatCreditCharged = true;
-    lifetimeFreeRemaining = 0;
-    lifetimeFreeUsed = user.lifetimeFreeAI;
-    creditBalanceAfter = charge.balanceAfter;
+
+  } catch (error) {
+    if (durableTurn) await prisma.chatTurn.update({ where: { id: turnId }, data: { status: "interrupted" } }).catch(() => {});
+    console.error("[/api/ai/chat] Could not start chat:", error);
+    return NextResponse.json({ error: "Could not start chat. Please try again." }, { status: 503 });
   }
 
   // ── Stream response ───────────────────────────────────────────────────────
+  let disconnected = request.signal.aborted;
+  let generation: ReturnType<typeof anthropic.messages.stream> | undefined;
+  const onDisconnect = () => {
+    disconnected = true;
+    generation?.abort();
+  };
+  request.signal.addEventListener("abort", onDisconnect);
   const stream = new ReadableStream({
+    cancel() { onDisconnect(); },
     async start(controller) {
-      controller.enqueue(
-        encodeEvent({
-          type: "meta",
-          lifetimeFreeRemaining,
-          lifetimeFreeUsed,
-          creditBalanceAfter,
-        }),
-      );
+      const emit = (event: SseEvent) => {
+        if (disconnected) return;
+        try { controller.enqueue(encodeEvent(event)); }
+        catch { onDisconnect(); }
+      };
+      emit({ type: "meta", lifetimeFreeRemaining, lifetimeFreeUsed, creditBalanceAfter });
 
       let fullText = "";
+      let lastCheckpoint = Date.now();
+      async function persist(status: "streaming" | "complete" | "interrupted") {
+        if (!durableTurn) return;
+        const data = { assistantText: cleanChatText(fullText), status };
+        // One retry handles a short connection drop without rewriting the whole thread.
+        try { await prisma.chatTurn.update({ where: { id: turnId }, data }); }
+        catch { await prisma.chatTurn.update({ where: { id: turnId }, data }); }
+      }
 
       try {
+        if (disconnected) throw new Error("Chat interrupted");
         const claudeStream = anthropic.messages.stream({
           model: ANTHROPIC_DEFAULT_MODEL,
           max_tokens: 1024,
@@ -275,6 +336,8 @@ export async function POST(request: Request) {
           messages: anthropicMessages,
         });
 
+        generation = claudeStream;
+        if (disconnected) claudeStream.abort();
         for await (const event of claudeStream) {
           if (
             event.type === "content_block_delta" &&
@@ -282,9 +345,21 @@ export async function POST(request: Request) {
           ) {
             const chunk = event.delta.text;
             fullText += chunk;
-            controller.enqueue(encodeEvent({ type: "text", text: chunk }));
+            emit({ type: "text", text: chunk });
+            if (Date.now() - lastCheckpoint >= 2000) {
+              await persist("streaming");
+              lastCheckpoint = Date.now();
+            }
           }
         }
+
+        if (disconnected) throw new Error("Chat interrupted");
+        if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
+          const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;
+          fullText += suffix;
+          emit({ type: "text", text: suffix });
+        }
+        await persist("complete");
 
         // Extract [adjustments] block and emit as a separate event
         const adjMatch = fullText.match(/\[adjustments\]([\s\S]*?)\[\/adjustments\]/);
@@ -293,7 +368,7 @@ export async function POST(request: Request) {
             const parsed = normalizeAdjustmentPatch(
               JSON.parse(adjMatch[1]) as Partial<Record<string, number>>,
             );
-            controller.enqueue(encodeEvent({ type: "adjustments", adjustments: parsed }));
+            emit({ type: "adjustments", adjustments: parsed });
           } catch {
             console.error(
               "[/api/ai/chat] Failed to parse [adjustments] JSON:",
@@ -308,12 +383,6 @@ export async function POST(request: Request) {
             );
           }
         }
-
-        if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
-          const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;
-          fullText += suffix;
-          controller.enqueue(encodeEvent({ type: "text", text: suffix }));
-        }
       } catch (err) {
         console.error("[/api/ai/chat] Anthropic stream error:", err);
         if (chatCreditCharged) {
@@ -327,13 +396,24 @@ export async function POST(request: Request) {
             console.error("[/api/ai/chat] Failed to refund chat credit:", refundErr);
           }
         }
-        controller.enqueue(
-          encodeEvent({ type: "text", text: "\n\nSomething went wrong. Please try again." }),
-        );
+        emit({ type: "interrupted" });
+        if (!disconnected) {
+          const text = "\n\nSomething went wrong. Please try again.";
+          fullText += text;
+          emit({ type: "text", text });
+        }
+        try { await persist("interrupted"); }
+        catch (saveError) {
+          console.error("[/api/ai/chat] Could not save response:", saveError);
+          emit({ type: "history_error" });
+        }
       }
 
-      controller.enqueue(encodeEvent({ type: "done" }));
-      controller.close();
+      request.signal.removeEventListener("abort", onDisconnect);
+      emit({ type: "done" });
+      if (!disconnected) {
+        try { controller.close(); } catch { /* disconnected after final save */ }
+      }
     },
   });
 

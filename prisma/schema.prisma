@@ -41,10 +41,29 @@ model Image {
   deletedAt   DateTime?
   versions    ImageVersion[]
   albumMembers AlbumImage[]
+  chatTurns   ChatTurn[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
   @@index([userId, deletedAt])
+}
+
+/// One durable user/assistant exchange. Sequence keeps pagination stable across tabs.
+model ChatTurn {
+  id                 String   @id @default(uuid())
+  sequence           Int      @unique @default(autoincrement())
+  imageId            String
+  image              Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  userText           String
+  assistantText      String   @default("")
+  attachmentUrl      String?
+  attachmentPublicId String?
+  mode               String   @default("agent")
+  status             String   @default("streaming")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([imageId, sequence])
 }
 
 model Album {
