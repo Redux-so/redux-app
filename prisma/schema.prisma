@@ -63,7 +63,34 @@ model ChatTurn {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  toolRun            ChatToolRun?
+
   @@index([imageId, sequence])
+}
+
+/// An immutable, approved plan. Reopening a transcript never replays its actions.
+model ChatToolRun {
+  turnId    String @id
+  turn      ChatTurn @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  plan      Json
+  status    String @default("pending")
+  steps     ChatToolStep[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Claim before invoking a paid endpoint. An uncertain outcome cannot be retried/charged again.
+model ChatToolStep {
+  id        String @id
+  turnId    String
+  run       ChatToolRun @relation(fields: [turnId], references: [turnId], onDelete: Cascade)
+  index     Int
+  status    String @default("running")
+  result    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([turnId, index])
 }
 
 model Album {

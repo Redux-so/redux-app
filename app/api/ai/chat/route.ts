@@ -44,6 +44,7 @@ import {
 } from "@/lib/atomic-credits";
 import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { CREDIT_COSTS } from "@/constants/credits";
+import { EDIT_PHOTO_TOOL, editorPlanSchema, planCost, type ChatToolPlan } from "@/lib/editor-actions";
 
 // ---------------------------------------------------------------------------
 // SSE helpers
@@ -58,6 +59,7 @@ type SseEvent =
   | { type: "text"; text: string }
   | { type: "progress"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
+  | { type: "tools"; plan: ChatToolPlan }
   | { type: "interrupted" }
   | { type: "history_error" }
   | { type: "done" };
@@ -143,6 +145,8 @@ export async function POST(request: Request) {
     imageBase64,
     imageMediaType,
     chatInteractionMode,
+    toolsEnabled,
+    editorContext,
   } = parsed.data;
 
   if (imageId && !await ownsChatImage(imageId, user.id)) {
@@ -228,7 +232,7 @@ export async function POST(request: Request) {
 
   userContent.push({
     type: "text",
-    text: `${userMessage.trim()}\n\n${adjustmentsContext}`,
+    text: `${userMessage.trim()}\n\n${adjustmentsContext}${editorContext ? `\nEditor context (coordinates refer to the transformed image): ${JSON.stringify(editorContext)}` : ""}`,
   });
 
   const turnId = requestedTurnId ?? randomUUID();
@@ -256,6 +260,7 @@ export async function POST(request: Request) {
   }
   const anthropicMessages = buildAnthropicMessages(context, userContent);
   const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
+  const enableTools = toolsEnabled && allowAdjustments && durableTurn;
 
   // ── Consume free message or credit ───────────────────────────────────────
   let lifetimeFreeRemaining: number;
@@ -321,6 +326,10 @@ export async function POST(request: Request) {
       emit({ type: "progress", text: CHAT_PROGRESS_LABELS.waiting });
 
       let fullText = "";
+      let toolInput = "";
+      let toolCalls = 0;
+      let toolBlock = -1;
+      let truncated = false;
       const progressParser = createChatProgressParser();
       let lastCheckpoint = Date.now();
       async function persist(status: "streaming" | "complete" | "interrupted") {
@@ -335,14 +344,21 @@ export async function POST(request: Request) {
         if (disconnected) throw new Error("Chat interrupted");
         const claudeStream = anthropic.messages.stream({
           model: ANTHROPIC_DEFAULT_MODEL,
-          max_tokens: 1024,
-          system: buildChatSystemPrompt(chatInteractionMode),
+          max_tokens: enableTools ? 2048 : 1024,
+          system: buildChatSystemPrompt(chatInteractionMode, enableTools),
           messages: anthropicMessages,
+          ...(enableTools ? { tools: [EDIT_PHOTO_TOOL], tool_choice: { type: "auto" as const, disable_parallel_tool_use: true } } : {}),
         });
 
         generation = claudeStream;
         if (disconnected) claudeStream.abort();
         for await (const event of claudeStream) {
+          if (event.type === "message_delta" && event.delta.stop_reason === "max_tokens") truncated = true;
+          if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+            if (!enableTools || event.content_block.name !== "edit_photo" || ++toolCalls > 1) throw new Error("Invalid editor tool request");
+            toolBlock = event.index;
+          }
+          if (event.type === "content_block_delta" && event.index === toolBlock && event.delta.type === "input_json_delta") toolInput += event.delta.partial_json;
           if (event.type === "message_start") {
             emit({ type: "progress", text: CHAT_PROGRESS_LABELS.thinking });
           }
@@ -361,17 +377,29 @@ export async function POST(request: Request) {
         }
 
         if (disconnected) throw new Error("Chat interrupted");
+        if (truncated) throw new Error("The response was incomplete; no tools were run");
         for (const update of progressParser.finish()) emit(update);
         if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
           const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;
           fullText += suffix;
           emit({ type: "text", text: suffix });
         }
-        await persist("complete");
+        if (toolCalls) {
+          const plan = editorPlanSchema.parse(JSON.parse(toolInput));
+          for (const action of plan.actions) {
+            if (action.type === "apply_selection" && action.tool === "blur" && action.intensity === undefined) action.intensity = editorContext?.blurIntensity ?? 30;
+            if (action.type === "revert" && !editorContext?.versions.some((v) => v.id === action.versionId)) throw new Error("This version is not available in the current history");
+          }
+          if (plan.actions.some((a) => a.type === "style_match") && !attachment) throw new Error("Attach a reference image for style matching");
+          await prisma.chatToolRun.create({ data: { turnId, plan: JSON.parse(JSON.stringify(plan)) } });
+          fullText = "Edits are ready. They have not been confirmed as applied. If this request was interrupted, send a new message to continue.";
+          await persist("streaming");
+          emit({ type: "tools", plan: { ...plan, turnId, credits: planCost(plan) } });
+        } else await persist("complete");
 
         // Extract [adjustments] block and emit as a separate event
         const adjMatch = fullText.match(/\[adjustments\]([\s\S]*?)\[\/adjustments\]/);
-        if (adjMatch && allowAdjustments) {
+        if (adjMatch && allowAdjustments && !enableTools) {
           try {
             const parsed = normalizeAdjustmentPatch(
               JSON.parse(adjMatch[1]) as Partial<Record<string, number>>,

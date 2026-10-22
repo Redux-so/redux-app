@@ -387,6 +387,8 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     commitState,
     createEditGuard,
     createChatEditGuard,
+    getEditorRevision: () => revisionRef.current,
+    getEditorState: () => currentRef.current,
     updateAdjustment,
     previewAdjustment,
     patchAdjustments,

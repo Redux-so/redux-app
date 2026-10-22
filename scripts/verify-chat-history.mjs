@@ -27,11 +27,12 @@ function compile(path, adapters) {
 const turnId = "b501765b-7815-4a8a-986d-43ab939294b9";
 function host(options = {}) {
   const rows = options.rows ?? [];
-  const state = { modelCalls: 0, charges: 0, refunds: 0, updates: 0, uploads: 0, modelMessages: [] };
+  const state = { modelCalls: 0, charges: 0, refunds: 0, updates: 0, uploads: 0, modelMessages: [], toolPlans: [], modelTools: [] };
   const matches = (row, where) => row.imageId === where.imageId && where.image.userId === "user-a" &&
     row.imageId === "photo-a" && (!where.status || row.status === where.status) &&
     (!where.sequence || row.sequence < where.sequence.lt);
   const prisma = {
+    chatToolRun: { create: async ({ data }) => { state.toolPlans.push(data); return data; } },
     image: { findFirst: async ({ where }) => where.id === "photo-a" && where.userId === "user-a" ? { id: where.id } : null },
     user: { update: async () => { state.charges++; } },
     chatTurn: {
@@ -58,12 +59,13 @@ function host(options = {}) {
     __clock: options.clock,
     "@/lib/prisma": { prisma }, "@/lib/require-user": auth, "@/lib/chat-history": history,
     "@/lib/anthropic": {
-      formatAdjustmentsForPrompt: () => "Current adjustments", anthropic: { messages: { stream({ messages }) {
-        state.modelCalls++; state.modelMessages = messages;
+      formatAdjustmentsForPrompt: () => "Current adjustments", anthropic: { messages: { stream({ messages, tools }) {
+        state.modelCalls++; state.modelMessages = messages; state.modelTools = tools ?? [];
         let aborted = false;
         return {
           abort() { aborted = true; },
           async *[Symbol.asyncIterator]() {
+            for (const event of options.modelEvents ?? []) yield event;
             for (const text of options.chunks ?? ['Done. ', '[adjustments]{"exposure":12}[/adjustments]']) {
               if (aborted) throw new Error("aborted");
               yield { type: "content_block_delta", delta: { type: "text_delta", text } };
@@ -332,7 +334,7 @@ test("Ask starts with waiting; photo preparation is exclusive to Agent mode", ()
 });
 
 /** Exercise the real chat component's event handlers without editing a real photo. */
-function chatPanelHost(mode) {
+function chatPanelHost(mode, options = {}) {
   const React = nativeRequire("react");
   const slots = [];
   let cursor = 0;
@@ -353,8 +355,9 @@ function chatPanelHost(mode) {
     "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => false },
     "react-dom": { flushSync: (callback) => callback(), createPortal: (children) => children },
     "@/hooks/useImageChatHistory": { useImageChatHistory: historyHook },
+    "@/hooks/useEditorChatTools": { chatToolsRequest: async () => ({ ok: true }) },
     "@/constants/chat-interaction-mode": { ...constants, DEFAULT_CHAT_INTERACTION_MODE: mode },
-    __globals: { TextDecoder, DOMException, crypto: globalThis.crypto,
+    __globals: { TextDecoder, DOMException, crypto: { randomUUID: () => turnId },
       fetch: async (url) => url === "/api/ai/chat" ? response : Response.json({ lifetimeFreeAI: 0, creditBalance: 10 }) },
   }).default;
   const dispatcher = {
@@ -376,6 +379,7 @@ function chatPanelHost(mode) {
       onPatch(patch) { assert.equal(messages.at(-1).content, "", "explanation must stay hidden until edits commit"); edits.push(patch); return true; },
       createEditGuard: () => () => true, createChatEditGuard: () => () => true,
       beginOperation: () => () => {}, onUndo() {},
+      ...options,
     }); } finally { internals.H = previous; }
   }
   function find(predicate, ...nodes) {
@@ -444,4 +448,88 @@ test("interrupted staged replies retain partial text without applying buffered e
   assert.equal(panel.messages().at(-1).content, "Partial explanation.");
   assert.equal(panel.messages().at(-1).interrupted, true);
   assert.equal(panel.label(), undefined);
+});
+
+
+test("Agent requests native validated tools without charging or executing paid operations during planning", async () => {
+  const plan = { actions: [{ type: "remove_background" }, { type: "rotate", degrees: 90 }] };
+  const app = host({ chunks: [], modelEvents: [
+    { type: "content_block_start", index: 1, content_block: { type: "tool_use", name: "edit_photo" } },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan).slice(0, 20) } },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan).slice(20) } },
+  ] });
+  const result = events(await (await app.send({ toolsEnabled: true })).text());
+  assert.equal(app.state.modelTools[0].name, "edit_photo");
+  assert.equal(app.state.charges, 1, "only the chat allowance is consumed during planning");
+  assert.equal(app.state.toolPlans.length, 1);
+  assert.equal(result.find((e) => e.type === "tools").plan.credits, 1);
+  assert.equal(result.some((e) => e.type === "adjustments"), false);
+  assert.match(app.rows[0].assistantText, /not been confirmed as applied/);
+  assert.notEqual(app.rows[0].status, "complete");
+});
+
+test("Ask never receives tools and rejects a model-invented tool call", async () => {
+  const app = host({ chunks: [], modelEvents: [
+    { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
+  ] });
+  const result = events(await (await app.send({ toolsEnabled: true, chatInteractionMode: "ask" })).text());
+  assert.equal(app.state.modelTools.length, 0);
+  assert.equal(app.state.toolPlans.length, 0);
+  assert.equal(result.some((e) => e.type === "tools"), false);
+  assert.equal(result.some((e) => e.type === "interrupted"), true);
+});
+
+test("invalid or truncated tool plans never become executable", async () => {
+  for (const truncated of [false, true]) {
+    const app = host({ chunks: [], modelEvents: [
+      { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
+      { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: JSON.stringify({ actions: [{ type: "rotate", degrees: truncated ? 90 : 777 }] }) } },
+      ...(truncated ? [{ type: "message_delta", delta: { stop_reason: "max_tokens" } }] : []),
+    ] });
+    const result = events(await (await app.send({ toolsEnabled: true })).text());
+    assert.equal(app.state.toolPlans.length, 0);
+    assert.equal(result.some((e) => e.type === "tools"), false);
+    assert.equal(result.some((e) => e.type === "interrupted"), true);
+  }
+});
+
+
+test("free native actions execute before the final explanation is revealed", async () => {
+  let calls = 0;
+  const panel = chatPanelHost("agent", { onExecuteTools: async () => {
+    calls++; assert.equal(panel.messages().at(-1).content, ""); return "Rotate 90° completed.";
+  } });
+  await panel.submit();
+  await panel.sendEvent({ type: "tools", plan: { turnId, credits: 0, actions: [{ type: "rotate", degrees: 90 }] } });
+  assert.equal(calls, 0);
+  await panel.finish();
+  assert.equal(calls, 1);
+  assert.equal(panel.messages().at(-1).content, "Rotate 90° completed.");
+});
+
+test("paid plans display their costs and require approval before execution", async () => {
+  let calls = 0;
+  const panel = chatPanelHost("agent", { onExecuteTools: async () => { calls++; return "Remove background completed."; } });
+  await panel.submit();
+  await panel.sendEvent({ type: "tools", plan: { turnId, credits: 1, actions: [{ type: "remove_background" }] } });
+  await panel.finish();
+  assert.equal(calls, 0);
+  const approve = panel.find((node) => node.type === "button" && Array.isArray(node.props.children) && node.props.children[0] === "Apply · ");
+  assert.ok(approve);
+  await approve.props.onClick();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(calls, 1);
+  assert.equal(panel.messages().at(-1).content, "Remove background completed.");
+});
+
+test("Ask and interrupted streams cannot execute native actions", async () => {
+  for (const mode of ["ask", "agent"]) {
+    let calls = 0;
+    const panel = chatPanelHost(mode, { onExecuteTools: async () => { calls++; return "done"; } });
+    await panel.submit();
+    await panel.sendEvent({ type: "tools", plan: { turnId, credits: 0, actions: [{ type: "rotate", degrees: 90 }] } });
+    if (mode === "agent") await panel.sendEvent({ type: "interrupted" });
+    await panel.finish();
+    assert.equal(calls, 0);
+  }
 });

@@ -28,6 +28,20 @@ export interface SavedEditorVersion {
   legacy?: boolean;
 }
 
+/** One numbering scheme for the visible history and chat's version identifiers. */
+export function editorHistoryRows(entries: EditorHistoryEntry[], versions: SavedEditorVersion[]) {
+  const rows = [
+    ...versions.map((version) => ({ ...version, id: `saved:${version.id}` })),
+    ...entries.filter((entry) => entry.id !== "original").map((entry) => ({
+      id: entry.id, createdAt: entry.createdAt, adjustments: serializePersistedEditorState(entry.state),
+    })),
+  ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const numbered = rows.map((row, index) => ({ ...row, title: `Version ${index + 1}` }));
+  const original = entries.find((entry) => entry.id === "original");
+  if (original) numbered.unshift({ id: original.id, createdAt: "", title: "Original", adjustments: serializePersistedEditorState(original.state) });
+  return numbered;
+}
+
 export const EDITOR_HISTORY_LIMIT = 1000;
 
 const adjustmentLabels: Record<AdjustmentKey, string> = {

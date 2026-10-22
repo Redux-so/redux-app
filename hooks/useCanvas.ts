@@ -816,7 +816,7 @@ export function useCanvas(
   // Mirrors the prop-driven useEffect but works on demand without waiting
   // for React to re-render with a new imageUrl prop.
   // ---------------------------------------------------------------------------
-  const loadImageUrl = useCallback(async (url: string, isCurrent: () => boolean = () => true) => {
+  const loadImageUrl = useCallback(async (url: string, isCurrent: () => boolean = () => true, nextTransform?: ImageTransform) => {
     const canvas = fabricRef.current;
     if (!canvas) return false;
     const generation = ++loadGenerationRef.current;
@@ -824,6 +824,8 @@ export function useCanvas(
     const { FabricImage } = await import("fabric");
     const img = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
     if (!isCurrent() || generation !== loadGenerationRef.current || canvas !== fabricRef.current) return false;
+
+    if (nextTransform) transformRef.current = { ...nextTransform };
 
     const w = canvas.getWidth();
     const h = canvas.getHeight();
@@ -856,7 +858,8 @@ export function useCanvas(
   // ---------------------------------------------------------------------------
   // Resize canvas + re-fit background image
   // ---------------------------------------------------------------------------
-  const resizeCanvas = useCallback(async (newW: number, newH: number, isCurrent: () => boolean = () => true): Promise<string | null> => {
+  const resizeCanvas = useCallback(async (newW: number, newH: number, isCurrent: () => boolean = () => true,
+    region?: { x: number; y: number; width: number; height: number }): Promise<string | null> => {
     const canvas = fabricRef.current;
     const img = bgImageRef.current;
     if (!canvas || !img) return null;
@@ -869,12 +872,12 @@ export function useCanvas(
     const natH = srcEl.height;
 
     // Clamp target to source dimensions (can't crop to larger than source)
-    const outW = Math.min(newW, natW);
-    const outH = Math.min(newH, natH);
+    const outW = region ? Math.max(1, Math.round(region.width * natW)) : Math.min(newW, natW);
+    const outH = region ? Math.max(1, Math.round(region.height * natH)) : Math.min(newH, natH);
 
     // Take center outW × outH pixels at native resolution
-    const srcX = (natW - outW) / 2;
-    const srcY = (natH - outH) / 2;
+    const srcX = region ? Math.min(natW - outW, Math.round(region.x * natW)) : (natW - outW) / 2;
+    const srcY = region ? Math.min(natH - outH, Math.round(region.y * natH)) : (natH - outH) / 2;
 
     const offscreen = document.createElement("canvas");
     offscreen.width = outW;
@@ -1308,6 +1311,11 @@ export function useCanvas(
     enableBlurBrush,
     disableBlurBrush,
     exportBlurMask,
+    getSelectionTools: () => ([
+      ...(healPathsRef.current.length ? ["heal"] : []),
+      ...(eraserPathsRef.current.length ? ["eraser"] : []),
+      ...(blurPathsRef.current.length ? ["blur"] : []),
+    ]),
     getTransformSnapshot: () => ({ ...transformRef.current }),
     getPixelDimensions: () => ({ width: sourceImageRef.current?.width ?? null, height: sourceImageRef.current?.height ?? null }),
   };

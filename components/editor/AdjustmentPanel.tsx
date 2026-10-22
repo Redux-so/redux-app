@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from "react";
+import { EDITOR_TOOL_ROUTES } from "@/lib/editor-tool-routes";
 import { Icon, type IconName } from "@/components/shared/Icon";
 import DiscordIcon from "@/components/shared/DiscordIcon";
 import GitHubIcon from "@/components/shared/GitHubIcon";
@@ -23,6 +24,7 @@ import {
 import { SURFACE_BTN_ACTIVE, SURFACE_BTN_IDLE, SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
 
 interface AdjustmentPanelProps {
+  chatControlsRef?: Ref<AdjustmentPanelChatControls>;
   adjustments: Adjustments;
   onPreview: (key: AdjustmentKey, value: number) => void;
   onCommit: (key: AdjustmentKey, value: number) => void;
@@ -63,6 +65,12 @@ interface AdjustmentPanelProps {
   brushSizes: BrushSizes;
   setBrushSize: (tool: RetouchTool, size: number) => void;
   history: HistoryPanelProps;
+}
+
+export interface AdjustmentPanelChatControls {
+  openBrush: (tool: RetouchTool, size?: number, intensity?: number) => void;
+  closeBrush: () => void;
+  getBlurIntensity?: () => number;
 }
 
 type ToolSection = "light" | "color" | "effects" | "retouch" | "transform" | "history";
@@ -307,6 +315,7 @@ async function fileToBase64(
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function AdjustmentPanel({
+  chatControlsRef,
   adjustments,
   onPreview,
   onCommit,
@@ -416,6 +425,17 @@ export default function AdjustmentPanel({
   const [loadingEraser, setLoadingEraser] = useState(false);
   const [loadingBlur, setLoadingBlur] = useState(false);
   const [blurIntensity, setBlurIntensity] = useState(30);
+  useImperativeHandle(chatControlsRef, () => ({
+    openBrush(tool, size, intensity) {
+      if (isCropping) onToggleCrop?.();
+      setActiveSection("retouch");
+      if (size !== undefined) setBrushSize(tool, size);
+      if (intensity !== undefined) setBlurIntensity(intensity);
+      setActiveTool(tool);
+    },
+    closeBrush() { setActiveTool(null); },
+    getBlurIntensity: () => blurIntensity,
+  }));
 
   const prevActiveToolRef = useRef<ActiveTool>(null);
   useEffect(() => {
@@ -473,7 +493,7 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
-      const res = await fetch("/api/ai/enhance", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.auto_enhance, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
@@ -502,7 +522,7 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
-      const res = await fetch("/api/ai/tone", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.auto_tone_balance, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
@@ -531,7 +551,7 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
-      const res = await fetch("/api/ai/color-balance", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.smart_color_balance, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
@@ -566,7 +586,7 @@ export default function AdjustmentPanel({
       setStyleMatchPreview(dataUrl);
       setLoadingStyleMatch(true);
 
-      const res = await fetch("/api/ai/style-match", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.style_match, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -614,7 +634,7 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
-      const res = await fetch("/api/ai/background-remove", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.remove_background, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: aiImageUrl, imageId }),
@@ -651,7 +671,7 @@ export default function AdjustmentPanel({
         toast.error(msg);
         return;
       }
-      const res = await fetch("/api/ai/heal", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.heal, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -709,7 +729,7 @@ export default function AdjustmentPanel({
         toast.error(msg);
         return;
       }
-      const res = await fetch("/api/images/erase", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.eraser, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId }),
@@ -764,7 +784,7 @@ export default function AdjustmentPanel({
         toast.error(msg);
         return;
       }
-      const res = await fetch("/api/images/blur", {
+      const res = await fetch(EDITOR_TOOL_ROUTES.blur, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId, blurIntensity }),

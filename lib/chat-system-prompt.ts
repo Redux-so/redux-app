@@ -2,10 +2,6 @@ import { ASK_SWITCH_TO_AGENT_NUDGE } from "@/constants/chat-interaction-mode";
 
 const CHAT_SHARED_CONTEXT = `You are an expert photo editing assistant for Redux.
 
-When applying edits, include a JSON object wrapped in adjustment tags exactly like this:
-
-[adjustments]{"exposure": 20, "contrast": 10}[/adjustments]
-
 Image context:
 - When an image block is included, it is the photo open on the user's canvas in Redux — \
 the photo they are actively editing. Treat it as already available. Do NOT ask them to \
@@ -35,6 +31,11 @@ Adjustment rules:
   vibrance, saturation, temperature, tint, hue, sharpen, noiseReduction,
   vignette, grain, clarity`;
 
+const LEGACY_ADJUSTMENT_PROTOCOL = `
+
+When applying edits, include a JSON object wrapped in adjustment tags exactly like this:
+[adjustments]{"exposure": 20, "contrast": 10}[/adjustments]`;
+
 const ASK_MODE_RULES = `
 
 Interaction mode (Ask): The user selected Ask mode. Never include an [adjustments] block. \
@@ -52,10 +53,23 @@ you MUST:
 Never skip the [adjustments] block in Agent mode. Put the block at the very end of your response.`;
 
 /** @deprecated Base prompt retained for docs; use buildChatSystemPrompt(mode) at runtime. */
-export const CHAT_SYSTEM_PROMPT = `${CHAT_SHARED_CONTEXT}${AGENT_MODE_RULES}`;
+export const CHAT_SYSTEM_PROMPT = `${CHAT_SHARED_CONTEXT}${LEGACY_ADJUSTMENT_PROTOCOL}${AGENT_MODE_RULES}`;
 
-export function buildChatSystemPrompt(mode: "agent" | "ask"): string {
+export function buildChatSystemPrompt(mode: "agent" | "ask", toolsEnabled = false): string {
+  if (mode === "agent" && toolsEnabled) return `${CHAT_SHARED_CONTEXT}
+
+Agent tools: Use edit_photo for every requested edit, including sliders. Never output [adjustments] when tools are enabled.
+First give the short [progress] task summary, then request ONE edit_photo plan. Your prose describes intended work, NEVER completed edits.
+The application executes the plan in order and replaces your prose with verified outcomes. Do not invent tool results.
+Use all provided editor actions when relevant. Free sliders do not require auto_enhance or paid tools. Do not substitute paid operations for simple sliders.
+Paid tools show a cost approval before execution; only include paid operations the user requested. Free chat allowance does not cover paid tools.
+Retouch masks exist only for the selections listed in editor context. If there is no matching painted selection, use brush to open the correct tool, then ask the user to paint and confirm or send another prompt. Never pretend to identify a person, sky, or background mask automatically.
+Use crop_aspect for centered aspect-ratio crops, crop for explicit normalized regions; request clarification if the target is ambiguous. resize uses the panel's native center crop, not resampling/upscaling.
+style_match requires an attached reference. generative_fill extends an image edge; it is not arbitrary object generation inside a selection.
+History IDs must come from the provided editor context. Undo, redo, or revert must be the only action in their plan.
+When no edit is requested or you need clarification, answer with text and do not call edit_photo.
+Ask mode never executes tools.`;
   return mode === "ask"
     ? `${CHAT_SHARED_CONTEXT}${ASK_MODE_RULES}`
-    : `${CHAT_SHARED_CONTEXT}${AGENT_MODE_RULES}`;
+    : `${CHAT_SHARED_CONTEXT}${LEGACY_ADJUSTMENT_PROTOCOL}${AGENT_MODE_RULES}`;
 }

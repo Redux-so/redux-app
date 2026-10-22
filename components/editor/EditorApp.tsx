@@ -5,8 +5,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useSearchParams } from "next/navigation";
 import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
+import { useEditorChatTools } from "@/hooks/useEditorChatTools";
+import { editorHistoryRows } from "@/lib/editor-history";
 import type { ImageRecord } from "@/types/image";
-import { parseVersionAdjustments } from "@/lib/editor-state";
+import { DEFAULT_IMAGE_TRANSFORM, parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
 import { renderEditorPayload } from "@/lib/interactive-image-preview";
 import { probeImageDimensions } from "@/lib/probe-image-dimensions";
 import { rememberVisitedPage } from "@/lib/last-visited-page";
@@ -14,6 +16,7 @@ import ReturnToPreviousPage from "@/components/shared/ReturnToPreviousPage";
 
 import Toolbar from "@/components/editor/Toolbar";
 import AdjustmentPanel from "@/components/editor/AdjustmentPanel";
+import type { AdjustmentPanelChatControls } from "@/components/editor/AdjustmentPanel";
 import Canvas from "@/components/editor/Canvas";
 import ImageNavigator from "@/components/editor/ImageNavigator";
 import { EditorPreviewProvider } from "@/components/editor/EditorPreviewContext";
@@ -55,6 +58,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   const [showExport, setShowExport] = useState(false);
   const saveEditorStateRef = useRef<(() => Promise<void>) | null>(null);
   const canvasHydratedRef = useRef(false);
+  const adjustmentControlsRef = useRef<AdjustmentPanelChatControls | null>(null);
 
   useEffect(() => {
     if (!imageId) return;
@@ -92,6 +96,8 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     commitState,
     createEditGuard,
     createChatEditGuard,
+    getEditorState,
+    getEditorRevision,
     beginOperation,
     prepareExportState,
     previewAdjustment,
@@ -149,6 +155,9 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     resetZoom,
     toggleBefore,
     rotateCW,
+    rotateCCW,
+    flipH,
+    flipV,
     straightenImage,
     startCrop,
     confirmCrop,
@@ -167,6 +176,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     enableBlurBrush,
     disableBlurBrush,
     exportBlurMask,
+    getSelectionTools,
     restoreMasks,
     getTransformSnapshot,
     getPixelDimensions,
@@ -211,18 +221,19 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     } finally { finishOperation(); }
   }, [beginOperation, restorePersistedState, createEditGuard, image?.originalUrl, loadImageUrl, cancelCrop]);
 
-  const reloadCanvas = useCallback(async (url: string, isCurrent: () => boolean = () => true, label = "Image edited") => {
+  const reloadCanvas = useCallback(async (url: string, isCurrent: () => boolean = () => true, label = "Image edited", resetTransform = false) => {
     if (!isCurrent()) return false;
     const dims = await probeImageDimensions(url);
     if (!isCurrent()) return false;
     if (!dims) throw new Error("Could not load the edited image");
-    if (!(await loadImageUrl(url, isCurrent))) return false;
+    if (!(await loadImageUrl(url, isCurrent, resetTransform ? DEFAULT_IMAGE_TRANSFORM : undefined))) return false;
     if (!isCurrent()) return false;
     commitState({
       workingImageUrl: url,
       workingWidth: dims.width,
       workingHeight: dims.height,
       masks: undefined,
+      ...(resetTransform ? { transform: { ...DEFAULT_IMAGE_TRANSFORM } } : {}),
     }, true, label);
     return true;
   }, [loadImageUrl, commitState]);
@@ -288,6 +299,26 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     redo();
   }, [cancelCrop, redo]);
 
+  const chatTools = useEditorChatTools({
+    imageId, originalUrl: image?.originalUrl ?? null, width: image?.width ?? 1, height: image?.height ?? 1,
+    ready: versionLoaded && !loadingImage && !!activeImageUrl, isCropping,
+    getState: getEditorState, getRevision: getEditorRevision, getSelections: getSelectionTools, brushSizes,
+    clearSelections: () => restoreMasks(undefined),
+    versions: editorHistoryRows(historyEntries, savedVersions).map((row) => ({ id: row.id, label: row.title })),
+    controls: adjustmentControlsRef, patch: (values) => patchAdjustments(values, "Agent adjustments applied"),
+    rotateCW, rotateCCW, flipH, flipV, straighten: (degrees) => straightenImage(degrees),
+    resize: resizeCanvas, commitPixels, exportMasks: { heal: exportMask, eraser: exportEraserMask, blur: exportBlurMask },
+    reload: reloadCanvas, undo: handleUndo, redo: handleRedo, canUndo, canRedo,
+    revert: async (id) => {
+      const saved = savedVersions.find((v) => `saved:${v.id}` === id);
+      const entry = historyEntries.find((v) => v.id === id);
+      if (saved) await handleRestoreHistory(saved.adjustments, saved.label ?? "saved version");
+      else if (entry) await handleRestoreHistory(serializePersistedEditorState(entry.state), entry.id === "original" ? "Original" : "version");
+      else throw new Error("This version is no longer available.");
+    },
+    save: () => saveVersion(true),
+  });
+
   useEffect(() => {
     if (!canvasHydratedRef.current) return;
     const timer = setTimeout(() => {
@@ -325,6 +356,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
 
         <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
           <AdjustmentPanel
+            chatControlsRef={adjustmentControlsRef}
             adjustments={adjustments}
             onPreview={handlePreviewAdjustment}
             onCommit={handleCommitAdjustment}
@@ -397,6 +429,9 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
 
           <EditorErrorBoundary label="chat">
             <ChatPanel
+              getToolContext={chatTools.context}
+              getWorkspaceImage={chatTools.workspaceImage}
+              onExecuteTools={chatTools.execute}
               adjustments={adjustments}
               onPatch={(patch) => patchAdjustments(patch, "Agent adjustments applied")}
               createEditGuard={createEditGuard}

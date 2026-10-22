@@ -4,6 +4,9 @@ import dynamic from "next/dynamic";
 import { useImageChatHistory } from "@/hooks/useImageChatHistory";
 import { cleanChatText as cleanText, type ChatMessage as Message } from "@/lib/chat-history-shared";
 import { CHAT_PROGRESS_LABELS, initialChatProgress } from "@/lib/chat-progress";
+import { actionCost, actionLabel, editorPlanSchema, type ChatToolPlan, type EditorToolContext } from "@/lib/editor-actions";
+import type { ActionExecution } from "@/lib/editor-action-runner";
+import { chatToolsRequest } from "@/hooks/useEditorChatTools";
 import { useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
@@ -150,11 +153,15 @@ type SseEvent =
   | { type: "text"; text: string }
   | { type: "progress"; text: string }
   | { type: "adjustments"; adjustments: Partial<Record<AdjustmentKey, number>> }
+  | { type: "tools"; plan: ChatToolPlan }
   | { type: "history_error" }
   | { type: "interrupted" }
   | { type: "done" };
 
 interface ChatPanelProps {
+  getWorkspaceImage?: () => Promise<string>;
+  getToolContext?: () => EditorToolContext | undefined;
+  onExecuteTools?: (plan: ChatToolPlan, execution: ActionExecution) => Promise<string>;
   adjustments: Adjustments;
   onPatch: (patch: Partial<Record<string, number>>) => boolean;
   createEditGuard: () => () => boolean;
@@ -712,6 +719,9 @@ function ChatMessageAvatar({
 }
 
 export default function ChatPanel({
+  getWorkspaceImage,
+  getToolContext,
+  onExecuteTools,
   adjustments,
   onPatch,
   createEditGuard,
@@ -727,6 +737,12 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [sending, setSending] = useState(false);
+  const [pendingToolPlan, setPendingToolPlan] = useState<{
+    plan: ChatToolPlan; assistantId: string; isCurrent: () => boolean; isUnchanged: () => boolean;
+  } | null>(null);
+  const toolExecutorRef = useRef(onExecuteTools);
+  const toolApprovalInFlightRef = useRef(false);
+  toolExecutorRef.current = onExecuteTools;
   const [replyProgress, setReplyProgress] = useState<{ id: string; label: string } | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [changesExpanded, setChangesExpanded] = useState(false);
@@ -907,7 +923,7 @@ export default function ChatPanel({
   // ── Send message ────────────────────────────────────────────────────────
   async function handleSend(overrideText?: string) {
     const text = (overrideText ?? input).trim();
-    if (!text || sending || !historyLoaded) return;
+    if (!text || sending || pendingToolPlan || !historyLoaded) return;
     if (chatBlocked) {
       promptPurchaseCredits();
       return;
@@ -950,8 +966,10 @@ export default function ChatPanel({
     setMessages((prev) => [...prev, assistantPlaceholder]);
 
     const isCurrent = createChatEditGuard();
+    const isUnchanged = onExecuteTools ? createEditGuard() : () => true;
     const finishOperation = allowAdjustments ? beginOperation() : () => {};
     const turnPatch: Partial<Record<AdjustmentKey, number>> = {};
+    let toolPlan: ChatToolPlan | undefined;
     let completed = false;
     let interrupted = false;
     let receivedText = "";
@@ -960,6 +978,8 @@ export default function ChatPanel({
     abortRef.current = controller;
 
     try {
+      const workspaceImage = getWorkspaceImage ? await getWorkspaceImage() : canvasImageUrl;
+      if (onExecuteTools && !isUnchanged()) throw new Error("The image changed while preparing this request. Send it again.");
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -969,10 +989,12 @@ export default function ChatPanel({
           adjustments,
           conversationHistory,
           imageId,
-          workspaceImageUrl: canvasImageUrl ?? undefined,
+          workspaceImageUrl: workspaceImage ?? undefined,
           imageBase64,
           imageMediaType,
           chatInteractionMode,
+          toolsEnabled: !!onExecuteTools && !!imageId,
+          editorContext: getToolContext?.(),
         }),
         signal: controller.signal,
       });
@@ -1055,6 +1077,10 @@ export default function ChatPanel({
               if (allowAdjustments) {
                 Object.assign(turnPatch, event.adjustments);
               }
+            } else if (event.type === "tools" && allowAdjustments && onExecuteTools) {
+              const parsedPlan = editorPlanSchema.parse({ actions: event.plan.actions });
+              if (event.plan.turnId !== turnId) throw new Error("Tool request did not match this message");
+              toolPlan = { ...event.plan, ...parsedPlan };
             }
           }
         }
@@ -1064,7 +1090,15 @@ export default function ChatPanel({
         });
       }
 
-      if (completed && !interrupted && !controller.signal.aborted && isCurrent() && Object.keys(turnPatch).length > 0) {
+      if (completed && !interrupted && !controller.signal.aborted && isCurrent() && toolPlan) {
+        if (toolPlan.credits > 0) {
+          setPendingToolPlan({ plan: toolPlan, assistantId, isCurrent, isUnchanged });
+          receivedText = "Review the tool costs below, then apply the edits when you are ready. These costs are separate from your chat message.";
+        } else {
+          receivedText = await toolExecutorRef.current!(toolPlan, { signal: controller.signal, isCurrent, isUnchanged,
+            progress: (label) => setReplyProgress({ id: assistantId, label }) });
+        }
+      } else if (completed && !interrupted && !controller.signal.aborted && isCurrent() && Object.keys(turnPatch).length > 0) {
         changeSnapshotRef.current = null;
         setPendingChanges([]);
         flushSync(() => {
@@ -1114,6 +1148,38 @@ export default function ChatPanel({
     }
   }
 
+  async function handleToolApproval(approve: boolean) {
+    const pending = pendingToolPlan;
+    if (!pending || sending || toolApprovalInFlightRef.current) return;
+    if (approve && chatInteractionMode !== "agent") { toast.error("Switch to Agent mode to apply these edits."); return; }
+    toolApprovalInFlightRef.current = true;
+    setSending(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const finish = approve ? beginOperation() : () => {};
+    try {
+      if (!approve) {
+        await chatToolsRequest({ phase: "cancel", turnId: pending.plan.turnId }, controller.signal);
+        setMessages((prev) => prev.map((m) => m.id === pending.assistantId ? { ...m, content: "Edits cancelled. No tools were run." } : m));
+      } else {
+        setMessages((prev) => prev.map((m) => m.id === pending.assistantId ? { ...m, content: "" } : m));
+        setReplyProgress({ id: pending.assistantId, label: CHAT_PROGRESS_LABELS.applying });
+        const result = await toolExecutorRef.current!(pending.plan, { signal: controller.signal,
+          isCurrent: pending.isCurrent, isUnchanged: pending.isUnchanged,
+          progress: (label) => setReplyProgress({ id: pending.assistantId, label }) });
+        setMessages((prev) => prev.map((m) => m.id === pending.assistantId ? { ...m, content: result } : m));
+      }
+      setPendingToolPlan(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not execute these edits.";
+      setMessages((prev) => prev.map((m) => m.id === pending.assistantId ? { ...m, content: message, interrupted: true } : m));
+      setPendingToolPlan(null);
+    } finally {
+      toolApprovalInFlightRef.current = false;
+      finish(); setReplyProgress(null); setSending(false); abortRef.current = null; refreshChatQuota();
+    }
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -1121,7 +1187,7 @@ export default function ChatPanel({
     }
   }
 
-  const canSend = !!input.trim() && !sending && !chatBlocked && historyLoaded;
+  const canSend = !!input.trim() && !sending && !pendingToolPlan && !chatBlocked && historyLoaded;
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -1222,6 +1288,19 @@ export default function ChatPanel({
                     imageUrl={msg.role === "user" ? user?.imageUrl : undefined}
                   />
                   <div className="relative flex min-w-0 flex-1 flex-col gap-1">
+                    {pendingToolPlan?.assistantId === msg.id && !sending && (
+                      <div className="mb-2 rounded-lg border border-[#262626] bg-[#1d1d1d] p-3 text-[13px] text-[#e5e5e5]">
+                        <ul className="space-y-2">
+                          {pendingToolPlan.plan.actions.map((action, index) => <li key={index} className="flex justify-between gap-3">
+                            <span>{actionLabel(action)}</span><span className="shrink-0 text-[#888888]">{actionCost(action)} credits</span>
+                          </li>)}
+                        </ul>
+                        <div className="mt-3 flex gap-2">
+                          <button type="button" onClick={() => void handleToolApproval(true)} className={BTN_PRIMARY_COMPACT}>Apply · {pendingToolPlan.plan.credits} credits</button>
+                          <button type="button" onClick={() => void handleToolApproval(false)} className="px-3 text-[#888888] hover:text-white cursor-pointer">Cancel</button>
+                        </div>
+                      </div>
+                    )}
                     <AnimatePresence mode="wait" initial={false}>
                       {isAssistantLoading ? (
                         <motion.div
@@ -1448,7 +1527,7 @@ export default function ChatPanel({
                   </div>
 
                   <ChatInteractionModeSelector
-                    disabled={chatBlocked}
+                    disabled={chatBlocked || sending}
                     mode={chatInteractionMode}
                     onModeChange={setChatInteractionMode}
                   />

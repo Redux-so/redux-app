@@ -238,6 +238,15 @@ export const chatRequestBodySchema = z.object({
   imageBase64: base64PayloadSchema.optional(),
   imageMediaType: chatImageMediaTypeSchema.optional(),
   chatInteractionMode: z.enum(["agent", "ask"]).optional().default("agent"),
+  toolsEnabled: z.boolean().optional().default(false),
+  editorContext: z.object({
+    width: z.number().int().min(1).max(32768), height: z.number().int().min(1).max(32768),
+    transform: z.object({ rotation: z.number().min(-360).max(360), flipX: z.boolean(), flipY: z.boolean(), straighten: z.number().min(-45).max(45) }),
+    selections: z.array(z.enum(["blur", "eraser", "heal"])).max(3),
+    brushSizes: z.object({ blur: z.number().int().min(1).max(200), eraser: z.number().int().min(1).max(200), heal: z.number().int().min(1).max(200) }).optional(),
+    blurIntensity: z.number().int().min(1).max(100).optional(),
+    versions: z.array(z.object({ id: z.string().max(200), label: z.string().max(200) })).max(100),
+  }).optional(),
 });
 
 export const imageUrlOnlyBodySchema = z.object({

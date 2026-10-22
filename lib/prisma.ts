@@ -8,7 +8,7 @@ const globalForPrisma = globalThis as unknown as {
  * Bump when Prisma schema changes require a fresh client in dev (HMR keeps
  * globalThis.prisma across hot reloads).
  */
-const PRISMA_CLIENT_SCHEMA_TOKEN = 3;
+const PRISMA_CLIENT_SCHEMA_TOKEN = 4;
 
 function createPrismaClient() {
   const client = new PrismaClient() as PrismaClient & { __schemaToken?: number };
@@ -22,6 +22,7 @@ function isFreshPrismaClient(
   return (
     typeof client.album !== "undefined" &&
     typeof client.chatTurn !== "undefined" &&
+    typeof client.chatToolRun !== "undefined" &&
     client.__schemaToken === PRISMA_CLIENT_SCHEMA_TOKEN
   );
 }

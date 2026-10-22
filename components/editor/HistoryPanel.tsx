@@ -4,8 +4,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { SURFACE_BORDER, SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
-import { serializePersistedEditorState } from "@/lib/editor-state";
-import type { EditorHistoryEntry, SavedEditorVersion } from "@/lib/editor-history";
+import { editorHistoryRows, type EditorHistoryEntry, type SavedEditorVersion } from "@/lib/editor-history";
 
 export interface HistoryPanelProps {
   entries: EditorHistoryEntry[];
@@ -22,15 +21,7 @@ export function HistoryVersionList({ entries, currentId, versions, ready, error,
   if (!ready) return <div className="flex justify-center py-8"><LoadingSpinner size="sm" label="Loading history" /></div>;
 
   // Existing checkpoints and new automatic versions share one chronological list.
-  const rows = [
-    ...versions.map((version) => ({ ...version, id: `saved:${version.id}` })),
-    ...entries.filter((entry) => entry.id !== "original").map((entry) => ({
-      id: entry.id, createdAt: entry.createdAt, adjustments: serializePersistedEditorState(entry.state),
-    })),
-  ].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  const original = entries.find((entry) => entry.id === "original");
-  const numbered = rows.map((row, index) => ({ ...row, title: `Version ${index + 1}` }));
-  if (original) numbered.unshift({ id: original.id, createdAt: "", title: "Original", adjustments: serializePersistedEditorState(original.state) });
+  const numbered = editorHistoryRows(entries, versions);
 
   async function revert(id: string, adjustments: unknown, title: string) {
     if (revertingId) return;
