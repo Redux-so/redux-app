@@ -136,21 +136,15 @@ export async function POST(request: Request) {
 
       const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
-      // Scale result back to original dimensions; adaptive JPEG quality ensures < 9MB for any resolution
-      const CLOUDINARY_MAX_BYTES = 9 * 1024 * 1024;
-      let restoredBuffer: Buffer;
-      let quality = 92;
-      do {
-        restoredBuffer = await sharp(resultBuffer)
-          .resize(originalWidth, originalHeight, { fit: "fill" })
-          .jpeg({ quality })
-          .toBuffer();
-        quality -= 10;
-      } while (restoredBuffer.length > CLOUDINARY_MAX_BYTES && quality > 20);
+      // Restore dimensions once; storage preparation preserves the result losslessly.
+      const restoredBuffer = await sharp(resultBuffer)
+        .resize(originalWidth, originalHeight, { fit: "fill" })
+        .png()
+        .toBuffer();
 
       const uploaded = await uploadToCloudinary(
         restoredBuffer,
-        `${image.filename.replace(/\.[^/.]+$/, "")}_erase.jpeg`,
+        `${image.filename.replace(/\.[^/.]+$/, "")}_erase.png`,
       );
 
       await prisma.imageVersion.create({

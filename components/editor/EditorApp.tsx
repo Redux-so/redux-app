@@ -110,6 +110,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     isDirty,
     justSaved,
     saveVersion,
+    getSaveError,
     restorePersistedState,
     versionLoaded,
     historyEntries,
@@ -205,9 +206,9 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   useEffect(() => {
     saveEditorStateRef.current = async () => {
       await prepareExportState();
-      if (!(await saveVersion(true))) throw new Error("Could not save your edits. Please try again.");
+      if (!(await saveVersion(true))) throw getSaveError() ?? new Error("Could not save your edits. Please try again.");
     };
-  }, [saveVersion, prepareExportState]);
+  }, [saveVersion, prepareExportState, getSaveError]);
 
   const handleRestoreHistory = useCallback(async (raw: unknown, label: string) => {
     const finishOperation = beginOperation();
@@ -316,7 +317,11 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       else if (entry) await handleRestoreHistory(serializePersistedEditorState(entry.state), entry.id === "original" ? "Original" : "version");
       else throw new Error("This version is no longer available.");
     },
-    save: () => saveVersion(true),
+    save: async () => {
+      const saved = await saveVersion(true);
+      if (!saved && getSaveError()) throw getSaveError();
+      return saved;
+    },
   });
 
   useEffect(() => {

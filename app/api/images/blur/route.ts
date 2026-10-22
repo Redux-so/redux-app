@@ -14,8 +14,6 @@ function intensityToSigma(intensity: number): number {
   return 1 + (clamped / 100) * 29;
 }
 
-const CLOUDINARY_MAX_BYTES = 9 * 1024 * 1024;
-
 export async function POST(request: Request) {
   try {
     const authResult = await requireAuthUser();
@@ -93,29 +91,24 @@ export async function POST(request: Request) {
             blend: "over",
           },
         ])
-        .removeAlpha()
+        .ensureAlpha()
         .raw()
         .toBuffer({ resolveWithObject: true });
 
-      // Adaptive JPEG quality loop — guarantees under 9MB for any image size
-      let outputBuffer: Buffer;
-      let quality = 92;
-      do {
-        outputBuffer = await sharp(composed.data, {
-          raw: {
-            width: composed.info.width,
-            height: composed.info.height,
-            channels: composed.info.channels,
-          },
-        })
-          .jpeg({ quality })
-          .toBuffer();
-        quality -= 10;
-      } while (outputBuffer.length > CLOUDINARY_MAX_BYTES && quality > 20);
+      // The shared uploader handles storage size without degrading these pixels.
+      const outputBuffer = await sharp(composed.data, {
+        raw: {
+          width: composed.info.width,
+          height: composed.info.height,
+          channels: composed.info.channels,
+        },
+      })
+        .png()
+        .toBuffer();
 
       const uploaded = await uploadToCloudinary(
         outputBuffer,
-        `${image.filename.replace(/\.[^/.]+$/, "")}_blur.jpeg`,
+        `${image.filename.replace(/\.[^/.]+$/, "")}_blur.png`,
       );
 
       await prisma.imageVersion.create({

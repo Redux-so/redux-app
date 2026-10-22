@@ -98,7 +98,19 @@ test("a slower older save cannot replace a newer cover or saved editor state", a
 
 test("failed cover upload preserves the saved cover and version", async () => {
   const host = routeHost(async () => { throw new Error("storage unavailable"); });
-  await assert.rejects(host.post(await request(102, 90)), /storage unavailable/);
+  const response = await host.post(await request(102, 90));
+  assert.equal(response.status, 500);
+  assert.match((await response.json()).error, /Could not save/);
+  assert.equal(host.image().previewUrl, "previous");
+  assert.equal(host.version(), null);
+});
+
+test("a permanent storage-size failure is actionable and never publishes partial state", async () => {
+  const { ImageStorageError } = load("../lib/image-storage.ts");
+  const host = routeHost(async () => { throw new ImageStorageError("Cannot store this image losslessly. Configure larger-image storage.", false); });
+  const response = await host.post(await request(103, 30));
+  assert.equal(response.status, 413);
+  assert.deepEqual(await response.json(), { error: "Cannot store this image losslessly. Configure larger-image storage.", code: "IMAGE_STORAGE_LIMIT", retryable: false });
   assert.equal(host.image().previewUrl, "previous");
   assert.equal(host.version(), null);
 });

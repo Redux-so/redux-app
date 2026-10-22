@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { imageStorageErrorBody } from "@/lib/image-storage";
 
 /** Client-visible API error body — never include stack traces, DB errors, or internal details. */
 export type ApiErrorBody = {
@@ -39,5 +40,7 @@ export function apiInternalErrorResponse(
   publicMessage: string = API_ERROR_MESSAGE.internal,
 ): NextResponse<ApiErrorBody> {
   logApiError(routeLabel, err);
+  const storageError = imageStorageErrorBody(err);
+  if (storageError) return NextResponse.json(storageError, { status: storageError.retryable ? 503 : 413 });
   return apiErrorResponse(publicMessage, 500);
 }

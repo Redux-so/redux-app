@@ -1,6 +1,7 @@
 import { cloudinaryPublicIdFromDeliveryUrl } from "@/lib/cloudinary-public-id";
 import { parseVersionAdjustments } from "@/lib/editor-state";
 import { prisma } from "@/lib/prisma";
+import { alternateAssetIdFromUrl } from "@/lib/image-storage";
 
 export interface ImageRemoteAssets {
   cloudinaryPublicIds: string[];
@@ -9,7 +10,7 @@ export interface ImageRemoteAssets {
 
 function addCloudinaryUrl(publicIds: Set<string>, url: string | null | undefined) {
   if (!url) return;
-  const publicId = cloudinaryPublicIdFromDeliveryUrl(url);
+  const publicId = cloudinaryPublicIdFromDeliveryUrl(url) ?? alternateAssetIdFromUrl(url);
   if (publicId) {
     publicIds.add(publicId);
   }

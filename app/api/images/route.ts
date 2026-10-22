@@ -7,6 +7,7 @@ import { requireAuthUser } from "@/lib/require-user";
 import { scheduleImageEmbeddingAfterResponse } from "@/lib/schedule-image-embedding";
 import { deleteImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { imageStorageErrorBody } from "@/lib/image-storage";
 import { parseImageUploadFormData } from "@/lib/image-upload";
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 
@@ -60,9 +61,11 @@ export async function POST(request: NextRequest) {
   let height: number;
   let format: string;
   try {
-    ({ secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name));
+    ({ secureUrl, publicId, width, height, format } = await uploadToCloudinary(buffer, name, { preserveOriginal: true }));
   } catch (err) {
     console.error("[POST /api/images] Cloudinary upload failed:", err);
+    const storageError = imageStorageErrorBody(err);
+    if (storageError) return NextResponse.json(storageError, { status: storageError.retryable ? 503 : 413 });
     return NextResponse.json({ error: "Failed to store image" }, { status: 502 });
   }
 

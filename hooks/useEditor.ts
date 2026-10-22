@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createEditorOperations } from "@/lib/editor-operations";
+import { saveResponseError, clearEditorSaveFailure, getEditorSaveFailure, recordEditorSaveFailure } from "@/lib/editor-save-errors";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey, type Adjustments as SliderAdjustments } from "@/constants/adjustments";
 import {
   defaultPersistedEditorState,
@@ -101,6 +102,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
       return;
     }
 
+    clearEditorSaveFailure(imageId);
     setVersionLoaded(false);
     historyReadyRef.current = false;
     let cancelled = false;
@@ -232,6 +234,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     const history = serializeEditorTimeline(timelineRef.current);
     const historyRevision = historyRevisionRef.current;
     const revision = revisionRef.current;
+    if (!force && getEditorSaveFailure(imgId, revision)?.retryable === false) return null;
     if (!force && persistedStatesEqual(persisted, lastPersistedRef.current) && historyRevision === lastSavedHistoryRevisionRef.current) {
       return null;
     }
@@ -269,6 +272,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
 
     const save = async () => {
       if (imgId !== imageIdRef.current || revision !== revisionRef.current) return null;
+      if (!force && getEditorSaveFailure(imgId, revision)?.retryable === false) return null;
       try {
         // Multiple native crops can exceed one request's size ceiling. Upload each
         // source separately, then publish the timeline and cover in the final save.
@@ -281,7 +285,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ imageId: imgId, adjustments: {}, sourceOnly: true, imageBase64: source.split(",")[1] }),
               });
-              if (!upload.ok) throw new Error("Could not save a history image");
+              if (!upload.ok) throw await saveResponseError(upload);
               const data = await upload.json() as { sourceUrl: string };
               url = data.sourceUrl;
               uploadedSourcesRef.current.set(source, url);
@@ -303,9 +307,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
           body: JSON.stringify(payload),
           keepalive: !payload.historyImages.length && !payload.coverBase64,
         });
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
+        if (!res.ok) throw await saveResponseError(res);
         const data = (await res.json()) as { version?: { adjustments: unknown }; previewUrl?: string; stale?: boolean; historySources?: string[] };
         if (data.stale) return null;
         for (const [source, token] of inlineSources) {
@@ -317,6 +319,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
           ? parseVersionAdjustments(data.version.adjustments)
           : persisted;
         if (revision !== revisionRef.current || imgId !== imageIdRef.current) return null;
+        clearEditorSaveFailure(imgId);
         if (!mountedRef.current) return saved;
         lastPersistedRef.current = persisted;
         lastSavedHistoryRevisionRef.current = historyRevision;
@@ -326,6 +329,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
         justSavedTimerRef.current = setTimeout(() => setJustSaved(false), 2000);
         return saved;
       } catch (err) {
+        recordEditorSaveFailure(imgId, revision, err);
         console.error("[useEditor] Auto-save failed:", err);
         return null;
       }
@@ -400,6 +404,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     isDirty,
     justSaved,
     saveVersion,
+    getSaveError: () => getEditorSaveFailure(imageIdRef.current ?? "", revisionRef.current)?.error,
     restorePersistedState,
     versionLoaded,
   };

@@ -9,6 +9,50 @@ import { require as tsxRequire } from "tsx/cjs/api";
 
 const { useEditor } = tsxRequire("../hooks/useEditor.ts", import.meta.url);
 
+test("permanent storage failures pause identical autosaves, preserve dirty edits and allow manual retry", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalError = console.error;
+  let requests = 0;
+  globalThis.fetch = async () => { requests++; return Response.json({ error: "Image exceeds storage limits", code: "IMAGE_STORAGE_LIMIT", retryable: false }, { status: 413 }); };
+  console.error = () => {};
+  try {
+    const render = editorHost("storage-retry-image");
+    let editor = render();
+    editor.patchAdjustments({ temperature: 20 }); editor = render();
+    assert.equal(await editor.saveVersion(), null);
+    assert.equal(requests, 1);
+    assert.match(editor.getSaveError().message, /storage limits/);
+    assert.equal(await editor.saveVersion(), null);
+    assert.equal(requests, 1, "identical permanent failures must not spam the provider");
+    assert.equal(await editor.saveVersion(true), null);
+    assert.equal(requests, 2, "manual retries remain available after storage is fixed");
+    editor.patchAdjustments({ temperature: 30 }); editor = render();
+    assert.equal(editor.isDirty, true);
+    assert.equal(editor.getSaveError(), undefined);
+    assert.equal(await editor.saveVersion(), null);
+    assert.equal(requests, 3, "a new document revision can try saving again");
+  } finally { globalThis.fetch = originalFetch; console.error = originalError; }
+});
+
+test("temporary storage failures remain retryable and a successful save clears the error", async () => {
+  const originalFetch = globalThis.fetch, originalError = console.error;
+  let requests = 0;
+  globalThis.fetch = async () => { requests++; return requests === 1
+    ? Response.json({ error: "Storage temporarily unavailable", retryable: true }, { status: 503 })
+    : Response.json({}); };
+  console.error = () => {};
+  try {
+    const render = editorHost("temporary-storage-image");
+    let editor = render(); editor.patchAdjustments({ exposure: 4 }); editor = render();
+    assert.equal(await editor.saveVersion(), null);
+    assert.ok(await editor.saveVersion());
+    editor = render();
+    assert.equal(editor.getSaveError(), undefined);
+    assert.equal(editor.isDirty, false);
+    assert.equal(requests, 2);
+  } finally { globalThis.fetch = originalFetch; console.error = originalError; }
+});
+
 function editorHost(imageId, options = {}) {
   const slots = [];
   let cursor = 0;

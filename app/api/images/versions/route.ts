@@ -8,6 +8,7 @@ import { renderAdjustedImage } from "@/lib/apply-image-adjustments";
 import { prisma } from "@/lib/prisma";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import {
   parseJsonRequest,
   parseResourceIdParam,
@@ -85,6 +86,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  try { return await saveVersion(request); }
+  catch (error) { return apiInternalErrorResponse("POST /api/images/versions", error, "Could not save your edits. Please retry."); }
+}
+
+async function saveVersion(request: NextRequest) {
   const authResult = await requireAuthUser();
   if ("error" in authResult) {
     return authResult.error;

@@ -144,7 +144,7 @@ export function useEditorChatTools(options: {
     let message = describeOutcomes(outcomes);
     if (outcomes.some((o) => o.status === "applied")) {
       try { if (!await options.save()) message += "\n\nYour edits are visible, but saving failed. Save again before leaving."; }
-      catch { message += "\n\nYour edits are visible, but saving failed. Save again before leaving."; }
+      catch (error) { message += `\n\nYour edits are visible, but saving failed. ${error instanceof Error ? error.message : "Save again before leaving."}`; }
     }
     // Persist actual outcomes, not the model's intended edits. Never replay on reload.
     try { await chatToolsRequest({ phase: "finish", turnId: plan.turnId, message }); }
