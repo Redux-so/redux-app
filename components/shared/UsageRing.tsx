@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { useReducedMotion } from "framer-motion";
 import { CHAT_POPOVER_CHROME } from "@/lib/panel-chrome";
 import { BRAND_LINK_TEXT_CLASS, BRAND_LINK_TEXT_HOVER_CLASS } from "@/lib/brand-colors";
@@ -247,7 +246,9 @@ export default function UsageRing({
     }
   }
 
-  const ariaLabel = view?.tooltipLine ?? USAGE_RING_CONFIG.copy.loading;
+  if (!view) return null;
+
+  const ariaLabel = view.tooltipLine;
 
   const tooltip =
     tooltipVisible && view && tooltipCoords && typeof document !== "undefined"
@@ -315,15 +316,11 @@ export default function UsageRing({
         onBlur={() => hideTooltip()}
         onClick={handleTriggerClick}
       >
-        {!view ? (
-          <LoadingSpinner size="md" label="Loading usage" />
-        ) : (
-          <UsageRingSvg
-            fillProgress={view.fillProgress}
-            isDepleted={view.isDepleted}
-            reduceMotion={reduceMotion}
-          />
-        )}
+        <UsageRingSvg
+          fillProgress={view.fillProgress}
+          isDepleted={view.isDepleted}
+          reduceMotion={reduceMotion}
+        />
       </button>
       {tooltip}
     </>
