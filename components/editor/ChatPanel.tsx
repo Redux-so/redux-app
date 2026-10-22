@@ -381,7 +381,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                   aria-disabled="true"
                   className={`${MODEL_MENU_ROW_CLASS} cursor-default select-none text-[#555555] opacity-60`}
                 >
-                  <span className="min-w-0 shrink-0 rounded-full border border-[#212121] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#555555]">
+                  <span className="-ml-1.5 min-w-0 shrink-0 rounded-full border border-[#212121] bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#555555]">
                     {COMING_SOON_MODEL_ROW.badge}
                   </span>
                   <span className="size-4 shrink-0" aria-hidden />
