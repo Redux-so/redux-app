@@ -92,7 +92,7 @@ export default function LibrarySidebar({
           <div className="flex items-center px-3 pt-4 pb-0">
             <Link
               href="/library"
-              className="inline-flex items-center pl-2.5 no-underline transition-opacity duration-150 hover:opacity-80 focus-visible:opacity-80"
+              className="inline-flex items-center pl-2.5 no-underline focus-visible:opacity-80"
             >
               <AppChromeLogo className="-ml-1" />
             </Link>
