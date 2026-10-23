@@ -6,6 +6,7 @@ import { cleanChatText as cleanText, type ChatMessage as Message } from "@/lib/c
 import { CHAT_PROGRESS_LABELS, initialChatProgress } from "@/lib/chat-progress";
 import { actionCost, actionLabel, editorPlanSchema, type ChatToolPlan, type EditorToolContext } from "@/lib/editor-actions";
 import type { ActionExecution } from "@/lib/editor-action-runner";
+import type { EditorChange, EditorChangeReview } from "@/lib/editor-change-review";
 import { chatToolsRequest } from "@/hooks/useEditorChatTools";
 import { useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -136,12 +137,7 @@ const ADJUSTMENT_LABELS: Record<AdjustmentKey, string> = {
 // Types
 // ---------------------------------------------------------------------------
 
-interface PendingChange {
-  key: AdjustmentKey;
-  label: string;
-  from: number;
-  to: number;
-}
+type PendingChange = EditorChange;
 
 type SseEvent =
   | {
@@ -752,6 +748,8 @@ export default function ChatPanel({
   const messageInitialY = prefersReducedMotion ? 0 : 6;
 
   const canUndoChatRef = useRef<(() => boolean) | null>(null);
+  const undoToolReviewRef = useRef<(() => Promise<void>) | null>(null);
+  const [reviewIncludesPaidTools, setReviewIncludesPaidTools] = useState(false);
   const changeSnapshotRef = useRef<Adjustments | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const adjustmentsRef = useRef(adjustments);
@@ -827,6 +825,8 @@ export default function ChatPanel({
     const patch = normalizeAdjustmentPatch(rawPatch);
     const keys = Object.keys(patch) as AdjustmentKey[];
     if (keys.length === 0 || !onPatch(patch)) return;
+    undoToolReviewRef.current = null;
+    setReviewIncludesPaidTools(false);
 
     if (!changeSnapshotRef.current) {
       changeSnapshotRef.current = { ...adjustmentsRef.current };
@@ -851,15 +851,35 @@ export default function ChatPanel({
     canUndoChatRef.current = createEditGuard();
   }
 
-  function handleUndoAllChanges() {
-    if (canUndoChatRef.current?.()) onUndo();
-    canUndoChatRef.current = null;
-    setPendingChanges([]);
+  function reviewToolChanges(review: EditorChangeReview) {
+    setPendingChanges(review.changes);
     setChangesExpanded(false);
     changeSnapshotRef.current = null;
+    canUndoChatRef.current = review.canUndo;
+    undoToolReviewRef.current = review.undo;
+    setReviewIncludesPaidTools(review.includesPaidTools);
+  }
+
+  async function handleUndoAllChanges() {
+    if (sending) return;
+    if (!canUndoChatRef.current?.()) {
+      toast.error("The image has changed since these edits. Use History to revert them.");
+      return;
+    }
+    setSending(true);
+    try {
+      if (undoToolReviewRef.current) await undoToolReviewRef.current();
+      else onUndo();
+      handleKeepAllChanges();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not revert these edits.");
+    } finally { setSending(false); }
   }
 
   function handleKeepAllChanges() {
+    canUndoChatRef.current = null;
+    undoToolReviewRef.current = null;
+    setReviewIncludesPaidTools(false);
     setPendingChanges([]);
     setChangesExpanded(false);
     changeSnapshotRef.current = null;
@@ -1096,6 +1116,7 @@ export default function ChatPanel({
           receivedText = "Review the tool costs below, then apply the edits when you are ready. These costs are separate from your chat message.";
         } else {
           receivedText = await toolExecutorRef.current!(toolPlan, { signal: controller.signal, isCurrent, isUnchanged,
+            reviewChanges: reviewToolChanges,
             progress: (label) => setReplyProgress({ id: assistantId, label }) });
         }
       } else if (completed && !interrupted && !controller.signal.aborted && isCurrent() && Object.keys(turnPatch).length > 0) {
@@ -1165,6 +1186,7 @@ export default function ChatPanel({
         setMessages((prev) => prev.map((m) => m.id === pending.assistantId ? { ...m, content: "" } : m));
         setReplyProgress({ id: pending.assistantId, label: CHAT_PROGRESS_LABELS.applying });
         const result = await toolExecutorRef.current!(pending.plan, { signal: controller.signal,
+          reviewChanges: reviewToolChanges,
           isCurrent: pending.isCurrent, isUnchanged: pending.isUnchanged,
           progress: (label) => setReplyProgress({ id: pending.assistantId, label }) });
         setMessages((prev) => prev.map((m) => m.id === pending.assistantId ? { ...m, content: result } : m));
@@ -1361,57 +1383,81 @@ export default function ChatPanel({
           </div>
 
           {/* Changes indicator bar */}
-          {pendingChanges.length > 0 && (
-            <div
-              className={`${CHAT_PANEL_GUTTER_MARGIN_CLASS} mb-2 shrink-0 overflow-hidden rounded-md border border-[#212121] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
-            >
-              <div className="flex items-center gap-2 px-3 py-2 min-w-0">
-                <button
-                  type="button"
-                  aria-expanded={changesExpanded}
-                  aria-label={changesExpanded ? "Collapse changes" : "Expand changes"}
-                  onClick={() => setChangesExpanded((prev) => !prev)}
-                  className="shrink-0 text-[#888888] hover:text-white transition-colors cursor-pointer"
-                >
-                  <Icon
-                    name="ChevronRight"
-                    size={16}
-                    className={[
-                      "transition-transform duration-150",
-                      changesExpanded ? "rotate-90" : "",
-                    ].join(" ")}
-                    aria-hidden
-                  />
-                </button>
-
-                <span className="min-w-0 truncate text-[13px] font-medium text-[#888888]">
-                  {pendingChanges.length} Change{pendingChanges.length !== 1 ? "s" : ""}
-                </span>
-
-                <div className="ml-auto flex shrink-0 items-center gap-2">
-                  <button type="button" onClick={handleUndoAllChanges} className={BTN_SECONDARY}>
-                    Undo all
+          <AnimatePresence initial={false}>
+            {!sending && !replyProgress && !pendingToolPlan && pendingChanges.length > 0 && (
+              <motion.div
+                key="chat-changes"
+                initial={{ opacity: prefersReducedMotion ? 1 : 0, y: prefersReducedMotion ? 0 : 8, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 8 }}
+                exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 8, height: 0, marginBottom: 0,
+                  transition: { duration: prefersReducedMotion ? 0 : 0.12, delay: 0, ease: "easeOut" } }}
+                // The thinking indicator exits, then the reply fades in before the review enters.
+                transition={{ duration: prefersReducedMotion ? 0 : 0.12, delay: messageDuration * 2, ease: "easeOut" }}
+                onAnimationComplete={() => {
+                  const scroll = scrollRef.current;
+                  if (scroll) scroll.scrollTop = scroll.scrollHeight;
+                }}
+                className={`${CHAT_PANEL_GUTTER_MARGIN_CLASS} shrink-0 overflow-hidden rounded-md border border-[#212121] bg-white/[0.04] ${CHAT_SURFACE_SHADOW}`}
+              >
+                <div className="flex items-center gap-2 px-3 py-2 min-w-0">
+                  <button
+                    type="button"
+                    aria-expanded={changesExpanded}
+                    aria-label={changesExpanded ? "Collapse changes" : "Expand changes"}
+                    onClick={() => setChangesExpanded((prev) => !prev)}
+                    className="flex min-w-0 items-center gap-2 text-[#888888] hover:text-white transition-colors cursor-pointer"
+                  >
+                    <Icon
+                      name="ChevronRight"
+                      size={16}
+                      className={[
+                        "transition-transform duration-150",
+                        changesExpanded ? "rotate-90" : "",
+                      ].join(" ")}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 truncate text-[13px] font-medium">
+                      {pendingChanges.length} Change{pendingChanges.length !== 1 ? "s" : ""}
+                    </span>
                   </button>
-                  <button type="button" onClick={handleKeepAllChanges} className={BTN_PRIMARY_COMPACT}>
-                    Keep all
-                  </button>
+
+                  <div className="ml-auto flex shrink-0 items-center gap-2">
+                    <button type="button" disabled={sending} onClick={() => void handleUndoAllChanges()} className={BTN_SECONDARY}>
+                      Undo all
+                    </button>
+                    <button type="button" disabled={sending} onClick={handleKeepAllChanges} className={BTN_PRIMARY_COMPACT}>
+                      Keep all
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {changesExpanded && (
-                <div className="border-t border-[#212121] px-3 py-2 space-y-1.5">
-                  {pendingChanges.map((change) => (
-                    <div
-                      key={change.key}
-                      className="text-[12px] font-medium text-[#888888] leading-snug"
+                <AnimatePresence initial={false}>
+                  {changesExpanded && (
+                    <motion.div
+                      key="chat-change-details"
+                      initial={{ height: 0, opacity: prefersReducedMotion ? 1 : 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: prefersReducedMotion ? 0 : 0.12, ease: "easeOut" }}
+                      className="overflow-hidden"
                     >
-                      {change.label}: {change.from} → {change.to}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                      <div className="max-h-48 overflow-y-auto border-t border-[#212121] px-3 py-2 space-y-1.5">
+                        {pendingChanges.map((change) => (
+                          <div
+                            key={change.key}
+                            className="text-[12px] font-medium text-[#888888] leading-snug"
+                          >
+                            {change.label}: {change.from !== undefined ? <>{change.from} → </> : null}{change.to}
+                          </div>
+                        ))}
+                        {reviewIncludesPaidTools && <p className="text-[11px] text-[#888888]">Undoing edits does not refund tool credits.</p>}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Input composite — pinned to bottom */}
           <div className={`shrink-0 pb-4 pt-2 ${CHAT_PANEL_GUTTER_CLASS}`}>

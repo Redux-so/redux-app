@@ -190,9 +190,12 @@ function editorHost(extra = {}) {
     exportMasks: { blur: async () => "bWFzaw==", heal: async () => "bWFzaw==", eraser: async () => "bWFzaw==" },
     reload: async (url, guard) => { assert.equal(guard(), true); state.workingImageUrl = url; change("reload"); return true; },
     undo: () => change("undo"), redo: () => change("redo"), canUndo: true, canRedo: true, revert: async () => change("revert"), save: async () => { calls.push("save"); return state; },
+    restore: async (snapshot) => { Object.assign(state, snapshot, { sliders: { ...snapshot.sliders }, transform: { ...snapshot.transform } }); change("restore"); },
     ...extra,
   });
-  return { tools, state, calls, bodies, fetch: async (_, init) => {
+  return { tools, state, calls, bodies,
+    manualChange: (values) => { Object.assign(state.sliders, values); change("manual"); },
+    fetch: async (_, init) => {
     const body = JSON.parse(init.body); bodies.push(body);
     if (body.phase === "execute") return Response.json({ resultUrl: `${imageUrl}?new=${body.index}` });
     return Response.json({ ok: true });
@@ -206,9 +209,139 @@ test("editor bridge applies geometry and effects in sequence, saves, and reports
     const result = await app.tools.execute({ turnId, credits: 1, actions: [{ type: "rotate", degrees: 90 }, { type: "remove_background" }, { type: "adjust", values: { grain: 8 } }] }, execution());
     assert.deepEqual(app.calls, ["rotate", "reload", "adjust", "save"]);
     assert.equal(app.state.sliders.grain, 8);
-    assert.match(result, /Remove background completed/);
+    assert.match(result, /Removed the background/);
+    assert.doesNotMatch(result, /completed|grain \+8/);
     assert.equal(app.bodies.at(-1).phase, "finish");
     assert.equal(app.bodies.at(-1).message, result);
+  } finally { globalThis.fetch = original; }
+});
+
+/** Exercise the actual review handlers without mounting unrelated chat UI. */
+function reviewUi() {
+  const file = ts.createSourceFile("ChatPanel.tsx", readFileSync(new URL("../components/editor/ChatPanel.tsx", import.meta.url), "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const functions = [], executions = [];
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && ["reviewToolChanges", "handleUndoAllChanges", "handleKeepAllChanges"].includes(node.name?.text)) functions.push(node.getText(file));
+    if (ts.isCallExpression(node) && node.expression.getText(file).includes("toolExecutorRef.current!")) executions.push(node);
+    ts.forEachChild(node, visit);
+  }
+  visit(file);
+  assert.equal(executions.length, 2, "free edits and approved paid edits both execute tools");
+  for (const call of executions) assert.ok(call.arguments[1].properties.some((p) => p.name?.getText(file) === "reviewChanges"), "both execution paths must connect the review panel");
+  const context = { sending: false, changes: [], errors: [],
+    canUndoChatRef: { current: null }, undoToolReviewRef: { current: null }, changeSnapshotRef: { current: null },
+    onUndo() { assert.fail("multi-step review must restore its complete snapshot"); },
+  };
+  Object.assign(context, {
+    setPendingChanges(value) { context.changes = value; }, setChangesExpanded(value) { context.expanded = value; },
+    setReviewIncludesPaidTools(value) { context.includesPaidTools = value; }, setSending(value) { context.sending = value; },
+    toast: { error: (message) => context.errors.push(message) },
+  });
+  const compiled = ts.transpileModule(functions.join("\n"), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  const handlers = vm.runInNewContext(`${compiled}\n({reviewToolChanges, handleUndoAllChanges, handleKeepAllChanges});`, context);
+  return { ...handlers, state: context };
+}
+
+test("chat slider edits restore the Changes panel with exact values and a readable saved reply", async () => {
+  const app = editorHost(), ui = reviewUi();
+  const original = globalThis.fetch; globalThis.fetch = app.fetch;
+  try {
+    const message = await app.tools.execute({ turnId, credits: 0, actions: [{ type: "adjust", values: { exposure: 15, shadows: 20 } }] },
+      { ...execution(), reviewChanges: ui.reviewToolChanges });
+    assert.deepEqual(ui.state.changes.map(({ key, from, to }) => ({ key, from, to })), [
+      { key: "exposure", from: 0, to: 15 }, { key: "shadows", from: 0, to: 20 },
+    ]);
+    assert.match(message, /Brightened the image and lifted the shadows/);
+    assert.doesNotMatch(message, /15|20|completed/);
+    assert.equal(app.bodies.at(-1).message, message);
+    await ui.handleUndoAllChanges();
+    assert.equal(app.state.sliders.exposure, 0);
+    assert.equal(app.state.sliders.shadows, 0);
+    assert.equal(ui.state.changes.length, 0);
+    assert.deepEqual(app.calls, ["adjust", "save", "restore", "save"]);
+  } finally { globalThis.fetch = original; }
+});
+
+test("multi-action reviews include pixels, geometry and slider changes; Undo all restores the whole request", async () => {
+  const app = editorHost(), ui = reviewUi();
+  const original = globalThis.fetch; globalThis.fetch = app.fetch;
+  try {
+    const message = await app.tools.execute({ turnId, credits: 1, actions: [{ type: "rotate", degrees: 90 }, { type: "remove_background" }, { type: "adjust", values: { grain: 8 } }] },
+      { ...execution(), reviewChanges: ui.reviewToolChanges });
+    assert.ok(ui.state.changes.some((change) => change.label === "Rotation" && change.from === "0°" && change.to === "90°"));
+    assert.ok(ui.state.changes.some((change) => change.label === "Remove background"));
+    assert.ok(ui.state.changes.some((change) => change.key === "grain" && change.to === 8));
+    assert.equal(ui.state.includesPaidTools, true);
+    assert.match(message, /\*\*Edits applied\*\*/);
+    await ui.handleUndoAllChanges();
+    assert.equal(app.state.workingImageUrl, imageUrl);
+    assert.equal(app.state.transform.rotation, 0);
+    assert.equal(app.state.sliders.grain, 0);
+    assert.equal(app.bodies.filter((body) => body.phase === "execute").length, 1, "undo must never rerun or refund a paid tool");
+    assert.equal(app.calls.filter((call) => call === "restore").length, 1);
+  } finally { globalThis.fetch = original; }
+});
+
+test("Keep all dismisses review without reverting, and stale Undo all cannot overwrite later edits", async () => {
+  const app = editorHost(), ui = reviewUi();
+  const original = globalThis.fetch; globalThis.fetch = app.fetch;
+  try {
+    const plan = { turnId, credits: 0, actions: [{ type: "adjust", values: { exposure: 15 } }] };
+    await app.tools.execute(plan, { ...execution(), reviewChanges: ui.reviewToolChanges });
+    ui.handleKeepAllChanges();
+    assert.equal(ui.state.changes.length, 0);
+    assert.equal(app.state.sliders.exposure, 15);
+    await app.tools.execute({ ...plan, actions: [{ type: "adjust", values: { exposure: 25 } }] }, { ...execution(), reviewChanges: ui.reviewToolChanges });
+    app.manualChange({ exposure: 30 });
+    await ui.handleUndoAllChanges();
+    assert.equal(app.state.sliders.exposure, 30);
+    assert.equal(app.calls.includes("restore"), false);
+    assert.match(ui.state.errors[0], /Use History/);
+    assert.equal(ui.state.changes.length, 1);
+  } finally { globalThis.fetch = original; }
+});
+
+test("partial failure reviews only applied edits and never attributes intervening manual changes to the agent", async () => {
+  const app = editorHost(), ui = reviewUi();
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (JSON.parse(init.body).phase === "execute") {
+      app.manualChange({ exposure: 88 });
+      return Response.json({ error: "Provider unavailable" }, { status: 503 });
+    }
+    return app.fetch(url, init);
+  };
+  try {
+    const message = await app.tools.execute({ turnId, credits: 1, actions: [
+      { type: "adjust", values: { exposure: 15 } }, { type: "remove_background" }, { type: "flip", axis: "horizontal" },
+    ] }, { ...execution(), reviewChanges: ui.reviewToolChanges });
+    assert.deepEqual(ui.state.changes.map(({ key, to }) => ({ key, to })), [{ key: "exposure", to: 15 }]);
+    assert.match(message, /Provider unavailable/);
+    assert.doesNotMatch(message, /Removed the background|Flipped the image/);
+    assert.equal(ui.state.canUndoChatRef.current(), false);
+  } finally { globalThis.fetch = original; }
+});
+
+test("unchanged settings do not invent change rows", async () => {
+  const app = editorHost(), ui = reviewUi();
+  const original = globalThis.fetch; globalThis.fetch = app.fetch;
+  try {
+    const message = await app.tools.execute({ turnId, credits: 0, actions: [{ type: "adjust", values: { exposure: 0 } }] },
+      { ...execution(), reviewChanges: ui.reviewToolChanges });
+    assert.equal(ui.state.changes.length, 0);
+    assert.equal(message, "The requested settings already match your image.");
+  } finally { globalThis.fetch = original; }
+});
+
+test("save failures keep the exact change review available and remain explicit in the reply", async () => {
+  const app = editorHost({ save: async () => { throw new Error("Storage unavailable"); } }), ui = reviewUi();
+  const original = globalThis.fetch; globalThis.fetch = app.fetch;
+  try {
+    const message = await app.tools.execute({ turnId, credits: 0, actions: [{ type: "adjust", values: { exposure: 15 } }] },
+      { ...execution(), reviewChanges: ui.reviewToolChanges });
+    assert.equal(ui.state.changes[0].to, 15);
+    assert.match(message, /saving failed.*Storage unavailable/);
+    assert.equal(app.bodies.at(-1).message, message);
   } finally { globalThis.fetch = original; }
 });
 

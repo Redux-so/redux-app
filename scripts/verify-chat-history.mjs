@@ -352,7 +352,7 @@ function chatPanelHost(mode, options = {}) {
     "@/components/shared/BrandLogo": { default: () => null },
     "@/components/editor/ChatEmptyState": { default: () => null },
     "@clerk/nextjs": { useUser: () => ({ user: null }) },
-    "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => false },
+    "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => options.reduceMotion === true },
     "react-dom": { flushSync: (callback) => callback(), createPortal: (children) => children },
     "@/hooks/useImageChatHistory": { useImageChatHistory: historyHook },
     "@/hooks/useEditorChatTools": { chatToolsRequest: async () => ({ ok: true }) },
@@ -505,6 +505,59 @@ test("free native actions execute before the final explanation is revealed", asy
   await panel.finish();
   assert.equal(calls, 1);
   assert.equal(panel.messages().at(-1).content, "Rotate 90° completed.");
+});
+
+test("free edit reviews stay hidden during execution and enter after the final reply", async () => {
+  let release;
+  const panel = chatPanelHost("agent", { onExecuteTools: async (_plan, execution) => {
+    execution.reviewChanges({ changes: [{ key: "exposure", label: "Exposure", from: 0, to: 15 }],
+      canUndo: () => true, undo: async () => {}, includesPaidTools: false });
+    await new Promise((resolve) => { release = resolve; });
+    return "Brightened the image and lifted the shadows.";
+  } });
+  await panel.submit();
+  await panel.sendEvent({ type: "tools", plan: { turnId, credits: 0, actions: [{ type: "adjust", values: { exposure: 15 } }] } });
+  await panel.finish();
+  assert.equal(panel.messages().at(-1).content, "");
+  assert.equal(panel.find((node) => node.key === "chat-changes"), undefined, "never show the review while saving or thinking");
+  release();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(panel.messages().at(-1).content, "Brightened the image and lifted the shadows.");
+  const notice = panel.find((node) => node.key === "chat-changes");
+  assert.ok(notice);
+  assert.equal(notice.props.initial.y, 8);
+  assert.equal(notice.props.initial.opacity, 0);
+  assert.equal(notice.props.animate.opacity, 1);
+  assert.equal(notice.props.transition.duration, 0.12);
+  assert.equal(notice.props.transition.delay, 0.4, "wait for the thinking exit and message entrance");
+  assert.equal(notice.props.exit.transition.delay, 0);
+});
+
+test("approved paid edit reviews also wait for the reply and respect reduced motion", async () => {
+  let release;
+  const panel = chatPanelHost("agent", { reduceMotion: true, onExecuteTools: async (_plan, execution) => {
+    execution.reviewChanges({ changes: [{ key: "background", label: "Remove background", to: "Applied" }],
+      canUndo: () => true, undo: async () => {}, includesPaidTools: true });
+    await new Promise((resolve) => { release = resolve; });
+    return "Removed the background.";
+  } });
+  await panel.submit();
+  await panel.sendEvent({ type: "tools", plan: { turnId, credits: 1, actions: [{ type: "remove_background" }] } });
+  await panel.finish();
+  const approve = panel.find((node) => node.type === "button" && Array.isArray(node.props.children) && node.props.children[0] === "Apply · ");
+  approve.props.onClick();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(panel.find((node) => node.key === "chat-changes"), undefined);
+  release();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(panel.messages().at(-1).content, "Removed the background.");
+  const notice = panel.find((node) => node.key === "chat-changes");
+  assert.ok(notice);
+  assert.equal(notice.props.transition.duration, 0);
+  assert.equal(notice.props.transition.delay, 0);
+  assert.equal(notice.props.initial.y, 0);
+  panel.find((node) => node.type === "button" && node.props["aria-label"] === "Expand changes").props.onClick();
+  assert.equal(panel.find((node) => node.key === "chat-change-details").props.transition.duration, 0);
 });
 
 test("paid plans display their costs and require approval before execution", async () => {

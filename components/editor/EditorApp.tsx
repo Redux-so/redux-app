@@ -310,6 +310,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     rotateCW, rotateCCW, flipH, flipV, straighten: (degrees) => straightenImage(degrees),
     resize: resizeCanvas, commitPixels, exportMasks: { heal: exportMask, eraser: exportEraserMask, blur: exportBlurMask },
     reload: reloadCanvas, undo: handleUndo, redo: handleRedo, canUndo, canRedo,
+    restore: (state) => handleRestoreHistory(serializePersistedEditorState(state), "before chat edits"),
     revert: async (id) => {
       const saved = savedVersions.find((v) => `saved:${v.id}` === id);
       const entry = historyEntries.find((v) => v.id === id);

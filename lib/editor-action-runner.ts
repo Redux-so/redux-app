@@ -1,4 +1,5 @@
 import { actionLabel, editorPlanSchema, type EditorAction, type EditorPlan } from "@/lib/editor-actions";
+import type { EditorChangeReview } from "@/lib/editor-change-review";
 
 export interface ActionOutcome { action: string; status: "applied" | "needs_input" | "failed"; message: string }
 export interface ActionExecution {
@@ -6,6 +7,7 @@ export interface ActionExecution {
   isCurrent: () => boolean;
   isUnchanged?: () => boolean;
   progress: (label: string) => void;
+  reviewChanges?: (review: EditorChangeReview) => void;
 }
 
 /** Never execute actions concurrently: every step consumes the previous result. */
@@ -32,8 +34,4 @@ export async function runEditorPlan(plan: EditorPlan, execution: ActionExecution
     }
   }
   return outcomes;
-}
-
-export function describeOutcomes(outcomes: ActionOutcome[]): string {
-  return outcomes.map((outcome) => outcome.status === "failed" ? `${outcome.action}: ${outcome.message}` : outcome.message).join("\n\n");
 }

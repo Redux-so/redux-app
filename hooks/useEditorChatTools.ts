@@ -1,8 +1,9 @@
 "use client";
 
 import type { RefObject } from "react";
-import { actionLabel, actionResultMessage, isRemoteAction, type ChatToolPlan, type EditorAction, type EditorToolContext } from "@/lib/editor-actions";
-import { describeOutcomes, runEditorPlan, type ActionExecution } from "@/lib/editor-action-runner";
+import { actionCost, actionLabel, actionResultMessage, isRemoteAction, type ChatToolPlan, type EditorAction, type EditorToolContext } from "@/lib/editor-actions";
+import { runEditorPlan, type ActionExecution } from "@/lib/editor-action-runner";
+import { editorChanges, editorReply } from "@/lib/editor-change-review";
 import { hasImageTransform, transformedDimensions } from "@/lib/image-transform";
 import { transformedSource } from "@/lib/canvas-image-geometry";
 import { renderEditorPayload } from "@/lib/interactive-image-preview";
@@ -34,6 +35,7 @@ export function useEditorChatTools(options: {
   reload: (url: string, guard: () => boolean, label: string, resetTransform?: boolean) => Promise<boolean>;
   undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean;
   revert: (id: string) => Promise<void>;
+  restore: (state: EditorHistoryState) => Promise<void>;
   save: () => Promise<unknown>;
 }) {
   function context(): EditorToolContext | undefined {
@@ -70,6 +72,15 @@ export function useEditorChatTools(options: {
     }
     await chatToolsRequest({ phase: "approve", turnId: plan.turnId }, execution.signal);
     if (!execution.isCurrent() || execution.isUnchanged?.() === false || execution.signal.aborted) throw new Error("The image changed. Send a new request.");
+    const snapshot = () => {
+      const state = options.getState();
+      return { ...state, sliders: { ...state.sliders }, transform: { ...state.transform },
+        workingWidth: state.workingWidth ?? options.width, workingHeight: state.workingHeight ?? options.height };
+    };
+    const before = snapshot();
+    let confirmed = before;
+    let revision = options.getRevision();
+    const recordAppliedState = () => { confirmed = snapshot(); revision = options.getRevision(); };
     const outcomes = await runEditorPlan({ actions: plan.actions }, execution, {
       getRevision: options.getRevision,
       async execute(action: EditorAction, index, guard) {
@@ -110,6 +121,7 @@ export function useEditorChatTools(options: {
             if (action.type === "apply_selection") { options.clearSelections(); options.controls.current?.closeBrush(); }
           } else if (result.adjustments) options.patch(result.adjustments);
           else throw new Error("The tool returned no usable edit.");
+          recordAppliedState();
           return actionResultMessage(action, result.adjustments);
         }
         switch (action.type) {
@@ -138,11 +150,24 @@ export function useEditorChatTools(options: {
           case "redo": if (!options.canRedo) throw new Error("There is nothing to redo."); options.redo(); break;
           case "revert": await options.revert(action.versionId); break;
         }
+        recordAppliedState();
         return actionResultMessage(action);
       },
     });
-    let message = describeOutcomes(outcomes);
+    const applied = plan.actions.filter((_, index) => outcomes[index]?.status === "applied");
+    const changes = editorChanges(before, confirmed, applied);
+    if (applied.length) execution.reviewChanges?.({ changes,
+      includesPaidTools: applied.some((action) => actionCost(action) > 0),
+      canUndo: () => options.getRevision() === revision,
+      undo: async () => {
+        if (options.getRevision() !== revision) throw new Error("The image has changed since these edits. Use History to revert them.");
+        await options.restore(before);
+        if (!await options.save()) throw new Error("The edits were reverted, but saving failed. Save again before leaving.");
+      },
+    });
+    let message = editorReply(outcomes, plan.actions, changes);
     if (outcomes.some((o) => o.status === "applied")) {
+      execution.progress("Saving edits...");
       try { if (!await options.save()) message += "\n\nYour edits are visible, but saving failed. Save again before leaving."; }
       catch (error) { message += `\n\nYour edits are visible, but saving failed. ${error instanceof Error ? error.message : "Save again before leaving."}`; }
     }
