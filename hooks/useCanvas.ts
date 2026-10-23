@@ -672,15 +672,16 @@ export function useCanvas(
     const generation = ++cropGenerationRef.current;
     const { Rect } = await import("fabric");
     if (canvas !== fabricRef.current || generation !== cropGenerationRef.current) return;
-    const w = canvas.getWidth();
-    const h = canvas.getHeight();
-    const inset = Math.min(w, h) * 0.05;
+    const imageBounds = bgImageRef.current?.getBoundingRect();
+    if (!imageBounds) return;
 
     const rect = new Rect({
-      left: inset,
-      top: inset,
-      width: w - inset * 2,
-      height: h - inset * 2,
+      originX: "center",
+      originY: "center",
+      left: imageBounds.left + imageBounds.width / 2,
+      top: imageBounds.top + imageBounds.height / 2,
+      width: imageBounds.width * 0.9,
+      height: imageBounds.height * 0.9,
       fill: "rgba(0,0,0,0)",
       stroke: "#ffffff",
       strokeWidth: 1.5,
