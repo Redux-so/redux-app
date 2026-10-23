@@ -34,7 +34,7 @@ import type { LibrarySidebarView } from "@/lib/library-filters";
 import type { AlbumRecord } from "@/types/album";
 
 const SECTION_LABEL =
-  "text-xs font-semibold uppercase tracking-wide text-[#888888]";
+  "text-xs font-medium uppercase tracking-wide text-[#888888]";
 
 interface LibrarySidebarProps {
   sidebarView: LibrarySidebarView;
@@ -97,7 +97,7 @@ export default function LibrarySidebar({
               <AppChromeLogo className="-ml-1" />
             </Link>
           </div>
-          <p className={`px-5 mt-3 mb-3 ${SECTION_LABEL}`}>Library</p>
+          <p className={`px-5 mt-6 mb-3 ${SECTION_LABEL}`}>Library</p>
 
           <nav
             aria-label="Library quick filters"
@@ -157,7 +157,7 @@ export default function LibrarySidebar({
           </nav>
         </div>
 
-        <div className="flex flex-col flex-1 min-h-0 mt-4">
+        <div className="flex flex-col flex-1 min-h-0 mt-6">
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain pb-2">
             <div className="relative px-5 mb-3">
               <p className={SECTION_LABEL}>Albums</p>

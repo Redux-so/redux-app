@@ -219,7 +219,7 @@ export default function PhotoGrid({
       {groups.map((group) =>
         group.images.length === 0 ? null : (
           <div key={group.label}>
-            <p className="text-[12px] font-semibold text-[#666666] mb-3">
+            <p className="text-[12px] font-medium text-[#666666] mb-3">
               {group.label}
             </p>
             <AnimatedPhotoGrid

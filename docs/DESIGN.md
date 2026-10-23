@@ -16,7 +16,7 @@ Document what exists in code — do not invent new tokens. Source files: `lib/su
 
 - **Font in repo:** **Geist Sans** via `geist` package (`lib/fonts.ts`, `app/layout.tsx`, `--font-geist-sans` in `globals.css`)
 - Panel titles: `14px font-semibold text-white` (`PANEL_TITLE`)
-- Section labels (library): `text-xs font-semibold uppercase tracking-wide text-[#888888]`
+- Section labels (library): `text-xs font-medium uppercase tracking-wide text-[#888888]`
 
 *(Older notes mentioned Inter; current code uses Geist.)*
 
