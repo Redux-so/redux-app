@@ -9,6 +9,38 @@ import { require as tsxRequire } from "tsx/cjs/api";
 
 const { useEditor } = tsxRequire("../hooks/useEditor.ts", import.meta.url);
 
+test("returning after autosave reuses the confirmed save, including a queued manual save", async () => {
+  const originalFetch = globalThis.fetch;
+  let requests = 0, covers = 0, release, started;
+  const saving = new Promise((resolve) => { started = resolve; });
+  globalThis.fetch = async () => {
+    requests++;
+    if (requests === 1) {
+      started();
+      await new Promise((resolve) => { release = resolve; });
+    }
+    return Response.json({});
+  };
+  try {
+    const render = editorHost("save-reuse-image", { renderCover: async () => { covers++; return "cover"; } });
+    let editor = render();
+    editor.patchAdjustments({ temperature: 20 }); editor = render();
+    const autosave = editor.saveVersion();
+    await saving;
+    const leaving = editor.saveVersion(true);
+    release();
+    assert.ok(await autosave);
+    assert.ok(await leaving);
+    assert.ok(await editor.saveVersion(true));
+    assert.equal(requests, 1);
+    assert.equal(covers, 1);
+    editor.patchAdjustments({ temperature: 30 }); editor = render();
+    assert.ok(await editor.saveVersion(true));
+    assert.equal(requests, 2, "changed pixels must still save before leaving");
+    assert.equal(covers, 2);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test("permanent storage failures pause identical autosaves, preserve dirty edits and allow manual retry", async () => {
   const originalFetch = globalThis.fetch;
   const originalError = console.error;

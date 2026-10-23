@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 import { mergeImageRecords } from "@/lib/merge-image-records";
+import { recallLibraryView, rememberLibraryView, restoreLibraryPages } from "@/lib/library-view-cache";
 import {
   LIBRARY_PREVIEW_UPDATED_EVENT,
   applyLibraryPreviewUpdates,
@@ -121,11 +122,13 @@ function buildImagesListUrl(trash: boolean, page: number): string {
 }
 
 export interface LibraryPageClientProps {
+  ownerId: string;
   initialLibrary: LibraryInitialPage;
   initialTrash: LibraryInitialPage;
 }
 
 export default function LibraryPageClient({
+  ownerId,
   initialLibrary,
   initialTrash,
 }: LibraryPageClientProps) {
@@ -139,8 +142,6 @@ export default function LibraryPageClient({
   const [trashTotal, setTrashTotal] = useState(initialTrash.total);
   const [libraryPage, setLibraryPage] = useState(1);
   const [trashPage, setTrashPage] = useState(1);
-  const [libraryLoading, setLibraryLoading] = useState(false);
-  const [trashLoading, setTrashLoading] = useState(false);
   const [libraryLoadingMore, setLibraryLoadingMore] = useState(false);
   const [trashLoadingMore, setTrashLoadingMore] = useState(false);
   const [searchOverlay, setSearchOverlay] = useState<LibrarySearchOverlay>({
@@ -151,6 +152,42 @@ export default function LibraryPageClient({
     DEFAULT_LIBRARY_SIDEBAR_VIEW,
   );
   const [albums, setAlbums] = useState<AlbumRecord[]>([]);
+
+  useLayoutEffect(() => {
+    const previous = recallLibraryView(ownerId);
+    if (!previous) return;
+    const library = restoreLibraryPages(previous.images, previous.libraryTotal, previous.libraryPage, initialLibrary);
+    const trash = restoreLibraryPages(previous.trashedImages, previous.trashTotal, previous.trashPage, initialTrash);
+    setImages(library.images);
+    setLibraryTotal(initialLibrary.total);
+    setLibraryPage(library.page);
+    setTrashedImages(trash.images);
+    setTrashTotal(initialTrash.total);
+    setTrashPage(trash.page);
+    setFilters(previous.filters);
+    setSidebarView(previous.sidebarView);
+    setAlbums(previous.albums);
+    const frame = requestAnimationFrame(() => {
+      if (mainScrollRef.current) mainScrollRef.current.scrollTop = previous.scrollTop;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [ownerId, initialLibrary, initialTrash]);
+
+  useEffect(() => {
+    const main = mainScrollRef.current;
+    const view = { images, trashedImages, libraryTotal, trashTotal, libraryPage, trashPage,
+      filters, sidebarView, albums, scrollTop: main?.scrollTop ?? 0 };
+    const remember = () => {
+      view.scrollTop = main?.scrollTop ?? 0;
+      rememberLibraryView(ownerId, view);
+    };
+    remember();
+    main?.addEventListener("scroll", remember, { passive: true });
+    return () => {
+      remember();
+      main?.removeEventListener("scroll", remember);
+    };
+  }, [ownerId, images, trashedImages, libraryTotal, trashTotal, libraryPage, trashPage, filters, sidebarView, albums]);
 
   const fetchAlbums = useCallback(async () => {
     try {
@@ -163,49 +200,8 @@ export default function LibraryPageClient({
     }
   }, []);
 
-  const mergePendingPreviewUpdates = useCallback((list: ImageRecord[]) => {
-    const pending = consumeLibraryPreviewUpdates();
-    if (Object.keys(pending).length > 0) {
-      previewUpdatesRef.current = { ...previewUpdatesRef.current, ...pending };
-    }
-    return applyLibraryPreviewUpdates(list, previewUpdatesRef.current);
-  }, []);
-
-  const fetchTrashedImages = useCallback(async () => {
-    setTrashLoading(true);
-    try {
-      const res = await fetch(buildImagesListUrl(true, 1), { cache: "no-store" });
-      if (!res.ok) return;
-      const data = (await res.json()) as ImagesPageResponse;
-      setTrashedImages(mergePendingPreviewUpdates(data.images));
-      setTrashTotal(data.total);
-      setTrashPage(data.page);
-    } finally {
-      setTrashLoading(false);
-    }
-  }, [mergePendingPreviewUpdates]);
-
-  const fetchImages = useCallback(async () => {
-    setLibraryLoading(true);
-    try {
-      const res = await fetch(buildImagesListUrl(false, 1), { cache: "no-store" });
-      if (!res.ok) {
-        toast.error("Could not load your library.");
-        return;
-      }
-      const data = (await res.json()) as ImagesPageResponse;
-      setImages(mergePendingPreviewUpdates(data.images));
-      setLibraryTotal(data.total);
-      setLibraryPage(data.page);
-    } catch {
-      toast.error("Could not load your library.");
-    } finally {
-      setLibraryLoading(false);
-    }
-  }, [mergePendingPreviewUpdates]);
-
   const loadMoreLibrary = useCallback(async () => {
-    if (libraryLoadingMore || libraryLoading) return;
+    if (libraryLoadingMore) return;
     if (images.length >= libraryTotal) return;
 
     const nextPage = libraryPage + 1;
@@ -216,7 +212,7 @@ export default function LibraryPageClient({
       });
       if (!res.ok) return;
       const data = (await res.json()) as ImagesPageResponse;
-      setImages((prev) => mergeImageRecords(prev, data.images));
+      setImages((prev) => mergeImageRecords(prev, applyLibraryPreviewUpdates(data.images, previewUpdatesRef.current)));
       setLibraryTotal(data.total);
       setLibraryPage(data.page);
     } finally {
@@ -224,14 +220,13 @@ export default function LibraryPageClient({
     }
   }, [
     images.length,
-    libraryLoading,
     libraryLoadingMore,
     libraryPage,
     libraryTotal,
   ]);
 
   const loadMoreTrash = useCallback(async () => {
-    if (trashLoadingMore || trashLoading) return;
+    if (trashLoadingMore) return;
     if (trashedImages.length >= trashTotal) return;
 
     const nextPage = trashPage + 1;
@@ -242,7 +237,7 @@ export default function LibraryPageClient({
       });
       if (!res.ok) return;
       const data = (await res.json()) as ImagesPageResponse;
-      setTrashedImages((prev) => mergeImageRecords(prev, data.images));
+      setTrashedImages((prev) => mergeImageRecords(prev, applyLibraryPreviewUpdates(data.images, previewUpdatesRef.current)));
       setTrashTotal(data.total);
       setTrashPage(data.page);
     } finally {
@@ -250,18 +245,22 @@ export default function LibraryPageClient({
     }
   }, [
     trashLoadingMore,
-    trashLoading,
     trashPage,
     trashTotal,
     trashedImages.length,
   ]);
 
   useLayoutEffect(() => {
-    const pending = consumeLibraryPreviewUpdates();
-    if (Object.keys(pending).length === 0) return;
-    previewUpdatesRef.current = { ...previewUpdatesRef.current, ...pending };
-    setImages((prev) => applyLibraryPreviewUpdates(prev, pending));
-    setTrashedImages((prev) => applyLibraryPreviewUpdates(prev, pending));
+    const applyPendingPreviews = () => {
+      const pending = consumeLibraryPreviewUpdates();
+      if (Object.keys(pending).length === 0) return;
+      previewUpdatesRef.current = { ...previewUpdatesRef.current, ...pending };
+      setImages((prev) => applyLibraryPreviewUpdates(prev, pending));
+      setTrashedImages((prev) => applyLibraryPreviewUpdates(prev, pending));
+    };
+    applyPendingPreviews();
+    window.addEventListener(LIBRARY_PREVIEW_UPDATED_EVENT, applyPendingPreviews);
+    return () => window.removeEventListener(LIBRARY_PREVIEW_UPDATED_EVENT, applyPendingPreviews);
   }, []);
 
   useEffect(() => {
@@ -273,22 +272,6 @@ export default function LibraryPageClient({
       setSearchOverlay({ kind: "none" });
     }
   }, [sidebarView]);
-
-  // Backup refetch — catches previews that finish shortly after navigation.
-  useEffect(() => {
-    const refresh = () => { void fetchImages(); void fetchTrashedImages(); };
-    window.addEventListener(LIBRARY_PREVIEW_UPDATED_EVENT, refresh);
-    const timers = [500, 2500].map((delay) =>
-      setTimeout(() => {
-        void fetchImages();
-        void fetchTrashedImages();
-      }, delay),
-    );
-    return () => {
-      window.removeEventListener(LIBRARY_PREVIEW_UPDATED_EVENT, refresh);
-      for (const timer of timers) clearTimeout(timer);
-    };
-  }, [fetchImages, fetchTrashedImages]);
 
   const handleDeleteImage = useCallback((id: string) => {
     setImages((prev) => {
@@ -517,7 +500,7 @@ export default function LibraryPageClient({
 
   const loadMoreSentinelRef = useInfiniteScrollSentinel({
     rootRef: mainScrollRef,
-    enabled: !isSearchActive && !(isTrashView ? trashLoading : libraryLoading),
+    enabled: !isSearchActive,
     hasMore: isTrashView ? trashHasMore : libraryHasMore,
     loading: isTrashView ? trashLoadingMore : libraryLoadingMore,
     onLoadMore: isTrashView ? loadMoreTrash : loadMoreLibrary,
@@ -655,7 +638,6 @@ export default function LibraryPageClient({
           )}
           <PhotoGrid
             groups={groups}
-            libraryLoading={isTrashView ? trashLoading : libraryLoading}
             viewMode={isTrashView ? "trash" : "library"}
             search={searchForGrid}
             albums={albums}

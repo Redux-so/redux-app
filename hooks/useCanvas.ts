@@ -7,6 +7,7 @@ import { constrainViewport, type ViewportTransform, type ViewportRect } from "@/
 import { type AdjustmentKey } from "@/constants/adjustments";
 import { transformedSource, drawSourceMask } from "@/lib/canvas-image-geometry";
 import { renderInteractiveImage } from "@/lib/interactive-image-preview";
+import { loadDecodedImage } from "@/lib/decoded-image-cache";
 import { transformedDimensions, type ImageTransform } from "@/lib/image-transform";
 
 export {
@@ -517,7 +518,7 @@ export function useCanvas(
       const { FabricImage } = await import("fabric");
       if (cancelled) return;
 
-      const img = await FabricImage.fromURL(imageUrl, { crossOrigin: "anonymous" });
+      const img = new FabricImage(await loadDecodedImage(imageUrl));
       if (cancelled || generation !== loadGenerationRef.current) return;
 
       const w = canvas.getWidth();
@@ -563,26 +564,32 @@ export function useCanvas(
     return () => observer.disconnect();
   }, [canvasReady, relayoutCanvas]);
 
-  // Feedback is local and painted before the browser's next frame. Never wait
-  // for debounce, network, image decoding, or a previous server render to finish.
+  // Coalesce slider updates into the next frame, without blocking React's commit.
+  // Cancel superseded work so only the latest adjustments reach the canvas.
   useLayoutEffect(() => {
     const canvas = fabricRef.current;
     const source = sourceImageRef.current;
     if (!canvasReady || !canvas || !source) return;
-    const pixels = source.getElement() as HTMLImageElement;
-    try {
-      const rendered = renderInteractiveImage(pixels, adjustments,
-        localPreviewCanvasRef.current ?? undefined);
-      localPreviewCanvasRef.current = rendered;
-      const PreviewImage = source.constructor as typeof FabricImage;
-      const preview = new PreviewImage(rendered, { objectCaching: false });
-      bgImageRef.current = preview;
-      canvas.backgroundImage = preview;
-      setPreviewError(null);
-      relayoutCanvas();
-    } catch (err) {
-      setPreviewError(err instanceof Error ? err.message : "Preview failed");
-    }
+    const frame = requestAnimationFrame(() => {
+      if (canvas !== fabricRef.current || source !== sourceImageRef.current) return;
+      const pixels = source.getElement() as HTMLImageElement;
+      try {
+        const rendered = renderInteractiveImage(pixels, adjustments,
+          localPreviewCanvasRef.current ?? undefined);
+        localPreviewCanvasRef.current = rendered;
+        if (bgImageRef.current?.getElement() !== rendered) {
+          const PreviewImage = source.constructor as typeof FabricImage;
+          const preview = new PreviewImage(rendered, { objectCaching: false });
+          bgImageRef.current = preview;
+          canvas.backgroundImage = preview;
+        }
+        setPreviewError(null);
+        relayoutCanvas();
+      } catch (err) {
+        setPreviewError(err instanceof Error ? err.message : "Preview failed");
+      }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [adjustments, savedTransform, canvasReady, sourceVersion, relayoutCanvas]);
 
   // ---------------------------------------------------------------------------
@@ -823,7 +830,7 @@ export function useCanvas(
     const generation = ++loadGenerationRef.current;
 
     const { FabricImage } = await import("fabric");
-    const img = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
+    const img = new FabricImage(await loadDecodedImage(url));
     if (!isCurrent() || generation !== loadGenerationRef.current || canvas !== fabricRef.current) return false;
 
     if (nextTransform) transformRef.current = { ...nextTransform };

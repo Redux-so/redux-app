@@ -2,6 +2,7 @@ import { buildPreviewRequestBody, type PreviewPayload } from "@/lib/preview-requ
 import { normalizeAdjustments } from "@/constants/adjustments";
 import { getColorOverlays } from "@/lib/color-overlays";
 import { buildInteractiveFilter } from "@/lib/interactive-image-filter";
+import { loadDecodedImage } from "@/lib/decoded-image-cache";
 
 const sourceAlphas = new WeakMap<HTMLImageElement, Map<string, Uint8ClampedArray | null>>();
 
@@ -60,10 +61,11 @@ export function renderInteractiveImage(
   const scale = fullSize ? 1 : previewScale;
   const width = Math.max(1, Math.round(source.naturalWidth * scale));
   const height = Math.max(1, Math.round(source.naturalHeight * scale));
-  canvas.width = width;
-  canvas.height = height;
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create the interactive image preview.");
+  ctx.clearRect(0, 0, width, height);
   const alpha = sourceAlpha(source, width, height);
   const normalized = normalizeAdjustments(adjustments);
   ctx.filter = buildInteractiveFilter(normalized, scale / previewScale);
@@ -110,10 +112,7 @@ export function renderInteractiveImage(
 /** Render document pixels, never the editor viewport, using the canvas's renderer. */
 export async function renderEditorPayload(payload: PreviewPayload, fullSize = false): Promise<PreviewPayload> {
   const body = buildPreviewRequestBody(payload);
-  const source = new Image();
-  source.crossOrigin = "anonymous";
-  source.src = body.imageBase64 ? `data:image/png;base64,${body.imageBase64}` : body.imageUrl ?? "";
-  await source.decode();
+  const source = await loadDecodedImage(body.imageBase64 ? `data:image/png;base64,${body.imageBase64}` : body.imageUrl ?? "");
   const rendered = renderInteractiveImage(source, payload.adjustments, undefined, fullSize);
   const blob = await new Promise<Blob>((resolve, reject) => {
     rendered.toBlob((result) => result ? resolve(result) : reject(new Error("Could not render image for export.")), "image/png");

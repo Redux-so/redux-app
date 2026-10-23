@@ -85,8 +85,7 @@ function AnimatedPhotoGrid({
   onPermanentDeleteImage?: (id: string) => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const duration = prefersReducedMotion ? 0 : 0.25;
-  const stagger = prefersReducedMotion ? 0 : 0.035;
+  const duration = prefersReducedMotion ? 0 : 0.12;
 
   return (
     <motion.div
@@ -95,7 +94,7 @@ function AnimatedPhotoGrid({
       animate="visible"
       variants={{
         hidden: {},
-        visible: { transition: { staggerChildren: stagger } },
+        visible: {},
       }}
     >
       {images.map((image) => (

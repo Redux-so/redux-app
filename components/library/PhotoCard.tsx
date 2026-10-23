@@ -2,7 +2,7 @@
 
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
@@ -11,6 +11,7 @@ import type { AlbumRecord } from "@/types/album";
 import type { ImageRecord } from "@/types/image";
 import toast from "react-hot-toast";
 import { cloudinaryThumbnailUrl } from "@/lib/cloudinary-url";
+import { prefetchDecodedImage } from "@/lib/decoded-image-cache";
 
 const OVERLAY_ACTION =
   "pointer-events-auto flex shrink-0 cursor-pointer items-center justify-center rounded-md border backdrop-blur-sm transition-all";
@@ -40,6 +41,26 @@ export default function PhotoCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFavorite, setIsFavorite] = useState(image.isFavorite === true);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelPrefetch = () => {
+    if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
+    prefetchTimerRef.current = null;
+  };
+
+  useEffect(() => () => {
+    if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
+  }, []);
+
+  function prefetchEditor() {
+    cancelPrefetch();
+    prefetchTimerRef.current = setTimeout(() => {
+      router.prefetch(`/editor?imageId=${image.id}`);
+      void import("@/components/editor/EditorApp").catch(() => {});
+      // Avoid downloading large originals just because the pointer crossed a card.
+      if (image.size <= 8 * 1024 * 1024) prefetchDecodedImage(image.originalUrl);
+    }, 180);
+  }
 
   useEffect(() => {
     setIsFavorite(image.isFavorite === true);
@@ -106,7 +127,13 @@ export default function PhotoCard({
   }
 
   return (
-    <div className="@container group relative aspect-square w-full min-w-0 overflow-hidden rounded-xl bg-white/[0.03]">
+    <div
+      className="@container group relative aspect-square w-full min-w-0 overflow-hidden rounded-xl bg-white/[0.03]"
+      onMouseEnter={prefetchEditor}
+      onMouseLeave={cancelPrefetch}
+      onFocus={prefetchEditor}
+      onBlur={cancelPrefetch}
+    >
       <Image
         key={`${image.id}:${image.previewUrl ?? image.originalUrl}`}
         src={cloudinaryThumbnailUrl(image.previewUrl ?? image.originalUrl)}

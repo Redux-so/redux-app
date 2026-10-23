@@ -39,6 +39,7 @@ Toolbar (h-16)
 - Sidebar **260px** (`LIBRARY_SIDEBAR_WIDTH_PX`): logo, filters, albums, trash, docs/help, profile
 - Main: greeting + search + upload + grid (single scroll, `.scroll-stable`)
 - Upload box retains its dark dashed surface for batch progress; skipped/failed files and a compact retry control appear below it
+- Returning from the editor restores loaded pages, filters, sidebar selection and scroll position from a bounded account-scoped memory cache. Fresh server records take precedence. Successful saves update covers directly without resetting the list or showing a loading overlay.
 
 ## Layout — settings
 

@@ -29,6 +29,8 @@ export default async function LibraryPage() {
 
   return (
     <LibraryPageClient
+      key={user.id}
+      ownerId={user.id}
       initialLibrary={{
         images: initialLibrary.images,
         total: initialLibrary.total,

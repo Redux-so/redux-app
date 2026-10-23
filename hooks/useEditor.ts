@@ -231,13 +231,13 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     if (canAutoSaveRef.current && !canAutoSaveRef.current()) return null;
 
     const persisted = buildCurrentPersistedState();
-    const history = serializeEditorTimeline(timelineRef.current);
     const historyRevision = historyRevisionRef.current;
     const revision = revisionRef.current;
     if (!force && getEditorSaveFailure(imgId, revision)?.retryable === false) return null;
-    if (!force && persistedStatesEqual(persisted, lastPersistedRef.current) && historyRevision === lastSavedHistoryRevisionRef.current) {
-      return null;
+    if (persistedStatesEqual(persisted, lastPersistedRef.current) && historyRevision === lastSavedHistoryRevisionRef.current) {
+      return force ? persisted : null;
     }
+    const history = serializeEditorTimeline(timelineRef.current);
 
     const payload: {
       imageId: string;
@@ -273,6 +273,10 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     const save = async () => {
       if (imgId !== imageIdRef.current || revision !== revisionRef.current) return null;
       if (!force && getEditorSaveFailure(imgId, revision)?.retryable === false) return null;
+      // A queued autosave may already have persisted this exact document.
+      if (persistedStatesEqual(persisted, lastPersistedRef.current) && historyRevision === lastSavedHistoryRevisionRef.current) {
+        return force ? persisted : null;
+      }
       try {
         // Multiple native crops can exceed one request's size ceiling. Upload each
         // source separately, then publish the timeline and cover in the final save.

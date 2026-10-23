@@ -2,7 +2,8 @@
 
 The canvas, saved library previews, and downloads share `renderInteractiveImage`
 in `lib/interactive-image-preview.ts`. Slider changes render locally before the
-next paint. No debounce, network request, autosave response, or delayed Sharp
+next paint, coalescing updates into a single animation frame and reusing the
+Fabric preview object. No debounce, network request, autosave response, or delayed Sharp
 preview can replace the displayed image. Color effects blend into the image
 itself, so zoom/pan and transforms cannot displace them.
 
@@ -12,6 +13,13 @@ filters and color blends. Blur scales with resolution; deterministic grain uses
 the same normalized texture. The canvas does not change to a different effect
 algorithm after a drag. Sharpen/clarity retain the established contrast-based
 appearance. Export never captures the visible viewport or editor UI.
+
+Canvas loading, cover rendering, and export share a bounded decoded-source cache
+(two images, at most 32 million decoded pixels). Hovering a library card warms
+the editor code and, for originals up to 8 MiB, its source. Only one speculative
+image download runs at a time. Sources and export resolution remain unchanged.
+An explicit save of an already confirmed document reuses that successful save;
+changed document state or history still requires persistence before leaving.
 
 The rendered PNG is sent with `pixelsRendered: true`. Sharp applies the document
 transform, adds an sRGB profile, and encodes JPEG, PNG, or TIFF without reapplying
