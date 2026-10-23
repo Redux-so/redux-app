@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { forwardRef } from "react";
+import { Icon } from "@/components/shared/Icon";
 import {
   LIBRARY_SIDEBAR_PROFILE_BTN,
   LIBRARY_SIDEBAR_PROFILE_BTN_OPEN,
@@ -73,7 +74,7 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
         ].join(" ")}
       >
         {avatar}
-        <div className="flex min-w-0 flex-col text-left">
+        <div className="flex min-w-0 flex-1 flex-col text-left">
           <span className="text-white text-[14px] leading-[1.3] font-medium truncate">
             {userName}
           </span>
@@ -81,6 +82,7 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
             {credits !== null ? credits.toLocaleString() : "—"} Credits
           </span>
         </div>
+        <Icon name="ChevronDown" size={16} className="ml-auto shrink-0 text-[#888888]" aria-hidden />
       </button>
     );
   },
