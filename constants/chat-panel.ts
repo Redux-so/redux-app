@@ -11,7 +11,7 @@ export const CHAT_ASSISTANT_LOADING_LABEL = "Thinking...";
 
 /** Typography for inline chat status labels (Thinking…, Composing…). */
 export const CHAT_STATUS_TEXT_CLASS =
-  "text-[15px] font-normal leading-snug";
+  "text-[15px] font-[350] leading-snug";
 
 /** Base color for chat status labels — always visible under shimmer overlay. */
 export const CHAT_STATUS_TEXT_COLOR_CLASS = "text-[#888888]";
