@@ -164,36 +164,39 @@ export default function SearchBar({
             label="Searching"
           />
         ) : null}
-        {showTypewriter ? (
-          <span
+        <div className="relative min-w-0 flex-1">
+          {showTypewriter ? (
+            <span
+              className={[
+                "pointer-events-none absolute left-0 right-2 top-1/2 z-[1] min-w-0 -translate-y-1/2 truncate text-[#888888]",
+                isLarge ? "text-[14px]" : "text-[13px]",
+              ].join(" ")}
+              aria-hidden
+            >
+              {displayText}
+              <span className={cursorVisible ? "opacity-100" : "opacity-0"}>|</span>
+            </span>
+          ) : null}
+          <input
+            type="text"
+            role="searchbox"
+            name="library-search"
+            value={value}
+            onChange={(e) => handleChange(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder=""
+            aria-label="Search photos by keyword, color, scene, or mood"
+            autoComplete="off"
+            enterKeyHint="search"
+            disabled={isSearching}
             className={[
-              "pointer-events-none absolute top-1/2 z-[1] min-w-0 -translate-y-1/2 truncate text-[#888888]",
-              isLarge ? "left-12 pr-14 text-[14px]" : "left-9 pr-12 text-[13px]",
+              "relative z-[2] w-full min-w-0 bg-transparent text-white outline-none disabled:opacity-60",
+              isLarge ? "pr-2 text-[14px]" : "pr-1 text-[13px]",
+              isSearching ? "!pr-8" : "",
             ].join(" ")}
-            aria-hidden
-          >
-            {displayText}
-            <span className={cursorVisible ? "opacity-100" : "opacity-0"}>|</span>
-          </span>
-        ) : null}
-        <input
-          type="text"
-          role="searchbox"
-          name="library-search"
-          value={value}
-          onChange={(e) => handleChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          placeholder=""
-          aria-label="Search photos by keyword, color, scene, or mood"
-          autoComplete="off"
-          enterKeyHint="search"
-          disabled={isSearching}
-          className={[
-            "relative z-[2] min-w-0 flex-1 bg-transparent text-white outline-none disabled:opacity-60",
-            isLarge ? "pr-2 text-[14px]" : "pr-1 text-[13px]",
-          ].join(" ")}
-        />
+          />
+        </div>
         <button
           type="button"
           onClick={() => {

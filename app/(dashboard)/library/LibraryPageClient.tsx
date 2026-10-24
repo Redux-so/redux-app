@@ -14,6 +14,8 @@ import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import LibraryHeader from "@/components/library/LibraryHeader";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
+import MobileLibraryNavigation from "@/components/library/MobileLibraryNavigation";
+import { useMobileLayout } from "@/hooks/useMobileLayout";
 import PhotoGrid from "@/components/library/PhotoGrid";
 import TrashViewToolbar from "@/components/library/TrashViewToolbar";
 import {
@@ -132,6 +134,8 @@ export default function LibraryPageClient({
   initialLibrary,
   initialTrash,
 }: LibraryPageClientProps) {
+  const mobileLayout = useMobileLayout();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const mainScrollRef = useRef<HTMLElement>(null);
   const previewUpdatesRef = useRef<LibraryPreviewUpdates>({});
   const [images, setImages] = useState<ImageRecord[]>(initialLibrary.images);
@@ -591,9 +595,20 @@ export default function LibraryPageClient({
       : "No photos found matching your search";
   }
 
+  const sidebar = (
+    <LibrarySidebar
+      sidebarView={sidebarView}
+      onSidebarViewChange={(view) => { setSidebarView(view); setMobileNavigationOpen(false); }}
+      albums={albums}
+      onCreateAlbum={handleCreateAlbum}
+      onRenameAlbum={handleRenameAlbum}
+      onDeleteAlbum={handleDeleteAlbum}
+    />
+  );
+
   return (
     <div
-      className="flex h-screen bg-[#161616] overflow-hidden"
+      className="library-shell flex h-dvh bg-[#161616] overflow-hidden"
       onDragOver={(event) => {
         if (!event.dataTransfer.types.includes("Files")) return;
         event.preventDefault();
@@ -605,19 +620,15 @@ export default function LibraryPageClient({
         void upload.uploadFiles(Array.from(event.dataTransfer.files));
       }}
     >
-      <LibrarySidebar
-        sidebarView={sidebarView}
-        onSidebarViewChange={setSidebarView}
-        albums={albums}
-        onCreateAlbum={handleCreateAlbum}
-        onRenameAlbum={handleRenameAlbum}
-        onDeleteAlbum={handleDeleteAlbum}
-      />
-      <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden bg-[#161616]">
+      <div className="hidden lg:contents">{!mobileLayout && sidebar}</div>
+      <div inert={mobileLayout && mobileNavigationOpen ? true : undefined} className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden bg-[#161616]">
         <main
           ref={mainScrollRef}
           className="scroll-stable flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-y-contain"
         >
+          <MobileLibraryNavigation open={mobileLayout && mobileNavigationOpen} onOpenChange={setMobileNavigationOpen}>
+            {mobileLayout && sidebar}
+          </MobileLibraryNavigation>
           {!isTrashView && (
             <LibraryHeader
               upload={upload}

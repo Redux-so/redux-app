@@ -43,6 +43,7 @@ function ToolbarBtn({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-label={title}
       className={[
         "flex shrink-0 items-center justify-center h-9 w-9 rounded-md transition-colors cursor-pointer",
         "disabled:opacity-30 disabled:cursor-not-allowed",
@@ -79,14 +80,14 @@ export default function Toolbar({
   const zoomPercent = `${Math.round(zoom * 100)}%`;
 
   return (
-    <div className="grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-[#212121] bg-[#121212] pl-3 pr-3">
+    <div className="editor-toolbar grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b border-[#212121] bg-[#121212] pl-3 pr-3">
       {/* Left — back to library */}
-      <div className="flex min-w-0 shrink-0 items-center justify-self-start gap-3">
+      <div className="editor-toolbar-back flex min-w-0 shrink-0 items-center justify-self-start gap-3">
         <BackToLibraryButton />
       </div>
 
       {/* Center — canvas controls (true viewport center via symmetric 1fr columns) */}
-      <div className="flex shrink-0 items-center justify-center gap-[2px]">
+      <div className="editor-toolbar-controls flex shrink-0 items-center justify-center gap-[2px]">
         {/* Zoom */}
         <ToolbarBtn onClick={zoomOut} title="Zoom out">
           <Icon name="Minus" size={20} aria-hidden />
@@ -95,6 +96,7 @@ export default function Toolbar({
         <button
           onClick={resetZoom}
           title="Reset zoom"
+          aria-label="Reset zoom"
           className="flex shrink-0 items-center justify-center h-9 px-3 rounded-md text-[14px] text-white tabular-nums hover:bg-[#1d1d1d] transition-colors cursor-pointer"
         >
           {zoomPercent}
@@ -112,6 +114,7 @@ export default function Toolbar({
           onClick={toggleBefore}
           disabled={!comparisonReady}
           title={!comparisonReady ? "Before view is not ready" : showBefore ? "Show after" : "Show before"}
+          aria-label={showBefore ? "Show after" : "Show before"}
           aria-pressed={showBefore}
           className={[
             "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
@@ -135,21 +138,21 @@ export default function Toolbar({
       </div>
 
       {/* Right — file info + actions */}
-      <div className="flex min-w-0 w-full max-w-full items-center justify-end gap-6 pl-3">
+      <div className="editor-toolbar-actions flex min-w-0 w-full max-w-full items-center justify-end gap-6 pl-3">
         {filename && (
           <span
             title={filename}
-            className="min-w-0 max-w-[22ch] shrink truncate text-left text-[13px] text-[#888888]"
+            className="editor-filename min-w-0 max-w-[22ch] shrink truncate text-left text-[13px] text-[#888888]"
           >
             {filename}
           </span>
         )}
 
-        <div className="flex shrink-0 items-center gap-[5px]">
+        <div className="editor-save-status flex shrink-0 items-center gap-[5px]">
           {!isDirty && justSaved ? <LoadingSpinner size="xs" label="Saving image" /> : (
             <>
               <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${isDirty ? "bg-[#f59e0b]" : "bg-[#22c55e]"}`} />
-              <span className="text-[13px] text-[#888888] whitespace-nowrap">{isDirty ? "Unsaved" : "Auto-saved"}</span>
+              <span className="editor-save-label text-[13px] text-[#888888] whitespace-nowrap">{isDirty ? "Unsaved" : "Auto-saved"}</span>
             </>
           )}
         </div>
@@ -158,10 +161,11 @@ export default function Toolbar({
           onClick={onExport}
           disabled={!exportReady}
           title="Export / share"
-          className={`${BTN_BRAND_SOLID} shrink-0`}
+          aria-label="Export / share"
+          className={`${BTN_BRAND_SOLID} editor-export shrink-0`}
         >
           <Icon name="Download01" size={16} strokeWidth={2} aria-hidden />
-          Export
+          <span className="editor-export-label">Export</span>
         </button>
       </div>
     </div>

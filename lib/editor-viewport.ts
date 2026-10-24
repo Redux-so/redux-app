@@ -1,6 +1,14 @@
 export type ViewportTransform = [number, number, number, number, number, number];
 export interface ViewportRect { left: number; top: number; width: number; height: number }
 
+/** Zoom and pan around the image point beneath the initial two-finger midpoint. */
+export function pinchViewport(start: ViewportTransform, startCenter: { x: number; y: number }, center: { x: number; y: number }, ratio: number): ViewportTransform {
+  const zoom = Math.max(0.1, Math.min(5, start[0] * ratio));
+  return [zoom, 0, 0, zoom,
+    center.x - ((startCenter.x - start[4]) / start[0]) * zoom,
+    center.y - ((startCenter.y - start[5]) / start[3]) * zoom];
+}
+
 function boundAxis(translation: number, start: number, size: number, zoom: number, viewport: number): number {
   const extent = size * zoom;
   if (extent <= viewport) return (viewport - extent) / 2 - start * zoom;

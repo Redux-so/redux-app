@@ -98,6 +98,13 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 
 ## Validate a change
 
+For responsive library/editor changes, `node scripts/verify-mobile-layout.mjs`
+checks real component handlers, breakpoint switching, keyboard viewport tracking,
+canvas measurement and touch gestures, and compiles the client modules and CSS.
+These checks do not replace visual testing in mobile Safari/Chrome. Check phone
+portrait/landscape and a tablet, including typing in chat, opening menus, painting,
+cropping, saving, exporting, and returning to the library.
+
 1. `pnpm run lint`
 2. `pnpm run typecheck`
 3. `pnpm run build` for non-trivial or cross-route changes
@@ -125,3 +132,5 @@ Optional Agent plugin for planning/debugging/verification workflows. Install and
 - Auth hero: `scripts/process-auth-hero.mjs` → `assets/brand/auth-hero.jpg`
 - Favicons: `scripts/process-favicons.mjs` → `public/favicon.png`
 - Mutable stable URLs (`/logo.png`, favicons): short `Cache-Control` in `next.config.ts`; hashed imports skip stale cache.
+
+Development disables Turbopack filesystem caching because local CSS changes were observed being restored from stale cache across server restarts. In-memory incremental compilation remains enabled; a cold restart may take longer. Production build caching is unchanged.

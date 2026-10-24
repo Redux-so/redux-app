@@ -89,7 +89,7 @@ function AnimatedPhotoGrid({
 
   return (
     <motion.div
-      className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))] gap-3"
+      className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))] gap-3"
       initial="hidden"
       animate="visible"
       variants={{

@@ -4,6 +4,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 import { useState } from "react";
 import Image from "next/image";
+import { usePhotoCardControls } from "@/hooks/usePhotoCardControls";
 import { Icon } from "@/components/shared/Icon";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import type { ImageRecord } from "@/types/image";
@@ -26,6 +27,7 @@ export default function TrashPhotoCard({
 }: TrashPhotoCardProps) {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const cardControls = usePhotoCardControls(image.id);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleRestore(e: React.MouseEvent) {
@@ -72,7 +74,7 @@ export default function TrashPhotoCard({
 
   return (
     <>
-      <div className="@container group relative aspect-square w-full min-w-0 overflow-hidden rounded-xl bg-white/[0.03]">
+      <div {...cardControls} className="photo-card @container group relative aspect-square w-full min-w-0 overflow-hidden rounded-xl bg-white/[0.03]">
         <Image
           key={`${image.id}:${image.previewUrl ?? image.originalUrl}`}
           src={cloudinaryThumbnailUrl(image.previewUrl ?? image.originalUrl)}
@@ -83,7 +85,7 @@ export default function TrashPhotoCard({
           loading="lazy"
         />
 
-        <div className="pointer-events-none absolute inset-0 flex min-w-0 items-center justify-center gap-1.5 bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <div {...cardControls} className="photo-card-actions pointer-events-none absolute inset-0 flex min-w-0 items-center justify-center gap-1.5 bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <button
             type="button"
             onClick={handleRestore}

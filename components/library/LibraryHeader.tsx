@@ -47,7 +47,7 @@ export default function LibraryHeader({
     : "Welcome";
 
   return (
-    <header className="flex shrink-0 flex-col gap-5 px-6 pt-8 pb-8">
+    <header className="flex shrink-0 flex-col gap-5 px-6 pt-4 lg:pt-8 pb-8">
       <div className="accent-glow-heading-zone">
         <h1 className="relative z-[1] text-center text-[32px] font-medium leading-tight tracking-tight text-white sm:text-[36px]">
           {greeting}, {firstName}

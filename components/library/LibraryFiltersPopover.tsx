@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useMobileLayout } from "@/hooks/useMobileLayout";
 
 import FilterDateField from "@/components/library/FilterDateField";
 import type { LibraryFileTypeKey } from "@/constants/image-formats";
@@ -120,9 +122,10 @@ export default function LibraryFiltersPopover({
   onClose,
 }: LibraryFiltersPopoverProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const mobileLayout = useMobileLayout();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || mobileLayout) return;
 
     function handleOutside(e: MouseEvent) {
       if (
@@ -143,7 +146,7 @@ export default function LibraryFiltersPopover({
       document.removeEventListener("mousedown", handleOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [open, onClose, containerRef]);
+  }, [open, onClose, containerRef, mobileLayout]);
 
   if (!open) return null;
 
@@ -167,143 +170,159 @@ export default function LibraryFiltersPopover({
     onDraftChange({ ...draft, orientations: next });
   }
 
-  return (
+  const panel = (
     <div
       ref={panelRef}
-      className={`absolute right-0 top-[calc(100%+8px)] z-50 w-[300px] rounded-lg p-4 ${LIBRARY_PANEL_POPOVER}`}
+      className={[
+        "library-filters-popover overflow-y-auto rounded-lg p-4 outline-none",
+        LIBRARY_PANEL_POPOVER,
+        mobileLayout
+          ? "mobile-filter-dialog pointer-events-auto relative w-full max-w-[360px] max-h-[calc(var(--app-height,100dvh)-32px)]"
+          : "absolute right-0 top-[calc(100%+8px)] z-50 w-[300px] max-w-[calc(100vw-32px)] max-h-[70dvh]",
+      ].join(" ")}
     >
-      <div className="mb-3 flex items-center justify-between">
+      {mobileLayout && <Dialog.Title className="sr-only">Photo filters</Dialog.Title>}
+      <div className={`mb-3 flex items-center justify-between gap-3 ${mobileLayout ? "sticky top-0 z-10 bg-[#121212]" : ""}`}>
         <span className="text-[14px] font-medium text-white">Filters</span>
-        {activeCount > 0 && (
-          <span className="text-[12px] text-[#888888]">
-            {activeCount} active
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-3">
+          {activeCount > 0 && (
+            <span className="text-[12px] text-[#888888]">
+              {activeCount} active
+            </span>
+          )}
+          {mobileLayout && (
+            <button type="button" aria-label="Close filters" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-[#888888] hover:bg-[#1d1d1d] hover:text-white cursor-pointer">
+              <Icon name="XClose" size={20} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Date presets are granular popover filters only — Recently Added and Favorites live in the sidebar. */}
-      <div>
-        <p className={SECTION_LABEL}>Date</p>
-        <div className="mt-2 flex flex-col">
-          <RadioOption
-            name="date-filter"
-            checked={draft.datePreset === "anytime"}
-            label="Anytime"
-            onChange={() => setDatePreset("anytime")}
-          />
-          <RadioOption
-            name="date-filter"
-            checked={draft.datePreset === "today"}
-            label="Today"
-            onChange={() => setDatePreset("today")}
-          />
-          <RadioOption
-            name="date-filter"
-            checked={draft.datePreset === LIBRARY_RECENTLY_ADDED_DATE_PRESET}
-            label="Last 7 days"
-            onChange={() => setDatePreset(LIBRARY_RECENTLY_ADDED_DATE_PRESET)}
-          />
-          <RadioOption
-            name="date-filter"
-            checked={draft.datePreset === "last30"}
-            label="Last 30 days"
-            onChange={() => setDatePreset("last30")}
-          />
-          <RadioOption
-            name="date-filter"
-            checked={draft.datePreset === "custom"}
-            label="Custom date range"
-            onChange={() => setDatePreset("custom")}
-          />
-        </div>
-        {draft.datePreset === "custom" && (
-          <div className="mt-3 flex flex-col gap-2">
-            <FilterDateField
-              label="Start date"
-              value={draft.customStartDate}
-              onChange={(customStartDate) =>
-                onDraftChange({ ...draft, customStartDate })
-              }
+      <div className={mobileLayout ? "mobile-filter-sections" : undefined}>
+        {/* Date presets are granular popover filters only — Recently Added and Favorites live in the sidebar. */}
+        <div>
+          <p className={SECTION_LABEL}>Date</p>
+          <div className="mt-2 flex flex-col">
+            <RadioOption
+              name="date-filter"
+              checked={draft.datePreset === "anytime"}
+              label="Anytime"
+              onChange={() => setDatePreset("anytime")}
             />
-            <FilterDateField
-              label="End date"
-              value={draft.customEndDate}
-              onChange={(customEndDate) =>
-                onDraftChange({ ...draft, customEndDate })
-              }
+            <RadioOption
+              name="date-filter"
+              checked={draft.datePreset === "today"}
+              label="Today"
+              onChange={() => setDatePreset("today")}
+            />
+            <RadioOption
+              name="date-filter"
+              checked={draft.datePreset === LIBRARY_RECENTLY_ADDED_DATE_PRESET}
+              label="Last 7 days"
+              onChange={() => setDatePreset(LIBRARY_RECENTLY_ADDED_DATE_PRESET)}
+            />
+            <RadioOption
+              name="date-filter"
+              checked={draft.datePreset === "last30"}
+              label="Last 30 days"
+              onChange={() => setDatePreset("last30")}
+            />
+            <RadioOption
+              name="date-filter"
+              checked={draft.datePreset === "custom"}
+              label="Custom date range"
+              onChange={() => setDatePreset("custom")}
             />
           </div>
-        )}
-      </div>
-
-      <Divider />
-
-      {/* Edit Status */}
-      <div>
-        <p className={SECTION_LABEL}>Edit Status</p>
-        <div className="mt-2 flex flex-col">
-          {(
-            [
-              ["all", "All photos"],
-              ["edited", "Edited"],
-              ["unedited", "Unedited"],
-            ] as const
-          ).map(([value, label]) => (
-            <RadioOption
-              key={value}
-              name="edit-status-filter"
-              checked={draft.editStatus === value}
-              label={label}
-              onChange={() => onDraftChange({ ...draft, editStatus: value })}
-            />
-          ))}
+          {draft.datePreset === "custom" && (
+            <div className="mt-3 flex flex-col gap-2">
+              <FilterDateField
+                label="Start date"
+                value={draft.customStartDate}
+                onChange={(customStartDate) =>
+                  onDraftChange({ ...draft, customStartDate })
+                }
+              />
+              <FilterDateField
+                label="End date"
+                value={draft.customEndDate}
+                onChange={(customEndDate) =>
+                  onDraftChange({ ...draft, customEndDate })
+                }
+              />
+            </div>
+          )}
         </div>
-      </div>
 
-      <Divider />
+        {!mobileLayout && <Divider />}
 
-      {/* File Type */}
-      <div>
-        <p className={SECTION_LABEL}>File Type</p>
-        <div className="mt-2 flex flex-col">
-          {(
-            [
-              ["jpeg", "JPEG"],
-              ["png", "PNG"],
-              ["tiff", "TIFF"],
-              ["raw", "RAW"],
-            ] as const
-          ).map(([value, label]) => (
-            <CheckboxOption
-              key={value}
-              checked={draft.fileTypes.includes(value)}
-              label={label}
-              onChange={() => toggleFileType(value)}
-            />
-          ))}
+        {/* Edit Status */}
+        <div>
+          <p className={SECTION_LABEL}>Edit Status</p>
+          <div className="mt-2 flex flex-col">
+            {(
+              [
+                ["all", "All photos"],
+                ["edited", "Edited"],
+                ["unedited", "Unedited"],
+              ] as const
+            ).map(([value, label]) => (
+              <RadioOption
+                key={value}
+                name="edit-status-filter"
+                checked={draft.editStatus === value}
+                label={label}
+                onChange={() => onDraftChange({ ...draft, editStatus: value })}
+              />
+            ))}
+          </div>
         </div>
-      </div>
 
-      <Divider />
+        {!mobileLayout && <Divider />}
 
-      {/* Orientation */}
-      <div>
-        <p className={SECTION_LABEL}>Orientation</p>
-        <div className="mt-2 flex flex-col">
-          {(
-            [
-              ["landscape", "Landscape"],
-              ["portrait", "Portrait"],
-              ["square", "Square"],
-            ] as const
-          ).map(([value, label]) => (
-            <CheckboxOption
-              key={value}
-              checked={draft.orientations.includes(value)}
-              label={label}
-              onChange={() => toggleOrientation(value)}
-            />
-          ))}
+        {/* File Type */}
+        <div>
+          <p className={SECTION_LABEL}>File Type</p>
+          <div className="mt-2 flex flex-col">
+            {(
+              [
+                ["jpeg", "JPEG"],
+                ["png", "PNG"],
+                ["tiff", "TIFF"],
+                ["raw", "RAW"],
+              ] as const
+            ).map(([value, label]) => (
+              <CheckboxOption
+                key={value}
+                checked={draft.fileTypes.includes(value)}
+                label={label}
+                onChange={() => toggleFileType(value)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {!mobileLayout && <Divider />}
+
+        {/* Orientation */}
+        <div>
+          <p className={SECTION_LABEL}>Orientation</p>
+          <div className="mt-2 flex flex-col">
+            {(
+              [
+                ["landscape", "Landscape"],
+                ["portrait", "Portrait"],
+                ["square", "Square"],
+              ] as const
+            ).map(([value, label]) => (
+              <CheckboxOption
+                key={value}
+                checked={draft.orientations.includes(value)}
+                label={label}
+                onChange={() => toggleOrientation(value)}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -326,5 +345,23 @@ export default function LibraryFiltersPopover({
         </button>
       </div>
     </div>
+  );
+
+  if (!mobileLayout) return panel;
+
+  return (
+    <Dialog.Root open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
+        <div className="viewport-modal fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          <Dialog.Content asChild aria-describedby={undefined} onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            containerRef.current?.querySelector<HTMLButtonElement>('[aria-label="Filter photos"]')?.focus();
+          }}>
+            {panel}
+          </Dialog.Content>
+        </div>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

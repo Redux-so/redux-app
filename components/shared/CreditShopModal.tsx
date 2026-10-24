@@ -119,9 +119,9 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="fixed inset-0 z-[90] flex items-center justify-center pointer-events-none"
+            className="viewport-modal fixed inset-0 z-[90] flex items-center justify-center pointer-events-none"
           >
-            <div className="pointer-events-auto mx-4 w-full max-w-[440px] bg-[#121212] border border-[#212121] rounded-xl shadow-2xl">
+            <div className="pointer-events-auto mx-4 w-full max-w-[440px] max-h-[calc(var(--app-height,100dvh)-32px)] overflow-y-auto bg-[#121212] border border-[#212121] rounded-xl shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-[#212121] px-6 py-4">
                 <h2 className="text-white text-[16px] font-medium">Purchase Credits</h2>

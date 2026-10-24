@@ -4,6 +4,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { usePhotoCardControls } from "@/hooks/usePhotoCardControls";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/shared/Icon";
 import PhotoCardAlbumMenu from "@/components/library/PhotoCardAlbumMenu";
@@ -39,6 +40,7 @@ export default function PhotoCard({
 }: PhotoCardProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const cardControls = usePhotoCardControls(image.id);
   const [isFavorite, setIsFavorite] = useState(image.isFavorite === true);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -128,7 +130,8 @@ export default function PhotoCard({
 
   return (
     <div
-      className="@container group relative aspect-square w-full min-w-0 overflow-hidden rounded-xl bg-white/[0.03]"
+      {...cardControls}
+      className="photo-card @container group relative aspect-square w-full min-w-0 overflow-hidden rounded-xl bg-white/[0.03]"
       onMouseEnter={prefetchEditor}
       onMouseLeave={cancelPrefetch}
       onFocus={prefetchEditor}
@@ -160,7 +163,7 @@ export default function PhotoCard({
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         aria-pressed={isFavorite}
         className={[
-          "pointer-events-auto absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-sm transition-all",
+          "photo-card-favorite pointer-events-auto absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-sm transition-all",
           isFavorite
             ? "border-[#ef4444]/30 bg-black/50 text-[#ef4444] opacity-100"
             : "border-white/[0.10] bg-black/40 text-[#888888] opacity-0 hover:text-white group-hover:opacity-100",
@@ -175,7 +178,7 @@ export default function PhotoCard({
         />
       </button>
 
-      <div className="pointer-events-none absolute inset-0 flex min-w-0 items-center justify-center gap-1.5 overflow-hidden bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      <div className="photo-card-actions pointer-events-none absolute inset-0 flex min-w-0 items-center justify-center gap-1.5 overflow-hidden bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <button
           type="button"
           onClick={handleEdit}

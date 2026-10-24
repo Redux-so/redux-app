@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEditor } from "@/hooks/useEditor";
 import { useCanvas } from "@/hooks/useCanvas";
+import { useMobileLayout } from "@/hooks/useMobileLayout";
 import { useEditorChatTools } from "@/hooks/useEditorChatTools";
 import { editorHistoryRows } from "@/lib/editor-history";
 import type { ImageRecord } from "@/types/image";
@@ -29,8 +30,8 @@ const ChatPanel = dynamic(() => import("@/components/editor/ChatPanel"), {
   ssr: false,
   loading: () => (
     <div
-      className="flex flex-col shrink-0 h-full min-w-0 overflow-hidden bg-[#121212] border-l border-[#212121] rounded-l-2xl"
-      style={{ width: CHAT_PANEL_WIDTH_PX }}
+      className="editor-chat-panel flex flex-col shrink-0 h-full min-w-0 overflow-hidden bg-[#121212] border-l border-[#212121] rounded-l-2xl w-[var(--chat-width)]"
+      style={{ "--chat-width": `${CHAT_PANEL_WIDTH_PX}px` } as CSSProperties}
       aria-busy
       aria-label="Loading chat"
     >
@@ -52,6 +53,9 @@ export default function EditorApp() {
 }
 
 function EditorWorkspace({ imageId }: { imageId?: string }) {
+  const mobileLayout = useMobileLayout();
+  const [mobilePanel, setMobilePanel] = useState<"chat" | "adjustments" | null>(null);
+  const handlePanelOpen = useCallback((open: boolean) => setMobilePanel(open ? "adjustments" : null), []);
   const [image, setImage] = useState<ImageRecord | null>(null);
   const [imageMissing, setImageMissing] = useState(false);
   const [loadingImage, setLoadingImage] = useState(!!imageId);
@@ -241,7 +245,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
 
   const handleToggleCrop = useCallback(() => {
     if (isCropping) cancelCrop();
-    else void startCrop();
+    else { setMobilePanel(null); void startCrop(); }
   }, [isCropping, cancelCrop, startCrop]);
 
   const commitPixels = useCallback((dataUrl: string | null, isCurrent: () => boolean, label: string) => {
@@ -340,7 +344,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       imageId={imageId}
       saveEditorStateRef={saveEditorStateRef}
     >
-      <div className="flex flex-col h-screen bg-[#161616] overflow-hidden">
+      <div className="editor-shell flex flex-col h-dvh bg-[#161616] overflow-hidden" data-mobile-panel={mobilePanel ?? "none"}>
         <Toolbar
           filename={image?.filename}
           zoom={zoom}
@@ -360,8 +364,13 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
           onExport={() => setShowExport(true)}
         />
 
-        <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+        <div className="editor-workspace flex flex-1 min-h-0 min-w-0 overflow-hidden" data-mobile-panel={mobilePanel ?? "none"}>
           <AdjustmentPanel
+            mobileLayout={mobileLayout}
+            mobileVisible={mobilePanel === "adjustments"}
+            onMobilePanelChange={handlePanelOpen}
+            mobileChatActive={mobilePanel === "chat"}
+            onMobileChatToggle={() => setMobilePanel((panel) => panel === "chat" ? null : "chat")}
             chatControlsRef={adjustmentControlsRef}
             adjustments={adjustments}
             onPreview={handlePreviewAdjustment}
@@ -404,7 +413,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
           />
 
           <EditorErrorBoundary label="canvas">
-            <div className="relative flex flex-1 min-h-0 min-w-0">
+            <div className="editor-canvas-slot relative flex flex-1 min-h-0 min-w-0">
               <Canvas
                 canvasRef={canvasRef}
                 containerRef={containerRef}
@@ -434,19 +443,23 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
           </EditorErrorBoundary>
 
           <EditorErrorBoundary label="chat">
-            <ChatPanel
-              getToolContext={chatTools.context}
-              getWorkspaceImage={chatTools.workspaceImage}
-              onExecuteTools={chatTools.execute}
-              adjustments={adjustments}
-              onPatch={(patch) => patchAdjustments(patch, "Agent adjustments applied")}
-              createEditGuard={createEditGuard}
-              createChatEditGuard={createChatEditGuard}
-              beginOperation={beginOperation}
-              onUndo={handleUndo}
-              imageId={imageId}
-              canvasImageUrl={baseImageUrl}
-            />
+            <div className="editor-chat-slot flex shrink-0 min-h-0 min-w-0">
+              <ChatPanel
+                mobileLayout={mobileLayout}
+                onMobileClose={() => setMobilePanel(null)}
+                getToolContext={chatTools.context}
+                getWorkspaceImage={chatTools.workspaceImage}
+                onExecuteTools={chatTools.execute}
+                adjustments={adjustments}
+                onPatch={(patch) => patchAdjustments(patch, "Agent adjustments applied")}
+                createEditGuard={createEditGuard}
+                createChatEditGuard={createChatEditGuard}
+                beginOperation={beginOperation}
+                onUndo={handleUndo}
+                imageId={imageId}
+                canvasImageUrl={baseImageUrl}
+              />
+            </div>
           </EditorErrorBoundary>
         </div>
 

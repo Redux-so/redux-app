@@ -9,7 +9,7 @@ import type { ActionExecution } from "@/lib/editor-action-runner";
 import type { EditorChange, EditorChangeReview } from "@/lib/editor-change-review";
 import { chatToolsRequest } from "@/hooks/useEditorChatTools";
 import { useUser } from "@clerk/nextjs";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal, flushSync } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
@@ -108,8 +108,8 @@ const CHAT_TOOLBAR_RING_SLOT = "inline-flex h-8 w-8 shrink-0 items-center justif
 /** Dropdown triggers (Agent/Ask, Auto) — shrink-wrap, no extra horizontal width. */
 const CHAT_TOOLBAR_TRIGGER_WRAP = "relative inline-flex h-8 shrink-0 items-center";
 
-const CHAT_PANEL_GUTTER_CLASS = "px-8";
-const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-8";
+const CHAT_PANEL_GUTTER_CLASS = "px-4 lg:px-8";
+const CHAT_PANEL_GUTTER_MARGIN_CLASS = "mx-4 lg:mx-8";
 const CHAT_AVATAR_PX = 44;
 const CHAT_AVATAR_LOGO_PX = 32;
 const CHAT_AVATAR_SHELL =
@@ -155,6 +155,8 @@ type SseEvent =
   | { type: "done" };
 
 interface ChatPanelProps {
+  mobileLayout?: boolean;
+  onMobileClose?: () => void;
   getWorkspaceImage?: () => Promise<string>;
   getToolContext?: () => EditorToolContext | undefined;
   onExecuteTools?: (plan: ChatToolPlan, execution: ActionExecution) => Promise<string>;
@@ -715,6 +717,8 @@ function ChatMessageAvatar({
 }
 
 export default function ChatPanel({
+  mobileLayout = false,
+  onMobileClose,
   getWorkspaceImage,
   getToolContext,
   onExecuteTools,
@@ -741,6 +745,7 @@ export default function ChatPanel({
   toolExecutorRef.current = onExecuteTools;
   const [replyProgress, setReplyProgress] = useState<{ id: string; label: string } | null>(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const isCollapsed = !mobileLayout && panelCollapsed;
   const [changesExpanded, setChangesExpanded] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const prefersReducedMotion = useReducedMotion();
@@ -1215,22 +1220,20 @@ export default function ChatPanel({
   return (
     <div
       className={[
-        "flex flex-col shrink-0 h-full min-w-0 overflow-hidden transition-[width] duration-200 ease-out",
+        "editor-chat-panel flex flex-col shrink-0 h-full min-w-0 overflow-hidden transition-[width] duration-200 ease-out w-[var(--chat-width)]",
         "bg-[#121212] border-l border-[#212121] rounded-l-2xl",
       ].join(" ")}
-      style={{
-        width: panelCollapsed ? CHAT_PANEL_COLLAPSED_WIDTH_PX : CHAT_PANEL_WIDTH_PX,
-      }}
+      style={{ "--chat-width": `${isCollapsed ? CHAT_PANEL_COLLAPSED_WIDTH_PX : CHAT_PANEL_WIDTH_PX}px` } as CSSProperties}
     >
       {/* Panel header */}
       <div
         className={[
           PANEL_HEADER,
           "relative",
-          panelCollapsed ? "justify-center px-0" : CHAT_PANEL_GUTTER_CLASS,
+          isCollapsed ? "justify-center px-0" : "px-8",
         ].join(" ")}
       >
-        {panelCollapsed ? (
+        {isCollapsed ? (
           <button
             type="button"
             aria-expanded={false}
@@ -1245,19 +1248,19 @@ export default function ChatPanel({
             <button
               type="button"
               aria-expanded
-              aria-label="Collapse chat panel"
-              onClick={() => setPanelCollapsed(true)}
-              className="absolute left-[18px] top-1/2 shrink-0 -translate-x-1/2 -translate-y-1/2 text-[#888888] hover:text-white transition-colors cursor-pointer"
+              aria-label={mobileLayout ? "Close chat panel" : "Collapse chat panel"}
+              onClick={() => mobileLayout ? onMobileClose?.() : setPanelCollapsed(true)}
+              className="absolute right-3 lg:right-auto lg:left-[18px] top-1/2 flex h-11 w-11 lg:h-auto lg:w-auto items-center justify-center shrink-0 lg:-translate-x-1/2 -translate-y-1/2 text-[#888888] hover:text-white transition-colors cursor-pointer"
             >
-              <Icon name="ChevronRight" size={16} aria-hidden={false} aria-label="Collapse chat panel" />
+              <Icon name={mobileLayout ? "ChevronDown" : "ChevronRight"} size={16} aria-hidden />
             </button>
             <span className={PANEL_TITLE}>Chat</span>
           </>
         )}
       </div>
 
-      {!panelCollapsed && (
-        <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
+      {!isCollapsed && (
+        <div className="editor-chat-content flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">
           {/* Message thread */}
           <div
             ref={scrollRef}
@@ -1421,7 +1424,7 @@ export default function ChatPanel({
                     </span>
                   </button>
 
-                  <div className="ml-auto flex shrink-0 items-center gap-2">
+                  <div className="chat-change-actions ml-auto flex shrink-0 items-center gap-2">
                     <button type="button" disabled={sending} onClick={() => void handleUndoAllChanges()} className={BTN_SECONDARY}>
                       Undo all
                     </button>
@@ -1441,7 +1444,7 @@ export default function ChatPanel({
                       transition={{ duration: prefersReducedMotion ? 0 : 0.12, ease: "easeOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="max-h-48 overflow-y-auto border-t border-[#212121] px-3 py-2 space-y-1.5">
+                      <div className="chat-change-details max-h-48 overflow-y-auto border-t border-[#212121] px-3 py-2 space-y-1.5">
                         {pendingChanges.map((change) => (
                           <div
                             key={change.key}
@@ -1460,7 +1463,7 @@ export default function ChatPanel({
           </AnimatePresence>
 
           {/* Input composite — pinned to bottom */}
-          <div className={`shrink-0 pb-4 pt-2 ${CHAT_PANEL_GUTTER_CLASS}`}>
+          <div className={`chat-composer shrink-0 pb-4 pt-2 ${CHAT_PANEL_GUTTER_CLASS}`}>
             {attachedPreview && (
               <div className="pb-2">
                 <div className="relative inline-block">
@@ -1512,7 +1515,7 @@ export default function ChatPanel({
               className={`overflow-hidden rounded-xl border-2 bg-[#1d1d1d] transition-colors ${inputFocused ? BRAND_BORDER_CLASS : "border-[#262626]"} ${CHAT_SURFACE_SHADOW}`}
             >
               {/* Upper input field */}
-              <div className="flex min-h-[76px] items-start px-4 pt-3 pb-3">
+              <div className="chat-composer-field flex min-h-[76px] items-start px-4 pt-3 pb-3">
                 <div className="flex w-full items-center gap-3.5">
                   <BrandLogo
                     width={46}
@@ -1551,9 +1554,9 @@ export default function ChatPanel({
               </div>
 
               {/* Lower toolbar row */}
-              <div className="flex items-center justify-between gap-2 border-t border-[#212121] px-4 pb-3 pt-3">
+              <div className="chat-composer-toolbar flex items-center justify-between gap-2 border-t border-[#212121] px-4 pb-3 pt-3">
                 <div
-                  className={`flex min-w-0 shrink-0 items-center ${CHAT_TOOLBAR_CONTROL_GAP}`}
+                  className={`chat-composer-tools flex min-w-0 shrink-0 items-center ${CHAT_TOOLBAR_CONTROL_GAP}`}
                 >
                   <div className={CHAT_TOOLBAR_PAPERCLIP_CHIP}>
                     <ToolbarIconBtn

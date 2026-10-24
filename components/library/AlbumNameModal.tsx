@@ -83,14 +83,14 @@ export default function AlbumNameModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none px-4"
+            className="viewport-modal fixed inset-0 z-[70] flex items-center justify-center pointer-events-none px-4"
           >
             <form
               role="dialog"
               aria-modal="true"
               aria-labelledby="album-name-title"
               onSubmit={handleSubmit}
-              className="pointer-events-auto w-full max-w-[300px] rounded-lg border border-[#212121] bg-[#121212] p-4 shadow-2xl"
+              className="pointer-events-auto w-full max-w-[300px] max-h-[calc(var(--app-height,100dvh)-32px)] overflow-y-auto rounded-lg border border-[#212121] bg-[#121212] p-4 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 id="album-name-title" className="text-[14px] font-medium text-white">{mode === "rename" ? "Rename album" : "New album"}</h2>

@@ -41,6 +41,14 @@ Toolbar (h-16)
 - Upload box retains its dark dashed surface for batch progress; skipped/failed files and a compact retry control appear below it
 - Returning from the editor restores loaded pages, filters, sidebar selection and scroll position from a bounded account-scoped memory cache. Fresh server records take precedence. Successful saves update covers directly without resetting the list or showing a loading overlay.
 
+## Responsive library and editor
+
+- Below 1024px, the library sidebar moves into a navigation drawer. Its existing sections, profile menu and album controls are reused. Phone grids show two columns; photo actions on mobile appear after tapping a card and dismiss when tapping elsewhere. Album selection uses a portaled dialog so other cards cannot overlap it.
+- The editor keeps its canvas and chat mounted when switching panels. Its tool rail becomes horizontal below the image, with a 28px profile avatar first and evenly spaced 24px tool icons that scroll together in one horizontal rail; All panels start closed on mobile; opening Chat or an adjustment section reveals it in the lower workspace. Closing a panel reveals more of the image. Desktop panel orientation is unchanged.
+- The mobile toolbar uses one compact 56px row with back, zoom, before/after, undo/redo and icon-only export. Filename and save status are hidden; autosave continues normally. Free inspection supports one-finger pan and two-finger zoom; crop handles and painted selections remain under Fabric's control.
+- `ViewportHeight` follows the visual viewport for keyboard-safe sizing, including body-portaled dialogs. While typing in mobile chat, the canvas and lower rail temporarily give their space to the conversation and composer. Sources, history, saving, credit costs and export resolution use the existing pipeline.
+- Phone input text uses 16px to avoid automatic focus zoom. Existing fonts, colors, borders, slider appearance and button chrome are retained.
+
 ## Layout — settings
 
 - Max width ~880px; tab nav 172px desktop; sections in `components/settings/settings-nav.ts`

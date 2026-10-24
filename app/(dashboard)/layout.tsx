@@ -1,4 +1,5 @@
 import AppToaster from "@/components/shared/AppToaster";
+import ViewportHeight from "@/components/shared/ViewportHeight";
 
 export default function DashboardLayout({
   children,
@@ -7,6 +8,7 @@ export default function DashboardLayout({
 }) {
   return (
     <>
+      <ViewportHeight />
       {children}
       <AppToaster />
     </>

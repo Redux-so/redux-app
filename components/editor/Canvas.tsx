@@ -42,7 +42,7 @@ export default function Canvas({
     // and the canvas never initializes.
     <div
       ref={containerRef}
-      className="relative flex-1 bg-[#161616] overflow-hidden flex items-center justify-center p-8"
+      className="relative flex-1 min-h-0 min-w-0 bg-[#161616] overflow-hidden flex items-center justify-center p-3 lg:p-8"
     >
       {/* Canvas wrapper — positioned parent for the overlay divs */}
       <div className="relative inline-block">

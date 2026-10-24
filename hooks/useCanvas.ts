@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
 import { normalizeBrushSize, type BrushSizes, type RetouchTool } from "@/lib/retouch-brush";
-import { constrainViewport, type ViewportTransform, type ViewportRect } from "@/lib/editor-viewport";
+import { constrainViewport, pinchViewport, type ViewportTransform, type ViewportRect } from "@/lib/editor-viewport";
 import { type AdjustmentKey } from "@/constants/adjustments";
 import { transformedSource, drawSourceMask } from "@/lib/canvas-image-geometry";
 import { renderInteractiveImage } from "@/lib/interactive-image-preview";
@@ -64,6 +64,17 @@ export { createExpandedCanvas, type ExpandDirection } from "@/lib/canvas-expand"
 // Internal transform state — stored in a ref so mutations don't re-render
 // ---------------------------------------------------------------------------
 type TransformState = ImageTransform;
+
+/** Measure the actual responsive padding instead of assuming desktop p-8. */
+export function canvasViewportSize(container: HTMLElement | null) {
+  if (!container) return { width: 800, height: 600 };
+  const style = getComputedStyle(container);
+  const padding = (value: string) => Number.parseFloat(value) || 0;
+  return {
+    width: Math.max(1, container.clientWidth - padding(style.paddingLeft) - padding(style.paddingRight)),
+    height: Math.max(1, container.clientHeight - padding(style.paddingTop) - padding(style.paddingBottom)),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -247,9 +258,7 @@ export function useCanvas(
     const vpt = [...canvas.viewportTransform] as ViewportTransform;
     const centerX = oldBounds ? (((previous?.width ?? canvas.getWidth()) / 2 - vpt[4]) / vpt[0] - oldBounds.left) / oldBounds.width : 0.5;
     const centerY = oldBounds ? (((previous?.height ?? canvas.getHeight()) / 2 - vpt[5]) / vpt[3] - oldBounds.top) / oldBounds.height : 0.5;
-    const PADDING = 64;
-    const w = Math.max(1, container.clientWidth - PADDING);
-    const h = Math.max(1, container.clientHeight - PADDING);
+    const { width: w, height: h } = canvasViewportSize(container);
     if (canvas.getWidth() !== w || canvas.getHeight() !== h) {
       canvas.setDimensions({ width: w, height: h });
     }
@@ -336,9 +345,7 @@ export function useCanvas(
       // Size the canvas to its outer container (the flex-1 wrapper).
       // The canvas element defaults to 300×150 — do NOT use el.offsetWidth here.
       const container = containerRef.current;
-      const PADDING = 64; // p-8 (32px) × 2 sides
-      const w = container ? Math.max(1, container.clientWidth - PADDING) : 800;
-      const h = container ? Math.max(1, container.clientHeight - PADDING) : 600;
+      const { width: w, height: h } = canvasViewportSize(container);
       canvas.setDimensions({ width: w, height: h });
 
       // Fabric wraps the canvas element in a div (.canvas-container).
@@ -396,6 +403,15 @@ export function useCanvas(
       let isPanning = false;
       let panLastX = 0;
       let panLastY = 0;
+      const touches = new Map<number, { x: number; y: number }>();
+      let pinch: { viewport: ViewportTransform; center: { x: number; y: number }; distance: number } | null = null;
+      const gesture = () => {
+        const [first, second] = [...touches.values()];
+        if (!first || !second) return null;
+        const bounds = wrapper.getBoundingClientRect();
+        return { center: { x: (first.x + second.x) / 2 - bounds.left, y: (first.y + second.y) / 2 - bounds.top },
+          distance: Math.hypot(first.x - second.x, first.y - second.y) };
+      };
 
       const handlePointerDown = (e: PointerEvent) => {
         // Crop mode: let Fabric handle its interactive rect
@@ -403,6 +419,16 @@ export function useCanvas(
         // Heal brush / free drawing: let Fabric handle strokes
         if (canvas.isDrawingMode && !showBeforeRef.current) return;
         if (e.button !== 0 && e.button !== 1) return;
+        if (e.pointerType === "touch") {
+          touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          const current = gesture();
+          if (current && current.distance > 0) {
+            pinch = { ...current, viewport: [...canvas.viewportTransform] as ViewportTransform };
+            isPanning = false;
+            try { eventTarget.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+            return;
+          }
+        }
         isPanning = true;
         panLastX = e.clientX;
         panLastY = e.clientY;
@@ -413,6 +439,16 @@ export function useCanvas(
       const handlePointerMove = (e: PointerEvent) => {
         brushPointerRef.current = { x: e.clientX, y: e.clientY };
         updateBrushCursor();
+        if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pinch) {
+          const current = gesture();
+          if (current) {
+            e.preventDefault();
+            canvas.setViewportTransform(pinchViewport(pinch.viewport, pinch.center, current.center, current.distance / pinch.distance));
+            syncViewport();
+            return;
+          }
+        }
         if (!isPanning) return;
         const dx = e.clientX - panLastX;
         const dy = e.clientY - panLastY;
@@ -426,11 +462,16 @@ export function useCanvas(
       };
 
       const handlePointerUp = (e: PointerEvent) => {
-        if (!isPanning) return;
-        isPanning = false;
-        eventTarget.style.cursor = "";
+        const wasActive = isPanning || touches.has(e.pointerId);
+        touches.delete(e.pointerId);
+        if (e.type === "pointercancel") touches.clear();
+        pinch = null;
+        const remaining = touches.values().next().value;
+        isPanning = !!remaining;
+        if (remaining) { panLastX = remaining.x; panLastY = remaining.y; }
+        eventTarget.style.cursor = remaining ? "grabbing" : "";
         try { eventTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-        syncViewport();
+        if (wasActive) syncViewport();
       };
 
       eventTarget.addEventListener("pointerleave", handlePointerLeave);

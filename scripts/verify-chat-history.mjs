@@ -586,3 +586,18 @@ test("Ask and interrupted streams cannot execute native actions", async () => {
     assert.equal(calls, 0);
   }
 });
+
+test("mobile chat reuses desktop drafts and opens even if the desktop panel was collapsed", () => {
+  let closes = 0;
+  const options = { mobileLayout: false, onMobileClose: () => { closes++; } };
+  const panel = chatPanelHost("agent", options);
+  panel.find((node) => node.type === "textarea").props.onChange({ target: { value: "Keep this draft" } });
+  panel.find((node) => node.props?.["aria-label"] === "Collapse chat panel").props.onClick();
+  assert.equal(panel.find((node) => node.type === "textarea"), undefined);
+  options.mobileLayout = true;
+  assert.equal(panel.find((node) => node.type === "textarea").props.value, "Keep this draft");
+  panel.find((node) => node.props?.["aria-label"] === "Close chat panel").props.onClick();
+  assert.equal(closes, 1);
+  options.mobileLayout = false;
+  assert.equal(panel.find((node) => node.type === "textarea"), undefined, "desktop collapse preference remains intact");
+});

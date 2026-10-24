@@ -24,6 +24,11 @@ import {
 import { SURFACE_BTN_ACTIVE, SURFACE_BTN_IDLE, SURFACE_SECONDARY_BTN } from "@/lib/surface-colors";
 
 interface AdjustmentPanelProps {
+  mobileLayout?: boolean;
+  mobileVisible?: boolean;
+  mobileChatActive?: boolean;
+  onMobilePanelChange?: (open: boolean) => void;
+  onMobileChatToggle?: () => void;
   chatControlsRef?: Ref<AdjustmentPanelChatControls>;
   adjustments: Adjustments;
   onPreview: (key: AdjustmentKey, value: number) => void;
@@ -191,6 +196,7 @@ function RailBtn({
       type="button"
       onClick={onClick}
       title={title}
+      aria-label={title}
       aria-pressed={active}
       className={[
         "flex shrink-0 items-center justify-center h-12 w-12 rounded-xl border transition-colors cursor-pointer",
@@ -315,6 +321,11 @@ async function fileToBase64(
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function AdjustmentPanel({
+  mobileLayout = false,
+  mobileVisible = false,
+  mobileChatActive = false,
+  onMobilePanelChange,
+  onMobileChatToggle,
   chatControlsRef,
   adjustments,
   onPreview,
@@ -429,6 +440,7 @@ export default function AdjustmentPanel({
     openBrush(tool, size, intensity) {
       if (isCropping) onToggleCrop?.();
       setActiveSection("retouch");
+      onMobilePanelChange?.(true);
       if (size !== undefined) setBrushSize(tool, size);
       if (intensity !== undefined) setBlurIntensity(intensity);
       setActiveTool(tool);
@@ -457,7 +469,9 @@ export default function AdjustmentPanel({
   }, [isCropping, activeTool]);
 
   function toggleActiveSection(section: ToolSection) {
-    setActiveSection((prev) => (prev === section ? null : section));
+    const next = activeSection === section && (!mobileLayout || mobileVisible) ? null : section;
+    setActiveSection(next);
+    onMobilePanelChange?.(next !== null);
   }
 
   useEffect(() => {
@@ -828,14 +842,19 @@ export default function AdjustmentPanel({
 
   return (
     <>
-      <div className="flex shrink-0 h-full min-w-0">
+      <div className="editor-adjustments flex shrink-0 h-full min-w-0">
         {/* Icon tool rail */}
-        <div className="flex flex-col shrink-0 w-[72px] h-full items-center bg-[#121212] border-r border-[#212121]">
-          <div className="flex flex-col items-center py-4 gap-4">
+        <div className="editor-tool-rail flex flex-col shrink-0 w-[72px] h-full items-center bg-[#121212] border-r border-[#212121]">
+          <div className="editor-tool-buttons flex flex-col items-center py-4 gap-4">
+            <div className="lg:hidden">
+              <RailBtn active={mobileChatActive} title="Chat" onClick={() => onMobileChatToggle?.()}>
+                <RailIcon iconName="MessageSquare01" />
+              </RailBtn>
+            </div>
             {TOOL_SECTIONS.map(({ id, title, iconName }) => (
               <RailBtn
                 key={id}
-                active={activeSection === id}
+                active={activeSection === id && (!mobileLayout || mobileVisible)}
                 title={title}
                 onClick={() => toggleActiveSection(id)}
               >
@@ -843,7 +862,7 @@ export default function AdjustmentPanel({
               </RailBtn>
             ))}
             <RailBtn
-              active={activeSection === "history"}
+              active={activeSection === "history" && (!mobileLayout || mobileVisible)}
               title="Version history"
               onClick={() => toggleActiveSection("history")}
             >
@@ -851,13 +870,15 @@ export default function AdjustmentPanel({
             </RailBtn>
           </div>
 
-          <div className="mt-auto shrink-0 pb-4 w-full flex flex-col items-center gap-4">
-            <RailLink href={REDUX_DOCS_URL} title="GitHub" external>
-              <RailGitHubIcon />
-            </RailLink>
-            <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback" external>
-              <RailDiscordIcon />
-            </RailLink>
+          <div className="editor-rail-footer mt-auto shrink-0 pb-4 w-full flex flex-col items-center gap-4">
+            <div className="editor-rail-links flex flex-col items-center gap-4">
+              <RailLink href={REDUX_DOCS_URL} title="GitHub" external>
+                <RailGitHubIcon />
+              </RailLink>
+              <RailLink href={REDUX_HELP_FEEDBACK_URL} title="Help & Feedback" external>
+                <RailDiscordIcon />
+              </RailLink>
+            </div>
             <ProfileMenu
               variant="compact"
               settingsReturnPath={
@@ -872,7 +893,7 @@ export default function AdjustmentPanel({
         {/* Section panel */}
         <div
           className={[
-            "flex flex-col shrink-0 h-full min-w-0 bg-[#121212] overflow-hidden transition-[width] duration-200 ease-out",
+            "editor-section-panel flex flex-col shrink-0 h-full min-w-0 bg-[#121212] overflow-hidden transition-[width] duration-200 ease-out",
             activeSection
               ? "w-[360px] rounded-r-2xl border-r border-[#212121]"
               : "w-0 border-r-0",
@@ -881,10 +902,13 @@ export default function AdjustmentPanel({
           {activeSection && (
             <div
               ref={panelInnerRef}
-              className="flex flex-col h-full w-[360px] min-w-[360px]"
+              className="editor-section-content flex flex-col h-full w-[360px] min-w-[360px]"
             >
               <div className={`${PANEL_HEADER} px-8`}>
                 <span className={PANEL_TITLE}>{activeSectionLabel}</span>
+                <button type="button" aria-label="Close adjustments" onClick={() => onMobilePanelChange?.(false)} className="ml-auto lg:hidden text-[#888888] p-2 cursor-pointer">
+                  <Icon name="ChevronDown" size={20} />
+                </button>
               </div>
 
               {activeSection === "history" ? (

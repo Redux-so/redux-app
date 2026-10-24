@@ -141,12 +141,12 @@ export default function GenerativeFillModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="viewport-modal fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="genfill-modal-title"
     >
-      <div className="relative w-full max-w-[480px] bg-[#121212] border border-[#212121] rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-[480px] bg-[#121212] border border-[#212121] rounded-xl shadow-2xl flex flex-col max-h-[min(90dvh,calc(var(--app-height,100dvh)-32px))]">
         <div className="flex items-center justify-between px-4 h-11 border-b border-[#212121] shrink-0">
           <h2 id="genfill-modal-title" className="text-[13px] font-medium text-white">
             Generative Fill
