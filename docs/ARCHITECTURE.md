@@ -25,7 +25,7 @@ Verified from the repository unless marked **uncertain**.
 ## Authentication
 
 - `proxy.ts` (Next.js 16 replacement for `middleware.ts`): `clerkMiddleware` + `auth.protect()` for non-public routes
-- Public routes: `lib/public-routes.ts` (landing, sign-in/up, SSO callback, webhooks, Sentry tunnel)
+- Public routes: `lib/public-routes.ts` (root redirect, sign-in/up, SSO callback, webhooks, Sentry tunnel)
 - API handlers resolve DB user via `lib/require-user.ts` (`clerkId` → `User`)
 - Unknown page URLs reach the persistent 404 screen in `app/not-found.tsx`, with one account-aware action to sign in or open the library. Keep `isAppPagePath` in `lib/last-visited-page.ts` synchronized with page routes so private pages retain proxy authentication. APIs retain their JSON error behavior.
 - Editor URLs are remembered after their image loads successfully. Missing/empty image IDs and images returning 404 use the same recovery component without overwriting the previous URL; recovery to the current URL falls back to `/` to prevent loops.
@@ -64,7 +64,7 @@ Representative routes:
 
 ## Frontend architecture
 
-- **Routes:** `app/(dashboard)/*` (library, editor, settings), `app/(auth)/*`, marketing `app/page.tsx`
+- **Routes:** `app/(dashboard)/*` (library, editor, settings), `app/(auth)/*`, root `app/page.tsx` (redirects signed-out visitors to sign-in and signed-in users to the library)
 - **Editor shell:** client `EditorApp.tsx` composes Toolbar, AdjustmentPanel, Canvas, ChatPanel
 - **State:** React hooks — `useEditor`, `useCanvas`, `use-undo`; preview refresh via `EditorPreviewContext`
 - **No global Redux store** — name is product brand only
