@@ -26,6 +26,7 @@ Verified from the repository unless marked **uncertain**.
 
 - `proxy.ts` (Next.js 16 replacement for `middleware.ts`): `clerkMiddleware` + `auth.protect()` for non-public routes
 - Public routes: `lib/public-routes.ts` (root redirect, sign-in/up, SSO callback, webhooks, Sentry tunnel)
+- Google sign-in/sign-up uses Clerk's popup flow so Redux stays visible in the main tab. Popup blocking and errors return to the existing form; the SSO callback and route loading states use the shared dark spinner.
 - API handlers resolve DB user via `lib/require-user.ts` (`clerkId` → `User`)
 - Unknown page URLs reach the persistent 404 screen in `app/not-found.tsx`, with one account-aware action to sign in or open the library. Keep `isAppPagePath` in `lib/last-visited-page.ts` synchronized with page routes so private pages retain proxy authentication. APIs retain their JSON error behavior.
 - Editor URLs are remembered after their image loads successfully. Missing/empty image IDs and images returning 404 use the same recovery component without overwriting the previous URL; recovery to the current URL falls back to `/` to prevent loops.

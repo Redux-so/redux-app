@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, useClerk, useSignUp } from "@clerk/nextjs";
 
+import { authenticateWithGooglePopup } from "@/lib/google-auth-popup";
 import { AUTH_PRIMARY_BTN_CLASS } from "@/lib/brand-colors";
 
 const AFTER_AUTH = "/library";
@@ -271,19 +272,24 @@ export default function SignUpForm() {
   }
 
   async function handleGoogleSignUp() {
-    if (!isClerkReady || isBusy || !clerk.client) return;
+    const client = clerk.client;
+    if (!isClerkReady || isBusy || !client) return;
 
     setFormError(null);
     setIsSubmitting(true);
 
     try {
-      await clerk.client.signUp.authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: "/sso-callback",
-        redirectUrlComplete: AFTER_AUTH,
-      });
+      await authenticateWithGooglePopup((popup) =>
+        client.signUp.authenticateWithPopup({
+          popup,
+          strategy: "oauth_google",
+          redirectUrl: new URL("/sso-callback", window.location.origin).href,
+          redirectUrlComplete: new URL(AFTER_AUTH, window.location.origin).href,
+        }),
+      );
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
+    } finally {
       setIsSubmitting(false);
     }
   }
