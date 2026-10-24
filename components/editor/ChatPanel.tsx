@@ -1208,16 +1208,18 @@ export default function ChatPanel({
           </button>
         ) : (
           <>
+            <span className={PANEL_TITLE}>Chat</span>
             <button
               type="button"
               aria-expanded
               aria-label={mobileLayout ? "Close chat panel" : "Collapse chat panel"}
               onClick={() => mobileLayout ? onMobileClose?.() : setPanelCollapsed(true)}
-              className="absolute right-3 lg:right-auto lg:left-[18px] top-1/2 flex h-11 w-11 lg:h-auto lg:w-auto items-center justify-center shrink-0 lg:-translate-x-1/2 -translate-y-1/2 text-[#888888] hover:text-white transition-colors cursor-pointer"
+              className={mobileLayout
+                ? "ml-auto -mr-2 lg:hidden text-[#888888] p-2 cursor-pointer"
+                : "absolute left-[18px] top-1/2 flex items-center justify-center shrink-0 -translate-x-1/2 -translate-y-1/2 text-[#888888] hover:text-white transition-colors cursor-pointer"}
             >
-              <Icon name={mobileLayout ? "ChevronDown" : "ChevronRight"} size={16} aria-hidden />
+              <Icon name={mobileLayout ? "ChevronDown" : "ChevronRight"} size={mobileLayout ? 20 : 16} aria-hidden />
             </button>
-            <span className={PANEL_TITLE}>Chat</span>
           </>
         )}
       </div>

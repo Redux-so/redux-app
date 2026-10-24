@@ -906,7 +906,7 @@ export default function AdjustmentPanel({
             >
               <div className={`${PANEL_HEADER} px-8`}>
                 <span className={PANEL_TITLE}>{activeSectionLabel}</span>
-                <button type="button" aria-label="Close adjustments" onClick={() => onMobilePanelChange?.(false)} className="ml-auto lg:hidden text-[#888888] p-2 cursor-pointer">
+                <button type="button" aria-label="Close adjustments" onClick={() => onMobilePanelChange?.(false)} className="ml-auto -mr-2 lg:hidden text-[#888888] p-2 cursor-pointer">
                   <Icon name="ChevronDown" size={20} />
                 </button>
               </div>

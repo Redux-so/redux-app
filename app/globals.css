@@ -450,7 +450,6 @@ button:disabled:has([data-loading-spinner]) {
   .editor-section-panel textarea,
   .editor-chat-panel textarea,
   .mobile-library-drawer input { font-size: 16px; }
-  .editor-workspace[data-mobile-panel="chat"] { grid-template-rows: minmax(0, 1fr) minmax(0, 60%) auto; }
   .editor-chat-panel { container-type: size; }
   .editor-chat-content { overflow-y: auto; }
   .chat-composer { padding-bottom: 12px; }
