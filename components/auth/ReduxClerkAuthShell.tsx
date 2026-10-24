@@ -135,8 +135,7 @@ export default function ReduxClerkAuthShell({
           alt=""
           fill
           priority
-          quality={85}
-          sizes="50vw"
+          unoptimized
           className="object-cover"
         />
       </div>
