@@ -1,10 +1,18 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import { networkInterfaces } from "node:os";
 import { buildSecurityHeaders } from "./lib/content-security-policy";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
+  // Allow phone testing on this computer's private LAN addresses in development.
+  allowedDevOrigins: isProduction ? [] : Object.values(networkInterfaces())
+    .flatMap((addresses) => addresses ?? [])
+    .filter(({ family, internal, address }) =>
+      family === "IPv4" && !internal && /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(address),
+    )
+    .map(({ address }) => address),
   transpilePackages: ["geist"],
   experimental: {
     // Recompile local edits on restart instead of restoring stale development styles.

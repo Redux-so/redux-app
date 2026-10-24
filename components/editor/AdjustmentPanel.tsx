@@ -170,12 +170,12 @@ const GenerativeFillModal = dynamic(() => import("./GenerativeFillModal"), {
   ssr: false,
 });
 
-const EFFECTS_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
-  { key: "sharpen", label: "Sharpen" },
-  { key: "noiseReduction", label: "Noise Reduction" },
-  { key: "vignette", label: "Vignette" },
-  { key: "grain", label: "Grain" },
-  { key: "clarity", label: "Clarity" },
+const EFFECTS_ADJUSTMENTS: { key: AdjustmentKey; label: string; min: number; max: number }[] = [
+  { key: "sharpen", label: "Sharpen", min: 0, max: 100 },
+  { key: "noiseReduction", label: "Noise Reduction", min: -100, max: 0 },
+  { key: "vignette", label: "Vignette", min: 0, max: 100 },
+  { key: "grain", label: "Grain", min: 0, max: 100 },
+  { key: "clarity", label: "Clarity", min: -100, max: 100 },
 ];
 
 // ── Shared sub-components ────────────────────────────────────────────────────
@@ -994,11 +994,13 @@ export default function AdjustmentPanel({
 
                   {activeSection === "effects" && (
                     <div className="pb-4 pt-4">
-                      {EFFECTS_ADJUSTMENTS.map(({ key, label }) => (
+                      {EFFECTS_ADJUSTMENTS.map(({ key, label, min, max }) => (
                         <AdjustmentSlider
                           key={key}
                           label={label}
-                          value={adjustments[key]}
+                          min={min}
+                          max={max}
+                          value={Math.max(min, Math.min(max, adjustments[key]))}
                           onChange={(v) => onPreview(key, v)}
                           onCommit={(v) => onCommit(key, v)}
                         />
@@ -1114,10 +1116,11 @@ export default function AdjustmentPanel({
                         <div className="bg-[#1d1d1d] border border-[#262626] rounded-xl p-3 flex flex-col gap-3">
                           <div className="flex items-center gap-2">
                             <div className="flex flex-col gap-1 flex-1">
-                              <label className="text-[11px] font-medium text-[#555555]">
+                              <label htmlFor="editor-resize-width" className="text-[11px] font-medium text-[#555555]">
                                 Width
                               </label>
                               <input
+                                id="editor-resize-width"
                                 type="number"
                                 value={resizeW}
                                 onChange={(e) => handleResizeW(e.target.value)}
@@ -1136,10 +1139,11 @@ export default function AdjustmentPanel({
                               )}
                             </button>
                             <div className="flex flex-col gap-1 flex-1">
-                              <label className="text-[11px] font-medium text-[#555555]">
+                              <label htmlFor="editor-resize-height" className="text-[11px] font-medium text-[#555555]">
                                 Height
                               </label>
                               <input
+                                id="editor-resize-height"
                                 type="number"
                                 value={resizeH}
                                 onChange={(e) => handleResizeH(e.target.value)}

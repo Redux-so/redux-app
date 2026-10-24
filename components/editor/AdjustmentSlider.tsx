@@ -136,7 +136,7 @@ export default function AdjustmentSlider({
         disabled={disabled}
         onValueChange={([v]) => onChange(v)}
         onValueCommit={([v]) => onCommit?.(v)}
-        className="relative flex w-full touch-none select-none items-center"
+        className="adjustment-slider-control relative flex w-full touch-none select-none items-center"
       >
         <SliderPrimitive.Track
           className={[

@@ -134,3 +134,7 @@ Optional Agent plugin for planning/debugging/verification workflows. Install and
 - Mutable stable URLs (`/logo.png`, favicons): short `Cache-Control` in `next.config.ts`; hashed imports skip stale cache.
 
 Development disables Turbopack filesystem caching because local CSS changes were observed being restored from stale cache across server restarts. In-memory incremental compilation remains enabled; a cold restart may take longer. Production build caching is unchanged.
+
+For phone testing, use the computer's private Wi-Fi address and the dev server port on the same network. `next.config.ts` permits the computer's current private IPv4 addresses as development origins, so Next.js can serve client assets and HMR to the phone. Restart the dev server after changing networks. Production origins are unchanged.
+
+Client history and chat IDs use `lib/create-uuid.ts`, which falls back to UUID v4 bytes from `crypto.getRandomValues` on local HTTP origins where `crypto.randomUUID` is unavailable. Mobile regression checks cover this path, slider callbacks, brush sizes, chat entry, and menu selection.

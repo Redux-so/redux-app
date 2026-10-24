@@ -1,5 +1,7 @@
 "use client";
 
+import { positionChatPopover } from "@/lib/chat-popover-position";
+import { createUuid } from "@/lib/create-uuid";
 import dynamic from "next/dynamic";
 import { useImageChatHistory } from "@/hooks/useImageChatHistory";
 import { cleanChatText as cleanText, type ChatMessage as Message } from "@/lib/chat-history-shared";
@@ -215,11 +217,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>(AVAILABLE_MODELS[0].id);
   const [placement, setPlacement] = useState<"above" | "below">("above");
-  const [menuCoords, setMenuCoords] = useState<{
-    top: number;
-    left: number;
-    triggerWidth: number;
-  } | null>(null);
+  const [menuCoords, setMenuCoords] = useState<ReturnType<typeof positionChatPopover> | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -233,16 +231,9 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
 
     const rect = trigger.getBoundingClientRect();
     const menuHeight = menuRef.current?.offsetHeight ?? MODEL_MENU_ESTIMATED_HEIGHT;
-    const spaceAbove = rect.top;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const openBelow = spaceBelow >= menuHeight && spaceBelow > spaceAbove;
-
-    setPlacement(openBelow ? "below" : "above");
-    setMenuCoords({
-      left: rect.left,
-      top: openBelow ? rect.bottom + 6 : rect.top - menuHeight - 6,
-      triggerWidth: rect.width,
-    });
+    const position = positionChatPopover(rect, modelMenuWidthPx(rect.width), menuHeight);
+    setPlacement(position.placement);
+    setMenuCoords(position);
   }, []);
 
   useLayoutEffect(() => {
@@ -283,30 +274,21 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
     document.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("resize", onReposition);
     window.addEventListener("scroll", onReposition, true);
+    window.visualViewport?.addEventListener("resize", onReposition);
+    window.visualViewport?.addEventListener("scroll", onReposition);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("resize", onReposition);
       window.removeEventListener("scroll", onReposition, true);
+      window.visualViewport?.removeEventListener("resize", onReposition);
+      window.visualViewport?.removeEventListener("scroll", onReposition);
     };
   }, [open, updateMenuPosition]);
 
   function handleToggle() {
     if (disabled) return;
-    if (!open && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const spaceAbove = rect.top;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const openBelow = spaceBelow >= MODEL_MENU_ESTIMATED_HEIGHT && spaceBelow > spaceAbove;
-      setPlacement(openBelow ? "below" : "above");
-      setMenuCoords({
-        left: rect.left,
-        top: openBelow
-          ? rect.bottom + 6
-          : rect.top - MODEL_MENU_ESTIMATED_HEIGHT - 6,
-        triggerWidth: rect.width,
-      });
-    }
+    if (!open) updateMenuPosition();
     setOpen((prev) => !prev);
   }
 
@@ -334,10 +316,11 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                 style={{
                   top: menuCoords.top,
                   left: menuCoords.left,
-                  width: modelMenuWidthPx(menuCoords.triggerWidth),
+                  width: menuCoords.width,
+                  maxHeight: menuCoords.maxHeight,
                 }}
                 className={[
-                  "fixed z-[100] box-border overflow-hidden rounded-md px-1 py-1",
+                  "fixed z-[100] box-border overflow-y-auto rounded-md px-1 py-1",
                   CHAT_POPOVER_CHROME,
                   CHAT_SURFACE_SHADOW,
                 ].join(" ")}
@@ -440,11 +423,7 @@ function ChatInteractionModeSelector({
 }) {
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<"above" | "below">("above");
-  const [menuCoords, setMenuCoords] = useState<{
-    top: number;
-    left: number;
-    triggerWidth: number;
-  } | null>(null);
+  const [menuCoords, setMenuCoords] = useState<ReturnType<typeof positionChatPopover> | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -457,16 +436,9 @@ function ChatInteractionModeSelector({
 
     const rect = trigger.getBoundingClientRect();
     const menuHeight = menuRef.current?.offsetHeight ?? INTERACTION_MENU_ESTIMATED_HEIGHT;
-    const spaceAbove = rect.top;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const openBelow = spaceBelow >= menuHeight && spaceBelow > spaceAbove;
-
-    setPlacement(openBelow ? "below" : "above");
-    setMenuCoords({
-      left: rect.left,
-      top: openBelow ? rect.bottom + 6 : rect.top - menuHeight - 6,
-      triggerWidth: rect.width,
-    });
+    const position = positionChatPopover(rect, interactionMenuWidthPx(rect.width), menuHeight);
+    setPlacement(position.placement);
+    setMenuCoords(position);
   }, []);
 
   useLayoutEffect(() => {
@@ -507,31 +479,21 @@ function ChatInteractionModeSelector({
     document.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("resize", onReposition);
     window.addEventListener("scroll", onReposition, true);
+    window.visualViewport?.addEventListener("resize", onReposition);
+    window.visualViewport?.addEventListener("scroll", onReposition);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("resize", onReposition);
       window.removeEventListener("scroll", onReposition, true);
+      window.visualViewport?.removeEventListener("resize", onReposition);
+      window.visualViewport?.removeEventListener("scroll", onReposition);
     };
   }, [open, updateMenuPosition]);
 
   function handleToggle() {
     if (disabled) return;
-    if (!open && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const spaceAbove = rect.top;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const openBelow =
-        spaceBelow >= INTERACTION_MENU_ESTIMATED_HEIGHT && spaceBelow > spaceAbove;
-      setPlacement(openBelow ? "below" : "above");
-      setMenuCoords({
-        left: rect.left,
-        top: openBelow
-          ? rect.bottom + 6
-          : rect.top - INTERACTION_MENU_ESTIMATED_HEIGHT - 6,
-        triggerWidth: rect.width,
-      });
-    }
+    if (!open) updateMenuPosition();
     setOpen((prev) => !prev);
   }
 
@@ -559,10 +521,11 @@ function ChatInteractionModeSelector({
                 style={{
                   top: menuCoords.top,
                   left: menuCoords.left,
-                  width: interactionMenuWidthPx(menuCoords.triggerWidth),
+                  width: menuCoords.width,
+                  maxHeight: menuCoords.maxHeight,
                 }}
                 className={[
-                  "fixed z-[100] box-border overflow-hidden rounded-md px-1 py-1",
+                  "fixed z-[100] box-border overflow-y-auto rounded-md px-1 py-1",
                   CHAT_POPOVER_CHROME,
                   CHAT_SURFACE_SHADOW,
                 ].join(" ")}
@@ -964,7 +927,7 @@ export default function ChatPanel({
       .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
     const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
 
-    const turnId = crypto.randomUUID();
+    const turnId = createUuid();
     const userMsg: Message = {
       id: `${turnId}:user`,
       role: "user",
@@ -1536,6 +1499,7 @@ export default function ChatPanel({
                     )}
                     <textarea
                       ref={textareaRef}
+                      aria-label="Message"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onFocus={() => setInputFocused(true)}

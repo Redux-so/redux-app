@@ -1,8 +1,25 @@
 import { buildPreviewRequestBody, type PreviewPayload } from "@/lib/preview-request";
 import { normalizeAdjustments } from "@/constants/adjustments";
 import { getColorOverlays } from "@/lib/color-overlays";
-import { buildInteractiveFilter } from "@/lib/interactive-image-filter";
+import { applySoftwareImageFilter } from "@/lib/software-image-filter";
+import { buildInteractiveFilter, interactiveFilterSettings } from "@/lib/interactive-image-filter";
 import { loadDecodedImage } from "@/lib/decoded-image-cache";
+
+let canvasFiltersSupported: boolean | undefined;
+
+/** Test pixels once: assigning a missing `filter` property can silently do nothing. */
+function supportsCanvasFilters(): boolean {
+  if (canvasFiltersSupported !== undefined) return canvasFiltersSupported;
+  const probe = document.createElement("canvas");
+  probe.width = probe.height = 1;
+  const ctx = probe.getContext("2d");
+  if (!ctx || !("filter" in ctx)) return canvasFiltersSupported = false;
+  ctx.fillStyle = "white";
+  ctx.filter = "brightness(0)";
+  ctx.fillRect(0, 0, 1, 1);
+  const pixel = ctx.getImageData(0, 0, 1, 1).data;
+  return canvasFiltersSupported = pixel[0] === 0 && pixel[3] === 255;
+}
 
 const sourceAlphas = new WeakMap<HTMLImageElement, Map<string, Uint8ClampedArray | null>>();
 
@@ -68,9 +85,20 @@ export function renderInteractiveImage(
   ctx.clearRect(0, 0, width, height);
   const alpha = sourceAlpha(source, width, height);
   const normalized = normalizeAdjustments(adjustments);
-  ctx.filter = buildInteractiveFilter(normalized, scale / previewScale);
-  ctx.drawImage(source, 0, 0, width, height);
-  ctx.filter = "none";
+  const pixelScale = scale / previewScale;
+  if (supportsCanvasFilters()) {
+    ctx.filter = buildInteractiveFilter(normalized, pixelScale);
+    ctx.drawImage(source, 0, 0, width, height);
+    ctx.filter = "none";
+  } else {
+    ctx.drawImage(source, 0, 0, width, height);
+    const settings = interactiveFilterSettings(normalized, pixelScale);
+    if (settings.brightness !== 1 || settings.contrast !== 1 || settings.saturation !== 1 || settings.blur > 0) {
+      const pixels = ctx.getImageData(0, 0, width, height);
+      applySoftwareImageFilter(pixels.data, width, height, normalized, pixelScale);
+      ctx.putImageData(pixels, 0, 0);
+    }
+  }
 
   const overlays = getColorOverlays(normalized);
   for (const overlay of [overlays.temperature, overlays.tint, overlays.hue]) {

@@ -1,3 +1,4 @@
+import { createUuid } from "@/lib/create-uuid";
 import { type AdjustmentKey } from "@/constants/adjustments";
 import { defaultPersistedEditorState, parseVersionAdjustments, persistedStatesEqual, serializePersistedEditorState, type PersistedEditorState } from "@/lib/editor-state";
 import type { CanvasMasks } from "@/hooks/useCanvas";
@@ -71,7 +72,7 @@ export function appendEditorHistory(timeline: EditorTimeline, state: EditorHisto
   // Confirming a destructive edit consumes its temporary painted selections.
   if (!draft) entries = entries.filter((entry) => !entry.draft);
   const entry: EditorHistoryEntry = {
-    id: crypto.randomUUID(), label: (label ?? (draft ? "Painted selection" : describeEditorAction(previous, state))).slice(0, 120),
+    id: createUuid(), label: (label ?? (draft ? "Painted selection" : describeEditorAction(previous, state))).slice(0, 120),
     createdAt: new Date().toISOString(), state, ...(draft ? { draft: true } : {}),
   };
   if (!checkpoint && entries.length > 1 && entries.at(-1)?.draft === entry.draft) {

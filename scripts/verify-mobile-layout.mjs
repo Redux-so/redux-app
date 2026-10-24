@@ -60,6 +60,124 @@ function find(node, predicate) {
   return predicate(node) ? node : find(node.props?.children, predicate);
 }
 
+function findAll(node, predicate) {
+  if (!node || typeof node !== "object") return [];
+  if (Array.isArray(node)) return node.flatMap((child) => findAll(child, predicate));
+  return [...(predicate(node) ? [node] : []), ...findAll(node.props?.children, predicate)];
+}
+
+test("HTTP phone sessions create valid history IDs without crypto.randomUUID", () => {
+  const { webcrypto } = nativeRequire("node:crypto");
+  const { createUuid } = compile("../lib/create-uuid.ts", {
+    __globals: { crypto: { getRandomValues: (array) => webcrypto.getRandomValues(array) } },
+  });
+  const ids = new Set(Array.from({ length: 200 }, createUuid));
+  assert.equal(ids.size, 200);
+  for (const id of ids) assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  const history = compile("../lib/editor-history.ts", { "@/lib/create-uuid": { createUuid } });
+  let timeline = history.createEditorTimeline();
+  for (const key of Object.keys(defaultPersistedEditorState().sliders)) {
+    const previous = timeline.entries[timeline.cursor].state;
+    timeline = history.appendEditorHistory(timeline, { ...previous, sliders: { ...previous.sliders, [key]: 15 } }, true);
+    assert.equal(timeline.entries[timeline.cursor].state.sliders[key], 15);
+  }
+  const restored = history.parseEditorTimeline({ ...load("../lib/editor-state.ts").serializePersistedEditorState(timeline.entries[timeline.cursor].state), history: history.serializeEditorTimeline(timeline) });
+  assert.equal(restored.entries.length, timeline.entries.length);
+  assert.equal(restored.cursor, timeline.cursor);
+});
+
+test("every light, color and effects slider routes touch changes and commits to the editor", () => {
+  const Panel = compile("../components/editor/AdjustmentPanel.tsx").default;
+  const previews = [], commits = [];
+  const panel = host(Panel, { adjustments: defaultPersistedEditorState().sliders,
+    onPreview: (key, value) => previews.push([key, value]), onCommit: (key, value) => commits.push([key, value]),
+    restoredMaskTool: null, createEditGuard: () => () => true, beginOperation: () => noop,
+    brushSizes: { blur: 20, heal: 20, eraser: 20 }, setBrushSize: noop,
+    history: { entries: [], versions: [], ready: true }, mobileLayout: true, mobileVisible: true });
+  for (const title of ["Light adjustments", "Color adjustments", "Effects adjustments"]) {
+    find(panel.render(), (node) => node.props?.title === title).props.onClick();
+    const sliders = findAll(panel.render(), (node) => node.type?.name === "AdjustmentSlider");
+    assert.ok(sliders.length > 0);
+    for (const slider of sliders) {
+      assert.notEqual(slider.props.disabled, true);
+      const value = slider.props.max === 0 ? -15 : 15;
+      slider.props.onChange(value); slider.props.onCommit(value);
+      if (["Sharpen", "Vignette", "Grain"].includes(slider.props.label)) assert.equal(slider.props.min, 0);
+      if (slider.props.label === "Noise Reduction") assert.equal(slider.props.max, 0);
+    }
+  }
+  assert.equal(previews.length, Object.keys(defaultPersistedEditorState().sliders).length);
+  assert.deepEqual(previews, commits);
+});
+
+test("blur, eraser and heal brush size controls remain interactive on touch", () => {
+  const BrushControls = compile("../components/editor/RetouchBrushControls.tsx").default;
+  for (const tool of ["blur", "eraser", "heal"]) {
+    let size = 20;
+    const tree = BrushControls({ tool, size, onSizeChange: (value) => { size = value; }, loading: false });
+    const slider = find(tree, (node) => node.props?.label === "Brush size");
+    assert.equal(slider.props.disabled, false);
+    slider.props.onChange(75);
+    assert.equal(size, 75);
+  }
+});
+
+test("mobile transform buttons, angle slider and resize fields accept interaction", () => {
+  const Panel = compile("../components/editor/AdjustmentPanel.tsx").default;
+  const events = [];
+  const panel = host(Panel, { adjustments: defaultPersistedEditorState().sliders,
+    onPreview: noop, onCommit: noop, restoredMaskTool: null, createEditGuard: () => () => true, beginOperation: () => noop,
+    brushSizes: { blur: 20, heal: 20, eraser: 20 }, setBrushSize: noop,
+    history: { entries: [], versions: [], ready: true }, mobileLayout: true, mobileVisible: true,
+    imageWidth: 1200, imageHeight: 800,
+    onToggleCrop: () => events.push("crop"), onRotateCW: () => events.push("rotate"),
+    onStraighten: (value) => events.push(["angle", value]), onStraightenCommit: (value) => events.push(["commit", value]),
+    onResize: (width, height) => events.push(["resize", width, height]),
+  });
+  find(panel.render(), (node) => node.props?.title === "Crop and geometry").props.onClick();
+  for (const label of ["Crop", "Rotate", "Straighten"]) {
+    find(panel.render(), (node) => node.props?.label === label).props.onClick();
+  }
+  const angle = find(panel.render(), (node) => node.props?.label === "Angle");
+  angle.props.onChange(5); angle.props.onCommit(5);
+  find(panel.render(), (node) => node.props?.label === "Resize").props.onClick();
+  const input = (id) => find(panel.render(), (node) => node.props?.id === id);
+  input("editor-resize-width").props.onChange({ target: { value: "900" } });
+  assert.equal(input("editor-resize-height").props.value, "600");
+  find(panel.render(), (node) => node.props?.title === "Unlock aspect ratio").props.onClick();
+  input("editor-resize-height").props.onChange({ target: { value: "500" } });
+  find(panel.render(), (node) => node.type === "button" && node.props.children === "Apply").props.onClick();
+  assert.deepEqual(events, ["crop", "rotate", ["angle", 5], ["commit", 5], ["resize", 900, 500]]);
+});
+
+test("chat mode and model menus open, stay inside the keyboard viewport, and accept selections", () => {
+  const viewport = { offsetLeft: 0, offsetTop: 20, width: 320, height: 340 };
+  const window = { innerWidth: 320, innerHeight: 800, visualViewport: viewport };
+  const position = compile("../lib/chat-popover-position.ts", { __globals: { window } });
+  const { ChatModelSelector, ChatInteractionModeSelector } = compile("../components/editor/ChatPanel.tsx", {
+    "@/lib/chat-popover-position": position,
+    "react-dom": { createPortal: (children) => children },
+    "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => true },
+    __globals: { window, document: { body: {} } },
+  }, "exports.ChatModelSelector = ChatModelSelector; exports.ChatInteractionModeSelector = ChatInteractionModeSelector;");
+  for (const Selector of [ChatModelSelector, ChatInteractionModeSelector]) {
+    let mode;
+    const menu = host(Selector, { mode: "agent", onModeChange: (value) => { mode = value; } });
+    const trigger = () => find(menu.render(), (node) => node.props?.["aria-haspopup"] === "menu");
+    trigger().props.ref.current = { getBoundingClientRect: () => ({ top: 290, bottom: 322, left: 290, width: 45 }) };
+    trigger().props.onClick();
+    assert.equal(trigger().props["aria-expanded"], true);
+    const list = find(menu.render(), (node) => node.props?.role === "menu");
+    assert.ok(list.props.style.top >= 28);
+    assert.ok(list.props.style.left + list.props.style.width <= 312);
+    const options = findAll(list, (node) => node.type === "button" && !node.props.disabled && node.props.onClick);
+    assert.ok(options.length > 0);
+    options.at(-1).props.onClick();
+    assert.equal(trigger().props["aria-expanded"], false);
+    if (Selector === ChatInteractionModeSelector) assert.equal(mode, "ask");
+  }
+});
+
 test("touch photo controls reveal on tap, ignore actions, and dismiss outside without closing inside album portals", () => {
   let visible = false;
   let touch = true;
@@ -368,6 +486,9 @@ test("mobile CSS and client entry points compile without production uploads", as
   assert.equal(value(".editor-export", "width"), "28px");
   assert.equal(value(".editor-toolbar", "grid-template-columns"), "40px minmax(0, 1fr) 40px");
   assert.equal(value(".editor-toolbar-actions", "justify-content"), "center");
+  assert.equal(value(".adjustment-slider-control", "padding-block"), "14px");
+  assert.equal(value(".adjustment-slider-control", "margin-block"), "-14px");
+  assert.equal(value(".editor-section-panel input", "font-size"), "16px");
   assert.equal(value(".editor-adjustments", "display"), "contents");
   assert.equal(value(".editor-tool-rail", "flex-direction"), "row");
   assert.equal(value('.editor-workspace[data-mobile-panel="adjustments"] .editor-section-panel', "display"), "flex");

@@ -1,7 +1,7 @@
 import { normalizeAdjustments } from "@/constants/adjustments";
 
 /** Shared browser filter for the stable canvas image and full-resolution exports. */
-export function buildInteractiveFilter(adj: Partial<Record<string, number>>, pixelScale = 1): string {
+export function interactiveFilterSettings(adj: Partial<Record<string, number>>, pixelScale = 1) {
   const normalized = normalizeAdjustments(adj);
 
   // Exposure + partial contributions from tonal controls → CSS brightness()
@@ -24,20 +24,22 @@ export function buildInteractiveFilter(adj: Partial<Record<string, number>>, pix
   // Sharpen: approximate via contrast boost
   const sharpenedContrast = contrast * (1 + Math.max(0, normalized.sharpen) * 0.005);
 
-  // Temperature, tint, and hue all use separate color overlays — no hue-rotate
-  const parts = [
-    `brightness(${brightness.toFixed(3)})`,
-    `contrast(${sharpenedContrast.toFixed(3)})`,
-    `saturate(${saturate.toFixed(3)})`,
-  ];
-
-  // Noise reduction: CSS Gaussian blur is a valid real-time approximation.
-  // Slider left (negative) = more blur: noiseReduction=-100 → 2px, 0 → 0px.
-  if (normalized.noiseReduction < 0) {
-    const blurPx = (Math.abs(normalized.noiseReduction) / 100) * 2 * pixelScale;
-    parts.push(`blur(${blurPx.toFixed(2)}px)`);
-  }
-
-  return parts.join(" ");
+  return {
+    brightness: Number(brightness.toFixed(3)),
+    contrast: Number(sharpenedContrast.toFixed(3)),
+    saturation: Number(saturate.toFixed(3)),
+    blur: normalized.noiseReduction < 0
+      ? Number((Math.abs(normalized.noiseReduction) / 100 * 2 * pixelScale).toFixed(2)) : 0,
+  };
 }
 
+export function buildInteractiveFilter(adj: Partial<Record<string, number>>, pixelScale = 1): string {
+  const settings = interactiveFilterSettings(adj, pixelScale);
+  const parts = [
+    `brightness(${settings.brightness.toFixed(3)})`,
+    `contrast(${settings.contrast.toFixed(3)})`,
+    `saturate(${settings.saturation.toFixed(3)})`,
+  ];
+  if (settings.blur > 0) parts.push(`blur(${settings.blur.toFixed(2)}px)`);
+  return parts.join(" ");
+}

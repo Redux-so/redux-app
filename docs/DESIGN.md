@@ -108,3 +108,7 @@ Toolbar (h-16)
 | Toolbar height | 64px (h-16) |
 
 Detailed file index for editor/library previously lived in `.context`; use component paths above and grep when implementing.
+
+Mobile sliders retain their visible track and thumb sizes while expanding their touch hit area vertically. Chat mode/model menus stay within the visual viewport and reposition when the keyboard changes its size.
+
+Browsers without working Canvas 2D filters use a pixel renderer for tonal/color filters and noise softening. Native filter settings are shared with the fallback; temperature/tint/hue, vignette, grain and alpha handling retain their existing pipeline. Effects sliders expose only supported ranges (sharpen/vignette/grain 0–100, noise reduction −100–0, clarity −100–100).

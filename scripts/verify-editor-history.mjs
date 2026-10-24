@@ -160,6 +160,30 @@ test("slider gestures and batched chat patches each use one checkpoint", () => {
   assert.equal(editor.adjustments.temperature, 0);
 });
 
+test("HTTP phone slider previews, commits, undo and redo work without randomUUID", () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+  const crypto = globalThis.crypto;
+  Object.defineProperty(globalThis, "crypto", { configurable: true, value: {
+    getRandomValues: (array) => crypto.getRandomValues(array),
+  } });
+  try {
+    const render = editorHost();
+    let editor = render();
+    editor.previewAdjustment("exposure", 10);
+    editor.previewAdjustment("exposure", 20);
+    editor.updateAdjustment("exposure", 25);
+    editor = render();
+    assert.equal(editor.adjustments.exposure, 25);
+    editor.undo(); editor = render();
+    assert.equal(editor.adjustments.exposure, 0);
+    editor.redo(); editor = render();
+    assert.equal(editor.adjustments.exposure, 25);
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, "crypto", descriptor);
+    else delete globalThis.crypto;
+  }
+});
+
 test("each mask stroke is reversible and a new stroke clears redo", () => {
   const render = editorHost();
   let editor = render();

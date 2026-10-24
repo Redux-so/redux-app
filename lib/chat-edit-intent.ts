@@ -100,3 +100,10 @@ export function askModeNudgeMissing(assistantText: string): boolean {
     !normalized.includes(ASK_SWITCH_TO_AGENT_NUDGE.toLowerCase())
   );
 }
+
+
+/** Agent already authorizes requested edits; distinguish permission-seeking from real choices. */
+export function agentReplyRequestsEditPermission(reply: string): boolean {
+  if (/\b(?:or|which|where)\b/i.test(reply)) return false;
+  return /\b(?:would you like me to|do you want me to|shall i|should i|can i)\s+(?:apply|make|adjust|edit|brighten|darken|warm|cool|enhance|crop|rotate|remove|reduce|increase|decrease)\b/i.test(reply);
+}

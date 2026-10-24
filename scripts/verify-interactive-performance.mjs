@@ -138,7 +138,7 @@ test("repeated previews reuse the backing canvas and clear previous pixels", () 
     get height() { return this.h; }
     set height(value) { this.h = value; this.resizes++; }
     getContext() { return {
-      clearRect: () => { this.clears++; }, drawImage() {},
+      clearRect: () => { this.clears++; }, drawImage() {}, putImageData() {},
       getImageData: () => ({ data: new Uint8ClampedArray(this.w * this.h * 4).fill(255) }),
     }; }
   }

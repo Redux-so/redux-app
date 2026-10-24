@@ -21,6 +21,7 @@ import { buildChatSystemPrompt } from "@/lib/chat-system-prompt";
 import { ASK_SWITCH_TO_AGENT_NUDGE } from "@/constants/chat-interaction-mode";
 import {
   allowChatAdjustmentsForTurn,
+  agentReplyRequestsEditPermission,
   askModeNudgeMissing,
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
@@ -330,7 +331,7 @@ export async function POST(request: Request) {
       let toolCalls = 0;
       let toolBlock = -1;
       let truncated = false;
-      const progressParser = createChatProgressParser();
+      let progressParser = createChatProgressParser();
       let lastCheckpoint = Date.now();
       async function persist(status: "streaming" | "complete" | "interrupted") {
         if (!durableTurn) return;
@@ -342,42 +343,58 @@ export async function POST(request: Request) {
 
       try {
         if (disconnected) throw new Error("Chat interrupted");
-        const claudeStream = anthropic.messages.stream({
-          model: ANTHROPIC_DEFAULT_MODEL,
-          max_tokens: enableTools ? 2048 : 1024,
-          system: buildChatSystemPrompt(chatInteractionMode, enableTools),
-          messages: anthropicMessages,
-          ...(enableTools ? { tools: [EDIT_PHOTO_TOOL], tool_choice: { type: "auto" as const, disable_parallel_tool_use: true } } : {}),
-        });
+        // One bounded recovery for an Agent reply that asks unnecessary permission.
+        // Reuse the original request and billing transaction; paid plans still require approval.
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (disconnected) throw new Error("Chat interrupted");
+          const claudeStream = anthropic.messages.stream({
+            model: ANTHROPIC_DEFAULT_MODEL,
+            max_tokens: enableTools ? 2048 : 1024,
+            system: buildChatSystemPrompt(chatInteractionMode, enableTools) + (attempt === 1
+              ? "\nYour previous draft asked for permission instead of executing the requested edit. Call edit_photo now using the user's original request. Do not add paid operations the user did not request."
+              : ""),
+            messages: anthropicMessages,
+            ...(enableTools ? { tools: [EDIT_PHOTO_TOOL], tool_choice: attempt === 1
+              ? { type: "tool" as const, name: "edit_photo", disable_parallel_tool_use: true }
+              : { type: "auto" as const, disable_parallel_tool_use: true } } : {}),
+          });
 
-        generation = claudeStream;
-        if (disconnected) claudeStream.abort();
-        for await (const event of claudeStream) {
-          if (event.type === "message_delta" && event.delta.stop_reason === "max_tokens") truncated = true;
-          if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
-            if (!enableTools || event.content_block.name !== "edit_photo" || ++toolCalls > 1) throw new Error("Invalid editor tool request");
-            toolBlock = event.index;
-          }
-          if (event.type === "content_block_delta" && event.index === toolBlock && event.delta.type === "input_json_delta") toolInput += event.delta.partial_json;
-          if (event.type === "message_start") {
-            emit({ type: "progress", text: CHAT_PROGRESS_LABELS.thinking });
-          }
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            const chunk = event.delta.text;
-            fullText += chunk;
-            for (const update of progressParser.push(chunk)) emit(update);
-            if (Date.now() - lastCheckpoint >= 2000) {
-              await persist("streaming");
-              lastCheckpoint = Date.now();
+          generation = claudeStream;
+          if (disconnected) claudeStream.abort();
+          for await (const event of claudeStream) {
+            if (event.type === "message_delta" && event.delta.stop_reason === "max_tokens") truncated = true;
+            if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
+              if (!enableTools || event.content_block.name !== "edit_photo" || ++toolCalls > 1) throw new Error("Invalid editor tool request");
+              toolBlock = event.index;
+            }
+            if (event.type === "content_block_delta" && event.index === toolBlock && event.delta.type === "input_json_delta") toolInput += event.delta.partial_json;
+            if (event.type === "message_start") {
+              emit({ type: "progress", text: CHAT_PROGRESS_LABELS.thinking });
+            }
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              const chunk = event.delta.text;
+              fullText += chunk;
+              for (const update of progressParser.push(chunk)) emit(update);
+              if (Date.now() - lastCheckpoint >= 2000) {
+                await persist("streaming");
+                lastCheckpoint = Date.now();
+              }
             }
           }
-        }
 
-        if (disconnected) throw new Error("Chat interrupted");
-        if (truncated) throw new Error("The response was incomplete; no tools were run");
+          if (disconnected) throw new Error("Chat interrupted");
+          if (truncated) throw new Error("The response was incomplete; no tools were run");
+          if (enableTools && toolCalls === 0 && attempt === 0 && agentReplyRequestsEditPermission(cleanChatText(fullText))) {
+            fullText = "";
+            progressParser = createChatProgressParser();
+            continue;
+          }
+          if (attempt === 1 && toolCalls === 0) throw new Error("The requested edits could not be prepared. Please try again.");
+          break;
+        }
         for (const update of progressParser.finish()) emit(update);
         if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
           const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;

@@ -29,7 +29,9 @@ Adjustment rules:
 - Available adjustments (all range from -100 to 100):
   exposure, contrast, blacks, whites, highlights, shadows,
   vibrance, saturation, temperature, tint, hue, sharpen, noiseReduction,
-  vignette, grain, clarity`;
+  vignette, grain, clarity
+- Sharpen, vignette, and grain use 0 to 100; negative values do not apply an effect.
+- Noise reduction uses -100 to 0: more negative values soften noise, and 0 is neutral.`;
 
 const LEGACY_ADJUSTMENT_PROTOCOL = `
 
@@ -59,7 +61,10 @@ export function buildChatSystemPrompt(mode: "agent" | "ask", toolsEnabled = fals
   if (mode === "agent" && toolsEnabled) return `${CHAT_SHARED_CONTEXT}
 
 Agent tools: Use edit_photo for every requested edit, including sliders. Never output [adjustments] when tools are enabled.
-First give the short [progress] task summary, then request ONE edit_photo plan. Your prose describes intended work, NEVER completed edits.
+First give the short [progress] task summary, then request ONE edit_photo plan.
+Agent mode is already permission to apply the requested edits. Never ask "Would you like me to apply these changes?" or wait for another confirmation before calling edit_photo.
+For feedback or recommendations about the photo, implement your suggested safe slider edits with edit_photo in the same response.
+Ask for clarification only when required information is genuinely missing, such as a crop target, painted selection, or style reference. Your prose describes intended work, NEVER completed edits.
 The application executes the plan in order and replaces your prose with verified outcomes. Do not invent tool results.
 Use all provided editor actions when relevant. Free sliders do not require auto_enhance or paid tools. Do not substitute paid operations for simple sliders.
 Paid tools show a cost approval before execution; only include paid operations the user requested. Free chat allowance does not cover paid tools.
@@ -67,7 +72,7 @@ Retouch masks exist only for the selections listed in editor context. If there i
 Use crop_aspect for centered aspect-ratio crops, crop for explicit normalized regions; request clarification if the target is ambiguous. resize uses the panel's native center crop, not resampling/upscaling.
 style_match requires an attached reference. generative_fill extends an image edge; it is not arbitrary object generation inside a selection.
 History IDs must come from the provided editor context. Undo, redo, or revert must be the only action in their plan.
-When no edit is requested or you need clarification, answer with text and do not call edit_photo.
+For greetings, product questions, or a request requiring missing information, answer with text and do not call edit_photo.
 Ask mode never executes tools.`;
   return mode === "ask"
     ? `${CHAT_SHARED_CONTEXT}${ASK_MODE_RULES}`

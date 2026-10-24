@@ -124,3 +124,5 @@ See [docs/DEVELOPMENT.md](DEVELOPMENT.md) for variable names (no secret values).
 - Matcher in `proxy.ts` excludes static files (`.*\\..*`)
 
 Editor render contract, export synchronization, and color limitations: [EDITOR_RENDERING.md](EDITOR_RENDERING.md).
+
+Agent edit requests execute free plans automatically. If the model returns an unnecessary permission question instead of a tool call, the server makes one bounded recovery using the same original request and chat charge. Ask mode and genuine clarification questions do not trigger recovery; paid tools retain cost approval before execution.

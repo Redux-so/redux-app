@@ -27,7 +27,7 @@ function compile(path, adapters) {
 const turnId = "b501765b-7815-4a8a-986d-43ab939294b9";
 function host(options = {}) {
   const rows = options.rows ?? [];
-  const state = { modelCalls: 0, charges: 0, refunds: 0, updates: 0, uploads: 0, modelMessages: [], toolPlans: [], modelTools: [] };
+  const state = { modelCalls: 0, charges: 0, refunds: 0, updates: 0, uploads: 0, modelMessages: [], toolPlans: [], modelTools: [], modelConfigs: [] };
   const matches = (row, where) => row.imageId === where.imageId && where.image.userId === "user-a" &&
     row.imageId === "photo-a" && (!where.status || row.status === where.status) &&
     (!where.sequence || row.sequence < where.sequence.lt);
@@ -59,19 +59,21 @@ function host(options = {}) {
     __clock: options.clock,
     "@/lib/prisma": { prisma }, "@/lib/require-user": auth, "@/lib/chat-history": history,
     "@/lib/anthropic": {
-      formatAdjustmentsForPrompt: () => "Current adjustments", anthropic: { messages: { stream({ messages, tools }) {
+      formatAdjustmentsForPrompt: () => "Current adjustments", anthropic: { messages: { stream({ messages, tools, tool_choice, system }) {
+        const attempt = options.modelAttempts?.[state.modelCalls] ?? options;
+        state.modelConfigs.push({ tool_choice, system });
         state.modelCalls++; state.modelMessages = messages; state.modelTools = tools ?? [];
         let aborted = false;
         return {
           abort() { aborted = true; },
           async *[Symbol.asyncIterator]() {
-            for (const event of options.modelEvents ?? []) yield event;
-            for (const text of options.chunks ?? ['Done. ', '[adjustments]{"exposure":12}[/adjustments]']) {
+            for (const event of attempt.modelEvents ?? []) yield event;
+            for (const text of attempt.chunks ?? ['Done. ', '[adjustments]{"exposure":12}[/adjustments]']) {
               if (aborted) throw new Error("aborted");
               yield { type: "content_block_delta", delta: { type: "text_delta", text } };
               options.afterChunk?.();
             }
-            if (options.failStream || aborted) throw new Error("model interrupted");
+            if (attempt.failStream || aborted) throw new Error("model interrupted");
           },
         };
       } } },
@@ -341,7 +343,7 @@ function chatPanelHost(mode, options = {}) {
   let messages = [];
   let network;
   const edits = [];
-  const response = new Response(new ReadableStream({ start(controller) { network = controller; } }));
+  const response = options.response ?? new Response(new ReadableStream({ start(controller) { network = controller; } }));
   const constants = load("../constants/chat-interaction-mode.ts");
   const historyHook = () => ({ messages,
     setMessages(value) { messages = typeof value === "function" ? value(messages) : value; },
@@ -355,6 +357,7 @@ function chatPanelHost(mode, options = {}) {
     "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => options.reduceMotion === true },
     "react-dom": { flushSync: (callback) => callback(), createPortal: (children) => children },
     "@/hooks/useImageChatHistory": { useImageChatHistory: historyHook },
+    "@/lib/create-uuid": { createUuid: options.createUuid ?? (() => turnId) },
     "@/hooks/useEditorChatTools": { chatToolsRequest: async () => ({ ok: true }) },
     "@/constants/chat-interaction-mode": { ...constants, DEFAULT_CHAT_INTERACTION_MODE: mode },
     __globals: { TextDecoder, DOMException, crypto: { randomUUID: () => turnId },
@@ -600,4 +603,93 @@ test("mobile chat reuses desktop drafts and opens even if the desktop panel was 
   assert.equal(closes, 1);
   options.mobileLayout = false;
   assert.equal(panel.find((node) => node.type === "textarea"), undefined, "desktop collapse preference remains intact");
+});
+
+
+test("mobile chat accepts text and sends suggestion prompts when randomUUID is unavailable", async () => {
+  const { createUuid } = compile("../lib/create-uuid.ts", {
+    __globals: { crypto: { getRandomValues: (array) => array.fill(7) } },
+  });
+  const panel = chatPanelHost("ask", { mobileLayout: true, createUuid });
+  const input = () => panel.find((node) => node.type === "textarea");
+  assert.equal(input().props.disabled, false);
+  input().props.onFocus();
+  input().props.onChange({ target: { value: "Make it warmer" } });
+  assert.equal(input().props.value, "Make it warmer");
+  input().props.onBlur();
+  const suggestions = panel.find((node) => typeof node.props?.onSelectSuggestion === "function");
+  assert.equal(suggestions.props.disabled, false);
+  suggestions.props.onSelectSuggestion("Balance the colors");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(panel.messages()[0].content, "Balance the colors");
+  assert.match(panel.messages()[0].id, /^[0-9a-f-]{36}:user$/);
+  await panel.finish();
+});
+
+
+test("Agent recovers a permission-only reply into a free edit plan with one chat charge", async () => {
+  const plan = { actions: [{ type: "adjust", values: { exposure: 25, shadows: 15 } }] };
+  const app = host({ modelAttempts: [
+    { chunks: ["Would you like me to apply these changes?"] },
+    { chunks: [], modelEvents: [
+      { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
+      { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan) } },
+    ] },
+  ] });
+  const result = events(await (await app.send({ toolsEnabled: true })).text());
+  assert.equal(app.state.modelCalls, 2);
+  assert.equal(app.state.charges, 1);
+  assert.equal(app.state.toolPlans.length, 1);
+  assert.equal(app.state.modelConfigs[1].tool_choice.type, "tool");
+  assert.equal(app.state.modelConfigs[1].tool_choice.name, "edit_photo");
+  const prepared = result.find((event) => event.type === "tools").plan;
+  assert.equal(prepared.credits, 0, "free sliders must not trigger the paid approval path");
+  assert.deepEqual(prepared.actions, plan.actions);
+  assert.ok(result.some((event) => event.type === "done"));
+});
+
+test("Agent recovery is bounded and Ask permission replies never trigger tools", async () => {
+  const question = "Would you like me to apply these changes?";
+  const agent = host({ chunks: [question] });
+  const result = events(await (await agent.send({ toolsEnabled: true })).text());
+  assert.equal(agent.state.modelCalls, 2);
+  assert.equal(agent.state.toolPlans.length, 0);
+  assert.ok(result.some((event) => event.type === "interrupted"));
+  const ask = host({ chunks: [question] });
+  await (await ask.send({ toolsEnabled: true, chatInteractionMode: "ask" })).text();
+  assert.equal(ask.state.modelCalls, 1);
+  assert.equal(ask.state.toolPlans.length, 0);
+});
+
+test("Agent permission recovery preserves real clarification questions", () => {
+  const { agentReplyRequestsEditPermission } = load("../lib/chat-edit-intent.ts");
+  assert.equal(agentReplyRequestsEditPermission("Should I brighten your image?"), true);
+  assert.equal(agentReplyRequestsEditPermission("Would you like me to apply these adjustments?"), true);
+  assert.equal(agentReplyRequestsEditPermission("Should I crop the left or right side?"), false);
+  assert.equal(agentReplyRequestsEditPermission("Which area should I edit?"), false);
+  assert.equal(agentReplyRequestsEditPermission("Would you like me to explain the histogram?"), false);
+});
+
+
+test("mobile Agent turns a permission-only model reply into automatically applied slider edits", async () => {
+  const plan = { actions: [{ type: "adjust", values: { exposure: 25 } }] };
+  const server = host({ modelAttempts: [
+    { chunks: ["Would you like me to apply these changes?"] },
+    { chunks: [], modelEvents: [
+      { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
+      { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan) } },
+    ] },
+  ] });
+  let exposure = 0, applications = 0;
+  const panel = chatPanelHost("agent", { mobileLayout: true, response: await server.send({ toolsEnabled: true }),
+    onExecuteTools: async (prepared) => {
+      applications++; exposure = prepared.actions[0].values.exposure;
+      return "Brightened your photo.";
+    },
+  });
+  await panel.submit();
+  assert.equal(applications, 1);
+  assert.equal(exposure, 25);
+  assert.equal(panel.messages().at(-1).content, "Brightened your photo.");
+  assert.equal(server.state.charges, 1);
 });
