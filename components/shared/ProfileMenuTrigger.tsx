@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { forwardRef } from "react";
 import { Icon } from "@/components/shared/Icon";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import {
   LIBRARY_SIDEBAR_PROFILE_BTN,
   LIBRARY_SIDEBAR_PROFILE_BTN_OPEN,
@@ -78,8 +79,10 @@ const ProfileMenuTrigger = forwardRef<HTMLButtonElement, ProfileMenuTriggerProps
           <span className="text-white text-[14px] leading-[1.3] font-medium truncate">
             {userName}
           </span>
-          <span className="text-[#888888] text-[12px] leading-[1.3] whitespace-nowrap truncate">
-            {credits !== null ? credits.toLocaleString() : "—"} Credits
+          <span className="flex h-[1.3em] items-center text-[#888888] text-[12px] leading-[1.3] whitespace-nowrap">
+            {credits !== null ? `${credits.toLocaleString()} Credits` : (
+              <LoadingSpinner size="xs" label="Loading credits" />
+            )}
           </span>
         </div>
         <Icon name="ChevronDown" size={16} className="ml-auto shrink-0 text-[#888888]" aria-hidden />
