@@ -14,19 +14,19 @@ import { SURFACE_GHOST_BTN, SURFACE_POPOVER } from "@/lib/surface-colors";
 const STEPS: { title: string; description: string }[] = [
   {
     title: "Welcome to Redux",
-    description: "Your agentic photo editing platform. Upload a photo, describe your edits, and export the result.",
+    description: "The agentic photo editing platform",
   },
   {
     title: "Start with a photo",
-    description: "Upload your first photo to the library. Keep photos organized with albums, then open one to start editing.",
+    description: "Upload a photo, organize it in an album, and open it to edit.",
   },
   {
     title: "Edit your way",
-    description: "Use adjustment tools yourself or describe what you want in chat. Agent mode applies edits; Ask mode offers guidance.",
+    description: "Adjust your photo manually or let Agent edit it. Use Ask for advice.",
   },
   {
     title: "Save and export",
-    description: "Edits save automatically. Use History to revisit earlier versions, then export your finished photo. Some AI tools require credits and show their cost before running.",
+    description: "Edits save automatically. Revisit versions in History and download your photo.",
   },
 ];
 
@@ -91,10 +91,10 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
               initial={reduceMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}
-              className={`${SURFACE_POPOVER} pointer-events-auto flex aspect-square w-[min(480px,calc(100vw-32px),calc(var(--app-height,100dvh)-32px))] flex-col overflow-hidden rounded-xl shadow-2xl outline-none`}
+              className={`${SURFACE_POPOVER} pointer-events-auto [container-type:size] flex aspect-square w-[min(480px,calc(100vw-32px),calc(var(--app-height,100dvh)-32px))] flex-col overflow-hidden rounded-xl shadow-2xl outline-none`}
             >
               <div className="flex shrink-0 items-center justify-between px-5 pt-4 sm:px-6">
-                <span className="text-[12px] text-[#888888]" aria-live="polite" aria-atomic="true">
+                <span className="text-[10px] text-[#888888]" aria-live="polite" aria-atomic="true">
                   {step + 1} of {STEPS.length}
                 </span>
                 <button
@@ -102,9 +102,9 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
                   aria-label="Close introduction"
                   disabled={saving}
                   onClick={() => void dismiss()}
-                  className="-mr-2 flex h-9 w-9 items-center justify-center rounded-md text-[#888888] hover:bg-[#1d1d1d] hover:text-white disabled:opacity-40 cursor-pointer"
+                  className="-mr-2 flex h-8 w-8 items-center justify-center rounded-md text-[#888888] hover:bg-[#1d1d1d] hover:text-white disabled:opacity-40 cursor-pointer"
                 >
-                  <Icon name="XClose" size={20} />
+                  <Icon name="XClose" size={16} />
                 </button>
               </div>
               <ol aria-label="Introduction progress" className="mt-2 flex shrink-0 gap-1.5 px-5 sm:px-6">
@@ -113,23 +113,23 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
                     key={item.title}
                     aria-current={index === step ? "step" : undefined}
                     aria-label={`Step ${index + 1}: ${item.title}${index <= step ? ", viewed" : ""}`}
-                    className={`h-[3px] flex-1 rounded-sm transition-colors motion-reduce:transition-none ${index <= step ? "bg-[#ededed]" : "bg-[#333333]"}`}
+                    className={`h-[2px] flex-1 rounded-sm transition-colors motion-reduce:transition-none ${index <= step ? "bg-[#ededed]" : "bg-[#333333]"}`}
                   />
                 ))}
               </ol>
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-4 sm:px-10">
-                <div className={`my-auto shrink-0 ${step === 0 ? "text-center" : ""}`}>
-                  {step === 0 && <BrandLogo width={48} height={48} decorative className="mx-auto mb-3 h-12 w-12 object-contain" />}
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-7 py-5 sm:px-12">
+                <div className={`my-auto min-h-0 w-full ${step === 0 ? "flex flex-col items-center gap-5 text-center" : "translate-y-2"}`}>
+                  {step === 0 && <BrandLogo width={64} height={64} decorative className="mx-auto h-16 w-16 object-contain" />}
                   {step > 0 && <IntroductionPreview step={step} />}
-                  <Dialog.Title className="text-[22px] font-medium leading-tight text-white sm:text-[26px]">
+                  <Dialog.Title className={`font-medium leading-tight text-white ${step === 0 ? "text-[26px] sm:text-[30px]" : "text-[16px] sm:text-[18px]"}`}>
                     {current.title}
                   </Dialog.Title>
-                  <Dialog.Description className="mt-3 text-[13px] leading-relaxed text-[#888888] sm:text-[14px]">
+                  <Dialog.Description className={`leading-relaxed text-[#888888] ${step === 0 ? "text-[14px] sm:text-[15px]" : "mt-2.5 text-[11px]"}`}>
                     {current.description}
                   </Dialog.Description>
                 </div>
               </div>
-              <div className="shrink-0 px-6 pb-5 sm:px-10 sm:pb-8">
+              <div className="shrink-0 px-7 pb-6 sm:px-12 sm:pb-7">
                 {error && <p role="alert" className="mb-3 text-[12px] text-white">{error}</p>}
                 <div className="flex items-center justify-end gap-3">
                   <div className="flex items-center gap-2">
@@ -138,12 +138,12 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
                       aria-label="Previous step"
                       disabled={step === 0 || saving}
                       onClick={() => setStep((previous) => Math.max(0, previous - 1))}
-                      className={`${SURFACE_GHOST_BTN} flex h-9 w-9 items-center justify-center rounded-md disabled:opacity-30 disabled:cursor-not-allowed`}
+                      className={`${SURFACE_GHOST_BTN} flex h-8 w-8 items-center justify-center rounded-md disabled:opacity-30 disabled:cursor-not-allowed`}
                     >
-                      <Icon name="ChevronLeft" size={20} />
+                      <Icon name="ChevronLeft" size={16} />
                     </button>
                     {lastStep ? (
-                      <button type="button" disabled={saving} onClick={() => void dismiss()} className={BTN_MODAL_SOLID}>
+                      <button type="button" disabled={saving} onClick={() => void dismiss()} className={`${BTN_MODAL_SOLID} !h-8 !px-3 !text-[12px]`}>
                         {saving ? <LoadingSpinner size="xs" label="Saving introduction" /> : "Finish"}
                       </button>
                     ) : (
@@ -155,9 +155,9 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
                           const next = Math.min(STEPS.length - 1, step + 1);
                           setStep(next);
                         }}
-                        className={`${SURFACE_GHOST_BTN} flex h-9 w-9 items-center justify-center rounded-md disabled:opacity-30 disabled:cursor-not-allowed`}
+                        className={`${SURFACE_GHOST_BTN} flex h-8 w-8 items-center justify-center rounded-md disabled:opacity-30 disabled:cursor-not-allowed`}
                       >
-                        <Icon name="ChevronRight" size={20} />
+                        <Icon name="ChevronRight" size={16} />
                       </button>
                     )}
                   </div>
