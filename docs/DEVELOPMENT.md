@@ -98,6 +98,8 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 
 ## Validate a change
 
+For library onboarding, `node scripts/verify-introduction.mjs` checks step navigation, account dismissal, persistence errors/retry and Settings replay without calling Clerk. Verify the square dialog, focus handling and new-account dismissal across refreshes in a signed-in browser too.
+
 For responsive library/editor changes, `node scripts/verify-mobile-layout.mjs`
 checks real component handlers, breakpoint switching, keyboard viewport tracking,
 canvas measurement and touch gestures, and compiles the client modules and CSS.

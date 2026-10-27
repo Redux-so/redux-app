@@ -13,6 +13,7 @@ import {
 import { useInfiniteScrollSentinel } from "@/hooks/useInfiniteScrollSentinel";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import LibraryHeader from "@/components/library/LibraryHeader";
+import Introduction from "@/components/shared/Introduction";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
 import MobileLibraryNavigation from "@/components/library/MobileLibraryNavigation";
 import { useMobileLayout } from "@/hooks/useMobileLayout";
@@ -620,6 +621,7 @@ export default function LibraryPageClient({
         void upload.uploadFiles(Array.from(event.dataTransfer.files));
       }}
     >
+      <Introduction key={ownerId} automatic />
       <div className="hidden lg:contents">{!mobileLayout && sidebar}</div>
       <div inert={mobileLayout && mobileNavigationOpen ? true : undefined} className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden bg-[#161616]">
         <main

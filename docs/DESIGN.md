@@ -51,6 +51,9 @@ Toolbar (h-16)
 
 ## Layout — settings
 
+- First library visits show a four-step square introduction with step count, close button, back/next arrows and Finish. Closing (including Escape) or finishing records `reduxIntroductionDismissed` in the account's Clerk unsafe metadata. Accounts without that flag see it once, including existing accounts encountering the introduction for the first time. Settings → About → Introduction replays it without clearing completion. The dialog uses the existing dark surfaces and white modal CTA, traps focus and fits the smaller viewport dimension; text can scroll on very small screens without changing the square.
+- Four thin blocks below the step count fill through the current step and clear later blocks when navigating back. Welcome centers the Redux logo above its heading and description with equal gaps; the other steps show illustrative library, editor/chat and export windows using the existing Fuji photo. Preview controls are decorative and do not perform actions.
+
 - Max width ~880px; tab nav 172px desktop; sections in `components/settings/settings-nav.ts`
 - Back navigation via `?returnTo=` (`lib/settings-navigation.ts`)
 

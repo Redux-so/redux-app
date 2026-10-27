@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import toast from "react-hot-toast";
 import SettingsBackButton from "@/components/shared/SettingsBackButton";
+import Introduction from "@/components/shared/Introduction";
 import { BTN_BRAND_SOLID } from "@/lib/button-styles";
 import { BRAND_LINK_TEXT_CLASS, BRAND_LINK_TEXT_HOVER_CLASS } from "@/lib/brand-colors";
 import CreditShopModal from "@/components/shared/CreditShopModal";
@@ -544,6 +545,11 @@ export default function SettingsPage() {
               <p className="text-[#888888] text-[14px] mt-2 leading-relaxed">
                 Agentic photo editing platform
               </p>
+            </div>
+
+            <div className={SETTING_ROW}>
+              <span className="text-[14px] text-white">Getting started</span>
+              <Introduction />
             </div>
 
             <div className={SETTING_ROW}>
