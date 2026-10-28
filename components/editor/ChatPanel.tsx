@@ -375,7 +375,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
       : null;
 
   return (
-    <div className={`${CHAT_TOOLBAR_TRIGGER_WRAP} -ml-2`}>
+    <div className={CHAT_TOOLBAR_TRIGGER_WRAP}>
       <button
         ref={triggerRef}
         type="button"
@@ -385,13 +385,13 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
         disabled={disabled}
         onClick={handleToggle}
         className={[
+          TOOLBAR_CHIP,
           "inline-flex",
           TOOLBAR_CHIP_H,
-          "shrink-0 items-center justify-center gap-0.5 rounded-md px-1 text-[12px] transition-colors",
+          "shrink-0 items-center justify-center gap-0.5 pl-2 pr-1.5 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
-            : "cursor-pointer hover:bg-white/[0.06]",
-          open && !disabled ? "bg-white/[0.06]" : "",
+            : "cursor-pointer hover:border-[#2e2e2e]",
         ].join(" ")}
       >
         <span className="whitespace-nowrap font-semibold leading-none text-[#888888]">
@@ -1481,13 +1481,7 @@ export default function ChatPanel({
             >
               {/* Upper input field */}
               <div className="chat-composer-field flex min-h-[76px] items-start px-4 pt-3 pb-3">
-                <div className="flex w-full items-center gap-3.5">
-                  <BrandLogo
-                    width={46}
-                    height={46}
-                    className="shrink-0 -translate-y-1"
-                    decorative
-                  />
+                <div className="flex w-full items-center gap-3.5 pl-1 pt-1">
                   <div className="relative min-w-0 flex-1">
                     {chatBlocked && !input && (
                       <span
@@ -1547,6 +1541,8 @@ export default function ChatPanel({
                     onModeChange={setChatInteractionMode}
                   />
 
+                  <ChatModelSelector disabled={chatBlocked} />
+
                   <div className={CHAT_TOOLBAR_RING_SLOT}>
                     <UsageRing
                       quota={chatQuota}
@@ -1554,8 +1550,6 @@ export default function ChatPanel({
                       reduceMotion={!!prefersReducedMotion}
                     />
                   </div>
-
-                  <ChatModelSelector disabled={chatBlocked} />
                 </div>
 
                 <div className="flex shrink-0 items-center">
