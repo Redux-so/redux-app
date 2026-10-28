@@ -1,5 +1,7 @@
 "use client";
 
+import { usePopupMotion } from "@/lib/popup-motion";
+
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -21,6 +23,8 @@ export default function AlbumNameModal({
   initialName = "",
   mode = "create",
 }: AlbumNameModalProps) {
+  const popupMotion = usePopupMotion();
+  const backdropMotion = usePopupMotion(true);
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,10 +72,7 @@ export default function AlbumNameModal({
         <>
           <motion.div
             key="album-name-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            {...backdropMotion}
             className="fixed inset-0 z-[60] bg-black/60"
             onClick={() => {
               if (!submitting) onClose();
@@ -79,10 +80,7 @@ export default function AlbumNameModal({
           />
           <motion.div
             key="album-name-modal"
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
+            {...popupMotion}
             className="viewport-modal fixed inset-0 z-[70] flex items-center justify-center pointer-events-none px-4"
           >
             <form

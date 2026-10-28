@@ -124,7 +124,7 @@ export default function FilterDateField({
         <div
           role="dialog"
           aria-label={`${label} calendar`}
-          className={`absolute left-0 top-[calc(100%+6px)] z-[60] w-[260px] rounded-lg p-3 ${LIBRARY_PANEL_POPOVER}`}
+          className={`redux-popup-enter absolute left-0 top-[calc(100%+6px)] z-[60] w-[260px] rounded-lg p-3 ${LIBRARY_PANEL_POPOVER}`}
         >
           <div className="mb-3 flex items-center justify-between">
             <button

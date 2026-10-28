@@ -46,9 +46,9 @@ const reduxFormElements = {
 
 /** UserProfile modal (Edit Profile / Security) — rendered in a body portal by openUserProfile(). */
 const reduxUserProfileElements = {
-  modalBackdrop: "!bg-black/70",
+  modalBackdrop: "redux-popup-backdrop !bg-black/70",
   modalContent:
-    "!rounded-xl !border !border-[#212121] !bg-[#121212] !shadow-2xl",
+    "redux-popup-enter !rounded-xl !border !border-[#212121] !bg-[#121212] !shadow-2xl",
   rootBox: "!bg-[#121212]",
   cardBox: "!shadow-none",
   card: "!rounded-xl !border !border-[#212121] !bg-[#121212] !shadow-none",

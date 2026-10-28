@@ -35,9 +35,9 @@ export const defaultToastOptions: DefaultToastOptions = {
   error: sharedToastOptions,
 };
 
-/** Opacity only: leave placement and stacking to the existing toaster. */
+/** Match popup timing and movement; the toaster still owns placement and stacking. */
 export function toastAnimation(visible: boolean): string {
   return visible
-    ? "redux-toast-appear 160ms ease-out both"
-    : "redux-toast-disappear 120ms ease-in both";
+    ? "redux-toast-appear 200ms ease-out both"
+    : "redux-toast-disappear 200ms ease-out both";
 }

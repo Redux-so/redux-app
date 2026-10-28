@@ -1,5 +1,7 @@
 "use client";
 
+import { usePopupMotion } from "@/lib/popup-motion";
+
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Icon } from "@/components/shared/Icon";
@@ -25,6 +27,7 @@ export default function AlbumSidebarRow({
   onRequestRename,
   onRequestDelete,
 }: AlbumSidebarRowProps) {
+  const popupMotion = usePopupMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -96,10 +99,7 @@ export default function AlbumSidebarRow({
         {menuOpen && (
           <motion.div
             key={`album-menu-${album.id}`}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            {...popupMotion}
             className="absolute right-0 top-[calc(100%+4px)] z-30 min-w-[160px] rounded-lg border border-[#212121] bg-[#121212] p-1 shadow-2xl"
           >
             <button

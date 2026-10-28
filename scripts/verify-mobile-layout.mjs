@@ -155,7 +155,9 @@ test("chat mode and model menus open, stay inside the keyboard viewport, and acc
   const window = { innerWidth: 320, innerHeight: 800, visualViewport: viewport };
   const position = compile("../lib/chat-popover-position.ts", { __globals: { window } });
   const { ChatModelSelector, ChatInteractionModeSelector } = compile("../components/editor/ChatPanel.tsx", {
+    "@/constants/brand": { BRAND_LOGO_IMAGE: { src: "/logo.png" } },
     "@/lib/chat-popover-position": position,
+    "@/lib/popup-motion": { usePopupMotion: () => ({}) },
     "react-dom": { createPortal: (children) => children },
     "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => true },
     __globals: { window, document: { body: {} } },

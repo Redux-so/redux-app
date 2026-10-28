@@ -1,5 +1,7 @@
 "use client";
 
+import { usePopupMotion } from "@/lib/popup-motion";
+
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 import { useEffect, useRef, useState } from "react";
@@ -30,6 +32,7 @@ export default function PhotoCardAlbumMenu({
   onAlbumMembershipChange,
 }: PhotoCardAlbumMenuProps) {
   const mobileLayout = useMobileLayout();
+  const popupMotion = usePopupMotion();
   const [open, setOpen] = useState(false);
   const [pendingAlbumId, setPendingAlbumId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -173,10 +176,7 @@ export default function PhotoCardAlbumMenu({
         {open && !mobileLayout && (
           <motion.div
             key="photo-card-album-menu"
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            {...popupMotion}
             className="photo-card-album-menu absolute left-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-[#212121] bg-[#121212] p-2 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
@@ -187,12 +187,12 @@ export default function PhotoCardAlbumMenu({
       {mobileLayout && (
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
+            <Dialog.Overlay className="redux-popup-backdrop fixed inset-0 z-50 bg-black/60" />
             <div className="viewport-modal pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
               <Dialog.Content
                 aria-describedby={undefined}
                 data-photo-card-owner={imageId}
-                className="pointer-events-auto relative w-full max-w-[360px] rounded-lg border border-[#212121] bg-[#121212] p-3 shadow-2xl outline-none"
+                className="redux-popup-enter pointer-events-auto relative w-full max-w-[360px] rounded-lg border border-[#212121] bg-[#121212] p-3 shadow-2xl outline-none"
                 onClick={(event) => event.stopPropagation()}
                 onCloseAutoFocus={(event) => {
                   event.preventDefault();

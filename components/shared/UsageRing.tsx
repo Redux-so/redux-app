@@ -264,7 +264,7 @@ export default function UsageRing({
               zIndex: 90,
             }}
             className={[
-              "pointer-events-auto whitespace-nowrap rounded-md px-3 py-2",
+              "redux-popup-enter pointer-events-auto whitespace-nowrap rounded-md px-3 py-2",
               CHAT_POPOVER_CHROME,
               CHAT_SURFACE_SHADOW,
             ].join(" ")}

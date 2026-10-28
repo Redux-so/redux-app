@@ -174,7 +174,7 @@ export default function LibraryFiltersPopover({
     <div
       ref={panelRef}
       className={[
-        "library-filters-popover overflow-y-auto rounded-lg p-4 outline-none",
+        "redux-popup-enter library-filters-popover overflow-y-auto rounded-lg p-4 outline-none",
         LIBRARY_PANEL_POPOVER,
         mobileLayout
           ? "mobile-filter-dialog pointer-events-auto relative w-full max-w-[360px] max-h-[calc(var(--app-height,100dvh)-32px)]"
@@ -352,7 +352,7 @@ export default function LibraryFiltersPopover({
   return (
     <Dialog.Root open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
+        <Dialog.Overlay className="redux-popup-backdrop fixed inset-0 z-50 bg-black/60" />
         <div className="viewport-modal fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
           <Dialog.Content asChild aria-describedby={undefined} onCloseAutoFocus={(event) => {
             event.preventDefault();

@@ -21,11 +21,11 @@ export default function MobileLibraryNavigation({ open, onOpenChange, children }
         </Dialog.Trigger>
       </div>
       <Dialog.Portal>
-        <div className="fixed inset-0 z-40 bg-black/60 lg:hidden" aria-hidden onClick={() => onOpenChange(false)} />
+        <div className="redux-popup-backdrop fixed inset-0 z-40 bg-black/60 lg:hidden" aria-hidden onClick={() => onOpenChange(false)} />
         <Dialog.Content
           aria-modal="true"
           onInteractOutside={(event) => event.preventDefault()}
-          className="mobile-library-drawer fixed inset-y-0 left-0 z-50 w-[260px] max-w-[calc(100vw-48px)] outline-none lg:hidden"
+          className="redux-popup-enter mobile-library-drawer fixed inset-y-0 left-0 z-50 w-[260px] max-w-[calc(100vw-48px)] outline-none lg:hidden"
         >
           <Dialog.Title className="sr-only">Library navigation</Dialog.Title>
           <Dialog.Description className="sr-only">Browse your library, albums, and account.</Dialog.Description>

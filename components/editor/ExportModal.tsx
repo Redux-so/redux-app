@@ -115,7 +115,7 @@ export default function ExportModal({
 
   return createPortal(
     <div
-      className="viewport-modal fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      className="redux-popup-backdrop viewport-modal fixed inset-0 z-50 flex items-center justify-center bg-black/70"
       onClick={(e) => {
         if (e.target === e.currentTarget && !loading) {
           onClose();
@@ -126,7 +126,7 @@ export default function ExportModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="mx-4 w-full max-w-[480px] max-h-[calc(var(--app-height,100dvh)-32px)] overflow-y-auto rounded-xl border border-[#212121] bg-[#121212] p-6 shadow-2xl"
+        className="redux-popup-enter mx-4 w-full max-w-[480px] max-h-[calc(var(--app-height,100dvh)-32px)] overflow-y-auto rounded-xl border border-[#212121] bg-[#121212] p-6 shadow-2xl"
       >
         {/* Header — same typography as Upload modal */}
         <div className="mb-5 flex items-center justify-between">

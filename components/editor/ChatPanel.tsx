@@ -1,5 +1,7 @@
 "use client";
 
+import { usePopupMotion } from "@/lib/popup-motion";
+
 import { positionChatPopover } from "@/lib/chat-popover-position";
 import { createUuid } from "@/lib/create-uuid";
 import dynamic from "next/dynamic";
@@ -231,13 +233,12 @@ function ChatModelIcon({ menu = false }: { menu?: boolean }) {
 }
 
 function ChatModelSelector({ disabled }: { disabled?: boolean }) {
+  const popupMotion = usePopupMotion();
   const [open, setOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>(AVAILABLE_MODELS[0].id);
-  const [placement, setPlacement] = useState<"above" | "below">("above");
   const [menuCoords, setMenuCoords] = useState<ReturnType<typeof positionChatPopover> | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
 
   const selectedModel =
     AVAILABLE_MODELS.find((model) => model.id === selectedModelId) ?? AVAILABLE_MODELS[0];
@@ -249,7 +250,6 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
     const rect = trigger.getBoundingClientRect();
     const menuHeight = menuRef.current?.offsetHeight ?? MODEL_MENU_ESTIMATED_HEIGHT;
     const position = positionChatPopover(rect, modelMenuWidthPx(rect.width), menuHeight);
-    setPlacement(position.placement);
     setMenuCoords(position);
   }, []);
 
@@ -314,7 +314,6 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
     setOpen(false);
   }
 
-  const menuOffsetY = placement === "above" ? 4 : -4;
 
   const menu =
     typeof document !== "undefined"
@@ -326,10 +325,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                 key="model-menu"
                 role="menu"
                 aria-label="Model options"
-                initial={{ opacity: 0, y: menuOffsetY }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: menuOffsetY }}
-                transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                {...popupMotion}
                 style={{
                   top: menuCoords.top,
                   left: menuCoords.left,
@@ -442,12 +438,11 @@ function ChatInteractionModeSelector({
   mode: ChatInteractionModeId;
   onModeChange: (mode: ChatInteractionModeId) => void;
 }) {
+  const popupMotion = usePopupMotion();
   const [open, setOpen] = useState(false);
-  const [placement, setPlacement] = useState<"above" | "below">("above");
   const [menuCoords, setMenuCoords] = useState<ReturnType<typeof positionChatPopover> | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
 
   const selectedMode = getChatInteractionMode(mode);
 
@@ -458,7 +453,6 @@ function ChatInteractionModeSelector({
     const rect = trigger.getBoundingClientRect();
     const menuHeight = menuRef.current?.offsetHeight ?? INTERACTION_MENU_ESTIMATED_HEIGHT;
     const position = positionChatPopover(rect, interactionMenuWidthPx(rect.width), menuHeight);
-    setPlacement(position.placement);
     setMenuCoords(position);
   }, []);
 
@@ -523,7 +517,6 @@ function ChatInteractionModeSelector({
     setOpen(false);
   }
 
-  const menuOffsetY = placement === "above" ? 4 : -4;
 
   const menu =
     typeof document !== "undefined"
@@ -535,10 +528,7 @@ function ChatInteractionModeSelector({
                 key="interaction-mode-menu"
                 role="menu"
                 aria-label="Interaction mode options"
-                initial={{ opacity: 0, y: menuOffsetY }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: menuOffsetY }}
-                transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeOut" }}
+                {...popupMotion}
                 style={{
                   top: menuCoords.top,
                   left: menuCoords.left,

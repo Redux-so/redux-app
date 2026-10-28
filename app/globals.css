@@ -362,18 +362,18 @@ button:disabled:has([data-loading-spinner]) {
 }
 
 @keyframes redux-toast-appear {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
 }
 
 @keyframes redux-toast-disappear {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from { opacity: 1; translate: 0 0; }
+  to { opacity: 0; translate: 0 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .redux-toaster .redux-toast {
-    animation-duration: 1ms !important;
+    animation: none !important;
   }
 }
 
@@ -460,7 +460,7 @@ button:disabled:has([data-loading-spinner]) {
   .chat-change-details { max-height: clamp(24px, calc(100cqh - 236px), 128px); }
   [data-keyboard-open="true"] .editor-shell[data-mobile-panel="chat"] .editor-tool-rail { display: none; }
   [data-keyboard-open="true"] .editor-workspace[data-mobile-panel="chat"] { grid-template-rows: 0 minmax(0, 1fr) 0; }
-  .mobile-library-drawer[data-state="open"] { animation: mobile-drawer-enter 150ms ease-out; }
+
   .viewport-modal input,
   .viewport-modal textarea,
   .library-shell input { font-size: 16px; }
@@ -489,14 +489,6 @@ button:disabled:has([data-loading-spinner]) {
   .photo-card:has(:focus-visible) .photo-card-actions button { pointer-events: auto; }
   .photo-card-actions button { min-width: 40px; min-height: 40px; }
 }
-@keyframes mobile-drawer-enter {
-  from { opacity: 0; transform: translateX(-12px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .mobile-library-drawer[data-state="open"] { animation: none; }
-}
-
 @media (max-width: 1023px) {
   .mobile-filter-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .mobile-filter-dialog { scrollbar-width: none; }
@@ -505,4 +497,20 @@ button:disabled:has([data-loading-spinner]) {
 @media (max-width: 1023px) and (max-height: 500px) and (min-width: 600px) {
   .mobile-filter-dialog { max-width: 720px; }
   .mobile-filter-sections { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Shared popup entrance, matching usePopupMotion and the introduction dialog.
+   Use translate separately so positioned tooltips retain their transform. */
+@keyframes redux-popup-enter {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes redux-popup-backdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.redux-popup-enter { animation: redux-popup-enter 200ms ease-out; }
+.redux-popup-backdrop { animation: redux-popup-backdrop 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .redux-popup-enter, .redux-popup-backdrop { animation: none; }
 }

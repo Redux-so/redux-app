@@ -1,9 +1,11 @@
 "use client";
 
+import { usePopupMotion } from "@/lib/popup-motion";
+
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import * as Dialog from "@radix-ui/react-dialog";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Icon } from "@/components/shared/Icon";
 import IntroductionPreview from "@/components/shared/IntroductionPreview";
 import BrandLogo from "@/components/shared/BrandLogo";
@@ -32,8 +34,8 @@ const STEPS: { title: string; description: string }[] = [
 
 /** Completion belongs to the account so it survives browser and device changes. */
 export default function Introduction({ automatic = false }: { automatic?: boolean }) {
+  const popupMotion = usePopupMotion();
   const { user, isLoaded } = useUser();
-  const reduceMotion = useReducedMotion();
   const [replayOpen, setReplayOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [step, setStep] = useState(0);
@@ -80,7 +82,7 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
         </Dialog.Trigger>
       )}
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/60" />
+        <Dialog.Overlay className="redux-popup-backdrop fixed inset-0 z-[80] bg-black/60" />
         <div className="viewport-modal fixed inset-0 z-[81] flex items-center justify-center p-4 pointer-events-none">
           <Dialog.Content
             asChild
@@ -88,9 +90,7 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
             onEscapeKeyDown={(event) => { if (saving) event.preventDefault(); }}
           >
             <motion.div
-              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
+              {...popupMotion}
               className={`${SURFACE_POPOVER} pointer-events-auto [container-type:size] flex aspect-square w-[min(480px,calc(100vw-32px),calc(var(--app-height,100dvh)-32px))] flex-col overflow-hidden rounded-xl shadow-2xl outline-none`}
             >
               <div className="flex shrink-0 items-center justify-between px-5 pt-4 sm:px-6">

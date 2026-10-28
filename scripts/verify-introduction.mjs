@@ -23,6 +23,7 @@ function mount({ metadata = {}, loaded = true, update = async () => {} } = {}) {
     );
     if (id === "framer-motion") return { motion: { div: "motion.div" }, useReducedMotion: () => false };
     if (id.startsWith("@/components/")) return { Icon: "Icon", LoadingSpinner: "Spinner" };
+    if (id === "@/lib/popup-motion") return { usePopupMotion: () => ({}) };
     if (id.startsWith("@/lib/")) return {};
     return require(id);
   } });

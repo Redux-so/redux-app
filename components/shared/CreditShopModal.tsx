@@ -1,5 +1,7 @@
 "use client";
 
+import { usePopupMotion } from "@/lib/popup-motion";
+
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/components/shared/Icon";
@@ -42,6 +44,8 @@ function isBestValueBundle(bundle: Bundle): boolean {
 const BEST_VALUE_BORDER_CLASS = `border-2 border-[${PRIMARY_BRAND_HEX}] shadow-[0_7px_16px_rgba(${PRIMARY_BRAND_RGB},0.1),0_13px_30px_rgba(${PRIMARY_BRAND_RGB},0.05)]`;
 
 export default function CreditShopModal({ open, onClose }: CreditShopModalProps) {
+  const popupMotion = usePopupMotion();
+  const backdropMotion = usePopupMotion(true);
   const [mounted, setMounted] = useState(false);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,10 +108,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
           {/* Backdrop */}
           <motion.div
             key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            {...backdropMotion}
             className="fixed inset-0 z-[80] bg-black/60"
             onClick={onClose}
           />
@@ -115,10 +116,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
           {/* Modal */}
           <motion.div
             key="modal"
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
+            {...popupMotion}
             className="viewport-modal fixed inset-0 z-[90] flex items-center justify-center pointer-events-none"
           >
             <div className="pointer-events-auto mx-4 w-full max-w-[440px] max-h-[calc(var(--app-height,100dvh)-32px)] overflow-y-auto bg-[#121212] border border-[#212121] rounded-xl shadow-2xl">

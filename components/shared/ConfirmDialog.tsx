@@ -30,8 +30,8 @@ export default function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70">
-      <div className="w-[360px] bg-[#121212] border border-[#212121] rounded-xl shadow-2xl p-6 flex flex-col gap-4">
+    <div className="redux-popup-backdrop fixed inset-0 z-[80] flex items-center justify-center bg-black/70">
+      <div className="redux-popup-enter w-[360px] bg-[#121212] border border-[#212121] rounded-xl shadow-2xl p-6 flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-[30px] h-[30px] rounded-md bg-[#1d1d1d] border border-[#262626] flex items-center justify-center">
             <Icon name="AlertTriangle" size={16} className="text-[#ef4444]" aria-hidden />

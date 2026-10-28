@@ -1,5 +1,7 @@
 "use client";
 
+import { usePopupMotion } from "@/lib/popup-motion";
+
 import { usePathname, useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Icon } from "@/components/shared/Icon";
@@ -92,6 +94,7 @@ export default function ProfileMenu({
   popoverCentered = false,
   settingsReturnPath,
 }: ProfileMenuProps) {
+  const popupMotion = usePopupMotion();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useUser();
@@ -227,10 +230,7 @@ export default function ProfileMenu({
               <motion.div
                 ref={menuRef}
                 key="profile-menu-portal"
-                initial={{ opacity: 0, scale: 0.95, y: 4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 4 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                {...popupMotion}
                 style={{
                   position: "fixed",
                   top: menuCoords.top,
@@ -263,10 +263,7 @@ export default function ProfileMenu({
             {popoverOpen && (
               <motion.div
                 key="popover"
-                initial={{ opacity: 0, scale: 0.95, y: 4 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 4 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                {...popupMotion}
                 className={[
                   "absolute bottom-full mb-2 z-50 bg-[#121212] border border-[#212121] rounded-xl shadow-2xl",
                   popoverCentered

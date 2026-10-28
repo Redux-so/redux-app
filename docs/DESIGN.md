@@ -72,7 +72,7 @@ Toolbar (h-16)
 | Brand logo | `BrandLogo`, `AppChromeLogo`, `constants/brand.ts` |
 | Profile | `ProfileMenu` — library footer + editor rail footer |
 | Modals | Portals to `document.body` (export, credits, upload, chat dropdowns) |
-| Toasts | One `AppToaster` in dashboard layout; bottom-right with safe-area spacing, opacity-only entry/exit, and shared styles in `lib/toast-styles.ts`; omit sentence punctuation in toast copy (including API messages) |
+| Toasts | One `AppToaster` in dashboard layout; bottom-right with safe-area spacing, shared popup fade and 8px rise, and shared styles in `lib/toast-styles.ts`; omit sentence punctuation in toast copy (including API messages) |
 | Loading | `LoadingSpinner` / `LoadingOverlay` |
 | Clerk auth UI | `ReduxClerkAuthShell`, `lib/redux-clerk-appearance.ts` |
 
@@ -83,6 +83,12 @@ Toolbar (h-16)
 - Buttons/chips: `rounded-md`
 - Inputs: `rounded-lg`
 - Clerk buttons: ~6px radius (not pill)
+
+## Popup motion
+
+- All app-owned dialogs, menus, tooltips, date pickers, drawers and notifications use a 200ms ease-out fade with an 8px upward entrance, matching onboarding. Backdrops fade without moving.
+- Framer Motion surfaces use `usePopupMotion` in `lib/popup-motion.ts`; CSS surfaces use `redux-popup-enter` and `redux-popup-backdrop` in `app/globals.css`. Both respect reduced motion. Keep these definitions synchronized.
+- Existing Framer surfaces reverse the entrance on exit; conditionally mounted CSS surfaces dismiss immediately.
 
 ## Interaction patterns
 
