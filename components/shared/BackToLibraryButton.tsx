@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 import { useEditorPreview } from "@/components/editor/EditorPreviewContext";
 import { Icon } from "@/components/shared/Icon";
@@ -15,20 +15,22 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 export default function BackToLibraryButton() {
   const router = useRouter();
   const editorPreview = useEditorPreview();
-  const [navigating, setNavigating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const navigating = saving || pending;
 
   async function handleClick() {
     if (navigating) return;
-    setNavigating(true);
+    setSaving(true);
     try {
       if (editorPreview?.imageId) {
         await editorPreview.saveEditorState();
       }
-      router.push("/library");
+      startTransition(() => router.push("/library"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save your edits.");
     } finally {
-      setNavigating(false);
+      setSaving(false);
     }
   }
 
@@ -37,6 +39,7 @@ export default function BackToLibraryButton() {
       type="button"
       onClick={() => void handleClick()}
       disabled={navigating}
+      aria-busy={navigating}
       aria-label="Back to Library"
       title="Back to Library"
       className={`inline-flex shrink-0 items-center justify-center w-10 h-10 rounded-md text-[#888888] transition-colors hover:bg-[#1d1d1d] hover:text-white cursor-pointer disabled:cursor-wait ${navigating ? "!opacity-100" : "disabled:opacity-60"}`}
