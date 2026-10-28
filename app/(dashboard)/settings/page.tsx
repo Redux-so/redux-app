@@ -541,7 +541,7 @@ export default function SettingsPage() {
           <Section label="About">
             <div className="py-5 border-b border-[#212121]">
               <p className="text-white text-[14px] font-medium">Redux</p>
-              <p className="text-[#888888] text-[14px] mt-[2px]">Version 1.0.0</p>
+              <p className="text-[#888888] text-[14px] mt-[2px]">Beta</p>
               <p className="text-[#888888] text-[14px] mt-2 leading-relaxed">
                 Agentic photo editing platform
               </p>
