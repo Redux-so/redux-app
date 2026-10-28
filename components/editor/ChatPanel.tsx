@@ -16,6 +16,7 @@ import { createPortal, flushSync } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import BrandLogo from "@/components/shared/BrandLogo";
+import { BRAND_LOGO_IMAGE } from "@/constants/brand";
 import { Icon } from "@/components/shared/Icon";
 import ChatEmptyState from "@/components/editor/ChatEmptyState";
 import { ShimmerText } from "@/components/shared/ShimmerText";
@@ -213,6 +214,22 @@ async function prepareChatAttachmentFile(
 // Component
 // ---------------------------------------------------------------------------
 
+function ChatModelIcon({ menu = false }: { menu?: boolean }) {
+  return (
+    <span aria-hidden className={`relative ${menu ? "size-4" : "size-6"} shrink-0`}>
+      <span
+        className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 bg-[#888888]"
+        style={{
+          maskImage: `url(${BRAND_LOGO_IMAGE.src})`,
+          maskSize: "contain",
+          maskRepeat: "no-repeat",
+          maskPosition: "center",
+        }}
+      />
+    </span>
+  );
+}
+
 function ChatModelSelector({ disabled }: { disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>(AVAILABLE_MODELS[0].id);
@@ -342,7 +359,10 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
                           : "text-[#888888] hover:bg-[#252525] hover:text-[#cccccc]",
                       ].join(" ")}
                     >
-                      <span className="min-w-0 shrink-0 font-medium">{model.label}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ChatModelIcon menu />
+                        <span className="shrink-0 font-medium">{model.label}</span>
+                      </span>
                       {isSelected ? (
                         <Icon
                           name="Check"
@@ -388,12 +408,13 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
           TOOLBAR_CHIP,
           "inline-flex",
           TOOLBAR_CHIP_H,
-          "shrink-0 items-center justify-center gap-0.5 pl-2 pr-1.5 text-[12px] transition-colors",
+          "shrink-0 items-center justify-center gap-0.5 px-2 text-[12px] transition-colors",
           disabled
             ? "cursor-not-allowed opacity-50"
             : "cursor-pointer hover:border-[#2e2e2e]",
         ].join(" ")}
       >
+        <ChatModelIcon />
         <span className="whitespace-nowrap font-semibold leading-none text-[#888888]">
           {selectedModel.label}
         </span>
@@ -401,7 +422,7 @@ function ChatModelSelector({ disabled }: { disabled?: boolean }) {
           name="ChevronDown"
           size={16}
           className={[
-            "size-4 shrink-0 -me-px text-[#888888] transition-transform duration-150",
+            "size-4 shrink-0 text-[#888888] transition-transform duration-150",
             open ? "rotate-180" : "",
           ].join(" ")}
           aria-hidden
