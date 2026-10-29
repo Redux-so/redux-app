@@ -84,10 +84,10 @@ test("four steps navigate in order, support going back, and finish permanently",
     button(app.render(), "Next step").props.onClick();
   }
   headings.push(title(app.render()));
-  assert.deepEqual(headings, ["Welcome to Redux", "Start with a photo", "Edit your way", "Save and export"]);
+  assert.deepEqual(headings, ["Welcome to Redux", "Upload a photo", "Edit your photo", "Export your photo"]);
   assert.equal(button(app.render(), "Next step"), undefined);
   button(app.render(), "Previous step").props.onClick();
-  assert.equal(title(app.render()), "Edit your way");
+  assert.equal(title(app.render()), "Edit your photo");
   button(app.render(), "Next step").props.onClick();
   const finish = find(app.render(), (node) => node.type === "button" && node.props.children === "Finish");
   await finish.props.onClick();

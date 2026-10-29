@@ -19,16 +19,16 @@ const STEPS: { title: string; description: string }[] = [
     description: "The agentic photo editing platform",
   },
   {
-    title: "Start with a photo",
-    description: "Upload a photo, organize it in an album, and open it to edit.",
+    title: "Upload a photo",
+    description: "Upload a photo and wait for it to appear in your library.",
   },
   {
-    title: "Edit your way",
-    description: "Adjust your photo manually or let Agent edit it. Use Ask for advice.",
+    title: "Edit your photo",
+    description: "Edit your image with adjustment sliders or chat to make changes.",
   },
   {
-    title: "Save and export",
-    description: "Edits save automatically. Revisit versions in History and download your photo.",
+    title: "Export your photo",
+    description: "Click Export in the top-right corner of the editor to download your finished photo.",
   },
 ];
 
@@ -124,7 +124,7 @@ export default function Introduction({ automatic = false }: { automatic?: boolea
                   <Dialog.Title className={`font-medium leading-tight text-white ${step === 0 ? "text-[26px] sm:text-[30px]" : "text-[16px] sm:text-[18px]"}`}>
                     {current.title}
                   </Dialog.Title>
-                  <Dialog.Description className={`leading-relaxed text-[#888888] ${step === 0 ? "text-[14px] sm:text-[15px]" : "mt-2.5 text-[11px]"}`}>
+                  <Dialog.Description className={`leading-relaxed text-[#888888] ${step === 0 ? "text-[14px] sm:text-[15px]" : "mt-2.5 text-[13px]"}`}>
                     {current.description}
                   </Dialog.Description>
                 </div>
