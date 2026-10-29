@@ -21,8 +21,8 @@ export default function IntroductionPreview({ step }: { step: number }) {
         loop
         muted
         playsInline
-        width={1728}
-        height={1080}
+        width={3024}
+        height={1700}
         className="block h-auto w-full"
       />
     </div>
