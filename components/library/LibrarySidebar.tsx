@@ -159,13 +159,13 @@ export default function LibrarySidebar({
 
         <div className="flex flex-col flex-1 min-h-0 mt-6">
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain pb-2">
-            <div className="relative px-5 mb-3">
+            <div className="mb-3 flex min-h-[22px] items-center justify-between px-5">
               <p className={SECTION_LABEL}>Albums</p>
               <button
                 type="button"
                 aria-label="Create album"
                 onClick={() => setCreateModalOpen(true)}
-                className={`${LIBRARY_SIDEBAR_ICON_BTN} absolute right-5 top-1/2 h-6 w-6 -translate-y-1/2`}
+                className={`${LIBRARY_SIDEBAR_ICON_BTN} h-[22px] w-[22px] !rounded !border-transparent focus-visible:bg-[#1d1d1d]`}
               >
                 <Icon name="Plus" size={16} aria-hidden />
               </button>
