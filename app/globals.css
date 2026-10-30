@@ -514,3 +514,19 @@ button:disabled:has([data-loading-spinner]) {
 @media (prefers-reduced-motion: reduce) {
   .redux-popup-enter, .redux-popup-backdrop { animation: none; }
 }
+
+/* Page chrome stays steady; only newly mounted content enters. */
+.redux-page-enter { animation: redux-popup-backdrop 200ms ease-out; }
+.redux-content-enter { animation: redux-popup-enter 200ms ease-out; }
+@keyframes redux-favorite-feedback {
+  from { scale: 0.85; }
+  to { scale: 1; }
+}
+.redux-favorite-feedback { animation: redux-favorite-feedback 150ms ease-out; }
+[data-motion-control] { transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, scale 150ms ease-out; }
+[data-motion-control]:active:not(:disabled) { scale: 0.97; }
+@media (prefers-reduced-motion: reduce) {
+  .redux-page-enter, .redux-content-enter, .redux-favorite-feedback { animation: none; }
+  [data-motion-control] { transition: none; }
+  [data-motion-control]:active:not(:disabled) { scale: 1; }
+}

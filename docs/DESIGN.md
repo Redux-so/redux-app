@@ -90,6 +90,13 @@ Toolbar (h-16)
 - Framer Motion surfaces use `usePopupMotion` in `lib/popup-motion.ts`; CSS surfaces use `redux-popup-enter` and `redux-popup-backdrop` in `app/globals.css`. Both respect reduced motion. Keep these definitions synchronized.
 - Existing Framer surfaces reverse the entrance on exit; conditionally mounted CSS surfaces dismiss immediately.
 
+## Content motion
+
+- Library and Settings main content and the editor canvas slot fade in over 200ms without moving page chrome or transforming the canvas.
+- Settings sections, adjustment sections, and library view results use the shared 200ms fade and 8px rise. Content keys follow section/view changes, not slider values or individual photo mutations.
+- Photo cards animate position changes over 200ms without scaling image content; favorite selection has a subtle 150ms feedback animation, and Settings/tool buttons have restrained press feedback.
+- Reduced motion disables content entrances, grid movement, and press/selection effects. Canvas adjustments stay immediate. The upload box has no separate entrance or status transition, matching the greeting and search bar.
+
 ## Interaction patterns
 
 - Tool rail: click icon toggles section; same icon closes

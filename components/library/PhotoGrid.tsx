@@ -85,7 +85,7 @@ function AnimatedPhotoGrid({
   onPermanentDeleteImage?: (id: string) => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const duration = prefersReducedMotion ? 0 : 0.12;
+  const duration = prefersReducedMotion ? 0 : 0.2;
 
   return (
     <motion.div
@@ -100,6 +100,8 @@ function AnimatedPhotoGrid({
       {images.map((image) => (
         <motion.div
           key={image.id}
+          layout={prefersReducedMotion ? false : "position"}
+          transition={{ layout: { duration, ease: "easeOut" } }}
           variants={{
             hidden: {
               opacity: prefersReducedMotion ? 1 : 0,
@@ -166,7 +168,7 @@ export default function PhotoGrid({
     }
     if (search.images.length === 0) {
       return (
-        <div className="flex h-full min-h-[240px] w-full items-center justify-center px-5">
+        <div className="redux-content-enter flex h-full min-h-[240px] w-full items-center justify-center px-5">
           <EmptyState
             icon={resolveLibraryEmptyIcon(searchEmptyMessage, viewMode)}
             message={searchEmptyMessage}
@@ -175,7 +177,7 @@ export default function PhotoGrid({
       );
     }
     return (
-      <div className="px-6 py-5 flex flex-col gap-5">
+      <div key="search-results" className="redux-content-enter px-6 py-5 flex flex-col gap-5">
         <AnimatedPhotoGrid
           images={search.images}
           viewMode={viewMode}
@@ -205,7 +207,7 @@ export default function PhotoGrid({
 
   if (!hasImages) {
     return (
-      <div className="flex h-full min-h-[240px] w-full items-center justify-center">
+      <div className="redux-content-enter flex h-full min-h-[240px] w-full items-center justify-center">
         <EmptyState
           icon={resolveLibraryEmptyIcon(libraryEmptyMessage, viewMode)}
           message={libraryEmptyMessage}
@@ -215,7 +217,7 @@ export default function PhotoGrid({
   }
 
   return (
-    <div className="px-6 py-5 flex flex-col gap-5">
+    <div className="redux-content-enter px-6 py-5 flex flex-col gap-5">
       {groups.map((group) =>
         group.images.length === 0 ? null : (
           <div key={group.label}>

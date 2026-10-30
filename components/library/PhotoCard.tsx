@@ -170,12 +170,14 @@ export default function PhotoCard({
           isTogglingFavorite ? "cursor-wait opacity-70" : "cursor-pointer",
         ].join(" ")}
       >
-        <Icon
-          name="Heart"
-          size={16}
-          className={isFavorite ? "fill-[#ef4444]" : ""}
-          aria-hidden
-        />
+        <span key={String(isFavorite)} className={isFavorite ? "redux-favorite-feedback inline-flex" : "inline-flex"}>
+          <Icon
+            name="Heart"
+            size={16}
+            className={isFavorite ? "fill-[#ef4444]" : ""}
+            aria-hidden
+          />
+        </span>
       </button>
 
       <div className="photo-card-actions pointer-events-none absolute inset-0 flex min-w-0 items-center justify-center gap-1.5 overflow-hidden bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">

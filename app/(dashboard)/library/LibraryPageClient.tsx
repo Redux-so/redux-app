@@ -626,7 +626,7 @@ export default function LibraryPageClient({
       <div inert={mobileLayout && mobileNavigationOpen ? true : undefined} className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden bg-[#161616]">
         <main
           ref={mainScrollRef}
-          className="scroll-stable flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-y-contain"
+          className="redux-page-enter scroll-stable flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-y-contain"
         >
           <MobileLibraryNavigation open={mobileLayout && mobileNavigationOpen} onOpenChange={setMobileNavigationOpen}>
             {mobileLayout && sidebar}
@@ -650,6 +650,7 @@ export default function LibraryPageClient({
             />
           )}
           <PhotoGrid
+            key={JSON.stringify([sidebarView, filters, searchOverlay.kind])}
             groups={groups}
             viewMode={isTrashView ? "trash" : "library"}
             search={searchForGrid}

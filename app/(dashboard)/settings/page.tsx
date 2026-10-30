@@ -125,6 +125,7 @@ function SettingsNavItem({
   return (
     <button
       type="button"
+      data-motion-control
       aria-current={active ? "page" : undefined}
       onClick={onClick}
       onMouseDown={(event) => {
@@ -607,7 +608,7 @@ export default function SettingsPage() {
 
         <main
           ref={mainRef}
-          className="scroll-stable flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-5 py-6"
+          className="redux-page-enter scroll-stable flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-5 py-6"
         >
           <div className="mx-auto w-full max-w-[880px]">
             <h1 className="text-[20px] font-semibold text-white">Settings</h1>
@@ -650,7 +651,7 @@ export default function SettingsPage() {
               </nav>
 
               {/* Content panel */}
-              <div className="min-w-0 flex-1">{renderSectionContent()}</div>
+              <div key={activeSection} className="redux-content-enter min-w-0 flex-1">{renderSectionContent()}</div>
             </div>
           </div>
         </main>

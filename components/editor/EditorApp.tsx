@@ -413,7 +413,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
           />
 
           <EditorErrorBoundary label="canvas">
-            <div className="editor-canvas-slot relative flex flex-1 min-h-0 min-w-0">
+            <div className="redux-page-enter editor-canvas-slot relative flex flex-1 min-h-0 min-w-0">
               <Canvas
                 canvasRef={canvasRef}
                 containerRef={containerRef}

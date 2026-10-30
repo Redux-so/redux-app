@@ -198,6 +198,7 @@ function RailBtn({
       title={title}
       aria-label={title}
       aria-pressed={active}
+      data-motion-control
       className={[
         "flex shrink-0 items-center justify-center h-12 w-12 rounded-xl border transition-colors cursor-pointer",
         active
@@ -901,8 +902,9 @@ export default function AdjustmentPanel({
         >
           {activeSection && (
             <div
+              key={activeSection}
               ref={panelInnerRef}
-              className="editor-section-content flex flex-col h-full w-[360px] min-w-[360px]"
+              className="redux-content-enter editor-section-content flex flex-col h-full w-[360px] min-w-[360px]"
             >
               <div className={`${PANEL_HEADER} px-8`}>
                 <span className={PANEL_TITLE}>{activeSectionLabel}</span>
