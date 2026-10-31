@@ -170,12 +170,12 @@ const GenerativeFillModal = dynamic(() => import("./GenerativeFillModal"), {
   ssr: false,
 });
 
-const EFFECTS_ADJUSTMENTS: { key: AdjustmentKey; label: string; min: number; max: number }[] = [
-  { key: "sharpen", label: "Sharpen", min: 0, max: 100 },
-  { key: "noiseReduction", label: "Noise Reduction", min: -100, max: 0 },
-  { key: "vignette", label: "Vignette", min: 0, max: 100 },
-  { key: "grain", label: "Grain", min: 0, max: 100 },
-  { key: "clarity", label: "Clarity", min: -100, max: 100 },
+const EFFECTS_ADJUSTMENTS: { key: AdjustmentKey; label: string }[] = [
+  { key: "sharpen", label: "Sharpen" },
+  { key: "noiseReduction", label: "Noise Reduction" },
+  { key: "vignette", label: "Vignette" },
+  { key: "grain", label: "Grain" },
+  { key: "clarity", label: "Clarity" },
 ];
 
 // ── Shared sub-components ────────────────────────────────────────────────────
@@ -996,13 +996,11 @@ export default function AdjustmentPanel({
 
                   {activeSection === "effects" && (
                     <div className="pb-4 pt-4">
-                      {EFFECTS_ADJUSTMENTS.map(({ key, label, min, max }) => (
+                      {EFFECTS_ADJUSTMENTS.map(({ key, label }) => (
                         <AdjustmentSlider
                           key={key}
                           label={label}
-                          min={min}
-                          max={max}
-                          value={Math.max(min, Math.min(max, adjustments[key]))}
+                          value={adjustments[key]}
                           onChange={(v) => onPreview(key, v)}
                           onCommit={(v) => onCommit(key, v)}
                         />

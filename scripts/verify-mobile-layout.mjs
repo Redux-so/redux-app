@@ -102,12 +102,34 @@ test("every light, color and effects slider routes touch changes and commits to 
       assert.notEqual(slider.props.disabled, true);
       const value = slider.props.max === 0 ? -15 : 15;
       slider.props.onChange(value); slider.props.onCommit(value);
-      if (["Sharpen", "Vignette", "Grain"].includes(slider.props.label)) assert.equal(slider.props.min, 0);
-      if (slider.props.label === "Noise Reduction") assert.equal(slider.props.max, 0);
+      if (title === "Effects adjustments") {
+        const Slider = compile("../components/editor/AdjustmentSlider.tsx").default;
+        const root = find(Slider(slider.props), (node) => typeof node.props?.onValueChange === "function");
+        assert.equal(root.props.min, -100);
+        assert.equal(root.props.max, 100);
+        assert.equal((root.props.value[0] - root.props.min) / (root.props.max - root.props.min), 0.5);
+      }
     }
   }
   assert.equal(previews.length, Object.keys(defaultPersistedEditorState().sliders).length);
   assert.deepEqual(previews, commits);
+});
+
+test("centered effects sliders allow movement both ways and reset to zero", () => {
+  const Slider = compile("../components/editor/AdjustmentSlider.tsx").default;
+  const changes = [], commits = [];
+  const tree = Slider({ label: "Effect", value: 0,
+    onChange: (value) => changes.push(value), onCommit: (value) => commits.push(value) });
+  const root = find(tree, (node) => typeof node.props?.onValueChange === "function");
+  for (const value of [-70, 70]) {
+    root.props.onValueChange([value]);
+    root.props.onValueCommit([value]);
+  }
+  assert.deepEqual(changes, [-70, 70]);
+  assert.deepEqual(commits, changes);
+  find(tree, (node) => node.props?.title === "Double-click to reset").props.onDoubleClick({ stopPropagation: noop });
+  assert.equal(changes.at(-1), 0);
+  assert.equal(commits.at(-1), 0);
 });
 
 test("blur, eraser and heal brush size controls remain interactive on touch", () => {
