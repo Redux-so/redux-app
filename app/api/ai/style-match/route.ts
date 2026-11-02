@@ -9,29 +9,43 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
-import { normalizeAdjustmentPatch } from "@/constants/adjustments";
+import { DEFAULT_ADJUSTMENTS } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
-import { parseJsonRequest, styleMatchBodySchema, adjustmentsRecordSchema } from "@/lib/api-validation";
+import { parseJsonRequest, styleMatchBodySchema } from "@/lib/api-validation";
 import {
   chargeCreditFeature,
   insufficientCreditsResponse,
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import { fetchPreparedChatImage } from "@/lib/chat-image-context";
-import { prepareChatVisionBase64 } from "@/lib/chat-image-vision-server";
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+import { extractStylePalette, describeStylePalette, transferStylePalette } from "@/lib/style-match-palette";
+import { prepareChatVisionBase64, VisionImageError } from "@/lib/chat-image-vision-server";
 import { styleMatchErrorResponse, StyleMatchResponseError } from "@/lib/style-match-error";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
-const SYSTEM_PROMPT =
-  "You are an expert photo editor specializing in color grading and style transfer. " +
-  "Analyze the reference image and identify its visual style — including color temperature, " +
-  "contrast, saturation, shadows, highlights, and overall mood. Then return ONLY a JSON object " +
-  "of adjustment values that would make the target image match the style of the reference image. " +
-  "Available adjustments: exposure, contrast, blacks, whites, highlights, shadows, " +
-  "vibrance, saturation, temperature, tint, hue, sharpen, vignette, grain, clarity. " +
-  "All values range from -100 to 100. Only include adjustments that need to change from 0. " +
-  "No explanation, just the JSON.";
+export const maxDuration = 300;
+
+const SYSTEM_PROMPT = `You match photographic palettes between two photos.
+The first image is the TARGET whose content must stay unchanged. The second is the REFERENCE.
+You will receive numbered palettes extracted from the actual pixels of each image, in sRGB.
+For EVERY target swatch choose a reference swatch with the corresponding visual role/material:
+sky to sky, foliage/grass to foliage/grass, skin to skin, buildings to buildings, shadows to shadows.
+Do not pair solely by nearest RGB: muted yellow-green grass may need the reference's rich green,
+blue sky may need pale gray/cyan, neutral buildings may need warm cream highlights.
+Preserve brightness ordering within a material: use different reference shades where available.
+When a material is absent, choose a compatible color with similar luminance and a natural palette.
+Choose only supplied palette IDs. Do not invent colors or slider values.
+The renderer transfers these colors directly, preserving the target's detail and composition.
+Return ONLY {"matches":[{"target":0,"reference":2},...]} covering every target ID exactly once.
+Multiple target swatches may share a reference swatch. No explanations or markdown.`;
+
+const paletteMatchesSchema = z.object({ matches: z.array(z.object({
+  target: z.number().int().min(0).max(11), reference: z.number().int().min(0).max(11),
+}).strict()).min(1).max(12) }).strict();
 
 export async function POST(request: Request) {
   const authResult = await requireAuthUser();
@@ -82,11 +96,24 @@ export async function POST(request: Request) {
   // Validate and normalize both images before charging or asking the model.
   let target: Awaited<ReturnType<typeof prepareChatVisionBase64>>;
   let reference: Awaited<ReturnType<typeof prepareChatVisionBase64>>;
+  let source: Buffer;
+  let targetPalette: Awaited<ReturnType<typeof extractStylePalette>>;
+  let referencePalette: Awaited<ReturnType<typeof extractStylePalette>>;
   try {
-    [target, reference] = await Promise.all([
-      fetchPreparedChatImage(imageUrl),
+    const [fetched, preparedReference] = await Promise.all([
+      fetchTrustedMediaBuffer(imageUrl),
       prepareChatVisionBase64(referenceImageBase64),
     ]);
+    source = fetched.buffer;
+    reference = preparedReference;
+    // Analyze copies; always grade the native source, never a CDN thumbnail.
+    target = await prepareChatVisionBase64(source.toString("base64"));
+    try {
+      [targetPalette, referencePalette] = await Promise.all([
+        extractStylePalette(Buffer.from(target.base64, "base64")),
+        extractStylePalette(Buffer.from(reference.base64, "base64")),
+      ]);
+    } catch { throw new VisionImageError(); }
   } catch (error) {
     console.error("[/api/ai/style-match] Image preparation failed:", error);
     return styleMatchErrorResponse(error);
@@ -117,14 +144,16 @@ export async function POST(request: Request) {
       {
         type: "text",
         text:
-          "The first image is the target photo to edit. The second image is the reference " +
-          "whose style should be matched. Return only the JSON object of adjustments.",
+          `TARGET palette: ${JSON.stringify(describeStylePalette(targetPalette))}\n` +
+          `REFERENCE palette: ${JSON.stringify(describeStylePalette(referencePalette))}\n` +
+          "Match every target swatch to the reference by visual role/material and tone.",
       },
     ];
 
     const response = await anthropic.messages.create({
       model: ANTHROPIC_DEFAULT_MODEL,
       max_tokens: 1024,
+      temperature: 0,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     });
@@ -140,9 +169,25 @@ export async function POST(request: Request) {
       console.error("[/api/ai/style-match] Invalid JSON:", logSnippetForDiagnostics(rawText));
       throw new StyleMatchResponseError();
     }
-    const validated = adjustmentsRecordSchema.safeParse(parsedResponse);
-    if (!validated.success) throw new StyleMatchResponseError();
-    return NextResponse.json({ adjustments: normalizeAdjustmentPatch(validated.data) });
+    const validated = paletteMatchesSchema.safeParse(parsedResponse);
+    if (!validated.success || validated.data.matches.length !== targetPalette.length ||
+        new Set(validated.data.matches.map(m => m.target)).size !== targetPalette.length ||
+        validated.data.matches.some(m => !targetPalette[m.target] || !referencePalette[m.reference])) {
+      throw new StyleMatchResponseError();
+    }
+    const result = await transferStylePalette(source, targetPalette, referencePalette, validated.data.matches);
+    const uploaded = await uploadToCloudinary(result, `${ownedImage.id}_style-match.png`);
+    try {
+      // Register the immutable source for subsequent edits, undo, and cleanup.
+      await prisma.imageVersion.create({ data: { imageId: ownedImage.id, url: uploaded.secureUrl,
+        publicId: uploaded.publicId, adjustments: { operationResult: true }, label: "Style Match" } });
+    } catch (error) {
+      await deleteFromCloudinary(uploaded.publicId).catch(() => {});
+      throw error;
+    }
+    // Colors are baked into the new source. Reset sliders in the same history
+    // checkpoint as the source replacement so neither entry point double-grades it.
+    return NextResponse.json({ resultUrl: uploaded.secureUrl, adjustments: { ...DEFAULT_ADJUSTMENTS } });
   } catch (err) {
     console.error("[/api/ai/style-match]", err);
     await refundCreditFeature({

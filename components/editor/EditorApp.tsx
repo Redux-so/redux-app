@@ -12,6 +12,7 @@ import type { ImageRecord } from "@/types/image";
 import { DEFAULT_IMAGE_TRANSFORM, parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
 import { renderEditorPayload } from "@/lib/interactive-image-preview";
 import { probeImageDimensions } from "@/lib/probe-image-dimensions";
+import { normalizeAdjustments, type Adjustments } from "@/constants/adjustments";
 import { rememberVisitedPage } from "@/lib/last-visited-page";
 import ReturnToPreviousPage from "@/components/shared/ReturnToPreviousPage";
 
@@ -226,7 +227,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     } finally { finishOperation(); }
   }, [beginOperation, restorePersistedState, createEditGuard, image?.originalUrl, loadImageUrl, cancelCrop]);
 
-  const reloadCanvas = useCallback(async (url: string, isCurrent: () => boolean = () => true, label = "Image edited", resetTransform = false) => {
+  const reloadCanvas = useCallback(async (url: string, isCurrent: () => boolean = () => true, label = "Image edited", resetTransform = false, adjustments?: Partial<Adjustments>) => {
     if (!isCurrent()) return false;
     const dims = await probeImageDimensions(url);
     if (!isCurrent()) return false;
@@ -238,6 +239,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       workingWidth: dims.width,
       workingHeight: dims.height,
       masks: undefined,
+      ...(adjustments ? { sliders: normalizeAdjustments(adjustments) } : {}),
       ...(resetTransform ? { transform: { ...DEFAULT_IMAGE_TRANSFORM } } : {}),
     }, true, label);
     return true;

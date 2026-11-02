@@ -61,19 +61,31 @@ PNG/TIFF preserve it. JPEG quality and the supported formats remain unchanged.
 
 ## Color and viewer limits
 
+Style Match extracts measured CIELAB palettes from both images and asks vision
+to pair colors by material and tone (for example, sky with sky and grass with
+grass). A smooth 3D color LUT transfers those reference colors to the native
+source pixels; it does not synthesize objects, resample geometry, or add random
+grain. Source shades sharing one reference color are pooled before fitting to
+retain texture. Color correspondence still depends on the model, and similar
+source colors cannot receive different grades based on their spatial location.
+The output is an immutable lossless working image, registered as an operation
+result. Chat and the manual panel load it with neutral sliders in one history
+checkpoint, preserving geometry and allowing undo to restore the prior grade.
+
 Style Match prepares both target and reference with the shared server vision
 encoder before charging. Images are decoded from their actual bytes, EXIF-oriented
 and resized to at most 1000px, including UploadThing-hosted working images. PNG
 is preferred, with JPEG fallback if the encoded payload exceeds 4 MiB. The MIME
-type always matches the encoded output. These are analysis copies; working
-sources, saved pixels and export resolution are unchanged. Chat Style Match also
+type always matches the encoded output. These are analysis copies; grading uses
+the native source, not the CDN thumbnail, and retains its dimensions and alpha. Chat Style Match also
 normalizes stored references before forwarding them to the tool's API validator.
 The manual reference picker shares chat's browser-side downscaling, avoiding
 oversized reference requests before server preparation can run. Local crop/resize
 sources use the existing source-version upload before Style Match.
 
-Unreadable images fail before billing. Provider failures and invalid model edits
-refund one Style Match charge. Safe error messages distinguish rate/usage limits,
+Unreadable images fail before billing. Provider failures, invalid palette pairs,
+rendering failures and storage failures refund one Style Match charge. A failed
+operation record also cleans up the new asset. Safe error messages distinguish rate/usage limits,
 service overload and unreadable images; rate-limit responses include wait guidance
 for manual and chat callers. Redux's existing 5/minute and 20/hour limits remain.
 

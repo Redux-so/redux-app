@@ -33,7 +33,7 @@ export function useEditorChatTools(options: {
   resize: (width: number, height: number, guard: () => boolean, region?: { x: number; y: number; width: number; height: number }) => Promise<string | null>;
   commitPixels: (data: string | null, guard: () => boolean, label: string) => void;
   exportMasks: Record<"blur" | "eraser" | "heal", () => Promise<string>>;
-  reload: (url: string, guard: () => boolean, label: string, resetTransform?: boolean) => Promise<boolean>;
+  reload: (url: string, guard: () => boolean, label: string, resetTransform?: boolean, adjustments?: Partial<Adjustments>) => Promise<boolean>;
   undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean;
   revert: (id: string) => Promise<void>;
   restore: (state: EditorHistoryState) => Promise<void>;
@@ -114,7 +114,7 @@ export function useEditorChatTools(options: {
             maskBase64, currentAdjustments: current.sliders });
           if (!guard()) throw new Error("The tool finished, but the image changed. Its result was not applied; its tool charge still applies.");
           if (result.resultUrl) {
-            if (!await options.reload(result.resultUrl, guard, label, bakeTransform)) throw new Error("The result could not be applied to the current image.");
+            if (!await options.reload(result.resultUrl, guard, label, bakeTransform, result.adjustments)) throw new Error("The result could not be applied to the current image.");
             if (action.type === "apply_selection") { options.clearSelections(); options.controls.current?.closeBrush(); }
           } else if (result.adjustments) options.patch(result.adjustments);
           else throw new Error("The tool returned no usable edit.");

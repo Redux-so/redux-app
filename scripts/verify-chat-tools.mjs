@@ -188,7 +188,9 @@ function editorHost(extra = {}) {
     resize: async (w, h, guard, region) => { assert.equal(guard(), true); calls.push(`crop:${w}:${h}:${!!region}`); return "data:image/png;base64,YQ=="; },
     commitPixels: (_, guard) => { assert.equal(guard(), true); change("commit-crop"); },
     exportMasks: { blur: async () => "bWFzaw==", heal: async () => "bWFzaw==", eraser: async () => "bWFzaw==" },
-    reload: async (url, guard) => { assert.equal(guard(), true); state.workingImageUrl = url; change("reload"); return true; },
+    reload: async (url, guard, _label, _resetTransform, adjustments) => { assert.equal(guard(), true); state.workingImageUrl = url;
+      if (adjustments) state.sliders = { ...defaultPersistedEditorState().sliders, ...adjustments };
+      change("reload"); return true; },
     undo: () => change("undo"), redo: () => change("redo"), canUndo: true, canRedo: true, revert: async () => change("revert"), save: async () => { calls.push("save"); return state; },
     restore: async (snapshot) => { Object.assign(state, snapshot, { sliders: { ...snapshot.sliders }, transform: { ...snapshot.transform } }); change("restore"); },
     ...extra,
@@ -410,5 +412,27 @@ test("aspect crops use current transformed dimensions; ordinary geometry and his
   try {
     await app.tools.execute({ turnId, actions: [{ type: "rotate", degrees: 90 }, { type: "crop_aspect", width: 1, height: 1 }, { type: "flip", axis: "horizontal" }, { type: "straighten", degrees: 2 }] }, execution());
     assert.deepEqual(app.calls, ["rotate", "crop:800:800:false", "commit-crop", "flip", "straighten", "save"]);
+  } finally { globalThis.fetch = original; }
+});
+
+test("chat Style Match reloads baked pixels with neutral sliders and Undo all restores the previous grade", async () => {
+  const app = editorHost(), ui = reviewUi();
+  app.manualChange({ grain: 70, exposure: 25, hue: 40 });
+  app.state.transform.rotation = 90;
+  const before = structuredClone(app.state);
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (JSON.parse(init.body).phase === "execute") return Response.json({ resultUrl: `${imageUrl}?matched`, adjustments: defaultPersistedEditorState().sliders });
+    return app.fetch(url, init);
+  };
+  try {
+    await app.tools.execute({ turnId, credits: 3, actions: [{ type: "style_match" }] }, { ...execution(), reviewChanges: ui.reviewToolChanges });
+    assert.equal(app.state.workingImageUrl, `${imageUrl}?matched`);
+    assert.deepEqual(app.state.sliders, defaultPersistedEditorState().sliders);
+    assert.equal(app.state.transform.rotation, 90);
+    assert.equal(app.calls.filter(call => call === "reload").length, 1);
+    assert.equal(app.calls.filter(call => call === "adjust").length, 0);
+    await ui.handleUndoAllChanges();
+    assert.deepEqual(app.state, before);
   } finally { globalThis.fetch = original; }
 });

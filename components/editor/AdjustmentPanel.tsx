@@ -58,7 +58,7 @@ interface AdjustmentPanelProps {
   restoredMaskTool: ActiveTool;
   createEditGuard: () => () => boolean;
   beginOperation: () => () => void;
-  onReloadCanvas?: (url: string, isCurrent?: () => boolean, label?: string) => boolean | Promise<boolean>;
+  onReloadCanvas?: (url: string, isCurrent?: () => boolean, label?: string, resetTransform?: boolean, adjustments?: Partial<Adjustments>) => boolean | Promise<boolean>;
   /** Active canvas image URL (may differ from library original after AI edits). */
   canvasImageUrl?: string | null;
   enableHealBrush?: () => void | Promise<void>;
@@ -609,11 +609,10 @@ export default function AdjustmentPanel({
         throw new Error(error.error ?? "Style Match could not complete. Please try again.");
       }
 
-      const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
+      const data = (await res.json()) as { resultUrl?: string; adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
-      if (data.adjustments) {
-        applyAiAdjustments(data.adjustments, onPatch ?? (() => {}), "Style match applied");
-      }
+      if (!data.resultUrl) throw new Error("Style Match returned no image.");
+      if (!(await onReloadCanvas?.(data.resultUrl, isCurrent, "Style match applied", false, data.adjustments))) return;
       toast.success("Style Match applied");
     } catch (err) {
       console.error("[AdjustmentPanel] style_match failed:", err);
