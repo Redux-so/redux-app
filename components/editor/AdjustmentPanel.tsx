@@ -1,5 +1,6 @@
 "use client";
 
+import { prepareVisionFile } from "@/lib/prepare-vision-file";
 import { prepareWorkingImage } from "@/lib/prepare-working-image";
 
 import dynamic from "next/dynamic";
@@ -305,22 +306,6 @@ function ToolBtn({
   );
 }
 
-async function fileToBase64(
-  file: File,
-): Promise<{ dataUrl: string; base64: string; mediaType: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      const [header, b64] = dataUrl.split(",");
-      const mediaType = header.replace("data:", "").replace(";base64", "");
-      resolve({ dataUrl, base64: b64, mediaType });
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function AdjustmentPanel({
@@ -594,20 +579,22 @@ export default function AdjustmentPanel({
   async function handleStyleMatchFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     e.target.value = "";
-    if (!file || !aiImageUrl) return;
+    if (!file || !aiImageUrl || !imageId) return;
 
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
+    setLoadingStyleMatch(true);
     try {
-      const { dataUrl, base64, mediaType } = await fileToBase64(file);
+      const { dataUrl, base64, mediaType } = await prepareVisionFile(file);
       setStyleMatchPreview(dataUrl);
-      setLoadingStyleMatch(true);
 
+      const source = await prepareWorkingImage(imageId, aiImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(EDITOR_TOOL_ROUTES.style_match, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageUrl: aiImageUrl,
+          imageUrl: source,
           referenceImageBase64: base64,
           referenceImageMediaType: mediaType,
         }),
@@ -615,16 +602,11 @@ export default function AdjustmentPanel({
 
       if (res.status === 402) {
         toast("Insufficient credits", { icon: "💳" });
-        setStyleMatchPreview(null);
-        return;
-      }
-      if (res.status === 429) {
-        toast("Rate limit exceeded. Please try again later.", { icon: "⏱" });
-        setStyleMatchPreview(null);
         return;
       }
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+        const error = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(error.error ?? "Style Match could not complete. Please try again.");
       }
 
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
@@ -633,12 +615,11 @@ export default function AdjustmentPanel({
         applyAiAdjustments(data.adjustments, onPatch ?? (() => {}), "Style match applied");
       }
       toast.success("Style Match applied");
-      setStyleMatchPreview(null);
     } catch (err) {
       console.error("[AdjustmentPanel] style_match failed:", err);
-      toast.error("Style Match failed");
-      setStyleMatchPreview(null);
+      toast.error(err instanceof Error ? err.message : "Style Match failed");
     } finally {
+      setStyleMatchPreview(null);
       finishOperation();
       setLoadingStyleMatch(false);
     }

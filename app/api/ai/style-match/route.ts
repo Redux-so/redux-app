@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { anthropic } from "@/lib/anthropic";
@@ -10,17 +9,18 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
-import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
-import { parseJsonRequest, styleMatchBodySchema } from "@/lib/api-validation";
+import { parseJsonRequest, styleMatchBodySchema, adjustmentsRecordSchema } from "@/lib/api-validation";
 import {
   chargeCreditFeature,
   insufficientCreditsResponse,
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { fetchPreparedChatImage } from "@/lib/chat-image-context";
+import { prepareChatVisionBase64 } from "@/lib/chat-image-vision-server";
+import { styleMatchErrorResponse, StyleMatchResponseError } from "@/lib/style-match-error";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const SYSTEM_PROMPT =
@@ -32,10 +32,6 @@ const SYSTEM_PROMPT =
   "vibrance, saturation, temperature, tint, hue, sharpen, vignette, grain, clarity. " +
   "All values range from -100 to 100. Only include adjustments that need to change from 0. " +
   "No explanation, just the JSON.";
-
-function toThumbnailUrl(url: string): string {
-  return url.replace("/upload/", "/upload/w_400,q_70,f_jpg/");
-}
 
 export async function POST(request: Request) {
   const authResult = await requireAuthUser();
@@ -54,11 +50,23 @@ export async function POST(request: Request) {
     RATE_LIMIT_MINUTE.style_match,
   );
   const minuteDenied = rateLimitDeniedResponse(minuteLimit);
-  if (minuteDenied) return minuteDenied;
+  if (minuteDenied) {
+    if (minuteDenied.status === 429) return NextResponse.json(
+      { error: "Style Match is limited to 5 attempts per minute. Try again in up to 1 minute." },
+      { status: 429, headers: { "Retry-After": "60" } },
+    );
+    return minuteDenied;
+  }
 
   const rateLimit = await checkRateLimit(user.id, "style_match", 20);
   const hourlyDenied = rateLimitDeniedResponse(rateLimit);
-  if (hourlyDenied) return hourlyDenied;
+  if (hourlyDenied) {
+    if (hourlyDenied.status === 429) return NextResponse.json(
+      { error: "Style Match is limited to 20 attempts per hour. Try again in up to 1 hour." },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
+    return hourlyDenied;
+  }
 
   const parsed = await parseJsonRequest(request, styleMatchBodySchema);
   if (!parsed.ok) {
@@ -71,6 +79,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
+  // Validate and normalize both images before charging or asking the model.
+  let target: Awaited<ReturnType<typeof prepareChatVisionBase64>>;
+  let reference: Awaited<ReturnType<typeof prepareChatVisionBase64>>;
+  try {
+    [target, reference] = await Promise.all([
+      fetchPreparedChatImage(imageUrl),
+      prepareChatVisionBase64(referenceImageBase64),
+    ]);
+  } catch (error) {
+    console.error("[/api/ai/style-match] Image preparation failed:", error);
+    return styleMatchErrorResponse(error);
+  }
+
   const charge = await chargeCreditFeature({
     userId: user.id,
     feature: "style_match",
@@ -80,30 +101,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const thumbnailUrl = toThumbnailUrl(imageUrl);
-    const { buffer } = await fetchTrustedMediaBuffer(thumbnailUrl);
-    const targetBase64 = buffer.toString("base64");
-
-    // Anthropic vision: PNG + max 1000px on longest side keeps payload under 5MB while
-    // preserving enough detail for style analysis (Sharp accepts any common input format).
-    const imageBuffer = Buffer.from(referenceImageBase64, "base64");
-    const pngBuffer = await sharp(imageBuffer)
-      .resize(1000, 1000, { fit: "inside", withoutEnlargement: true })
-      .png()
-      .toBuffer();
-    const pngBase64 = pngBuffer.toString("base64");
-
     const userContent: (ImageBlockParam | TextBlockParam)[] = [
       {
         type: "image",
-        source: { type: "base64", media_type: "image/jpeg", data: targetBase64 },
+        source: { type: "base64", media_type: target.mediaType, data: target.base64 },
       },
       {
         type: "image",
         source: {
           type: "base64",
-          media_type: "image/png",
-          data: pngBase64,
+          media_type: reference.mediaType,
+          data: reference.base64,
         },
       },
       {
@@ -126,27 +134,15 @@ export async function POST(request: Request) {
 
     const cleaned = rawText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
 
-    let adjustments: Partial<Record<AdjustmentKey, number>> = {};
-    try {
-      adjustments = JSON.parse(cleaned) as Partial<Record<AdjustmentKey, number>>;
-    } catch {
-      console.error(
-        "[/api/ai/style-match] Failed to parse JSON:",
-        logSnippetForDiagnostics(rawText),
-      );
-      await refundCreditFeature({
-        userId: user.id,
-        feature: "style_match",
-        description: "Refund: style match parse failure",
-      });
-      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
+    let parsedResponse: unknown;
+    try { parsedResponse = JSON.parse(cleaned); }
+    catch {
+      console.error("[/api/ai/style-match] Invalid JSON:", logSnippetForDiagnostics(rawText));
+      throw new StyleMatchResponseError();
     }
-
-    return NextResponse.json({
-      adjustments: normalizeAdjustmentPatch(
-        adjustments as Partial<Record<string, number>>,
-      ),
-    });
+    const validated = adjustmentsRecordSchema.safeParse(parsedResponse);
+    if (!validated.success) throw new StyleMatchResponseError();
+    return NextResponse.json({ adjustments: normalizeAdjustmentPatch(validated.data) });
   } catch (err) {
     console.error("[/api/ai/style-match]", err);
     await refundCreditFeature({
@@ -154,6 +150,6 @@ export async function POST(request: Request) {
       feature: "style_match",
       description: "Refund: style match failed",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return styleMatchErrorResponse(err);
   }
 }

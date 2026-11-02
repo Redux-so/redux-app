@@ -1,4 +1,5 @@
 import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { prepareChatVisionBase64 } from "@/lib/chat-image-vision-server";
 
 import {
   type ChatImageMediaType,
@@ -49,4 +50,10 @@ export async function fetchChatImageBase64(
     headerType && isChatImageMediaType(headerType) ? headerType : "image/jpeg";
 
   return { base64, mediaType };
+}
+
+/** Normalize fetched target/reference bytes before constructing vision requests. */
+export async function fetchPreparedChatImage(imageUrl: string) {
+  const image = await fetchChatImageBase64(imageUrl);
+  return prepareChatVisionBase64(image.base64);
 }

@@ -98,6 +98,12 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 
 ## Validate a change
 
+`node scripts/verify-style-match.mjs` checks the oversized target regression,
+JPEG/PNG/WebP/TIFF decoding, encoded size and orientation, storage-independent
+preparation, browser reference downsizing, chat dispatch, safe provider errors,
+rate-limit guidance and charge/refund behavior. Provider responses are mocked;
+verify a real Style Match with a large saved working image before release.
+
 `node scripts/verify-upload-performance.mjs` checks upload profile-read overhead,
 parallel cover/original storage, preserved originals, preview fallback/cleanup,
 and unchanged request safeguards. `POST /api/images` reports auth, validation,

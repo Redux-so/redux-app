@@ -61,6 +61,22 @@ PNG/TIFF preserve it. JPEG quality and the supported formats remain unchanged.
 
 ## Color and viewer limits
 
+Style Match prepares both target and reference with the shared server vision
+encoder before charging. Images are decoded from their actual bytes, EXIF-oriented
+and resized to at most 1000px, including UploadThing-hosted working images. PNG
+is preferred, with JPEG fallback if the encoded payload exceeds 4 MiB. The MIME
+type always matches the encoded output. These are analysis copies; working
+sources, saved pixels and export resolution are unchanged. Chat Style Match also
+normalizes stored references before forwarding them to the tool's API validator.
+The manual reference picker shares chat's browser-side downscaling, avoiding
+oversized reference requests before server preparation can run. Local crop/resize
+sources use the existing source-version upload before Style Match.
+
+Unreadable images fail before billing. Provider failures and invalid model edits
+refund one Style Match charge. Safe error messages distinguish rate/usage limits,
+service overload and unreadable images; rate-limit responses include wait guidance
+for manual and chat callers. Redux's existing 5/minute and 20/hour limits remain.
+
 This is an SDR, 8-bit sRGB workflow. Browser decoding applies source orientation
 and color management; the Canvas 2D output is sRGB. Pixels outside sRGB cannot all
 be retained. The exported file carries an sRGB ICC profile and no original EXIF

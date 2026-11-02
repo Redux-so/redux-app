@@ -56,10 +56,7 @@ import {
   quotaFromApi,
   type UsageQuotaSnapshot,
 } from "@/lib/usage-ring-state";
-import {
-  CHAT_VISION_MAX_PX,
-  isChatImageMediaType,
-} from "@/lib/chat-image-shared";
+import { prepareVisionFile as prepareChatAttachmentFile } from "@/lib/prepare-vision-file";
 import {
   allowChatAdjustmentsForTurn,
   askModeNudgeMissing,
@@ -174,42 +171,6 @@ interface ChatPanelProps {
   imageId?: string;
   /** Current canvas photo — sent to the model as already-available context. */
   canvasImageUrl?: string | null;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Convert a File to a base64 data-URL (for preview) and the raw base64 string
- * (for the API payload, without the `data:...;base64,` prefix).
- */
-/** Downscale chat attachments before upload (smaller POST + reliable vision). */
-async function prepareChatAttachmentFile(
-  file: File,
-): Promise<{ dataUrl: string; base64: string; mediaType: string }> {
-  const bitmap = await createImageBitmap(file);
-  const longest = Math.max(bitmap.width, bitmap.height);
-  const scale = longest > CHAT_VISION_MAX_PX ? CHAT_VISION_MAX_PX / longest : 1;
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    bitmap.close();
-    throw new Error("Canvas unavailable");
-  }
-  ctx.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close();
-
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
-  const [header, base64] = dataUrl.split(",");
-  const rawType = header.replace("data:", "").replace(";base64", "");
-  const mediaType = isChatImageMediaType(rawType) ? rawType : "image/jpeg";
-  return { dataUrl, base64, mediaType };
 }
 
 // ---------------------------------------------------------------------------

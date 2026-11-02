@@ -9,7 +9,7 @@ import { POST as erase } from "@/app/api/images/erase/route";
 import { POST as heal } from "@/app/api/ai/heal/route";
 import { EDITOR_TOOL_ROUTES } from "@/lib/editor-tool-routes";
 import { type EditorAction } from "@/lib/editor-actions";
-import { fetchChatImageBase64 } from "@/lib/chat-image-context";
+import { fetchPreparedChatImage } from "@/lib/chat-image-context";
 
 const handlers = { auto_enhance: enhance, auto_tone_balance: tone, smart_color_balance: color,
   style_match: style, remove_background: background, generative_fill: fill, blur, eraser: erase, heal };
@@ -24,7 +24,7 @@ export async function dispatchChatTool(request: Request, action: EditorAction, i
   if (action.type === "generative_fill") Object.assign(body, { expandDirection: action.direction, expandPixels: action.pixels, prompt: action.prompt });
   if (action.type === "style_match") {
     if (!referenceUrl) return Response.json({ error: "Attach a reference image to match its style." }, { status: 400 });
-    const reference = await fetchChatImageBase64(referenceUrl);
+    const reference = await fetchPreparedChatImage(referenceUrl);
     body.referenceImageBase64 = reference.base64;
     body.referenceImageMediaType = reference.mediaType;
   }
