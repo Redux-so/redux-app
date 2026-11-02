@@ -7,8 +7,17 @@ Fabric preview object. No debounce, network request, autosave response, or delay
 preview can replace the displayed image. Color effects blend into the image
 itself, so zoom/pan and transforms cannot displace them.
 
-The display uses a preview capped at 1600 pixels on its longest edge. Export
-renders the original working image at its full native dimensions with the same
+The editing display always uses the native working image resolution at every
+zoom level. Neutral adjustments display the decoded source directly; active
+adjustments render into one reusable full-size canvas, with Fabric image caching
+disabled to avoid smaller intermediate textures. Zoom, pan, rotation and layout
+changes affect only the viewing transform and do not rerender or downsample the
+photo. Slider updates remain coalesced into one animation frame, with stale work
+cancelled. There is no temporary low-resolution preview or delayed detail pass.
+Fabric's intrinsic image dimensions follow the native backing canvas so source
+changes cannot stretch the aspect ratio. Alpha masks are cached for the native
+editing image and the smaller cover. Covers retain their 1600px budget.
+Export renders the original working image at its full native dimensions with the same
 filters and color blends. Blur scales with resolution; deterministic grain uses
 the same normalized texture. The canvas does not change to a different effect
 algorithm after a drag. Sharpen/clarity retain the established contrast-based

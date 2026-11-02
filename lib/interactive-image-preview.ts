@@ -42,6 +42,8 @@ function sourceAlpha(source: HTMLImageElement, width: number, height: number): U
   const result = transparent ? alpha : null;
   const sizes = cached ?? new Map<string, Uint8ClampedArray | null>();
   sizes.set(key, result);
+  // Retain only the native editing mask and the smaller cover mask.
+  while (sizes.size > 2) sizes.delete(sizes.keys().next().value!);
   sourceAlphas.set(source, sizes);
   return result;
 }
@@ -74,6 +76,8 @@ export function renderInteractiveImage(
   canvas = document.createElement("canvas"),
   fullSize = false,
 ): HTMLCanvasElement {
+  // Keep effect sizes anchored to the original preview scale so native editing
+  // and export retain the same blur/grain appearance as the smaller covers.
   const previewScale = Math.min(1, 1600 / Math.max(source.naturalWidth, source.naturalHeight));
   const scale = fullSize ? 1 : previewScale;
   const width = Math.max(1, Math.round(source.naturalWidth * scale));
@@ -82,6 +86,8 @@ export function renderInteractiveImage(
   if (canvas.height !== height) canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create the interactive image preview.");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.clearRect(0, 0, width, height);
   const alpha = sourceAlpha(source, width, height);
   const normalized = normalizeAdjustments(adjustments);

@@ -25,8 +25,9 @@ test("rapid slider updates render only the latest frame and reuse the Fabric pre
   class Preview {
     constructor(element) { this.element = element; allocations++; }
     getElement() { return this.element; }
+    set(values) { Object.assign(this, values); }
   }
-  const source = new Preview({ naturalWidth: 2000, naturalHeight: 1500 });
+  const source = new Preview({ naturalWidth: 6000, naturalHeight: 4000 });
   const frames = new Map();
   let nextFrame = 0;
   const rendered = {};
@@ -35,7 +36,11 @@ test("rapid slider updates render only the latest frame and reuse the Fabric pre
     localPreviewCanvasRef: { current: null }, bgImageRef: { current: source }, adjustments: {},
     requestAnimationFrame(callback) { frames.set(++nextFrame, callback); return nextFrame; },
     cancelAnimationFrame(id) { frames.delete(id); },
-    renderInteractiveImage(_source, adjustments) { renders++; lastAdjustments = adjustments; return rendered; },
+    renderInteractiveImage(pixels, adjustments, _canvas, fullSize) {
+      assert.equal(fullSize, true, "Every editing frame must use native resolution");
+      renders++; lastAdjustments = adjustments;
+      Object.assign(rendered, { width: pixels.naturalWidth, height: pixels.naturalHeight }); return rendered;
+    },
     relayoutCanvas() {}, setPreviewError(error) { assert.equal(error, null); },
   };
   const run = vm.runInNewContext(`${compiled}\neffect;`, context);
@@ -57,9 +62,19 @@ test("rapid slider updates render only the latest frame and reuse the Fabric pre
   frames.clear();
   assert.equal(context.bgImageRef.current, preview);
   assert.equal(allocations, 2, "one source and one reusable preview");
+  cleanup?.();
   cleanup = run();
   cleanup();
   assert.equal(frames.size, 0, "unmount cancels pending rendering");
+  assert.deepEqual([preview.width, preview.height], [6000, 4000], "The reused Fabric image stays at native dimensions");
+  const rendersBeforeReset = renders;
+  context.adjustments = {};
+  cleanup = run();
+  for (const callback of frames.values()) callback();
+  frames.clear();
+  assert.equal(context.bgImageRef.current, source, "Reset displays the original decoded source directly");
+  assert.equal(renders, rendersBeforeReset, "Neutral edits must not allocate or render another full-size image");
+  cleanup();
 });
 
 test("image decoding is shared, failures retry, and speculative downloads are serialized", async () => {
@@ -152,6 +167,15 @@ test("repeated previews reuse the backing canvas and clear previous pixels", () 
     renderInteractiveImage(source, { exposure: 10 }, target);
     assert.equal(target.resizes, 2, "slider changes must not reallocate the same-sized backing canvas");
     assert.equal(target.clears, 2, "transparent source pixels must never retain a previous preview");
+    const large = { naturalWidth: 3200, naturalHeight: 2000 };
+    renderInteractiveImage(large, {}, target, true);
+    assert.deepEqual([target.width, target.height], [3200, 2000], "Editing retains native dimensions and aspect ratio");
+    const nativeResizes = target.resizes;
+    renderInteractiveImage(large, { contrast: 15 }, target, true);
+    assert.deepEqual([target.width, target.height], [3200, 2000], "Active edits never fall back to a smaller preview");
+    assert.equal(target.resizes, nativeResizes, "Native buffers are reused while editing");
+    renderInteractiveImage(large, {}, target);
+    assert.deepEqual([target.width, target.height], [1600, 1000], "Only covers use the smaller image budget");
   } finally { globalThis.document = originalDocument; }
 });
 

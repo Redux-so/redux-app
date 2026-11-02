@@ -573,7 +573,7 @@ export function useCanvas(
       const { FabricImage } = await import("fabric");
       if (cancelled) return;
 
-      const img = new FabricImage(await loadDecodedImage(imageUrl));
+      const img = new FabricImage(await loadDecodedImage(imageUrl), { objectCaching: false });
       if (cancelled || generation !== loadGenerationRef.current) return;
 
       const w = canvas.getWidth();
@@ -629,14 +629,26 @@ export function useCanvas(
       if (canvas !== fabricRef.current || source !== sourceImageRef.current) return;
       const pixels = source.getElement() as HTMLImageElement;
       try {
+        // Neutral edits can display the decoded native source directly, avoiding
+        // a second full-size pixel buffer or a softened intermediate preview.
+        if (!Object.values(adjustments).some(value => value !== 0)) {
+          bgImageRef.current = source;
+          canvas.backgroundImage = source;
+          setPreviewError(null);
+          relayoutCanvas();
+          return;
+        }
         const rendered = renderInteractiveImage(pixels, adjustments,
-          localPreviewCanvasRef.current ?? undefined);
+          localPreviewCanvasRef.current ?? undefined, true);
         localPreviewCanvasRef.current = rendered;
         if (bgImageRef.current?.getElement() !== rendered) {
           const PreviewImage = source.constructor as typeof FabricImage;
           const preview = new PreviewImage(rendered, { objectCaching: false });
           bgImageRef.current = preview;
           canvas.backgroundImage = preview;
+        } else {
+          // Keep Fabric's dimensions aligned with the native working image.
+          bgImageRef.current?.set({ width: rendered.width, height: rendered.height });
         }
         setPreviewError(null);
         relayoutCanvas();
@@ -645,7 +657,7 @@ export function useCanvas(
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [adjustments, savedTransform, canvasReady, sourceVersion, relayoutCanvas]);
+  }, [adjustments, canvasReady, sourceVersion, relayoutCanvas]);
 
   // ---------------------------------------------------------------------------
   // Zoom — 10% increments, clamped to 10%–500%
@@ -825,7 +837,7 @@ export function useCanvas(
 
     const dataUrl = offscreen.toDataURL("image/png");
     const { FabricImage } = await import("fabric");
-    const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+    const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" }, { objectCaching: false });
     if (!isCurrent() || canvas !== fabricRef.current || generation !== cropGenerationRef.current) {
       setIsCropping(false);
       return null;
@@ -885,7 +897,7 @@ export function useCanvas(
     const generation = ++loadGenerationRef.current;
 
     const { FabricImage } = await import("fabric");
-    const img = new FabricImage(await loadDecodedImage(url));
+    const img = new FabricImage(await loadDecodedImage(url), { objectCaching: false });
     if (!isCurrent() || generation !== loadGenerationRef.current || canvas !== fabricRef.current) return false;
 
     if (nextTransform) transformRef.current = { ...nextTransform };
@@ -953,7 +965,7 @@ export function useCanvas(
 
     const dataUrl = offscreen.toDataURL("image/png");
     const { FabricImage } = await import("fabric");
-    const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" });
+    const newImg = await FabricImage.fromURL(dataUrl, { crossOrigin: "anonymous" }, { objectCaching: false });
     if (!isCurrent() || canvas !== fabricRef.current) return null;
 
     // Fit the cropped image into the existing Fabric canvas (don't resize canvas element)
