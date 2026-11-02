@@ -98,6 +98,14 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 
 ## Validate a change
 
+`node scripts/verify-upload-performance.mjs` checks upload profile-read overhead,
+parallel cover/original storage, preserved originals, preview fallback/cleanup,
+and unchanged request safeguards. `POST /api/images` reports auth, validation,
+storage and database durations in `Server-Timing` for real-network diagnosis.
+The validation duration includes multipart reading and rate-limit checks; the
+storage duration includes any initial cover preparation. Tests mock providers,
+so compare actual uploads in the Network panel to assess network/provider delay.
+
 `node scripts/verify-retouch.mjs` checks actual Sharp pixels outside painted
 selections, alpha preservation, crop/mask alignment, transformed Fabric brush
 coordinates, canvas relayout, local source registration and retouch route

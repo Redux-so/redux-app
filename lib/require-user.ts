@@ -2,6 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import type { NextResponse } from "next/server";
 import type { User } from "@prisma/client";
 import { apiUnauthorizedResponse } from "@/lib/api-error";
+import { prisma } from "@/lib/prisma";
 import {
   displayNameFromClerkParts,
   primaryEmailFromWebhookAddresses,
@@ -43,18 +44,22 @@ export function clerkProfileFromCurrentUser(
 }
 
 /** Ensure a Prisma User row exists for this Clerk session (lazy sync on first API touch). */
-export async function getPrismaUserForClerkId(clerkId: string): Promise<User> {
+export async function getPrismaUserForClerkId(clerkId: string, refreshProfile = true): Promise<User> {
+  if (!refreshProfile) {
+    const existing = await prisma.user.findUnique({ where: { clerkId } });
+    if (existing) return existing;
+  }
   const clerkUser = await currentUser();
   return upsertPrismaUser(clerkProfileFromCurrentUser(clerkId, clerkUser));
 }
 
 /** Resolve Clerk session → Prisma User, or return a 401 JSON response. */
-export async function requireAuthUser(): Promise<RequireAuthUserResult> {
+export async function requireAuthUser(options: { refreshProfile?: boolean } = {}): Promise<RequireAuthUserResult> {
   const { userId: clerkId } = await auth();
   if (!clerkId) {
     return { error: apiUnauthorizedResponse() };
   }
 
-  const user = await getPrismaUserForClerkId(clerkId);
+  const user = await getPrismaUserForClerkId(clerkId, options.refreshProfile ?? true);
   return { user };
 }

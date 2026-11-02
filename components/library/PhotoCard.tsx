@@ -44,6 +44,7 @@ export default function PhotoCard({
   const [isFavorite, setIsFavorite] = useState(image.isFavorite === true);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const thumbnailUrl = cloudinaryThumbnailUrl(image.previewUrl ?? image.originalUrl);
 
   const cancelPrefetch = () => {
     if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current);
@@ -139,7 +140,8 @@ export default function PhotoCard({
     >
       <Image
         key={`${image.id}:${image.previewUrl ?? image.originalUrl}`}
-        src={cloudinaryThumbnailUrl(image.previewUrl ?? image.originalUrl)}
+        src={thumbnailUrl}
+        unoptimized={/^https:\/\/res\.cloudinary\.com\//.test(thumbnailUrl)}
         alt={image.filename}
         fill
         sizes="(max-width: 768px) 50vw, 20vw"

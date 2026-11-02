@@ -28,6 +28,7 @@ Verified from the repository unless marked **uncertain**.
 - Public routes: `lib/public-routes.ts` (root redirect, sign-in/up, SSO callback, webhooks, Sentry tunnel)
 - Google sign-in/sign-up uses Clerk's popup flow so Redux stays visible in the main tab. Popup blocking and errors return to the existing form; the SSO callback and route loading states use the shared dark spinner.
 - API handlers resolve DB user via `lib/require-user.ts` (`clerkId` → `User`)
+- Photo uploads still authenticate every request but reuse the existing Prisma user (`refreshProfile: false`) rather than fetching the Clerk profile and rewriting it for each file. Missing users retain the normal initialization path; other endpoints retain profile refresh.
 - Unknown page URLs reach the persistent 404 screen in `app/not-found.tsx`, with one account-aware action to sign in or open the library. Keep `isAppPagePath` in `lib/last-visited-page.ts` synchronized with page routes so private pages retain proxy authentication. APIs retain their JSON error behavior.
 - Editor URLs are remembered after their image loads successfully. Missing/empty image IDs and images returning 404 use the same recovery component without overwriting the previous URL; recovery to the current URL falls back to `/` to prevent loops.
 - Clerk webhook syncs users: `app/api/webhooks/clerk/route.ts` (Svix + `CLERK_WEBHOOK_SECRET`)
@@ -73,6 +74,8 @@ Representative routes:
 ## Media and image pipeline
 
 1. Upload → `POST /api/images` (multipart) → Cloudinary `redux/` folder → `Image` row (`originalUrl`, `publicId`)
+   - Upload parsing overlaps authenticated rate-limit checks. Large originals and TIFFs get a small browser-compatible cover prepared in parallel with original storage (`lib/store-library-upload.ts`). Originals retain exact bytes and native dimensions. The cover is saved as `previewUrl`; its asset ID stays in metadata for cleanup after later edits replace that preview. Editing/export continue to read the original or working source, never the cover.
+   - Already transformed Cloudinary grid thumbnails load directly from its CDN; other storage URLs retain Next image optimization.
 2. Legacy rows may still have `utKey` (UploadThing); permanent delete removes both Cloudinary assets and any remaining UploadThing keys
 3. Editor loads `previewUrl ?? originalUrl`
 4. Adjustments: shared local Canvas 2D renderer updates canvas immediately and renders export pixels at native dimensions; Sharp only transforms/encodes those pixels (`lib/interactive-image-preview.ts`, `lib/apply-image-adjustments.ts`)

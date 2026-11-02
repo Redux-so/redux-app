@@ -27,6 +27,7 @@ export async function collectImageRemoteAssets(
       publicId: true,
       previewUrl: true,
       utKey: true,
+      metadata: true,
     },
   });
 
@@ -53,6 +54,11 @@ export async function collectImageRemoteAssets(
   }
   publicIds.add(image.publicId);
   addCloudinaryUrl(publicIds, image.previewUrl);
+  const metadata = image.metadata;
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)
+    && "uploadCoverPublicId" in metadata && typeof metadata.uploadCoverPublicId === "string") {
+    publicIds.add(metadata.uploadCoverPublicId);
+  }
 
   for (const version of versions) {
     if (version.publicId) {
