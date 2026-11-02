@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { Canvas, FabricImage, FabricObject, Point as FabricPoint } from "fabric";
+import type { Canvas, FabricImage, FabricObject, TMat2D, Point as FabricPoint } from "fabric";
 import { normalizeBrushSize, type BrushSizes, type RetouchTool } from "@/lib/retouch-brush";
 import { constrainViewport, pinchViewport, type ViewportTransform, type ViewportRect } from "@/lib/editor-viewport";
 import { type AdjustmentKey } from "@/constants/adjustments";
-import { transformedSource, drawSourceMask } from "@/lib/canvas-image-geometry";
+import { transformedSource } from "@/lib/canvas-image-geometry";
+import { exportSourceMask, maskImageFrame } from "@/lib/canvas-retouch-mask";
 import { renderInteractiveImage } from "@/lib/interactive-image-preview";
 import { loadDecodedImage } from "@/lib/decoded-image-cache";
 import { transformedDimensions, type ImageTransform } from "@/lib/image-transform";
@@ -92,6 +93,8 @@ export function useCanvas(
   onMasksChangedRef.current = onMasksChanged;
   const loadGenerationRef = useRef(0);
   const brushGenerationRef = useRef(0);
+  const maskFramesRef = useRef(new WeakMap<FabricObject, TMat2D>());
+  const transformUtilsRef = useRef<typeof import("fabric").util | null>(null);
   const cropGenerationRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // containerRef is attached to the outer wrapper div in Canvas.tsx so we can
@@ -280,6 +283,16 @@ export function useCanvas(
         flipY,
       });
       img.setCoords();
+      const util = transformUtilsRef.current;
+      if (util) {
+        const frame = maskImageFrame(img);
+        for (const path of [...healPathsRef.current, ...eraserPathsRef.current, ...blurPathsRef.current]) {
+          const local = maskFramesRef.current.get(path);
+          if (!local) continue;
+          util.applyTransformToObject(path, util.multiplyTransformMatrices(frame, local));
+          path.setCoords();
+        }
+      }
       const bounds = displayedBounds(w, h) ?? img.getBoundingRect();
       vpt[4] = w / 2 - (bounds.left + centerX * bounds.width) * vpt[0];
       vpt[5] = h / 2 - (bounds.top + centerY * bounds.height) * vpt[3];
@@ -326,7 +339,8 @@ export function useCanvas(
     let disposed = false;
 
     (async () => {
-      const { Canvas: FabricCanvas, Point } = await import("fabric");
+      const { Canvas: FabricCanvas, Point, util } = await import("fabric");
+      transformUtilsRef.current = util;
       if (disposed) return;
 
       PointRef.current = Point;
@@ -969,6 +983,16 @@ export function useCanvas(
     return dataUrl;
   }, [updateImageBounds]);
 
+  const rememberMaskPath = useCallback((path: FabricObject) => {
+    const image = bgImageRef.current;
+    const util = transformUtilsRef.current;
+    if (!image || !util) return;
+    path.set({ selectable: false, evented: false });
+    maskFramesRef.current.set(path, util.multiplyTransformMatrices(
+      util.invertTransform(maskImageFrame(image)), path.calcTransformMatrix(),
+    ));
+  }, []);
+
   // ---------------------------------------------------------------------------
   // Heal brush — free drawing in red; export mask aligned to image pixels
   // ---------------------------------------------------------------------------
@@ -990,6 +1014,7 @@ export function useCanvas(
       healPathHandlerRef.current = null;
     }
     const onPathCreated = (e: { path: FabricObject }) => {
+      rememberMaskPath(e.path);
       healPathsRef.current = [...healPathsRef.current, e.path];
       onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current });
     };
@@ -1007,7 +1032,7 @@ export function useCanvas(
     canvas.discardActiveObject();
     canvas.requestRenderAll();
     setIsHealBrush(true);
-  }, [updateBrushCursor]);
+  }, [updateBrushCursor, rememberMaskPath]);
 
   const disableHealBrush = useCallback(() => {
     brushGenerationRef.current++;
@@ -1055,6 +1080,7 @@ export function useCanvas(
       eraserPathHandlerRef.current = null;
     }
     const onPathCreated = (e: { path: FabricObject }) => {
+      rememberMaskPath(e.path);
       eraserPathsRef.current = [...eraserPathsRef.current, e.path];
       onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current });
     };
@@ -1071,7 +1097,7 @@ export function useCanvas(
     canvas.selection = false;
     canvas.discardActiveObject();
     canvas.requestRenderAll();
-  }, [updateBrushCursor]);
+  }, [updateBrushCursor, rememberMaskPath]);
 
   const disableEraserBrush = useCallback(() => {
     brushGenerationRef.current++;
@@ -1094,52 +1120,12 @@ export function useCanvas(
   }, [updateBrushCursor]);
 
   const exportEraserMask = useCallback(async (): Promise<string> => {
-    const canvas = fabricRef.current;
-    const img = bgImageRef.current;
-    if (!canvas || !img) throw new Error("Canvas not ready");
+    const image = bgImageRef.current;
+    const source = sourceImageRef.current;
+    if (!image || !source) throw new Error("Canvas not ready");
     const paths = eraserPathsRef.current;
-    if (paths.length === 0) throw new Error("Paint over the area to erase first");
-
-    const nw = sourceImageRef.current?.width ?? img.width;
-    const nh = sourceImageRef.current?.height ?? img.height;
-    const cw = canvas.getWidth();
-    const ch = canvas.getHeight();
-    const br = img.getBoundingRect();
-
-    const { StaticCanvas } = await import("fabric");
-    const el = document.createElement("canvas");
-    el.width = cw;
-    el.height = ch;
-    const tmp = new StaticCanvas(el, { width: cw, height: ch, backgroundColor: "#000000" });
-
-    for (const p of paths) {
-      const cloned = await p.clone();
-      cloned.set({ stroke: "#ffffff", fill: "", opacity: 1 });
-      tmp.add(cloned);
-    }
-    tmp.renderAll();
-    const fullMaskDataUrl = tmp.toDataURL({ format: "png", multiplier: 1 });
-    tmp.dispose();
-
-    const maskCanvas = document.createElement("canvas");
-    maskCanvas.width = nw;
-    maskCanvas.height = nh;
-    const ctx = maskCanvas.getContext("2d");
-    if (!ctx) throw new Error("Could not get 2d context");
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, nw, nh);
-
-    const bitmap = new Image();
-    await new Promise<void>((resolve, reject) => {
-      bitmap.onload = () => resolve();
-      bitmap.onerror = () => reject(new Error("Failed to load eraser mask bitmap"));
-      bitmap.src = fullMaskDataUrl;
-    });
-    drawSourceMask(ctx, bitmap, br, nw, nh, transformRef.current);
-
-    const dataUrl = maskCanvas.toDataURL("image/png");
-    const comma = dataUrl.indexOf(",");
-    return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+    if (!paths.length) throw new Error("Paint over the area to erase first");
+    return exportSourceMask(image, paths, source.width, source.height);
   }, []);
 
   const enableBlurBrush = useCallback(async () => {
@@ -1160,6 +1146,7 @@ export function useCanvas(
       blurPathHandlerRef.current = null;
     }
     const onPathCreated = (e: { path: FabricObject }) => {
+      rememberMaskPath(e.path);
       blurPathsRef.current = [...blurPathsRef.current, e.path];
       onMasksChangedRef.current?.({ heal: healPathsRef.current, eraser: eraserPathsRef.current, blur: blurPathsRef.current });
     };
@@ -1176,7 +1163,7 @@ export function useCanvas(
     canvas.selection = false;
     canvas.discardActiveObject();
     canvas.requestRenderAll();
-  }, [updateBrushCursor]);
+  }, [updateBrushCursor, rememberMaskPath]);
 
   const disableBlurBrush = useCallback(() => {
     brushGenerationRef.current++;
@@ -1199,111 +1186,21 @@ export function useCanvas(
   }, [updateBrushCursor]);
 
   const exportBlurMask = useCallback(async (): Promise<string> => {
-    const canvas = fabricRef.current;
-    const img = bgImageRef.current;
-    if (!canvas || !img) throw new Error("Canvas not ready");
+    const image = bgImageRef.current;
+    const source = sourceImageRef.current;
+    if (!image || !source) throw new Error("Canvas not ready");
     const paths = blurPathsRef.current;
-    if (paths.length === 0) throw new Error("Paint over the area to blur first");
-
-    const nw = sourceImageRef.current?.width ?? img.width;
-    const nh = sourceImageRef.current?.height ?? img.height;
-    const cw = canvas.getWidth();
-    const ch = canvas.getHeight();
-    const br = img.getBoundingRect();
-
-    const { StaticCanvas } = await import("fabric");
-    const el = document.createElement("canvas");
-    el.width = cw;
-    el.height = ch;
-    const tmp = new StaticCanvas(el, { width: cw, height: ch, backgroundColor: "#000000" });
-
-    for (const p of paths) {
-      const cloned = await p.clone();
-      cloned.set({ stroke: "#ffffff", fill: "", opacity: 1 });
-      tmp.add(cloned);
-    }
-    tmp.renderAll();
-    const fullMaskDataUrl = tmp.toDataURL({ format: "png", multiplier: 1 });
-    tmp.dispose();
-
-    const maskCanvas = document.createElement("canvas");
-    maskCanvas.width = nw;
-    maskCanvas.height = nh;
-    const ctx = maskCanvas.getContext("2d");
-    if (!ctx) throw new Error("Could not get 2d context");
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, nw, nh);
-
-    const bitmap = new Image();
-    await new Promise<void>((resolve, reject) => {
-      bitmap.onload = () => resolve();
-      bitmap.onerror = () => reject(new Error("Failed to load blur mask bitmap"));
-      bitmap.src = fullMaskDataUrl;
-    });
-    drawSourceMask(ctx, bitmap, br, nw, nh, transformRef.current);
-
-    const dataUrl = maskCanvas.toDataURL("image/png");
-    const comma = dataUrl.indexOf(",");
-    return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+    if (!paths.length) throw new Error("Paint over the area to blur first");
+    return exportSourceMask(image, paths, source.width, source.height);
   }, []);
 
   const exportMask = useCallback(async (): Promise<string> => {
-    const canvas = fabricRef.current;
-    const img = bgImageRef.current;
-    if (!canvas || !img) {
-      throw new Error("Canvas not ready");
-    }
+    const image = bgImageRef.current;
+    const source = sourceImageRef.current;
+    if (!image || !source) throw new Error("Canvas not ready");
     const paths = healPathsRef.current;
-    if (paths.length === 0) {
-      throw new Error("Paint over the area to heal first");
-    }
-
-    const nw = sourceImageRef.current?.width ?? img.width;
-    const nh = sourceImageRef.current?.height ?? img.height;
-    const cw = canvas.getWidth();
-    const ch = canvas.getHeight();
-    const br = img.getBoundingRect();
-
-    const { StaticCanvas } = await import("fabric");
-    const el = document.createElement("canvas");
-    el.width = cw;
-    el.height = ch;
-    const tmp = new StaticCanvas(el, {
-      width: cw,
-      height: ch,
-      backgroundColor: "#000000",
-    });
-
-    for (const p of paths) {
-      const cloned = await p.clone();
-      cloned.set({ stroke: "#ffffff", fill: "", opacity: 1 });
-      tmp.add(cloned);
-    }
-    tmp.renderAll();
-    const fullMaskDataUrl = tmp.toDataURL({ format: "png", multiplier: 1 });
-    tmp.dispose();
-
-    const maskCanvas = document.createElement("canvas");
-    maskCanvas.width = nw;
-    maskCanvas.height = nh;
-    const ctx = maskCanvas.getContext("2d");
-    if (!ctx) {
-      throw new Error("Could not get 2d context");
-    }
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, nw, nh);
-
-    const bitmap = new Image();
-    await new Promise<void>((resolve, reject) => {
-      bitmap.onload = () => resolve();
-      bitmap.onerror = () => reject(new Error("Failed to load mask bitmap"));
-      bitmap.src = fullMaskDataUrl;
-    });
-    drawSourceMask(ctx, bitmap, br, nw, nh, transformRef.current);
-
-    const dataUrl = maskCanvas.toDataURL("image/png");
-    const comma = dataUrl.indexOf(",");
-    return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+    if (!paths.length) throw new Error("Paint over the area to heal first");
+    return exportSourceMask(image, paths, source.width, source.height);
   }, []);
 
 
@@ -1315,7 +1212,16 @@ export function useCanvas(
     healPathsRef.current = masks?.heal ?? [];
     eraserPathsRef.current = masks?.eraser ?? [];
     blurPathsRef.current = masks?.blur ?? [];
-    [...healPathsRef.current, ...eraserPathsRef.current, ...blurPathsRef.current].forEach((path) => canvas.add(path));
+    const image = bgImageRef.current;
+    const util = transformUtilsRef.current;
+    [...healPathsRef.current, ...eraserPathsRef.current, ...blurPathsRef.current].forEach((path) => {
+      const local = maskFramesRef.current.get(path);
+      if (image && util && local) {
+        util.applyTransformToObject(path, util.multiplyTransformMatrices(maskImageFrame(image), local));
+        path.setCoords();
+      }
+      canvas.add(path);
+    });
     canvas.requestRenderAll();
   }, []);
 

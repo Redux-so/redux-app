@@ -352,6 +352,7 @@ function chatPanelHost(mode, options = {}) {
   const component = compile("../components/editor/ChatPanel.tsx", {
     "next/dynamic": { default: () => () => null },
     "@/components/shared/BrandLogo": { default: () => null },
+    "@/constants/brand": { BRAND_LOGO_IMAGE: { src: "/logo.png", width: 40, height: 40 } },
     "@/components/editor/ChatEmptyState": { default: () => null },
     "@clerk/nextjs": { useUser: () => ({ user: null }) },
     "framer-motion": { ...nativeRequire("framer-motion"), useReducedMotion: () => options.reduceMotion === true },

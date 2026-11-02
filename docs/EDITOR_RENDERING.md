@@ -33,6 +33,25 @@ resize read that working source; effects are not baked into it twice. Confirmed
 results enter shared undo history. Unconfirmed masks and crop handles are
 selection UI; export requires confirming or cancelling them first.
 
+Painted Blur, Eraser and Heal masks are rasterized directly into working-source
+pixels using the inverse Fabric image transform. Strokes retain image-local
+coordinates through panel resizing, device layout changes, rotation and flips;
+viewport zoom/pan and device pixel ratio do not affect the exported selection.
+Server retouch rejects empty, corrupt or dimension-mismatched masks. Masks are
+decoded as one channel, including PNGs with alpha. The result is blended only
+through the original mask; unselected sRGB pixels and all source alpha remain
+unchanged. Gaussian blur uses this same compositor.
+
+Heal and Eraser share context-based LaMa inpainting rather than a text-prompted
+diffusion pass. Matching image/mask crops include surrounding context, preserve
+aspect ratio and pad to the provider's supported dimensions. Only painted pixels
+from the returned crop enter the full-resolution source. The provider may still
+produce an imperfect fill inside the selection; it cannot replace unpainted
+pixels. Incorrect provider dimensions fail rather than silently stretching the
+result. Background removal uses only the provider's alpha, preserving source RGB
+and existing transparency. Local crop/resize sources are registered through the
+existing source-version upload before manual or chat retouch requests.
+
 Export waits for active image operations and Agent edits before reading the
 current document. It loads the required working source, renders at full size,
 then applies image-local flips followed by rotation/straightening with

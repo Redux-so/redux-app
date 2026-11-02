@@ -98,6 +98,12 @@ Open `http://localhost:3000`. Sign in via Clerk for dashboard routes.
 
 ## Validate a change
 
+`node scripts/verify-retouch.mjs` checks actual Sharp pixels outside painted
+selections, alpha preservation, crop/mask alignment, transformed Fabric brush
+coordinates, canvas relayout, local source registration and retouch route
+storage/refunds. Provider calls and storage are mocked; live inpainting quality
+and phone/desktop brush interaction still require manual verification.
+
 For library onboarding, `node scripts/verify-introduction.mjs` checks step navigation, account dismissal, persistence errors/retry and Settings replay without calling Clerk. Verify the square dialog, focus handling and new-account dismissal across refreshes in a signed-in browser too.
 
 For responsive library/editor changes, `node scripts/verify-mobile-layout.mjs`

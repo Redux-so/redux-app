@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+import { prepareRetouchImage, compositeRetouch, RetouchMaskError } from "@/lib/retouch-image";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { apiInternalErrorResponse } from "@/lib/api-error";
@@ -42,69 +43,11 @@ export async function POST(request: Request) {
 
     try {
       const { buffer: sourceBuffer } = await fetchTrustedMediaBuffer(imageUrl);
-      const meta = await sharp(sourceBuffer).metadata();
-      const width = meta.width ?? 512;
-      const height = meta.height ?? 512;
-
-      const sigma = intensityToSigma(blurIntensity);
-      const maskBuffer = Buffer.from(maskBase64, "base64");
-
-      const [blurredRgb, maskResized] = await Promise.all([
-        sharp(sourceBuffer)
-          .blur(sigma)
-          .removeAlpha()
-          .raw()
-          .toBuffer({ resolveWithObject: true }),
-        sharp(maskBuffer)
-          .resize(width, height, { fit: "fill" })
-          .grayscale()
-          .raw()
-          .toBuffer({ resolveWithObject: true }),
-      ]);
-
-      const maskedRgba = await sharp(blurredRgb.data, {
-        raw: {
-          width: blurredRgb.info.width,
-          height: blurredRgb.info.height,
-          channels: 3,
-        },
-      })
-        .joinChannel(maskResized.data, {
-          raw: {
-            width: maskResized.info.width,
-            height: maskResized.info.height,
-            channels: 1,
-          },
-        })
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      const composed = await sharp(sourceBuffer)
-        .composite([
-          {
-            input: maskedRgba.data,
-            raw: {
-              width: maskedRgba.info.width,
-              height: maskedRgba.info.height,
-              channels: maskedRgba.info.channels,
-            },
-            blend: "over",
-          },
-        ])
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      // The shared uploader handles storage size without degrading these pixels.
-      const outputBuffer = await sharp(composed.data, {
-        raw: {
-          width: composed.info.width,
-          height: composed.info.height,
-          channels: composed.info.channels,
-        },
-      })
-        .png()
-        .toBuffer();
+      const selection = await prepareRetouchImage(sourceBuffer, maskBase64);
+      const blurred = await sharp(selection.pixels, {
+        raw: { width: selection.width, height: selection.height, channels: 4 },
+      }).blur(intensityToSigma(blurIntensity)).png().toBuffer();
+      const outputBuffer = await compositeRetouch(selection, blurred);
 
       const uploaded = await uploadToCloudinary(
         outputBuffer,
@@ -123,6 +66,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
+      if (innerErr instanceof RetouchMaskError) return NextResponse.json({ error: innerErr.message }, { status: 400 });
       return apiInternalErrorResponse("/api/images/blur", innerErr, "Blur failed");
     }
   } catch (outerErr) {

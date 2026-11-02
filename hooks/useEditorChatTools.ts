@@ -1,5 +1,6 @@
 "use client";
 
+import { prepareWorkingImage } from "@/lib/prepare-working-image";
 import type { RefObject } from "react";
 import { actionCost, actionLabel, actionResultMessage, isRemoteAction, type ChatToolPlan, type EditorAction, type EditorToolContext } from "@/lib/editor-actions";
 import { runEditorPlan, type ActionExecution } from "@/lib/editor-action-runner";
@@ -60,6 +61,7 @@ export function useEditorChatTools(options: {
 
   async function execute(plan: ChatToolPlan, execution: ActionExecution): Promise<string> {
     if (!options.ready || !options.imageId) throw new Error("Wait for the image to load before editing.");
+    const imageId = options.imageId;
     if (!execution.isCurrent() || execution.isUnchanged?.() === false || execution.signal.aborted) throw new Error("The image changed while this request was being prepared. Send a new request.");
     if (options.isCropping) throw new Error("Confirm or cancel the current crop before running chat edits.");
     // Preflight every selection before approval/provider calls. Missing masks never cost credits.
@@ -104,12 +106,7 @@ export function useEditorChatTools(options: {
           if (!guard()) throw new Error("The image changed before this tool started.");
           // Native crops are inline until saved. Register an immutable source using
           // the existing ownership-checked upload path before calling paid routes.
-          if (source.startsWith("data:")) {
-            const response = await fetch("/api/images/versions", { method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ imageId: options.imageId, adjustments: {}, sourceOnly: true, imageBase64: source.split(",")[1] }), signal: execution.signal });
-            if (!response.ok) throw new Error("Could not prepare the current image. No tool was run.");
-            source = (await response.json()).sourceUrl;
-          }
+          source = await prepareWorkingImage(imageId, source, execution.signal);
           if (!guard()) throw new Error("The image changed before this tool started.");
           // Once a provider starts, allow the server to record the result even if
           // the browser disconnects. The guard still prevents applying stale pixels.

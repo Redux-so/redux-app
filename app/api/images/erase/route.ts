@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import Replicate from "replicate";
-import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { prepareRetouchImage, RetouchMaskError } from "@/lib/retouch-image";
+import { inpaintSelection } from "@/lib/retouch-inpaint";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { apiInternalErrorResponse } from "@/lib/api-error";
@@ -12,50 +12,9 @@ import {
 } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
-import {
-  fetchReplicateDeliveryBuffer,
-  fetchTrustedMediaBuffer,
-} from "@/lib/safe-remote-fetch";
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 
 const ERASE_COST = CREDIT_COSTS.erase;
-
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
-
-// LaMa inpainting — context-aware object removal, no generative hallucination.
-// Model: zylim0702/remove-object (LaMa, same algorithm as andreasjansson/lama-inpainting which no longer exists on Replicate)
-// Latest version confirmed 2023-07-04 — check https://replicate.com/zylim0702/remove-object if this breaks.
-const REPLICATE_MODEL =
-  "zylim0702/remove-object:0e3a841c913f597c1e4c321560aa69e2bc1f15c65f8c366caafc379240efd8ba";
-
-/** LaMa only accepts these side lengths (same constraint as SD inpainting). */
-const ALLOWED_INPAINT_DIMS = [
-  64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024,
-] as const;
-
-function roundUpToAllowedDimension(n: number): number {
-  const v = Math.max(1, Math.ceil(n));
-  for (const d of ALLOWED_INPAINT_DIMS) {
-    if (d >= v) return d;
-  }
-  return 1024;
-}
-
-function extractOutputUrl(output: unknown): string {
-  if (typeof output === "string") return output;
-  if (Array.isArray(output) && output.length > 0) {
-    const first = output[0] as unknown;
-    if (first && typeof (first as Record<string, unknown>).url === "function") {
-      return ((first as Record<string, unknown>).url as () => URL)().href;
-    }
-    return String(first);
-  }
-  if (output && typeof (output as Record<string, unknown>).url === "function") {
-    return ((output as Record<string, unknown>).url as () => URL)().href;
-  }
-  throw new Error(`Unexpected Replicate output shape: ${String(output)}`);
-}
 
 export async function POST(request: Request) {
   try {
@@ -91,59 +50,10 @@ export async function POST(request: Request) {
 
     try {
       const { buffer: sourceImageBuffer } = await fetchTrustedMediaBuffer(imageUrl);
-      const imageMeta = await sharp(sourceImageBuffer).metadata();
-      const iw = imageMeta.width ?? 512;
-      const ih = imageMeta.height ?? 512;
-      const originalWidth = iw;
-      const originalHeight = ih;
-      const width = roundUpToAllowedDimension(iw);
-      const height = roundUpToAllowedDimension(ih);
-
-      // LaMa requires image and mask to be the exact same dimensions
-      const imageResized = await sharp(sourceImageBuffer)
-        .resize(width, height, { fit: "fill" })
-        .jpeg({ quality: 90 })
-        .toBuffer();
-
-      const imageUploaded = await uploadToCloudinary(
-        imageResized,
-        `erase_input_${imageId}_${Date.now()}.jpeg`,
-      );
-
-      const maskBuffer = Buffer.from(maskBase64, "base64");
-      const maskResized = await sharp(maskBuffer)
-        .resize(width, height, { fit: "fill" })
-        .png({ compressionLevel: 9 })
-        .toBuffer();
-
-      const maskUploaded = await uploadToCloudinary(
-        maskResized,
-        `erase_mask_${imageId}_${Date.now()}.png`,
-      );
-
-      const output = await replicate.run(
-        REPLICATE_MODEL as `${string}/${string}:${string}`,
-        {
-          input: {
-            image: imageUploaded.secureUrl,
-            mask: maskUploaded.secureUrl,
-            // LaMa fills from context — no text prompt needed
-          },
-        },
-      );
-
-      const resultUrl = extractOutputUrl(output);
-
-      const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
-
-      // Restore dimensions once; storage preparation preserves the result losslessly.
-      const restoredBuffer = await sharp(resultBuffer)
-        .resize(originalWidth, originalHeight, { fit: "fill" })
-        .png()
-        .toBuffer();
-
+      const selection = await prepareRetouchImage(sourceImageBuffer, maskBase64);
+      const result = await inpaintSelection(selection, imageId, "erase");
       const uploaded = await uploadToCloudinary(
-        restoredBuffer,
+        result,
         `${image.filename.replace(/\.[^/.]+$/, "")}_erase.png`,
       );
 
@@ -160,6 +70,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
       await refundCredits(user.id, "erase", ERASE_COST, "Erase failed");
+      if (innerErr instanceof RetouchMaskError) return NextResponse.json({ error: innerErr.message }, { status: 400 });
       return apiInternalErrorResponse("/api/images/erase", innerErr, "Erase failed");
     }
   } catch (outerErr) {

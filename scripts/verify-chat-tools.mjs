@@ -385,7 +385,11 @@ test("the dispatcher uses the actual paid panel endpoint and preserves its charg
         chargeCreditFeature: async ({ feature }) => { assert.equal(feature, "remove_background"); charges++; return { ok: true }; },
         refundCreditFeature: async ({ feature }) => { assert.equal(feature, "remove_background"); refunds++; },
       },
-      "@/lib/safe-remote-fetch": { fetchReplicateDeliveryBuffer: async () => ({ buffer: Buffer.from("image") }) },
+      "@/lib/safe-remote-fetch": {
+        fetchReplicateDeliveryBuffer: async () => ({ buffer: Buffer.from("image") }),
+        fetchTrustedMediaBuffer: async () => ({ buffer: Buffer.from("source") }),
+      },
+      "@/lib/retouch-image": { applyBackgroundMatte: async (_source, output) => output },
       "@/lib/cloudinary": { uploadToCloudinary: async () => ({ secureUrl: imageUrl, publicId: "result" }) },
       "@/lib/api-error": { apiInternalErrorResponse: () => Response.json({ error: "Background removal failed" }, { status: 500 }) },
     });

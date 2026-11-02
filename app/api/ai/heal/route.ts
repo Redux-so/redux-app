@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import Replicate from "replicate";
-import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { prepareRetouchImage, RetouchMaskError } from "@/lib/retouch-image";
+import { inpaintSelection } from "@/lib/retouch-inpaint";
 import { prisma } from "@/lib/prisma";
 import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
@@ -18,48 +18,7 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import {
-  fetchReplicateDeliveryBuffer,
-  fetchTrustedMediaBuffer,
-} from "@/lib/safe-remote-fetch";
-
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
-
-const REPLICATE_MODEL =
-  "stability-ai/stable-diffusion-inpainting:95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3";
-
-const INPAINT_PROMPT =
-  "remove object, clean background, seamless, realistic";
-
-/** Replicate SD inpainting only accepts these side lengths. */
-const ALLOWED_INPAINT_DIMS = [
-  64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024,
-] as const;
-
-function roundUpToAllowedDimension(n: number): number {
-  const v = Math.max(1, Math.ceil(n));
-  for (const d of ALLOWED_INPAINT_DIMS) {
-    if (d >= v) return d;
-  }
-  return 1024;
-}
-
-function extractOutputUrl(output: unknown): string {
-  if (typeof output === "string") return output;
-  if (Array.isArray(output) && output.length > 0) {
-    const first = output[0] as unknown;
-    if (first && typeof (first as Record<string, unknown>).url === "function") {
-      return ((first as Record<string, unknown>).url as () => URL)().href;
-    }
-    return String(first);
-  }
-  if (output && typeof (output as Record<string, unknown>).url === "function") {
-    return ((output as Record<string, unknown>).url as () => URL)().href;
-  }
-  throw new Error(`Unexpected Replicate output shape: ${String(output)}`);
-}
+import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
 
 export async function POST(request: Request) {
   try {
@@ -69,7 +28,7 @@ export async function POST(request: Request) {
     }
     const { user } = authResult;
 
-      if (user.creditBalance < CREDIT_COSTS.heal) {
+    if (user.creditBalance < CREDIT_COSTS.heal) {
       return insufficientCreditsResponse();
     }
 
@@ -105,44 +64,10 @@ export async function POST(request: Request) {
 
     try {
       const { buffer: sourceImageBuffer } = await fetchTrustedMediaBuffer(imageUrl);
-      const imageMeta = await sharp(sourceImageBuffer).metadata();
-      const iw = imageMeta.width ?? 512;
-      const ih = imageMeta.height ?? 512;
-      const width = roundUpToAllowedDimension(iw);
-      const height = roundUpToAllowedDimension(ih);
-
-      const maskBuffer = Buffer.from(maskBase64, "base64");
-      const maskResized = await sharp(maskBuffer)
-        .resize(width, height, { fit: "fill" })
-        .png()
-        .toBuffer();
-
-      const maskUploaded = await uploadToCloudinary(
-        maskResized,
-        `heal_mask_${imageId}_${Date.now()}.png`,
-      );
-
-      const output = await replicate.run(
-        REPLICATE_MODEL as `${string}/${string}:${string}`,
-        {
-          input: {
-            image: imageUrl,
-            mask: maskUploaded.secureUrl,
-            prompt: INPAINT_PROMPT,
-            width,
-            height,
-            num_inference_steps: 30,
-            num_outputs: 1,
-          },
-        },
-      );
-
-      const resultUrl = extractOutputUrl(output);
-
-      const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
-
+      const selection = await prepareRetouchImage(sourceImageBuffer, maskBase64);
+      const result = await inpaintSelection(selection, imageId, "heal");
       const uploaded = await uploadToCloudinary(
-        resultBuffer,
+        result,
         `${image.filename.replace(/\.[^/.]+$/, "")}_heal.png`,
       );
 
@@ -163,6 +88,7 @@ export async function POST(request: Request) {
         feature: "heal",
         description: "Refund: heal failed",
       });
+      if (innerErr instanceof RetouchMaskError) return NextResponse.json({ error: innerErr.message }, { status: 400 });
       return apiInternalErrorResponse("/api/ai/heal", innerErr, "Heal failed");
     }
   } catch (outerErr) {

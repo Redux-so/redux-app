@@ -1,5 +1,7 @@
 "use client";
 
+import { prepareWorkingImage } from "@/lib/prepare-working-image";
+
 import dynamic from "next/dynamic";
 import { useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from "react";
 import { EDITOR_TOOL_ROUTES } from "@/lib/editor-tool-routes";
@@ -649,10 +651,12 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
+      const imageUrl = await prepareWorkingImage(imageId, aiImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(EDITOR_TOOL_ROUTES.remove_background, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: aiImageUrl, imageId }),
+        body: JSON.stringify({ imageUrl, imageId }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -686,11 +690,13 @@ export default function AdjustmentPanel({
         toast.error(msg);
         return;
       }
+      const imageUrl = await prepareWorkingImage(imageId, canvasImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(EDITOR_TOOL_ROUTES.heal, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageUrl: canvasImageUrl,
+          imageUrl,
           maskBase64,
           imageId,
         }),
@@ -717,7 +723,7 @@ export default function AdjustmentPanel({
       setActiveTool(null);
     } catch (err) {
       console.error("[AdjustmentPanel] heal failed:", err);
-      toast.error("Heal failed");
+      toast.error(err instanceof Error ? err.message : "Heal failed");
     } finally {
       finishOperation();
       setLoadingHeal(false);
@@ -744,10 +750,12 @@ export default function AdjustmentPanel({
         toast.error(msg);
         return;
       }
+      const imageUrl = await prepareWorkingImage(imageId, canvasImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(EDITOR_TOOL_ROUTES.eraser, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId }),
+        body: JSON.stringify({ imageUrl, maskBase64, imageId }),
       });
       if (res.status === 402) {
         toast("Insufficient credits — purchase more to continue.", { icon: "💳" });
@@ -772,7 +780,7 @@ export default function AdjustmentPanel({
       setActiveTool(null);
     } catch (err) {
       console.error("[AdjustmentPanel] eraser failed:", err);
-      toast.error("Eraser failed");
+      toast.error(err instanceof Error ? err.message : "Eraser failed");
     } finally {
       finishOperation();
       setLoadingEraser(false);
@@ -799,10 +807,12 @@ export default function AdjustmentPanel({
         toast.error(msg);
         return;
       }
+      const imageUrl = await prepareWorkingImage(imageId, canvasImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(EDITOR_TOOL_ROUTES.blur, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: canvasImageUrl, maskBase64, imageId, blurIntensity }),
+        body: JSON.stringify({ imageUrl, maskBase64, imageId, blurIntensity }),
       });
       if (res.status === 429 || res.status === 503) {
         const errBody = (await res.json().catch(() => ({}))) as { error?: string };
@@ -823,7 +833,7 @@ export default function AdjustmentPanel({
       setActiveTool(null);
     } catch (err) {
       console.error("[AdjustmentPanel] blur failed:", err);
-      toast.error("Blur failed");
+      toast.error(err instanceof Error ? err.message : "Blur failed");
     } finally {
       finishOperation();
       setLoadingBlur(false);
