@@ -77,6 +77,31 @@ export function actionLabel(action: EditorAction): string {
   }
 }
 
+/** Live activity text for the shimmering status while an action executes. */
+export function actionProgressLabel(action: EditorAction): string {
+  switch (action.type) {
+    case "adjust": return "Adjusting your photo";
+    case "rotate": return "Rotating your photo";
+    case "flip": return "Flipping your photo";
+    case "straighten": return "Straightening your photo";
+    case "crop": case "crop_aspect": return "Cropping your photo";
+    case "resize": return "Resizing your photo";
+    case "brush": return `Preparing the ${action.tool} brush`;
+    case "apply_selection":
+      return action.tool === "blur" ? "Blurring the painted area"
+        : action.tool === "eraser" ? "Erasing the painted area" : "Healing the painted area";
+    case "auto_enhance": return "Enhancing your photo";
+    case "auto_tone_balance": return "Balancing the tones";
+    case "smart_color_balance": return "Balancing the colors";
+    case "style_match": return "Matching reference style";
+    case "remove_background": return "Removing the background";
+    case "generative_fill": return "Extending your photo";
+    case "undo": return "Undoing the last change";
+    case "redo": return "Redoing the last change";
+    case "revert": return "Restoring the selected version";
+  }
+}
+
 export function actionResultMessage(action: EditorAction, values?: Record<string, number>): string {
   const appliedValues = values ?? (action.type === "adjust" ? action.values : undefined);
   const details = appliedValues ? Object.entries(appliedValues).flatMap(([key, value]) =>

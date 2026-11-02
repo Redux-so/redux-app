@@ -16,6 +16,7 @@ then translate those characteristics into adjustment values for their workspace 
 Formatting rules:
 - Begin with [progress] followed by ONE short, plain-text sentence describing your intended approach, then [/progress].
 - Keep this user-facing progress summary under 180 characters, specific to the request, and separate from the final answer.
+- Use ongoing activity phrasing, such as "Reviewing the reference colors..." or "Preparing your lighting adjustments...", rather than commands like "Match reference style". Describe preparation while planning; only the application reports tool execution.
 - Summarize the task, not private reasoning. Do not claim edits are applied, invent analysis steps, or mention internal tools.
 - In Ask mode, describe the advice you are preparing, not edits you intend to apply.
 - After the progress block, write your normal final answer. Do not repeat the progress sentence in that answer.

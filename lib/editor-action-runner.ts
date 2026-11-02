@@ -1,4 +1,4 @@
-import { actionLabel, editorPlanSchema, type EditorAction, type EditorPlan } from "@/lib/editor-actions";
+import { actionLabel, actionProgressLabel, editorPlanSchema, type EditorAction, type EditorPlan } from "@/lib/editor-actions";
 import type { EditorChangeReview } from "@/lib/editor-change-review";
 
 export interface ActionOutcome { action: string; status: "applied" | "needs_input" | "failed"; message: string }
@@ -21,7 +21,7 @@ export async function runEditorPlan(plan: EditorPlan, execution: ActionExecution
   for (const [index, action] of parsed.actions.entries()) {
     const guard = () => !execution.signal.aborted && execution.isCurrent() && adapters.getRevision() === revision;
     if (!guard()) { outcomes.push({ action: actionLabel(action), status: "failed", message: "Stopped because the image changed or the request was cancelled." }); break; }
-    execution.progress(`${actionLabel(action)}...`);
+    execution.progress(`${actionProgressLabel(action)}...`);
     try {
       const result = await adapters.execute(action, index, guard);
       revision = adapters.getRevision();
