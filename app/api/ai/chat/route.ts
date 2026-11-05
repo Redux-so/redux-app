@@ -349,6 +349,7 @@ export async function POST(request: Request) {
           if (disconnected) throw new Error("Chat interrupted");
           const claudeStream = anthropic.messages.stream({
             model: ANTHROPIC_DEFAULT_MODEL,
+            thinking: { type: "disabled" },
             max_tokens: enableTools ? 2048 : 1024,
             system: buildChatSystemPrompt(chatInteractionMode, enableTools) + (attempt === 1
               ? "\nYour previous draft asked for permission instead of executing the requested edit. Call edit_photo now using the user's original request. Do not add paid operations the user did not request."
@@ -362,7 +363,10 @@ export async function POST(request: Request) {
           generation = claudeStream;
           if (disconnected) claudeStream.abort();
           for await (const event of claudeStream) {
-            if (event.type === "message_delta" && event.delta.stop_reason === "max_tokens") truncated = true;
+            if (event.type === "message_delta") {
+              if (event.delta.stop_reason === "max_tokens") truncated = true;
+              if (event.delta.stop_reason === "refusal") throw new Error("Claude declined the request; no tools were run");
+            }
             if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
               if (!enableTools || event.content_block.name !== "edit_photo" || ++toolCalls > 1) throw new Error("Invalid editor tool request");
               toolBlock = event.index;

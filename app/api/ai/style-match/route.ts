@@ -152,14 +152,16 @@ export async function POST(request: Request) {
 
     const response = await anthropic.messages.create({
       model: ANTHROPIC_DEFAULT_MODEL,
+      thinking: { type: "disabled" },
       max_tokens: 1024,
-      temperature: 0,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userContent }],
     });
 
     const rawText =
-      response.content[0]?.type === "text" ? response.content[0].text : "";
+      response.stop_reason === "refusal" || response.stop_reason === "max_tokens"
+        ? ""
+        : response.content.flatMap(block => block.type === "text" ? [block.text] : []).join("");
 
     const cleaned = rawText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
 
