@@ -12,7 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "node scripts/ci-test.mjs",
     "embed:all": "tsx scripts/reembed-images.ts"
   },

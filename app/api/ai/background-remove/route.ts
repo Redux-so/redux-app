@@ -12,9 +12,8 @@ import {
 import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { imageUrlAndIdBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import {
-  chargeCreditFeature,
+  commitPaidImageVersion,
   insufficientCreditsResponse,
-  refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { fetchReplicateDeliveryBuffer, withTrustedEditorImage } from "@/lib/safe-remote-fetch";
@@ -69,14 +68,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    const charge = await chargeCreditFeature({
-      userId: user.id,
-      feature: "remove_background",
-    });
-    if (!charge.ok) {
-      return insufficientCreditsResponse();
-    }
-
     try {
       // ── Call Replicate ────────────────────────────────────────────────────
       const output = await replicate.run(
@@ -114,24 +105,18 @@ export async function POST(request: Request) {
       );
 
       // ── Save ImageVersion ─────────────────────────────────────────────────
-      await prisma.imageVersion.create({
-        data: {
-          imageId,
-          url: uploaded.secureUrl,
-          publicId: uploaded.publicId,
-          adjustments: { operationResult: true },
-          label: "Background Removed",
-        },
+      const charge = await commitPaidImageVersion({ userId: user.id, feature: "remove_background" }, {
+        imageId,
+        url: uploaded.secureUrl,
+        publicId: uploaded.publicId,
+        adjustments: { operationResult: true },
+        label: "Background Removed",
       });
+      if (!charge.ok) return insufficientCreditsResponse();
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
 
     } catch (innerErr) {
-      await refundCreditFeature({
-        userId: user.id,
-        feature: "remove_background",
-        description: "Refund: background removal failed",
-      });
 
       return apiInternalErrorResponse(
         "/api/ai/background-remove",

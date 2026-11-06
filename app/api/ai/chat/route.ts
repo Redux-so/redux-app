@@ -41,7 +41,6 @@ import {
 import {
   chargeCreditFeature,
   insufficientCreditsResponse,
-  refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { CREDIT_COSTS } from "@/constants/credits";
@@ -159,7 +158,7 @@ export async function POST(request: Request) {
   // ── Find user ─────────────────────────────────────────────────────────────
   // ── Block only when lifetime free is used up AND there are no credits left.
   // While lifetimeFreeAI < 20, messages are free (lifetime counter increments).
-  // Once lifetimeFreeAI reaches 20, each message deducts 1 credit with no extra step.
+  // Once the allowance is exhausted, completed standalone replies cost one credit.
   if (user.lifetimeFreeAI >= USAGE_RING_CONFIG.freeChatAllowance && user.creditBalance === 0) {
     return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
   }
@@ -262,11 +261,10 @@ export async function POST(request: Request) {
   const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
   const enableTools = toolsEnabled && allowAdjustments && durableTurn;
 
-  // ── Consume free message or credit ───────────────────────────────────────
+  // ── Check chat allowance ───────────────────────────────────────
   let lifetimeFreeRemaining: number;
   let lifetimeFreeUsed: number;
   let creditBalanceAfter: number;
-  let chatCreditCharged = false;
 
   try {
     if (onFreeTier) {
@@ -281,23 +279,14 @@ export async function POST(request: Request) {
       );
       creditBalanceAfter = user.creditBalance;
     } else {
-      // Paid path: lifetime free already exhausted — charge 1 credit per message.
+      // Check affordability before starting paid generation.
       if (user.creditBalance < CREDIT_COSTS.chat_message) {
         if (durableTurn) await prisma.chatTurn.update({ where: { id: turnId }, data: { status: "interrupted" } });
         return insufficientCreditsResponse();
       }
-      const charge = await chargeCreditFeature({
-        userId: user.id,
-        feature: "chat_message",
-      });
-      if (!charge.ok) {
-        if (durableTurn) await prisma.chatTurn.update({ where: { id: turnId }, data: { status: "interrupted" } });
-        return insufficientCreditsResponse();
-      }
-      chatCreditCharged = true;
       lifetimeFreeRemaining = 0;
       lifetimeFreeUsed = user.lifetimeFreeAI;
-      creditBalanceAfter = charge.balanceAfter;
+      creditBalanceAfter = user.creditBalance;
     }
 
   } catch (error) {
@@ -343,7 +332,7 @@ export async function POST(request: Request) {
       try {
         if (disconnected) throw new Error("Chat interrupted");
         // One bounded recovery for an Agent reply that asks unnecessary permission.
-        // Reuse the original request and billing transaction; paid plans still require approval.
+        // Reuse the original request; paid plans still require approval.
         for (let attempt = 0; attempt < 2; attempt++) {
           if (disconnected) throw new Error("Chat interrupted");
           const claudeStream = anthropic.messages.stream({
@@ -403,12 +392,16 @@ export async function POST(request: Request) {
         if (!toolCalls) {
           for (const update of progressParser.finish()) emit(update);
         }
+        if (!toolCalls && !cleanChatText(fullText).trim()) {
+          throw new Error("The AI did not return a usable reply");
+        }
         if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
           const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;
           fullText += suffix;
           emit({ type: "text", text: suffix });
         }
         if (toolCalls) {
+          // Planning does not deliver an edit. Each paid tool bills when its result succeeds.
           const plan = editorPlanSchema.parse(JSON.parse(toolInput));
           for (const action of plan.actions) {
             if (action.type === "apply_selection" && action.tool === "blur" && action.intensity === undefined) action.intensity = editorContext?.blurIntensity ?? 30;
@@ -419,7 +412,23 @@ export async function POST(request: Request) {
           fullText = "Edits are ready. They have not been confirmed as applied. If this request was interrupted, send a new message to continue.";
           await persist("streaming");
           emit({ type: "tools", plan: { ...plan, turnId, credits: planCost(plan) } });
-        } else await persist("complete");
+        } else if (onFreeTier) {
+          await persist("complete");
+        } else {
+          const charge = await chargeCreditFeature({ userId: user.id, feature: "chat_message" },
+            durableTurn ? (tx) => tx.chatTurn.update({
+              where: { id: turnId },
+              data: { assistantText: cleanChatText(fullText), status: "complete" },
+            }) : undefined);
+          if (!charge.ok) {
+            fullText = "Insufficient credits. This reply was not charged.";
+            await persist("interrupted");
+            emit({ type: "interrupted" });
+            emit({ type: "text", text: `\n\n${fullText}` });
+            return;
+          }
+          emit({ type: "meta", lifetimeFreeRemaining, lifetimeFreeUsed, creditBalanceAfter: charge.balanceAfter });
+        }
 
         // Extract [adjustments] block and emit as a separate event
         const adjMatch = fullText.match(/\[adjustments\]([\s\S]*?)\[\/adjustments\]/);
@@ -445,17 +454,6 @@ export async function POST(request: Request) {
         }
       } catch (err) {
         console.error("[/api/ai/chat] Anthropic stream error:", err);
-        if (chatCreditCharged) {
-          try {
-            await refundCreditFeature({
-              userId: user.id,
-              feature: "chat_message",
-              description: "Refund: chat stream failed",
-            });
-          } catch (refundErr) {
-            console.error("[/api/ai/chat] Failed to refund chat credit:", refundErr);
-          }
-        }
         emit({ type: "interrupted" });
         if (!disconnected) {
           const text = "\n\nSomething went wrong. Please try again.";
@@ -467,12 +465,12 @@ export async function POST(request: Request) {
           console.error("[/api/ai/chat] Could not save response:", saveError);
           emit({ type: "history_error" });
         }
-      }
-
-      request.signal.removeEventListener("abort", onDisconnect);
-      emit({ type: "done" });
-      if (!disconnected) {
-        try { controller.close(); } catch { /* disconnected after final save */ }
+      } finally {
+        request.signal.removeEventListener("abort", onDisconnect);
+        emit({ type: "done" });
+        if (!disconnected) {
+          try { controller.close(); } catch { /* disconnected after final save */ }
+        }
       }
     },
   });

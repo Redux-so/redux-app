@@ -13,14 +13,12 @@ import { DEFAULT_ADJUSTMENTS } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { parseJsonRequest, styleMatchBodySchema } from "@/lib/api-validation";
 import {
-  chargeCreditFeature,
+  commitPaidImageVersion,
   insufficientCreditsResponse,
-  refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { stageTrustedEditorImage } from "@/lib/safe-remote-fetch";
-import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
-import { prisma } from "@/lib/prisma";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { z } from "zod";
 import { extractStylePalette, describeStylePalette, transferStylePalette } from "@/lib/style-match-palette";
 import { prepareChatVisionBase64, prepareChatVisionImage, VisionImageError } from "@/lib/chat-image-vision-server";
@@ -126,14 +124,6 @@ async function matchStagedImage(source: string, referenceImageBase64: string, us
     return styleMatchErrorResponse(error);
   }
 
-  const charge = await chargeCreditFeature({
-    userId,
-    feature: "style_match",
-  });
-  if (!charge.ok) {
-    return insufficientCreditsResponse();
-  }
-
   try {
     const userContent: (ImageBlockParam | TextBlockParam)[] = [
       {
@@ -188,24 +178,16 @@ async function matchStagedImage(source: string, referenceImageBase64: string, us
     // The renderer already produced a lossless PNG. Route large outputs
     // straight to alternate storage instead of decoding them again for WebP.
     const uploaded = await uploadToCloudinary(result, `${imageId}_style-match.png`, { preserveOriginal: true });
-    try {
-      // Register the immutable source for subsequent edits, undo, and cleanup.
-      await prisma.imageVersion.create({ data: { imageId, url: uploaded.secureUrl,
-        publicId: uploaded.publicId, adjustments: { operationResult: true }, label: "Style Match" } });
-    } catch (error) {
-      await deleteFromCloudinary(uploaded.publicId).catch(() => {});
-      throw error;
-    }
+    const charge = await commitPaidImageVersion({ userId, feature: "style_match" }, {
+      imageId, url: uploaded.secureUrl, publicId: uploaded.publicId,
+      adjustments: { operationResult: true }, label: "Style Match",
+    });
+    if (!charge.ok) return insufficientCreditsResponse();
     // Colors are baked into the new source. Reset sliders in the same history
     // checkpoint as the source replacement so neither entry point double-grades it.
     return NextResponse.json({ resultUrl: uploaded.secureUrl, adjustments: { ...DEFAULT_ADJUSTMENTS } });
   } catch (err) {
     console.error("[/api/ai/style-match]", err);
-    await refundCreditFeature({
-      userId,
-      feature: "style_match",
-      description: "Refund: style match failed",
-    });
     return styleMatchErrorResponse(err);
   }
 }

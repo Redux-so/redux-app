@@ -27,7 +27,7 @@ function compile(path, adapters) {
 const turnId = "b501765b-7815-4a8a-986d-43ab939294b9";
 function host(options = {}) {
   const rows = options.rows ?? [];
-  const state = { modelCalls: 0, charges: 0, refunds: 0, updates: 0, uploads: 0, modelMessages: [], toolPlans: [], modelTools: [], modelConfigs: [] };
+  const state = { modelCalls: 0, charges: 0, updates: 0, uploads: 0, modelMessages: [], toolPlans: [], modelTools: [], modelConfigs: [] };
   const matches = (row, where) => row.imageId === where.imageId && where.image.userId === "user-a" &&
     row.imageId === "photo-a" && (!where.status || row.status === where.status) &&
     (!where.sequence || row.sequence < where.sequence.lt);
@@ -80,8 +80,8 @@ function host(options = {}) {
     },
     "@/lib/kv": { checkRateLimit: async () => null, checkRateLimitPerMinute: async () => null, RATE_LIMIT_MINUTE: {} },
     "@/lib/expensive-route-guard": { rateLimitDeniedResponse: () => null },
-    "@/lib/atomic-credits": { chargeCreditFeature: async () => { state.charges++; return { ok: true, balanceAfter: 9 }; },
-      insufficientCreditsResponse: () => new Response(null, { status: 402 }), refundCreditFeature: async () => { state.refunds++; } },
+    "@/lib/atomic-credits": { chargeCreditFeature: async (_params, persist) => { await persist?.(prisma); state.charges++; return { ok: true, balanceAfter: 9 }; },
+      insufficientCreditsResponse: () => new Response(null, { status: 402 }) },
     "@/lib/cloudinary": { uploadToCloudinary: async () => { state.uploads++; return { secureUrl: "https://example.com/reference.png", publicId: "reference-id" }; }, deleteFromCloudinary: async () => {} },
     "@/lib/chat-image-vision-server": { prepareChatVisionBase64: async () => ({ base64: "aW1hZ2U=", mediaType: "image/png" }) },
   };
@@ -167,9 +167,17 @@ test("interrupted model responses preserve partial text and never emit edits", a
   assert.match(app.rows[0].assistantText, /Partial response/);
   assert.ok(emitted.some((event) => event.type === "interrupted"));
   assert.equal(emitted.some((event) => event.type === "adjustments"), false);
-  assert.equal(app.state.refunds, 1);
+  assert.equal(app.state.charges, 0);
   const restored = messagesFromTurns((await (await app.get()).json()).turns);
   assert.equal(restored[1].interrupted, true);
+});
+
+test("a paid reply charges after saving and reports the settled balance", async () => {
+  const app = host({ paid: true, chunks: ["A usable reply."] });
+  const emitted = events(await (await app.send()).text());
+  assert.equal(app.rows[0].status, "complete");
+  assert.equal(app.state.charges, 1);
+  assert.equal(emitted.filter((event) => event.type === "meta").at(-1).creditBalanceAfter, 9);
 });
 
 test("leaving mid-stream preserves the user message and partial response", async () => {
@@ -372,6 +380,7 @@ function chatPanelHost(mode, options = {}) {
     },
     useRef(initial) { const index = cursor++; return slots[index] ??= { current: initial }; },
     useCallback(callback) { cursor++; return callback; },
+    useContext() { cursor++; return false; },
     useEffect() { cursor++; }, useLayoutEffect() { cursor++; },
   };
   function render() {
@@ -457,14 +466,14 @@ test("interrupted staged replies retain partial text without applying buffered e
 
 test("Agent requests native validated tools without charging or executing paid operations during planning", async () => {
   const plan = { actions: [{ type: "remove_background" }, { type: "rotate", degrees: 90 }] };
-  const app = host({ chunks: [], modelEvents: [
+  const app = host({ paid: true, chunks: [], modelEvents: [
     { type: "content_block_start", index: 1, content_block: { type: "tool_use", name: "edit_photo" } },
     { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan).slice(0, 20) } },
     { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan).slice(20) } },
   ] });
   const result = events(await (await app.send({ toolsEnabled: true })).text());
   assert.equal(app.state.modelTools[0].name, "edit_photo");
-  assert.equal(app.state.charges, 1, "only the chat allowance is consumed during planning");
+  assert.equal(app.state.charges, 0, "planning does not deliver a billable edit");
   assert.equal(app.state.toolPlans.length, 1);
   assert.equal(result.find((e) => e.type === "tools").plan.credits, 1);
   assert.equal(result.some((e) => e.type === "adjustments"), false);

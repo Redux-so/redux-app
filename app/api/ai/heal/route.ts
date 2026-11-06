@@ -13,9 +13,8 @@ import {
 import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import {
-  chargeCreditFeature,
+  commitPaidImageVersion,
   insufficientCreditsResponse,
-  refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { withTrustedEditorImage } from "@/lib/safe-remote-fetch";
@@ -57,11 +56,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    const charge = await chargeCreditFeature({ userId: user.id, feature: "heal" });
-    if (!charge.ok) {
-      return insufficientCreditsResponse();
-    }
-
     try {
       const selection = await withTrustedEditorImage(imageUrl, (path) => prepareRetouchImage(path, maskBase64));
       const result = await inpaintSelection(selection, imageId, "heal");
@@ -71,23 +65,17 @@ export async function POST(request: Request) {
         { preserveOriginal: true },
       );
 
-      await prisma.imageVersion.create({
-        data: {
-          imageId,
-          url: uploaded.secureUrl,
-          publicId: uploaded.publicId,
-          adjustments: { operationResult: true },
-          label: "Heal",
-        },
+      const charge = await commitPaidImageVersion({ userId: user.id, feature: "heal" }, {
+        imageId,
+        url: uploaded.secureUrl,
+        publicId: uploaded.publicId,
+        adjustments: { operationResult: true },
+        label: "Heal",
       });
+      if (!charge.ok) return insufficientCreditsResponse();
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      await refundCreditFeature({
-        userId: user.id,
-        feature: "heal",
-        description: "Refund: heal failed",
-      });
       if (innerErr instanceof RetouchMaskError) return NextResponse.json({ error: innerErr.message }, { status: 400 });
       return apiInternalErrorResponse("/api/ai/heal", innerErr, "Heal failed");
     }

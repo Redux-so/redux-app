@@ -131,10 +131,10 @@ export default function SignUpForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"password" | "google" | "verify" | "resend" | null>(null);
 
   const isClerkReady = mounted && authLoaded && clerk.loaded;
-  const isBusy = isSubmitting || fetchStatus === "fetching";
+  const isBusy = pendingAction !== null || fetchStatus === "fetching";
 
   const globalError =
     formError ??
@@ -197,7 +197,7 @@ export default function SignUpForm() {
     }
 
     setFormError(null);
-    setIsSubmitting(true);
+    setPendingAction("password");
 
     try {
       const { error } = await signUp.password({
@@ -208,28 +208,28 @@ export default function SignUpForm() {
         setFormError(getClerkErrorMessage(error));
         return;
       }
+
+      if (signUp.isTransferable) {
+        setFormError("An account with this email already exists. Log in instead.");
+        return;
+      }
+
+      if (signUp.status === "complete") {
+        await finalizeSignUp();
+        return;
+      }
+
+      if (
+        signUp.status === "missing_requirements" &&
+        signUp.unverifiedFields.includes("email_address")
+      ) {
+        await handleEmailVerificationNeeded();
+      }
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
       return;
     } finally {
-      setIsSubmitting(false);
-    }
-
-    if (signUp.isTransferable) {
-      setFormError("An account with this email already exists. Log in instead.");
-      return;
-    }
-
-    if (signUp.status === "complete") {
-      await finalizeSignUp();
-      return;
-    }
-
-    if (
-      signUp.status === "missing_requirements" &&
-      signUp.unverifiedFields.includes("email_address")
-    ) {
-      await handleEmailVerificationNeeded();
+      setPendingAction(null);
     }
   }
 
@@ -238,7 +238,7 @@ export default function SignUpForm() {
     if (!isClerkReady || isBusy || !verificationCode) return;
 
     setFormError(null);
-    setIsSubmitting(true);
+    setPendingAction("verify");
 
     try {
       const { error } = await signUp.verifications.verifyEmailCode({
@@ -248,23 +248,26 @@ export default function SignUpForm() {
         setFormError(getClerkErrorMessage(error));
         return;
       }
+      if (signUp.status === "complete") {
+        await finalizeSignUp();
+      }
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
-      return;
     } finally {
-      setIsSubmitting(false);
-    }
-
-    if (signUp.status === "complete") {
-      await finalizeSignUp();
+      setPendingAction(null);
     }
   }
 
   async function handleResendVerificationCode() {
     if (!isClerkReady || isBusy) return;
-    const { error } = await signUp.verifications.sendEmailCode();
-    if (error) {
-      setFormError(getClerkErrorMessage(error));
+    setPendingAction("resend");
+    try {
+      const { error } = await signUp.verifications.sendEmailCode();
+      if (error) setFormError(getClerkErrorMessage(error));
+    } catch (err) {
+      setFormError(getClerkErrorMessage(err));
+    } finally {
+      setPendingAction(null);
     }
   }
 
@@ -273,7 +276,7 @@ export default function SignUpForm() {
     if (!isClerkReady || isBusy || !client) return;
 
     setFormError(null);
-    setIsSubmitting(true);
+    setPendingAction("google");
 
     try {
       await authenticateWithGooglePopup((popup) =>
@@ -287,7 +290,7 @@ export default function SignUpForm() {
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
     } finally {
-      setIsSubmitting(false);
+      setPendingAction(null);
     }
   }
 
@@ -320,10 +323,9 @@ export default function SignUpForm() {
             <FieldError message={errors.fields?.code?.message} />
           </div>
           <button type="submit" disabled={isBusy || !verificationCode} className={AUTH_PRIMARY_BTN}>
-            Verify email
-            <span aria-hidden className="text-base leading-none">
-              ›
-            </span>
+            {pendingAction === "verify" ? <LoadingSpinner size="sm" label="Verifying email" /> : (
+              <>Verify email<span aria-hidden className="text-base leading-none">›</span></>
+            )}
           </button>
         </form>
         <button
@@ -332,10 +334,11 @@ export default function SignUpForm() {
           disabled={isBusy}
           className={`${AUTH_SECONDARY_LINK} text-center disabled:opacity-40`}
         >
-          Resend code
+          {pendingAction === "resend" ? <LoadingSpinner size="sm" label="Resending code" /> : "Resend code"}
         </button>
         <button
           type="button"
+          disabled={isBusy}
           onClick={() => {
             void signUp.reset();
             setView("sign-up");
@@ -405,7 +408,7 @@ export default function SignUpForm() {
           disabled={!isClerkReady || isBusy}
           className={AUTH_PRIMARY_BTN}
         >
-          {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Signing up"} /> : (
+          {pendingAction === "password" ? <LoadingSpinner size="sm" label="Signing up" /> : (
             <>Sign Up<span aria-hidden className="text-base leading-none">›</span></>
           )}
         </button>
@@ -423,7 +426,7 @@ export default function SignUpForm() {
         disabled={!isClerkReady || isBusy}
         className={AUTH_GOOGLE_BTN}
       >
-        {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Redirecting"} /> : (
+        {pendingAction === "google" ? <LoadingSpinner size="sm" label="Continuing with Google" /> : (
           <><GoogleIcon />Continue with Google</>
         )}
       </button>

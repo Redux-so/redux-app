@@ -13,7 +13,7 @@
 | `pnpm run build` | Production build |
 | `pnpm run start` | Run production server locally |
 | `pnpm run lint` | ESLint (`eslint .`) |
-| `pnpm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `pnpm run typecheck` | Generate Next.js route types, then run TypeScript (`next typegen && tsc --noEmit`) |
 | `pnpm run test` | CI test gate — runs static `scripts/verify-*.ts` checks (no DB/network); fails if `*.test.*` / `*.spec.*` exist without a runner |
 | `pnpm run embed:all` | Regenerate CLIP embeddings (`scripts/reembed-images.ts`) |
 
@@ -60,11 +60,13 @@ Never commit secrets. Names referenced in code:
 | `DATABASE_URL`, `DIRECT_URL` | Prisma / Neon |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk (standard Clerk setup) |
 | `CLERK_WEBHOOK_SECRET` | Clerk webhook Svix verification |
+| `CLOSED_BETA_STARTER_CREDITS` | One-time credit bonus for newly provisioned accounts. Defaults to 150 for invite-only signup. Set it to 0 before opening signup. |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary |
 | `UPLOADTHING_TOKEN` | Legacy UploadThing cleanup on permanent delete (optional for new-only dev) |
 | `ANTHROPIC_API_KEY` | Chat / vision AI |
 | `REPLICATE_API_TOKEN` | Replicate models (heal, CLIP, etc.) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe |
+| `CREDIT_PURCHASES_ENABLED` | Credit shop and checkout switch. Defaults to off. Set to `true` and deploy to enable new purchases. |
 | `NEXT_PUBLIC_APP_URL` | Checkout redirect URLs |
 | `KV_REST_API_URL` (+ related KV vars per Vercel) | Rate limiting |
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (public DSN for browser; set both or only `NEXT_PUBLIC_SENTRY_DSN` if shared) |

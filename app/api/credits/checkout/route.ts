@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 import { checkoutBodySchema, parseJsonRequest } from "@/lib/api-validation";
+import { CREDIT_PURCHASES_UNAVAILABLE } from "@/constants/credits";
+import { creditPurchasesEnabled } from "@/lib/credit-purchases";
 
 function logCheckoutError(label: string, err: unknown) {
   console.error(`[credits/checkout] ${label}:`, err);
@@ -25,6 +27,10 @@ export async function POST(request: Request) {
       return authResult.error;
     }
     const { user } = authResult;
+
+    if (!creditPurchasesEnabled()) {
+      return NextResponse.json({ error: CREDIT_PURCHASES_UNAVAILABLE }, { status: 403 });
+    }
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {

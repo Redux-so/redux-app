@@ -1,5 +1,8 @@
 "use client";
 
+import { useCreditPurchasesEnabled } from "@/lib/credit-purchases-context";
+import { CREDIT_PURCHASES_UNAVAILABLE } from "@/constants/credits";
+
 import { appPath } from "@/lib/app-path";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -218,6 +221,7 @@ function TransactionTable({ transactions }: { transactions: Transaction[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const purchasesEnabled = useCreditPurchasesEnabled();
   const router = useRouter();
   const { user, isLoaded: userLoaded } = useUser();
   const { openUserProfile, signOut } = useClerk();
@@ -416,13 +420,17 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCreditShopOpen(true)}
-                  className={BTN_BRAND_SOLID}
-                >
-                  Purchase Credits
-                </button>
+                {purchasesEnabled ? (
+                  <button
+                    type="button"
+                    onClick={() => setCreditShopOpen(true)}
+                    className={BTN_BRAND_SOLID}
+                  >
+                    Purchase Credits
+                  </button>
+                ) : (
+                  <p className="text-[12px] text-[#888888]">{CREDIT_PURCHASES_UNAVAILABLE}</p>
+                )}
               </div>
             </div>
 
@@ -659,7 +667,7 @@ export default function SettingsPage() {
         </main>
       </div>
 
-      <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />
+      {purchasesEnabled && <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />}
 
       <ConfirmDialog
         open={showDeleteAccount}

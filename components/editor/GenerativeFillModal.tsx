@@ -1,5 +1,8 @@
 "use client";
 
+import { useCreditPurchasesEnabled } from "@/lib/credit-purchases-context";
+import { CREDIT_PURCHASES_UNAVAILABLE } from "@/constants/credits";
+
 import { appPath } from "@/lib/app-path";
 import { prepareWorkingImage } from "@/lib/prepare-working-image";
 
@@ -85,6 +88,7 @@ export default function GenerativeFillModal({
   const [direction, setDirection] = useState<ExpandDirection>("right");
   const [expandPixels, setExpandPixels] = useState("128");
   const [prompt, setPrompt] = useState("");
+  const purchasesEnabled = useCreditPurchasesEnabled();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -127,7 +131,7 @@ export default function GenerativeFillModal({
       });
 
       if (res.status === 402) {
-        toast("Insufficient credits", { icon: "💳" });
+        toast(purchasesEnabled ? "Insufficient credits" : CREDIT_PURCHASES_UNAVAILABLE, { icon: "💳" });
         return;
       }
       if (res.status === 429) {

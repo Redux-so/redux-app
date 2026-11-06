@@ -133,10 +133,10 @@ export default function SignInForm() {
   const [newPassword, setNewPassword] = useState("");
   const [forgotCodeSent, setForgotCodeSent] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"password" | "google" | "verify" | "resend" | null>(null);
 
   const isClerkReady = mounted && authLoaded && clerk.loaded;
-  const isBusy = isSubmitting || fetchStatus === "fetching";
+  const isBusy = pendingAction !== null || fetchStatus === "fetching";
 
   const globalError =
     formError ??
@@ -185,7 +185,7 @@ export default function SignInForm() {
     }
 
     setFormError(null);
-    setIsSubmitting(true);
+    setPendingAction("password");
 
     try {
       const { error } = await signIn.password({
@@ -231,7 +231,7 @@ export default function SignInForm() {
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
     } finally {
-      setIsSubmitting(false);
+      setPendingAction(null);
     }
   }
 
@@ -240,7 +240,7 @@ export default function SignInForm() {
     if (!isClerkReady || isBusy) return;
 
     setFormError(null);
-    setIsSubmitting(true);
+    setPendingAction("verify");
     try {
       const { error } = await signIn.mfa.verifyEmailCode({ code: verificationCode.trim() });
       if (error) {
@@ -253,7 +253,7 @@ export default function SignInForm() {
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
     } finally {
-      setIsSubmitting(false);
+      setPendingAction(null);
     }
   }
 
@@ -261,7 +261,7 @@ export default function SignInForm() {
     if (!isClerkReady || isBusy) return;
 
     setFormError(null);
-    setIsSubmitting(true);
+    setPendingAction("resend");
     try {
       const { error } = await signIn.mfa.sendEmailCode();
       if (error) setFormError(getClerkErrorMessage(error));
@@ -269,7 +269,7 @@ export default function SignInForm() {
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
     } finally {
-      setIsSubmitting(false);
+      setPendingAction(null);
     }
   }
 
@@ -314,7 +314,7 @@ export default function SignInForm() {
     if (!isClerkReady || isBusy || !client) return;
 
     setFormError(null);
-    setIsSubmitting(true);
+    setPendingAction("google");
 
     try {
       await authenticateWithGooglePopup((popup) =>
@@ -329,7 +329,7 @@ export default function SignInForm() {
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
     } finally {
-      setIsSubmitting(false);
+      setPendingAction(null);
     }
   }
 
@@ -361,7 +361,7 @@ export default function SignInForm() {
             />
           </div>
           <button type="submit" disabled={isBusy || !verificationCode} className={AUTH_PRIMARY_BTN}>
-            Verify
+            {pendingAction === "verify" ? <LoadingSpinner size="sm" label="Verifying code" /> : "Verify"}
           </button>
         </form>
         <button
@@ -370,7 +370,7 @@ export default function SignInForm() {
           disabled={isBusy}
           className={`${AUTH_SECONDARY_LINK} text-center disabled:opacity-40`}
         >
-          Resend code
+          {pendingAction === "resend" ? <LoadingSpinner size="sm" label="Resending code" /> : "Resend code"}
         </button>
         <button
           type="button"
@@ -535,7 +535,7 @@ export default function SignInForm() {
           disabled={!isClerkReady || isBusy}
           className={AUTH_PRIMARY_BTN}
         >
-          {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Signing in"} /> : (
+          {pendingAction === "password" ? <LoadingSpinner size="sm" label="Signing in" /> : (
             <>Login<span aria-hidden className="text-base leading-none">›</span></>
           )}
         </button>
@@ -553,7 +553,7 @@ export default function SignInForm() {
         disabled={!isClerkReady || isBusy}
         className={AUTH_GOOGLE_BTN}
       >
-        {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Redirecting"} /> : (
+        {pendingAction === "google" ? <LoadingSpinner size="sm" label="Continuing with Google" /> : (
           <><GoogleIcon />Continue with Google</>
         )}
       </button>
