@@ -401,7 +401,11 @@ export async function POST(request: Request) {
           if (attempt === 1 && toolCalls === 0) throw new Error("The requested edits could not be prepared. Please try again.");
           break;
         }
-        for (const update of progressParser.finish()) emit(update);
+        // A tool call can interrupt the optional progress text. Its input is
+        // validated independently before the plan can reach the editor.
+        if (!toolCalls) {
+          for (const update of progressParser.finish()) emit(update);
+        }
         if (chatInteractionMode === "ask" && askModeNudgeMissing(fullText)) {
           const suffix = `\n\n${ASK_SWITCH_TO_AGENT_NUDGE}`;
           fullText += suffix;

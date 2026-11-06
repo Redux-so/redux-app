@@ -472,6 +472,20 @@ test("Agent requests native validated tools without charging or executing paid o
   assert.notEqual(app.rows[0].status, "complete");
 });
 
+test("an unfinished progress summary cannot interrupt a valid Agent edit plan", async () => {
+  const plan = { actions: [{ type: "adjust", values: { exposure: 12 } }] };
+  const app = host({ chunks: [], modelEvents: [
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "[progress]Preparing the lighting changes..." } },
+    { type: "content_block_start", index: 1, content_block: { type: "tool_use", name: "edit_photo" } },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan) } },
+  ] });
+  const result = events(await (await app.send({ toolsEnabled: true })).text());
+  assert.deepEqual(result.find((event) => event.type === "tools")?.plan.actions, plan.actions);
+  assert.equal(app.state.toolPlans.length, 1);
+  assert.equal(result.some((event) => event.type === "interrupted"), false);
+  assert.equal(result.some((event) => event.type === "text" && event.text.includes("[progress]")), false);
+});
+
 test("Ask never receives tools and rejects a model-invented tool call", async () => {
   const app = host({ chunks: [], modelEvents: [
     { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
