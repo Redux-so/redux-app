@@ -13,7 +13,7 @@
 | `pnpm run build` | Production build |
 | `pnpm run start` | Run production server locally |
 | `pnpm run lint` | ESLint (`eslint .`) |
-| `pnpm run typecheck` | TypeScript (`tsc --noEmit`) |
+| `pnpm run typecheck` | Generate Next.js route types, then run TypeScript (`next typegen && tsc --noEmit`) |
 | `pnpm run test` | CI test gate — runs static `scripts/verify-*.ts` checks (no DB/network); fails if `*.test.*` / `*.spec.*` exist without a runner |
 | `pnpm run embed:all` | Regenerate CLIP embeddings (`scripts/reembed-images.ts`) |
 
