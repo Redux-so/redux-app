@@ -60,6 +60,7 @@ Never commit secrets. Names referenced in code:
 | `DATABASE_URL`, `DIRECT_URL` | Prisma / Neon |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk (standard Clerk setup) |
 | `CLERK_WEBHOOK_SECRET` | Clerk webhook Svix verification |
+| `CLOSED_BETA_STARTER_CREDITS` | One-time credit bonus for newly provisioned accounts. Defaults to 150 for invite-only signup. Set it to 0 before opening signup. |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary |
 | `UPLOADTHING_TOKEN` | Legacy UploadThing cleanup on permanent delete (optional for new-only dev) |
 | `ANTHROPIC_API_KEY` | Chat / vision AI |

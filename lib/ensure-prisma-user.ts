@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+import { Prisma, type User } from "@prisma/client";
 import {
   pendingClerkSyncEmail,
   tombstoneClerkIdentity,
@@ -15,8 +15,12 @@ export type ClerkUserProfile = {
 export async function upsertPrismaUser(profile: ClerkUserProfile): Promise<User> {
   const { clerkId, email, name } = profile;
   const normalizedEmail = email.trim();
+  const betaCredits = Number(process.env.CLOSED_BETA_STARTER_CREDITS ?? 150);
+  if (!Number.isInteger(betaCredits) || betaCredits < 0 || betaCredits > 2_147_483_647) {
+    throw new Error("CLOSED_BETA_STARTER_CREDITS must be a non-negative PostgreSQL integer");
+  }
 
-  return prisma.user.upsert({
+  const upsert = () => prisma.user.upsert({
     where: { clerkId },
     update: {
       ...(normalizedEmail ? { email: normalizedEmail } : {}),
@@ -26,8 +30,29 @@ export async function upsertPrismaUser(profile: ClerkUserProfile): Promise<User>
       clerkId,
       email: normalizedEmail || pendingClerkSyncEmail(clerkId),
       name,
+      ...(betaCredits > 0 && {
+        creditBalance: betaCredits,
+        transactions: {
+          create: {
+            type: "BONUS",
+            amount: betaCredits,
+            description: "Closed beta starter credits",
+          },
+        },
+      }),
     },
   });
+
+  try {
+    return await upsert();
+  } catch (error) {
+    // The nested ledger write prevents a native upsert. A concurrent Clerk sync
+    // can win the insert, so retry once to take the update path.
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+      throw error;
+    }
+    return upsert();
+  }
 }
 
 /**
