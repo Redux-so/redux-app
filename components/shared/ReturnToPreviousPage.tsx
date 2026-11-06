@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useEffect } from "react";
 import Link from "next/link";
 import { LAST_VISITED_PAGE_KEY, safePreviousPage } from "@/lib/last-visited-page";
@@ -16,11 +18,12 @@ export default function ReturnToPreviousPage() {
     if (!destination && document.referrer) {
       const referrer = new URL(document.referrer);
       if (referrer.origin === window.location.origin) {
-        destination = safePreviousPage(`${referrer.pathname}${referrer.search}${referrer.hash}`);
+        destination = safePreviousPage(`${referrer.pathname}${referrer.search}${referrer.hash}`, { browserUrl: true });
       }
     }
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.replace(destination && destination !== current ? destination : "/");
+    const target = destination && appPath(destination);
+    window.location.replace(target && target !== current ? target : appPath("/"));
   }, []);
 
   return (

@@ -332,7 +332,7 @@ test("the actual manual Style Match handler loads returned pixels and reset slid
   const mod = { exports: {} }, reloads = [], loading = [], success = [];
   let finished = 0;
   const code = ts.transpileModule(`${handler}\nmodule.exports = handleStyleMatchFilePick;`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
-  vm.runInNewContext(code, { module: mod, EDITOR_TOOL_ROUTES, aiImageUrl: imageUrl, imageId: "image-a", console,
+  vm.runInNewContext(code, { module: mod, EDITOR_TOOL_ROUTES, appPath: load("../lib/app-path.ts").appPath, aiImageUrl: imageUrl, imageId: "image-a", console,
     createEditGuard: () => () => true, beginOperation: () => () => { finished++; },
     setLoadingStyleMatch: value => loading.push(value), setStyleMatchPreview() {},
     prepareVisionFile: async () => ({ dataUrl: "data:image/png;base64,YQ==", base64: "YQ==", mediaType: "image/png" }),

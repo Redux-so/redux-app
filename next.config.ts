@@ -1,11 +1,13 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import { networkInterfaces } from "node:os";
+import { APP_BASE_PATH } from "./lib/app-path";
 import { buildSecurityHeaders } from "./lib/content-security-policy";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
+  basePath: APP_BASE_PATH,
   // Allow phone testing on this computer's private LAN addresses in development.
   allowedDevOrigins: isProduction ? [] : Object.values(networkInterfaces())
     .flatMap((addresses) => addresses ?? [])

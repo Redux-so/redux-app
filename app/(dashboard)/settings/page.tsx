@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -236,7 +238,7 @@ export default function SettingsPage() {
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
     try {
-      const res = await fetch("/api/user/stats");
+      const res = await fetch(appPath("/api/user/stats"));
       if (!res.ok) return;
       const data = (await res.json()) as Stats;
       setStats(data);
@@ -275,7 +277,7 @@ export default function SettingsPage() {
   async function handleClearLibrary() {
     setClearingLibrary(true);
     try {
-      const res = await fetch("/api/user/library", { method: "DELETE" });
+      const res = await fetch(appPath("/api/user/library"), { method: "DELETE" });
       if (!res.ok) {
         const err = (await res.json()) as { error?: string };
         toast.error(err.error ?? "Failed to clear library.");
@@ -297,7 +299,7 @@ export default function SettingsPage() {
   async function handleBillingPortal() {
     setPortalLoading(true);
     try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const res = await fetch(appPath("/api/stripe/portal"), { method: "POST" });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok) {
         toast.error(data.error ?? "Could not open billing portal.");

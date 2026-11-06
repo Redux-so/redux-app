@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 import { useEffect, useRef, useState } from "react";
@@ -74,7 +76,7 @@ export default function PhotoCard({
     if (isDeleting) return;
     setIsDeleting(true);
     try {
-      const res = await fetch("/api/images", {
+      const res = await fetch(appPath("/api/images"), {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageId: image.id }),
@@ -101,7 +103,7 @@ export default function PhotoCard({
     setIsTogglingFavorite(true);
 
     try {
-      const res = await fetch(`/api/images/${image.id}`, {
+      const res = await fetch(appPath(`/api/images/${image.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isFavorite: nextFavorite }),

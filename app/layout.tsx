@@ -1,3 +1,4 @@
+import { appPath } from "@/lib/app-path";
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -12,8 +13,8 @@ export const metadata: Metadata = {
   title: "Redux",
   description: "AI-powered photo editing",
   icons: {
-    icon: [{ url: FAVICON_PATH, type: "image/png" }],
-    apple: [{ url: APPLE_TOUCH_ICON_PATH }],
+    icon: [{ url: appPath(FAVICON_PATH), type: "image/png" }],
+    apple: [{ url: appPath(APPLE_TOUCH_ICON_PATH) }],
   },
 };
 

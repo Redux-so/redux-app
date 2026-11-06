@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { messagesFromTurns, type ChatHistoryPage, type ChatMessage } from "@/lib/chat-history-shared";
 
@@ -20,7 +22,7 @@ export function useImageChatHistory(imageId?: string) {
     setHistoryLoading(true);
     setHistoryError(null);
     try {
-      const response = await fetch(`/api/images/${encodeURIComponent(imageId)}/chat${before ? `?before=${before}` : ""}`, {
+      const response = await fetch(appPath(`/api/images/${encodeURIComponent(imageId)}/chat${before ? `?before=${before}` : ""}`), {
         cache: "no-store", signal: request.signal,
       });
       if (!response.ok) throw new Error("Could not load chat history. Please try again.");

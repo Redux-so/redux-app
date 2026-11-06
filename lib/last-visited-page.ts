@@ -1,3 +1,4 @@
+import { APP_BASE_PATH } from "@/lib/app-path";
 import { LIBRARY_PATH, SIGN_IN_PATH, SIGN_UP_PATH } from "@/constants/app-routes";
 
 export const LAST_VISITED_PAGE_KEY = "redux:last-visited-page";
@@ -11,11 +12,15 @@ export function isAppPagePath(pathname: string): boolean {
 }
 
 /** Only restore local app pages, never external URLs or one-time SSO callbacks */
-export function safePreviousPage(value: string | null): string | null {
+export function safePreviousPage(value: string | null, { browserUrl = false } = {}): string | null {
   if (!value || !value.startsWith("/") || value.startsWith("//")) return null;
   try {
     const base = "https://redux.invalid";
     const url = new URL(value, base);
+    if (browserUrl && APP_BASE_PATH) {
+      if (url.pathname !== APP_BASE_PATH && !url.pathname.startsWith(`${APP_BASE_PATH}/`)) return null;
+      url.pathname = url.pathname.slice(APP_BASE_PATH.length) || "/";
+    }
     if (url.origin !== base || !isAppPagePath(url.pathname)
       || url.pathname.replace(/\/+$/, "") === "/sso-callback") return null;
     if (url.pathname.replace(/\/+$/, "") === "/editor"

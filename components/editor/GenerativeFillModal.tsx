@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/shared/Icon";
 import EmptyState from "@/components/shared/EmptyState";
@@ -98,7 +100,7 @@ export default function GenerativeFillModal({
     const finishOperation = beginOperation();
     setLoading(true);
     try {
-      const res = await fetch("/api/ai/generative-fill", {
+      const res = await fetch(appPath("/api/ai/generative-fill"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

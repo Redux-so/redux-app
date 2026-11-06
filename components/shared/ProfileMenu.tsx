@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { usePopupMotion } from "@/lib/popup-motion";
 
 import { usePathname, useRouter } from "next/navigation";
@@ -115,7 +117,7 @@ export default function ProfileMenu({
   const usePortaledPopover = variant === "compact";
 
   useEffect(() => {
-    fetch("/api/credits")
+    fetch(appPath("/api/credits"))
       .then((res) => res.json())
       .then((data: { creditBalance?: number }) => {
         if (typeof data.creditBalance === "number") {

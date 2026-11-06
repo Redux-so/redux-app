@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
@@ -75,7 +77,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       setImage(null);
       setImageMissing(false);
     });
-    fetch(`/api/images/${encodeURIComponent(imageId)}`)
+    fetch(appPath(`/api/images/${encodeURIComponent(imageId)}`))
       .then((res) => {
         if (res.status === 404) {
           if (!cancelled) setImageMissing(true);
@@ -87,7 +89,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       .then((data: { image?: ImageRecord }) => {
         if (!cancelled && data.image) {
           setImage(data.image);
-          rememberVisitedPage(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+          rememberVisitedPage(`/editor${window.location.search}${window.location.hash}`);
         }
       })
       .catch(console.error)

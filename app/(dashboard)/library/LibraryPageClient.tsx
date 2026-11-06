@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import { LIBRARY_PAGE_SIZE } from "@/constants/library-pagination";
 import { mergeImageRecords } from "@/lib/merge-image-records";
@@ -196,7 +198,7 @@ export default function LibraryPageClient({
 
   const fetchAlbums = useCallback(async () => {
     try {
-      const res = await fetch("/api/albums", { cache: "no-store" });
+      const res = await fetch(appPath("/api/albums"), { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as { albums: AlbumRecord[] };
       setAlbums(data.albums);
@@ -212,7 +214,7 @@ export default function LibraryPageClient({
     const nextPage = libraryPage + 1;
     setLibraryLoadingMore(true);
     try {
-      const res = await fetch(buildImagesListUrl(false, nextPage), {
+      const res = await fetch(appPath(buildImagesListUrl(false, nextPage)), {
         cache: "no-store",
       });
       if (!res.ok) return;
@@ -237,7 +239,7 @@ export default function LibraryPageClient({
     const nextPage = trashPage + 1;
     setTrashLoadingMore(true);
     try {
-      const res = await fetch(buildImagesListUrl(true, nextPage), {
+      const res = await fetch(appPath(buildImagesListUrl(true, nextPage)), {
         cache: "no-store",
       });
       if (!res.ok) return;
@@ -328,7 +330,7 @@ export default function LibraryPageClient({
 
   const handleEmptyTrash = useCallback(async () => {
     try {
-      const res = await fetch("/api/trash", { method: "DELETE" });
+      const res = await fetch(appPath("/api/trash"), { method: "DELETE" });
       const data = (await res.json()) as { deleted?: number; error?: string };
       if (!res.ok) {
         toast.error(data.error ?? "Could not empty trash.");
@@ -409,7 +411,7 @@ export default function LibraryPageClient({
 
   const handleCreateAlbum = useCallback(async (name: string) => {
     try {
-      const res = await fetch("/api/albums", {
+      const res = await fetch(appPath("/api/albums"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -431,7 +433,7 @@ export default function LibraryPageClient({
 
   const handleRenameAlbum = useCallback(async (albumId: string, name: string) => {
     try {
-      const res = await fetch(`/api/albums/${albumId}`, {
+      const res = await fetch(appPath(`/api/albums/${albumId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -454,7 +456,7 @@ export default function LibraryPageClient({
   const handleDeleteAlbum = useCallback(
     async (albumId: string) => {
       try {
-        const res = await fetch(`/api/albums/${albumId}`, { method: "DELETE" });
+        const res = await fetch(appPath(`/api/albums/${albumId}`), { method: "DELETE" });
         const data = (await res.json()) as { error?: string };
         if (!res.ok) {
           toast.error(data.error ?? "Could not delete album.");

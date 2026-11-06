@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useCallback, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { IMAGE_UPLOAD_BATCH_LIMIT } from "@/constants/image-upload";
@@ -34,7 +36,7 @@ function postImageUpload(
     xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
     xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
     xhr.addEventListener("timeout", () => reject(new Error("Upload timed out")));
-    xhr.open("POST", "/api/images");
+    xhr.open("POST", appPath("/api/images"));
     xhr.timeout = 120_000;
     xhr.send(formData);
   });

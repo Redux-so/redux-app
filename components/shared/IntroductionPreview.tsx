@@ -1,3 +1,4 @@
+import { appPath } from "@/lib/app-path";
 import { SURFACE_POPOVER } from "@/lib/surface-colors";
 
 const PREVIEWS = [
@@ -15,7 +16,7 @@ export default function IntroductionPreview({ step }: { step: number }) {
     <div className={`${SURFACE_POPOVER} mb-6 w-full min-h-0 overflow-hidden rounded-lg border border-[#2e2e2e]`}>
       <video
         key={preview.src}
-        src={preview.src}
+        src={appPath(preview.src)}
         aria-label={preview.description}
         autoPlay
         loop

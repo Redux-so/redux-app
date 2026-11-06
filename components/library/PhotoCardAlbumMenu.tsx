@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { usePopupMotion } from "@/lib/popup-motion";
 
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
@@ -65,7 +67,7 @@ export default function PhotoCardAlbumMenu({
     setPendingAlbumId(albumId);
 
     try {
-      const res = await fetch(`/api/albums/${albumId}/images`, {
+      const res = await fetch(appPath(`/api/albums/${albumId}/images`), {
         method: isMember ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageId }),

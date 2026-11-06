@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { prepareVisionFile } from "@/lib/prepare-vision-file";
 import { prepareWorkingImage } from "@/lib/prepare-working-image";
 
@@ -495,7 +497,7 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
-      const res = await fetch(EDITOR_TOOL_ROUTES.auto_enhance, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.auto_enhance), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
@@ -524,7 +526,7 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
-      const res = await fetch(EDITOR_TOOL_ROUTES.auto_tone_balance, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.auto_tone_balance), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
@@ -553,7 +555,7 @@ export default function AdjustmentPanel({
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
-      const res = await fetch(EDITOR_TOOL_ROUTES.smart_color_balance, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.smart_color_balance), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
@@ -590,7 +592,7 @@ export default function AdjustmentPanel({
 
       const source = await prepareWorkingImage(imageId, aiImageUrl);
       if (!isCurrent()) return;
-      const res = await fetch(EDITOR_TOOL_ROUTES.style_match, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.style_match), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -633,7 +635,7 @@ export default function AdjustmentPanel({
     try {
       const imageUrl = await prepareWorkingImage(imageId, aiImageUrl);
       if (!isCurrent()) return;
-      const res = await fetch(EDITOR_TOOL_ROUTES.remove_background, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.remove_background), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl, imageId }),
@@ -672,7 +674,7 @@ export default function AdjustmentPanel({
       }
       const imageUrl = await prepareWorkingImage(imageId, canvasImageUrl);
       if (!isCurrent()) return;
-      const res = await fetch(EDITOR_TOOL_ROUTES.heal, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.heal), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -732,7 +734,7 @@ export default function AdjustmentPanel({
       }
       const imageUrl = await prepareWorkingImage(imageId, canvasImageUrl);
       if (!isCurrent()) return;
-      const res = await fetch(EDITOR_TOOL_ROUTES.eraser, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.eraser), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl, maskBase64, imageId }),
@@ -789,7 +791,7 @@ export default function AdjustmentPanel({
       }
       const imageUrl = await prepareWorkingImage(imageId, canvasImageUrl);
       if (!isCurrent()) return;
-      const res = await fetch(EDITOR_TOOL_ROUTES.blur, {
+      const res = await fetch(appPath(EDITOR_TOOL_ROUTES.blur), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl, maskBase64, imageId, blurIntensity }),

@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 import { useState } from "react";
@@ -35,7 +37,7 @@ export default function TrashPhotoCard({
     if (isRestoring) return;
     setIsRestoring(true);
     try {
-      const res = await fetch(`/api/images/${image.id}`, {
+      const res = await fetch(appPath(`/api/images/${image.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ restore: true }),
@@ -57,7 +59,7 @@ export default function TrashPhotoCard({
     if (isDeleting) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/images/${image.id}`, { method: "DELETE" });
+      const res = await fetch(appPath(`/api/images/${image.id}`), { method: "DELETE" });
       if (!res.ok) {
         toast.error("Could not delete photo permanently.");
         return;

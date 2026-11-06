@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { APP_BASE_PATH, appPath } from "../lib/app-path";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { isAppPagePath, safePreviousPage, rememberVisitedPage, LAST_VISITED_PAGE_KEY } from "../lib/last-visited-page";
@@ -9,6 +10,9 @@ for (const page of ["/", "/library", "/settings?tab=billing", "/editor?imageId=p
 for (const page of [null, "", "/unknown", "/editor", "/editor/", "/editor?imageId=", "/editor?imageId=%20", "/editor?image=photo-123", "/editor/unknown", "/api/images", "/monitoring", "/sso-callback", "/sso-callback/", "https://evil.example/library", "//evil.example/library", "/\\evil.example/library", "javascript:alert(1)", "/sign-in-typo"]) {
   assert.equal(safePreviousPage(page), null, String(page));
 }
+assert.equal(safePreviousPage(appPath("/editor?imageId=photo-123#crop"), { browserUrl: true }), "/editor?imageId=photo-123#crop");
+assert.equal(safePreviousPage(appPath("/sso-callback"), { browserUrl: true }), null);
+if (APP_BASE_PATH) assert.equal(safePreviousPage("/library", { browserUrl: true }), null);
 assert.equal(isAppPagePath("/library/"), true);
 assert.equal(isAppPagePath("/sso-callback"), true);
 

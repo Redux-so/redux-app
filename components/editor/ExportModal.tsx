@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import * as SliderPrimitive from "@radix-ui/react-slider";
@@ -69,7 +71,7 @@ export default function ExportModal({
     try {
       const latest = await prepareExport();
       const previewBody = buildPreviewRequestBody(latest);
-      const res = await fetch("/api/images/export", {
+      const res = await fetch(appPath("/api/images/export"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

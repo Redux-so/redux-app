@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { usePopupMotion } from "@/lib/popup-motion";
 
 import { positionChatPopover } from "@/lib/chat-popover-position";
@@ -721,7 +723,7 @@ export default function ChatPanel({
   }, []);
 
   const refreshChatQuota = useCallback(() => {
-    void fetch("/api/credits")
+    void fetch(appPath("/api/credits"))
       .then((r) => r.json())
       .then((data) => {
         const next = quotaFromApi(data);
@@ -940,7 +942,7 @@ export default function ChatPanel({
     try {
       const workspaceImage = getWorkspaceImage ? await getWorkspaceImage() : canvasImageUrl;
       if (onExecuteTools && !isUnchanged()) throw new Error("The image changed while preparing this request. Send it again.");
-      const res = await fetch("/api/ai/chat", {
+      const res = await fetch(appPath("/api/ai/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

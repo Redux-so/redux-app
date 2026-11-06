@@ -50,9 +50,11 @@ test("failed or cancelled OAuth closes the popup and preserves the error", async
   assert.equal(app.popup.closed, true);
 });
 
-for (const origin of ["http://localhost:3000", "http://192.168.1.20:3000", "https://redux.example.com"]) {
+const origins = ["http://localhost:3000", "http://192.168.1.20:3000", "https://redux.example.com"];
+const mounts = origins.flatMap((origin) => ["", "/app"].map((basePath) => ({ origin, basePath })));
+for (const { origin, basePath } of mounts) {
 for (const resource of ["signIn", "signUp"]) {
-  test(`${resource} uses absolute Clerk popup URLs at ${origin} and releases the busy state after failure`, async () => {
+  test(`${resource} uses absolute Clerk popup URLs at ${origin}${basePath} and releases the busy state after failure`, async () => {
     const app = popupHost(), slots = [];
     let cursor = 0, handler, params, fail = false;
     const auth = { loaded: true, client: { [resource]: { authenticateWithPopup: async (value) => {
@@ -68,6 +70,7 @@ for (const resource of ["signIn", "signUp"]) {
       "@clerk/nextjs": { useClerk: () => auth, useAuth: () => ({ isLoaded: true, isSignedIn: false }),
         [resource === "signIn" ? "useSignIn" : "useSignUp"]: () => ({ [resource]: {}, errors: { fields: {}, global: [] }, fetchStatus: "idle" }) },
       "@/lib/google-auth-popup": app,
+      "@/lib/app-path": compile("../lib/app-path.ts", {}, { process: { env: { NEXT_PUBLIC_APP_BASE_PATH: basePath } } }),
       "@/lib/brand-colors": { AUTH_PRIMARY_BTN_CLASS: "" },
       "@/components/shared/LoadingSpinner": { LoadingSpinner: () => null },
     }, { capture: (fn) => { handler = fn; }, process: { env: {} }, URL, window: { location: { origin } } }).default;
@@ -75,8 +78,8 @@ for (const resource of ["signIn", "signUp"]) {
     render(); await handler();
     assert.equal(params.popup, app.popup);
     assert.equal(params.strategy, "oauth_google");
-    assert.equal(params.redirectUrl, `${origin}/sso-callback`);
-    assert.equal(params.redirectUrlComplete, `${origin}/library`);
+    assert.equal(params.redirectUrl, `${origin}${basePath}/sso-callback`);
+    assert.equal(params.redirectUrlComplete, `${origin}${basePath}/library`);
     if (resource === "signIn") assert.equal(params.continueSignIn, false);
     assert.equal(slots.at(-1), false);
     fail = true; render(); await handler();

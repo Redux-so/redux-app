@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "@/components/shared/Icon";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
@@ -67,7 +69,7 @@ export default function SearchBar({
     onSearchStart();
     try {
       const res = await fetch(
-        `/api/ai/search?query=${encodeURIComponent(q)}`,
+        appPath(`/api/ai/search?query=${encodeURIComponent(q)}`),
         { cache: "no-store" },
       );
       if (res.status === 402) {

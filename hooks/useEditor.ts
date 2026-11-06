@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createEditorOperations } from "@/lib/editor-operations";
 import { saveResponseError, clearEditorSaveFailure, getEditorSaveFailure, recordEditorSaveFailure } from "@/lib/editor-save-errors";
@@ -108,7 +110,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
     let cancelled = false;
     const revision = revisionRef;
     revision.current++;
-    fetch(`/api/images/versions?imageId=${imageId}`)
+    fetch(appPath(`/api/images/versions?imageId=${imageId}`))
       .then((res) => {
         if (!res.ok) throw new Error(`Could not load history (${res.status})`);
         return res.json();
@@ -285,7 +287,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
           for (const [source, token] of inlineSources) {
             let url = uploadedSourcesRef.current.get(source);
             if (!url) {
-              const upload = await fetch("/api/images/versions", {
+              const upload = await fetch(appPath("/api/images/versions"), {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ imageId: imgId, adjustments: {}, sourceOnly: true, imageBase64: source.split(",")[1] }),
               });
@@ -305,7 +307,7 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
           inlineSources.clear();
         }
         if (renderCoverRef.current) payload.coverBase64 = await renderCoverRef.current(persisted);
-        const res = await fetch("/api/images/versions", {
+        const res = await fetch(appPath("/api/images/versions"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

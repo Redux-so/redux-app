@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 import { useCallback, useEffect, useState } from "react";
@@ -163,15 +165,10 @@ export default function SignInForm() {
           console.warn("[SignIn] session task pending:", session.currentTask);
           return;
         }
-        const url = decorateUrl(AFTER_AUTH);
-        if (url.startsWith("http")) {
-          window.location.href = url;
-        } else {
-          router.push(url);
-        }
+        window.location.assign(decorateUrl(appPath(AFTER_AUTH)));
       },
     });
-  }, [router, signIn]);
+  }, [signIn]);
 
   async function handleEmailPasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -295,8 +292,8 @@ export default function SignInForm() {
         client.signIn.authenticateWithPopup({
           popup,
           strategy: "oauth_google",
-          redirectUrl: new URL("/sso-callback", window.location.origin).href,
-          redirectUrlComplete: new URL(AFTER_AUTH, window.location.origin).href,
+          redirectUrl: new URL(appPath("/sso-callback"), window.location.origin).href,
+          redirectUrlComplete: new URL(appPath(AFTER_AUTH), window.location.origin).href,
           continueSignIn: false,
         }),
       );

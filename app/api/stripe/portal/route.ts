@@ -1,3 +1,4 @@
+import { appPath } from "@/lib/app-path";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${origin}/settings`,
+    return_url: `${origin}${appPath("/settings")}`,
   });
 
   return NextResponse.json({ url: portalSession.url });

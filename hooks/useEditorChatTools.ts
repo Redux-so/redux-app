@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { prepareWorkingImage } from "@/lib/prepare-working-image";
 import type { RefObject } from "react";
 import { actionCost, actionLabel, actionResultMessage, isRemoteAction, type ChatToolPlan, type EditorAction, type EditorToolContext } from "@/lib/editor-actions";
@@ -13,7 +15,7 @@ import type { AdjustmentPanelChatControls } from "@/components/editor/Adjustment
 import type { Adjustments } from "@/constants/adjustments";
 
 export async function chatToolsRequest(body: Record<string, unknown>, signal?: AbortSignal) {
-  const response = await fetch("/api/ai/chat/tools", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+  const response = await fetch(appPath("/api/ai/chat/tools"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error ?? "Could not run this tool");
   return result;

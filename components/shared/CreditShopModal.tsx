@@ -1,5 +1,7 @@
 "use client";
 
+import { appPath } from "@/lib/app-path";
+
 import { usePopupMotion } from "@/lib/popup-motion";
 
 import { useEffect, useState } from "react";
@@ -58,7 +60,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    fetch("/api/credits/bundles")
+    fetch(appPath("/api/credits/bundles"))
       .then((r) => r.json())
       .then((data: { bundles?: Bundle[] }) => {
         setBundles(data.bundles ?? []);
@@ -81,7 +83,7 @@ export default function CreditShopModal({ open, onClose }: CreditShopModalProps)
   async function handlePurchase(bundleId: string) {
     setPurchasing(bundleId);
     try {
-      const res = await fetch("/api/credits/checkout", {
+      const res = await fetch(appPath("/api/credits/checkout"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bundleId }),
