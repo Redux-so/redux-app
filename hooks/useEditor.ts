@@ -3,6 +3,8 @@
 import { appPath } from "@/lib/app-path";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { IMAGE_MULTIPART_MAX_BYTES } from "@/constants/image-upload";
+import { prepareWorkingImage } from "@/lib/prepare-working-image";
 import { createEditorOperations } from "@/lib/editor-operations";
 import { saveResponseError, clearEditorSaveFailure, getEditorSaveFailure, recordEditorSaveFailure } from "@/lib/editor-save-errors";
 import { DEFAULT_ADJUSTMENTS, normalizeAdjustments, type AdjustmentKey, type Adjustments as SliderAdjustments } from "@/constants/adjustments";
@@ -280,20 +282,15 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
         return force ? persisted : null;
       }
       try {
-        // Multiple native crops can exceed one request's size ceiling. Upload each
-        // source separately, then publish the timeline and cover in the final save.
-        if (payload.historyImages.reduce((size, source) => size + source.length, 0) > 44 * 1024 * 1024) {
+        if (renderCoverRef.current) payload.coverBase64 = await renderCoverRef.current(persisted);
+        let body = JSON.stringify(payload);
+        // Register pixel sources independently when the combined save exceeds Vercel's limit.
+        if (inlineSources.size && new TextEncoder().encode(body).length > IMAGE_MULTIPART_MAX_BYTES) {
           const resolved = new Map<string, string>();
           for (const [source, token] of inlineSources) {
             let url = uploadedSourcesRef.current.get(source);
             if (!url) {
-              const upload = await fetch(appPath("/api/images/versions"), {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ imageId: imgId, adjustments: {}, sourceOnly: true, imageBase64: source.split(",")[1] }),
-              });
-              if (!upload.ok) throw await saveResponseError(upload);
-              const data = await upload.json() as { sourceUrl: string };
-              url = data.sourceUrl;
+              url = await prepareWorkingImage(imgId, source);
               uploadedSourcesRef.current.set(source, url);
             }
             resolved.set(token, url);
@@ -305,13 +302,13 @@ export function useEditor(imageId?: string, options: UseEditorOptions = {}) {
           }
           payload.historyImages = [];
           inlineSources.clear();
+          body = JSON.stringify(payload);
         }
-        if (renderCoverRef.current) payload.coverBase64 = await renderCoverRef.current(persisted);
         const res = await fetch(appPath("/api/images/versions"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          keepalive: !payload.historyImages.length && !payload.coverBase64,
+          body,
+          keepalive: body.length < 16 * 1024 && !payload.historyImages.length && !payload.coverBase64,
         });
         if (!res.ok) throw await saveResponseError(res);
         const data = (await res.json()) as { version?: { adjustments: unknown }; previewUrl?: string; stale?: boolean; historySources?: string[] };

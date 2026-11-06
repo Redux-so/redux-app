@@ -423,3 +423,29 @@ test("a slider gesture returning to its starting value leaves no action", () => 
   assert.equal(editor.historyEntries.length, 1);
   assert.equal(editor.currentHistoryId, "original");
 });
+
+test("combined history pixels are registered separately before a size-limited save", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async (_url, options) => {
+    assert.ok(Buffer.byteLength(options.body) < 4 * 1024 * 1024);
+    const body = JSON.parse(options.body);
+    requests.push(body);
+    return Response.json(body.sourceOnly ? { sourceUrl: `https://example.ufs.sh/f/${requests.length}` } : {});
+  };
+  try {
+    const render = editorHost("image-large-history");
+    const first = `data:image/png;base64,${"A".repeat(2_200_000)}`;
+    const second = `data:image/png;base64,${"B".repeat(2_200_000)}`;
+    render().commitState({ workingImageUrl: first, workingWidth: 10, workingHeight: 20 });
+    render().commitState({ workingImageUrl: second, workingWidth: 20, workingHeight: 30 });
+    assert.ok(await render().saveVersion(true));
+    assert.equal(requests.length, 3);
+    assert.ok(requests[0].sourceOnly && requests[1].sourceOnly);
+    assert.deepEqual(requests[2].historyImages, []);
+    assert.equal(requests[2].adjustments.workingImageUrl, "https://example.ufs.sh/f/1");
+    assert.ok(requests[2].history.entries.some(({ state }) => state.workingImageUrl === "https://example.ufs.sh/f/2"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

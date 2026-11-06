@@ -75,11 +75,12 @@ export function renderInteractiveImage(
   adjustments: Partial<Record<string, number>>,
   canvas = document.createElement("canvas"),
   fullSize = false,
+  maxDimension = 1600,
 ): HTMLCanvasElement {
   // Keep effect sizes anchored to the original preview scale so native editing
   // and export retain the same blur/grain appearance as the smaller covers.
   const previewScale = Math.min(1, 1600 / Math.max(source.naturalWidth, source.naturalHeight));
-  const scale = fullSize ? 1 : previewScale;
+  const scale = fullSize ? 1 : Math.min(1, maxDimension / Math.max(source.naturalWidth, source.naturalHeight));
   const width = Math.max(1, Math.round(source.naturalWidth * scale));
   const height = Math.max(1, Math.round(source.naturalHeight * scale));
   if (canvas.width !== width) canvas.width = width;
@@ -144,10 +145,10 @@ export function renderInteractiveImage(
 }
 
 /** Render document pixels, never the editor viewport, using the canvas's renderer. */
-export async function renderEditorPayload(payload: PreviewPayload, fullSize = false): Promise<PreviewPayload> {
+export async function renderEditorPayload(payload: PreviewPayload, fullSize = false, maxDimension = 1600): Promise<PreviewPayload> {
   const body = buildPreviewRequestBody(payload);
   const source = await loadDecodedImage(body.imageBase64 ? `data:image/png;base64,${body.imageBase64}` : body.imageUrl ?? "");
-  const rendered = renderInteractiveImage(source, payload.adjustments, undefined, fullSize);
+  const rendered = renderInteractiveImage(source, payload.adjustments, undefined, fullSize, maxDimension);
   const blob = await new Promise<Blob>((resolve, reject) => {
     rendered.toBlob((result) => result ? resolve(result) : reject(new Error("Could not render image for export.")), "image/png");
   });

@@ -45,6 +45,45 @@ async function cleanUpAsset(publicId: string) {
 }
 
 export const libraryUploadRouter = {
+  editorSource: upload({ image: { maxFileSize: "64MB", maxFileCount: 1 } })
+    .input(z.object({ imageId: z.string().min(1).max(API_LIMITS.RESOURCE_ID_MAX_LEN) }))
+    .middleware(async ({ files, input: { imageId } }) => {
+      const auth = await requireAuthUser({ refreshProfile: false });
+      if ("error" in auth) throw new UploadThingError({ code: "FORBIDDEN", message: "Sign in to save edits" });
+      if (files.length !== 1 || files[0].type !== "image/png"
+        || files[0].size <= 0 || files[0].size > API_LIMITS.UPLOAD_SIZE_MAX) {
+        throw new UploadThingError({ code: "BAD_REQUEST", message: "Edited image must be a PNG up to 50 MiB" });
+      }
+      const blocked = await enforceFeatureRateLimits(auth.user.id, "save_version");
+      if (blocked) {
+        const { error } = await blocked.json() as { error: string };
+        throw new UploadThingError({ code: blocked.status === 429 ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR", message: error });
+      }
+      const image = await prisma.image.findFirst({
+        where: { id: imageId, userId: auth.user.id }, select: { id: true },
+      });
+      if (!image) throw new UploadThingError({ code: "NOT_FOUND", message: "Image not found" });
+      return { imageId };
+    })
+    .onUploadComplete(async ({ file, metadata: { imageId } }) => {
+      const publicId = `${ALTERNATE_ASSET_PREFIX}${file.key}`;
+      const { buffer } = await fetchTrustedMediaBuffer(file.ufsUrl);
+      const photo = await sharp(buffer).metadata().catch(() => null);
+      if (buffer.length !== file.size || buffer.length > API_LIMITS.UPLOAD_SIZE_MAX || photo?.format !== "png") {
+        await cleanUpAsset(publicId);
+        return { sourceUrl: null, error: "Could not read the edited image" };
+      }
+      // The signed callback may be delivered more than once for the same asset.
+      const id = createHash("sha256").update(publicId).digest("hex");
+      await prisma.imageVersion.createMany({
+        skipDuplicates: true,
+        data: {
+          id, imageId, publicId, url: file.ufsUrl,
+          adjustments: { operationResult: true }, label: "History source",
+        },
+      });
+      return { sourceUrl: file.ufsUrl, error: null };
+    }),
   libraryPhoto: upload({ image: { maxFileSize: "32MB", maxFileCount: 1 } })
     .input(z.object({ uploadId: z.string().uuid() }))
     .middleware(async ({ files, input }) => {

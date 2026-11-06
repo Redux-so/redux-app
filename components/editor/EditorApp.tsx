@@ -135,7 +135,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
         baseImageUrl: state.workingImageUrl ?? image.originalUrl,
         imageBase64: null,
         transform: state.transform,
-      });
+      }, false, 512);
       if (!rendered.imageBase64) throw new Error("Could not render the library cover.");
       return rendered.imageBase64;
     },

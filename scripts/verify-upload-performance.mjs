@@ -14,7 +14,7 @@ function compile(path, adapters = {}) {
   const code = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
-  vm.runInNewContext(code, { module: mod, exports: mod.exports, Buffer, Blob, File, FormData, Request, Response, URL, performance,
+  vm.runInNewContext(code, { module: mod, exports: mod.exports, Buffer, Blob, File, FormData, Request, Response, URL, performance, atob,
     console: { error() {} }, require: (id) => adapters[id] ?? (id.startsWith("@/") ? load(`../${id.slice(2)}`) : nativeRequire(id)),
   });
   return mod.exports;
@@ -41,6 +41,26 @@ test("batch uploads authenticate each request without repeated profile requests 
     assert.equal(result.user.creditBalance, 25);
   }
   assert.deepEqual(app.calls, { profile: 0, writes: 0, reads: 3 });
+});
+
+test("oversized editor pixels go to direct storage as a binary PNG", async () => {
+  const { large } = await fixture();
+  const signal = new AbortController().signal;
+  const { prepareWorkingImage } = compile("../lib/prepare-working-image.ts", {
+    "uploadthing/client": { genUploader: ({ url }) => ({
+      uploadFiles: async (slug, options) => {
+        assert.equal(url, "/api/images/upload");
+        assert.equal(slug, "editorSource");
+        assert.equal(options.input.imageId, "image-a");
+        assert.equal(options.signal, signal);
+        assert.equal(options.files[0].type, "image/png");
+        assert.deepEqual(Buffer.from(await options.files[0].arrayBuffer()), large);
+        return [{ serverData: { sourceUrl: original.secureUrl } }];
+      },
+    }) },
+    "@/lib/app-path": { appPath: (path) => path },
+  });
+  assert.equal(await prepareWorkingImage("image-a", `data:image/png;base64,${large.toString("base64")}`, signal), original.secureUrl);
 });
 
 test("new accounts still initialize, other endpoints still refresh, and signed-out uploads stay unauthorized", async () => {

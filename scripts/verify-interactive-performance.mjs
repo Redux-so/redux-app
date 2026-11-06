@@ -176,6 +176,8 @@ test("repeated previews reuse the backing canvas and clear previous pixels", () 
     assert.equal(target.resizes, nativeResizes, "Native buffers are reused while editing");
     renderInteractiveImage(large, {}, target);
     assert.deepEqual([target.width, target.height], [1600, 1000], "Only covers use the smaller image budget");
+    renderInteractiveImage(large, {}, target, false, 512);
+    assert.deepEqual([target.width, target.height], [512, 320], "Save renders a library-sized cover before encoding it");
   } finally { globalThis.document = originalDocument; }
 });
 
