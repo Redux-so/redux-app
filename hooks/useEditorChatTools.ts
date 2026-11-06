@@ -17,8 +17,13 @@ import type { Adjustments } from "@/constants/adjustments";
 
 export async function chatToolsRequest(body: Record<string, unknown>, signal?: AbortSignal) {
   const response = await fetch(appPath("/api/ai/chat/tools"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error ?? "Could not run this tool");
+  const result = await response.json().catch((error: unknown) => {
+    if (signal?.aborted) throw error;
+    throw new Error(response.ok
+      ? "The server returned an unreadable tool result. Check the image before trying again."
+      : `The server could not confirm the tool result (HTTP ${response.status}). Check the image and credit balance before trying again.`);
+  });
+  if (!response.ok) throw new Error(result?.error ?? "Could not run this tool");
   return result;
 }
 

@@ -23,7 +23,7 @@ import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { extractStylePalette, describeStylePalette, transferStylePalette } from "@/lib/style-match-palette";
-import { prepareChatVisionBase64, VisionImageError } from "@/lib/chat-image-vision-server";
+import { prepareChatVisionBase64, prepareChatVisionBuffer, VisionImageError } from "@/lib/chat-image-vision-server";
 import { styleMatchErrorResponse, StyleMatchResponseError } from "@/lib/style-match-error";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     source = fetched.buffer;
     reference = preparedReference;
     // Analyze copies; always grade the native source, never a CDN thumbnail.
-    target = await prepareChatVisionBase64(source.toString("base64"));
+    target = await prepareChatVisionBuffer(source);
     try {
       [targetPalette, referencePalette] = await Promise.all([
         extractStylePalette(Buffer.from(target.base64, "base64")),
@@ -178,7 +178,9 @@ export async function POST(request: Request) {
       throw new StyleMatchResponseError();
     }
     const result = await transferStylePalette(source, targetPalette, referencePalette, validated.data.matches);
-    const uploaded = await uploadToCloudinary(result, `${ownedImage.id}_style-match.png`);
+    // The renderer already produced a lossless PNG. Route large outputs
+    // straight to alternate storage instead of decoding them again for WebP.
+    const uploaded = await uploadToCloudinary(result, `${ownedImage.id}_style-match.png`, { preserveOriginal: true });
     try {
       // Register the immutable source for subsequent edits, undo, and cleanup.
       await prisma.imageVersion.create({ data: { imageId: ownedImage.id, url: uploaded.secureUrl,

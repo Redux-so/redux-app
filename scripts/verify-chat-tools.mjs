@@ -10,7 +10,7 @@ const nativeRequire = createRequire(import.meta.url);
 const load = (path) => tsxRequire(path, import.meta.url);
 const { editorPlanSchema, actionCost, planCost } = load("../lib/editor-actions.ts");
 const { runEditorPlan } = load("../lib/editor-action-runner.ts");
-const { useEditorChatTools: createEditorChatTools } = load("../hooks/useEditorChatTools.ts");
+const { chatToolsRequest, useEditorChatTools: createEditorChatTools } = load("../hooks/useEditorChatTools.ts");
 const { defaultPersistedEditorState } = load("../lib/editor-state.ts");
 function compile(path, adapters, globals = {}) {
   const code = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), {
@@ -228,6 +228,11 @@ function editorHost(extra = {}) {
     return Response.json({ ok: true });
   } };
 }
+
+test("chat tools report an HTML gateway failure without leaking the JSON parser error", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => new Response("<!DOCTYPE html>", { status: 500 }));
+  await assert.rejects(chatToolsRequest({}), /could not confirm the tool result \(HTTP 500\)/);
+});
 
 test("editor bridge applies geometry and effects in sequence, saves, and reports actual outcomes", async () => {
   const app = editorHost();

@@ -77,7 +77,12 @@ function routeHost({ source, reference, providerError, reply, owned = true, limi
     "@/lib/chat-image-context": context,
     "@/lib/safe-remote-fetch": { fetchTrustedMediaBuffer: async (url) => { calls.fetches.push(url); return { buffer: source }; } },
     "@/lib/cloudinary": {
-      uploadToCloudinary: async (buffer) => { if (uploadError) throw uploadError; calls.uploads.push(buffer); return { secureUrl: "https://app.ufs.sh/f/style-result", publicId: "style-result" }; },
+      uploadToCloudinary: async (buffer, _filename, options) => {
+        if (uploadError) throw uploadError;
+        assert.equal(options?.preserveOriginal, true);
+        calls.uploads.push(buffer);
+        return { secureUrl: "https://app.ufs.sh/f/style-result", publicId: "style-result" };
+      },
       deleteFromCloudinary: async (id) => { calls.deleted.push(id); },
     },
     "@/lib/prisma": { prisma: { imageVersion: { create: async ({ data }) => { if (persistError) throw persistError; calls.versions.push(data); } } } },
