@@ -1,3 +1,5 @@
+export const CREDIT_PURCHASES_UNAVAILABLE = "Credit purchases are unavailable during the closed beta.";
+
 export const CREDIT_COSTS = {
   auto_enhance: 1,
   auto_tone_balance: 1,

@@ -41,6 +41,7 @@ function host(component, initialProps) {
     },
     useRef(initial) { const index = cursor++; return slots[index] ??= { current: initial }; },
     useCallback(callback) { cursor++; return callback; },
+    useContext() { cursor++; return false; },
     useMemo(factory) { cursor++; return factory(); },
     useEffect() { cursor++; }, useLayoutEffect() { cursor++; },
     useImperativeHandle(ref, factory) { cursor++; if (ref) ref.current = factory(); },

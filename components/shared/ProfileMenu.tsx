@@ -1,5 +1,7 @@
 "use client";
 
+import { useCreditPurchasesEnabled } from "@/lib/credit-purchases-context";
+
 import { appPath } from "@/lib/app-path";
 
 import { usePopupMotion } from "@/lib/popup-motion";
@@ -47,7 +49,7 @@ function ProfileMenuPopoverContent({
   onSignOut,
 }: {
   onSettings: () => void;
-  onPurchaseCredits: () => void;
+  onPurchaseCredits?: () => void;
   onSignOut: () => void;
 }) {
   return (
@@ -61,14 +63,16 @@ function ProfileMenuPopoverContent({
         Settings
       </button>
 
-      <button
-        type="button"
-        onClick={onPurchaseCredits}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer rounded-lg"
-      >
-        <Icon name="Coins01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
-        Purchase Credits
-      </button>
+      {onPurchaseCredits && (
+        <button
+          type="button"
+          onClick={onPurchaseCredits}
+          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-[#cccccc] hover:bg-[#1d1d1d] hover:text-white transition-colors cursor-pointer rounded-lg"
+        >
+          <Icon name="Coins01" size={16} className="shrink-0 text-[#888888]" aria-hidden />
+          Purchase Credits
+        </button>
+      )}
 
       <div className="my-1.5 border-t border-[#212121]" />
 
@@ -96,6 +100,7 @@ export default function ProfileMenu({
   popoverCentered = false,
   settingsReturnPath,
 }: ProfileMenuProps) {
+  const purchasesEnabled = useCreditPurchasesEnabled();
   const popupMotion = usePopupMotion();
   const router = useRouter();
   const pathname = usePathname();
@@ -219,7 +224,7 @@ export default function ProfileMenu({
         setPopoverOpen(false);
         router.push(buildSettingsHref(resolvedSettingsReturnPath));
       }}
-      onPurchaseCredits={openCreditShop}
+      onPurchaseCredits={purchasesEnabled ? openCreditShop : undefined}
       onSignOut={() => void handleSignOut()}
     />
   );
@@ -308,7 +313,7 @@ export default function ProfileMenu({
 
       {portaledPopover}
 
-      <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />
+      {purchasesEnabled && <CreditShopModal open={creditShopOpen} onClose={() => setCreditShopOpen(false)} />}
     </>
   );
 }

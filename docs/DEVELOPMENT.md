@@ -66,6 +66,7 @@ Never commit secrets. Names referenced in code:
 | `ANTHROPIC_API_KEY` | Chat / vision AI |
 | `REPLICATE_API_TOKEN` | Replicate models (heal, CLIP, etc.) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe |
+| `CREDIT_PURCHASES_ENABLED` | Credit shop and checkout switch. Defaults to off. Set to `true` and deploy to enable new purchases. |
 | `NEXT_PUBLIC_APP_URL` | Checkout redirect URLs |
 | `KV_REST_API_URL` (+ related KV vars per Vercel) | Rate limiting |
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN (public DSN for browser; set both or only `NEXT_PUBLIC_SENTRY_DSN` if shared) |

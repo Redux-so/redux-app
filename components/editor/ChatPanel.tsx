@@ -1,5 +1,8 @@
 "use client";
 
+import { useCreditPurchasesEnabled } from "@/lib/credit-purchases-context";
+import { CREDIT_PURCHASES_UNAVAILABLE } from "@/constants/credits";
+
 import { appPath } from "@/lib/app-path";
 
 import { usePopupMotion } from "@/lib/popup-motion";
@@ -708,6 +711,7 @@ export default function ChatPanel({
 
   /** Chat quota synced from GET /api/credits and live SSE meta events. */
   const [chatQuota, setChatQuota] = useState<UsageQuotaSnapshot | null>(null);
+  const purchasesEnabled = useCreditPurchasesEnabled();
   const [creditShopOpen, setCreditShopOpen] = useState(false);
   const [chatInteractionMode, setChatInteractionMode] = useState<ChatInteractionModeId>(
     DEFAULT_CHAT_INTERACTION_MODE,
@@ -857,6 +861,10 @@ export default function ChatPanel({
   }
 
   function promptPurchaseCredits() {
+    if (!purchasesEnabled) {
+      toast.error(CREDIT_PURCHASES_UNAVAILABLE);
+      return;
+    }
     openCreditShop();
     toast.custom(
       (t) => (
@@ -1436,19 +1444,23 @@ export default function ChatPanel({
 
             {chatBlocked && (
               <p className="pb-2 text-[12px] text-[#666666] leading-snug">
-                {chatQuota?.hasPurchasedCredits
-                  ? "You're out of credits. "
-                  : "Free messages used. "}
-                <button
-                  type="button"
-                  onClick={openCreditShop}
-                  className="text-[#a3a3a3] underline underline-offset-2 hover:text-white cursor-pointer"
-                >
-                  {chatQuota?.hasPurchasedCredits
-                    ? "Purchase more credits"
-                    : "Purchase credits"}
-                </button>{" "}
-                to continue chatting.
+                {purchasesEnabled ? (
+                  <>
+                    {chatQuota?.hasPurchasedCredits
+                      ? "You're out of credits. "
+                      : "Free messages used. "}
+                    <button
+                      type="button"
+                      onClick={openCreditShop}
+                      className="text-[#a3a3a3] underline underline-offset-2 hover:text-white cursor-pointer"
+                    >
+                      {chatQuota?.hasPurchasedCredits
+                        ? "Purchase more credits"
+                        : "Purchase credits"}
+                    </button>{" "}
+                    to continue chatting.
+                  </>
+                ) : CREDIT_PURCHASES_UNAVAILABLE}
               </p>
             )}
 
@@ -1459,7 +1471,7 @@ export default function ChatPanel({
               <div className="chat-composer-field flex min-h-[76px] items-start px-4 pt-3 pb-3">
                 <div className="flex w-full items-center gap-3.5 pl-1 pt-1">
                   <div className="relative min-w-0 flex-1">
-                    {chatBlocked && !input && (
+                    {purchasesEnabled && chatBlocked && !input && (
                       <span
                         className="pointer-events-none absolute left-0 top-0 text-[15px] font-normal leading-snug text-[#666666]"
                         aria-hidden
@@ -1522,7 +1534,7 @@ export default function ChatPanel({
                   <div className={CHAT_TOOLBAR_RING_SLOT}>
                     <UsageRing
                       quota={chatQuota}
-                      onPurchaseClick={openCreditShop}
+                      onPurchaseClick={purchasesEnabled ? openCreditShop : undefined}
                       reduceMotion={!!prefersReducedMotion}
                     />
                   </div>
@@ -1562,7 +1574,7 @@ export default function ChatPanel({
         </div>
       )}
 
-      {creditShopOpen && (
+      {purchasesEnabled && creditShopOpen && (
         <CreditShopModal
           open={creditShopOpen}
           onClose={() => {

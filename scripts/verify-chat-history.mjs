@@ -380,6 +380,7 @@ function chatPanelHost(mode, options = {}) {
     },
     useRef(initial) { const index = cursor++; return slots[index] ??= { current: initial }; },
     useCallback(callback) { cursor++; return callback; },
+    useContext() { cursor++; return false; },
     useEffect() { cursor++; }, useLayoutEffect() { cursor++; },
   };
   function render() {
