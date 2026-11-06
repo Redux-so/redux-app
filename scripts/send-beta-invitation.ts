@@ -27,5 +27,11 @@ async function main() {
 
 main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : "Invitation failed.");
+  if (error && typeof error === "object" && "errors" in error && Array.isArray(error.errors)) {
+    for (const detail of error.errors) {
+      const message = detail?.longMessage ?? detail?.message;
+      if (typeof message === "string") console.error(message);
+    }
+  }
   process.exitCode = 1;
 });
