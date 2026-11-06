@@ -7,6 +7,17 @@ const { createEditorOperations } = tsxRequire("../lib/editor-operations.ts", imp
 const { exportBodySchema } = tsxRequire("../lib/api-validation.ts", import.meta.url);
 const { resolvePreviewSourceUrl } = tsxRequire("../lib/resolve-preview-source.ts", import.meta.url);
 const { transformedDimensions } = tsxRequire("../lib/image-transform.ts", import.meta.url);
+const { encodeTiff } = tsxRequire("../lib/encode-editor-export.ts", import.meta.url);
+
+test("browser TIFF export preserves dimensions and straight alpha", async () => {
+  const pixels = new Uint8ClampedArray([255, 0, 100, 128, 20, 200, 30, 255]);
+  const blob = encodeTiff({ width: 2, height: 1, data: pixels });
+  assert.equal(blob.type, "image/tiff");
+  const decoded = await sharp(Buffer.from(await blob.arrayBuffer())).raw().toBuffer({ resolveWithObject: true });
+  assert.equal(decoded.info.width, 2);
+  assert.equal(decoded.info.height, 1);
+  assert.deepEqual(decoded.data, Buffer.from(pixels));
+});
 
 async function fixture() {
   const data = Buffer.alloc(48 * 32 * 4);

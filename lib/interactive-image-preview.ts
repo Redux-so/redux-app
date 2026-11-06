@@ -145,10 +145,14 @@ export function renderInteractiveImage(
 }
 
 /** Render document pixels, never the editor viewport, using the canvas's renderer. */
-export async function renderEditorPayload(payload: PreviewPayload, fullSize = false, maxDimension = 1600): Promise<PreviewPayload> {
+export async function renderEditorCanvas(payload: PreviewPayload, fullSize = false, maxDimension = 1600) {
   const body = buildPreviewRequestBody(payload);
   const source = await loadDecodedImage(body.imageBase64 ? `data:image/png;base64,${body.imageBase64}` : body.imageUrl ?? "");
-  const rendered = renderInteractiveImage(source, payload.adjustments, undefined, fullSize, maxDimension);
+  return renderInteractiveImage(source, payload.adjustments, undefined, fullSize, maxDimension);
+}
+
+export async function renderEditorPayload(payload: PreviewPayload, fullSize = false, maxDimension = 1600): Promise<PreviewPayload> {
+  const rendered = await renderEditorCanvas(payload, fullSize, maxDimension);
   const blob = await new Promise<Blob>((resolve, reject) => {
     rendered.toBlob((result) => result ? resolve(result) : reject(new Error("Could not render image for export.")), "image/png");
   });

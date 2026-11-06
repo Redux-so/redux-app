@@ -1,7 +1,5 @@
 "use client";
 
-import { appPath } from "@/lib/app-path";
-
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import * as SliderPrimitive from "@radix-ui/react-slider";
@@ -13,31 +11,14 @@ import {
   BTN_MODAL_FORMAT_SELECTED,
 } from "@/lib/button-styles";
 import toast from "react-hot-toast";
-import { type PreviewPayload, buildPreviewRequestBody } from "@/lib/preview-request";
-import { IMAGE_MULTIPART_MAX_BYTES } from "@/constants/image-upload";
-import { prepareWorkingImage } from "@/lib/prepare-working-image";
-
-type ExportFormat = "jpeg" | "png" | "tiff";
+import { encodeEditorExport, type ExportFormat } from "@/lib/encode-editor-export";
 
 interface ExportModalProps {
   open: boolean;
   onClose: () => void;
   imageId?: string;
   filename?: string;
-  prepareExport: () => Promise<PreviewPayload>;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function estimateSize(format: ExportFormat, quality: number): string {
-  const base = 4 * 1024 * 1024;
-  if (format === "tiff") return `~${formatBytes(base * 2)}`;
-  if (format === "png") return `~${formatBytes(base * 0.8)}`;
-  return `~${formatBytes(base * (quality / 100) * 0.4)}`;
+  prepareExport: () => Promise<HTMLCanvasElement>;
 }
 
 export default function ExportModal({
@@ -71,33 +52,8 @@ export default function ExportModal({
     setError(null);
 
     try {
-      const latest = await prepareExport();
-      const previewBody = buildPreviewRequestBody(latest);
-      if (previewBody.imageBase64 && previewBody.imageBase64.length > IMAGE_MULTIPART_MAX_BYTES - 4096) {
-        previewBody.imageUrl = await prepareWorkingImage(imageId, `data:image/png;base64,${previewBody.imageBase64}`);
-        delete previewBody.imageBase64;
-      }
-      const res = await fetch(appPath("/api/images/export"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageId,
-          pixelsRendered: previewBody.pixelsRendered,
-          adjustments: previewBody.adjustments,
-          format,
-          quality,
-          imageUrl: previewBody.imageUrl,
-          imageBase64: previewBody.imageBase64,
-          transform: previewBody.transform,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null) as { error?: string } | null;
-        throw new Error(data?.error ?? `Export failed (HTTP ${res.status})`);
-      }
-
-      const blob = await res.blob();
+      const canvas = await prepareExport();
+      const blob = await encodeEditorExport(canvas, format, quality);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -197,17 +153,9 @@ export default function ExportModal({
                 </SliderPrimitive.Track>
                 <SliderPrimitive.Thumb className="block h-[12px] w-[12px] rounded-full bg-[#e5e5e5] shadow-[0_0_0_1px_rgba(255,255,255,0.15)] outline-none cursor-pointer transition-transform hover:scale-110" />
               </SliderPrimitive.Root>
-              <span className="text-[12px] text-[#555555]">
-                Estimated size: {estimateSize(format, quality)}
-              </span>
             </div>
           )}
 
-          {format !== "jpeg" && (
-            <span className="text-[12px] text-[#555555]">
-              Estimated size: {estimateSize(format, quality)}
-            </span>
-          )}
         </div>
 
         {error && (

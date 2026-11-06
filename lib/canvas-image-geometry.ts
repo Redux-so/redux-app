@@ -1,8 +1,10 @@
 import { transformedDimensions, type ImageTransform } from "@/lib/image-transform";
 
 /** Rasterize source pixels, never the viewport or Fabric's selection objects. */
-export function transformedSource(source: HTMLImageElement, transform: ImageTransform): HTMLCanvasElement {
-  const { width, height } = transformedDimensions(source.naturalWidth, source.naturalHeight, transform);
+export function transformedSource(source: HTMLImageElement | HTMLCanvasElement, transform: ImageTransform): HTMLCanvasElement {
+  const sourceWidth = "naturalWidth" in source ? source.naturalWidth : source.width;
+  const sourceHeight = "naturalHeight" in source ? source.naturalHeight : source.height;
+  const { width, height } = transformedDimensions(sourceWidth, sourceHeight, transform);
   const output = document.createElement("canvas");
   output.width = width;
   output.height = height;
@@ -11,7 +13,7 @@ export function transformedSource(source: HTMLImageElement, transform: ImageTran
   ctx.translate(width / 2, height / 2);
   ctx.rotate((transform.rotation + transform.straighten) * Math.PI / 180);
   ctx.scale(transform.flipX ? -1 : 1, transform.flipY ? -1 : 1);
-  ctx.drawImage(source, -source.naturalWidth / 2, -source.naturalHeight / 2);
+  ctx.drawImage(source, -sourceWidth / 2, -sourceHeight / 2);
   return output;
 }
 

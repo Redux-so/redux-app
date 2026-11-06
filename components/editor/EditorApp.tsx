@@ -12,7 +12,9 @@ import { useEditorChatTools } from "@/hooks/useEditorChatTools";
 import { editorHistoryRows } from "@/lib/editor-history";
 import type { ImageRecord } from "@/types/image";
 import { DEFAULT_IMAGE_TRANSFORM, parseVersionAdjustments, serializePersistedEditorState } from "@/lib/editor-state";
-import { renderEditorPayload } from "@/lib/interactive-image-preview";
+import { transformedSource } from "@/lib/canvas-image-geometry";
+import { hasImageTransform } from "@/lib/image-transform";
+import { renderEditorCanvas, renderEditorPayload } from "@/lib/interactive-image-preview";
 import { probeImageDimensions } from "@/lib/probe-image-dimensions";
 import { normalizeAdjustments, type Adjustments } from "@/constants/adjustments";
 import { rememberVisitedPage } from "@/lib/last-visited-page";
@@ -476,7 +478,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
             prepareExport={async () => {
               const latest = await prepareExportState();
               if (croppingRef.current) throw new Error("Confirm or cancel your crop before exporting.");
-              return renderEditorPayload({
+              const canvas = await renderEditorCanvas({
                 adjustments: latest.sliders,
                 originalUrl: image?.originalUrl ?? null,
                 storedPreviewUrl: image?.previewUrl ?? null,
@@ -484,6 +486,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
                 imageBase64: null,
                 transform: latest.transform,
               }, true);
+              return hasImageTransform(latest.transform) ? transformedSource(canvas, latest.transform) : canvas;
             }}
           />
         )}
