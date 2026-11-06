@@ -23,5 +23,6 @@ export default clerkMiddleware(async (auth, req) => {
 }, clerkContentSecurityPolicyOptions());
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*).*)"],
+  // With a basePath, the catch-all requires a slash after the prefix.
+  matcher: ["/", "/((?!_next|.*\\..*).*)"],
 };
