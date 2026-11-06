@@ -13,5 +13,5 @@ const callbackUrl = process.env.VERCEL_ENV === "production" && appUrl
 // requires a Redux session before issuing any upload URL.
 export const { GET, POST } = createRouteHandler({
   router: libraryUploadRouter,
-  config: { callbackUrl, logLevel: "warn" },
+  config: { callbackUrl, logLevel: "Warning" },
 });
