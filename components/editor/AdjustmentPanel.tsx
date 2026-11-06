@@ -243,13 +243,13 @@ function RailLink({
 // Credit-backed AI action — matches idle ToolBtn (Eraser, Heal, etc.)
 function AIButton({
   label,
-  loading,
+  loading = false,
   active,
   disabled,
   onClick,
 }: {
   label: string;
-  loading: boolean;
+  loading?: boolean;
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -1021,13 +1021,7 @@ export default function AdjustmentPanel({
                   {activeSection === "retouch" && (
                     <div className="px-8 pt-4 pb-5 flex flex-col gap-3">
                       <ToolBtn
-                        label={
-                          loadingBlur ? (
-                            <LoadingSpinner size="sm" label="Blur loading" />
-                          ) : (
-                            "Blur"
-                          )
-                        }
+                        label="Blur"
                         active={activeTool === "blur"}
                         disabled={loadingBlur}
                         onClick={() => {
@@ -1061,7 +1055,6 @@ export default function AdjustmentPanel({
                       <AIButton
                         label="Heal"
                         active={activeTool === "heal"}
-                        loading={loadingHeal}
                         disabled={!canvasImageUrl || loadingHeal}
                         onClick={() => {
                           if (isCropping) onToggleCrop?.();

@@ -144,6 +144,24 @@ test("blur, eraser and heal brush size controls remain interactive on touch", ()
   }
 });
 
+test("retrying uploads shows a spinner on the retry button after failures are cleared", async () => {
+  const Dropzone = compile("../components/library/UploadDropzone.tsx").default;
+  let finishRetry;
+  const upload = { isBusy: false, failures: [{ file: { name: "photo.jpg" }, reason: "Offline", retryable: true }],
+    retryFailed: () => new Promise((resolve) => { finishRetry = resolve; }) };
+  const dropzone = host(Dropzone, { upload });
+  find(dropzone.render(), (node) => node.type === "button").props.onClick();
+  upload.failures = [];
+  upload.isBusy = true;
+  const tree = dropzone.render();
+  assert.ok(find(find(tree, (node) => node.type === "button"), (node) => node.props?.label === "Retrying uploads"));
+  assert.equal(findAll(tree, (node) => node.type?.name === "LoadingSpinner").length, 1);
+  upload.isBusy = false;
+  finishRetry();
+  await new Promise(setImmediate);
+  assert.equal(find(dropzone.render(), (node) => node.type === "button"), undefined);
+});
+
 test("mobile transform buttons, angle slider and resize fields accept interaction", () => {
   const Panel = compile("../components/editor/AdjustmentPanel.tsx").default;
   const events = [];
