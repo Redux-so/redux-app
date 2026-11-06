@@ -7,7 +7,7 @@ export async function storeLibraryUpload(buffer: Buffer, name: string, mimeType:
   const needsCover = buffer.length > CLOUDINARY_IMAGE_MAX_BYTES || mimeType === "image/tiff";
   const [original, cover] = await Promise.allSettled([
     uploadToCloudinary(buffer, name, { preserveOriginal: true }),
-    needsCover ? createCover(buffer, name) : Promise.resolve(null),
+    needsCover ? createLibraryUploadCover(buffer, name) : Promise.resolve(null),
   ]);
   if (original.status === "rejected") {
     if (cover.status === "fulfilled" && cover.value) {
@@ -20,7 +20,7 @@ export async function storeLibraryUpload(buffer: Buffer, name: string, mimeType:
   return { ...original.value, cover: cover.status === "fulfilled" ? cover.value : null };
 }
 
-async function createCover(buffer: Buffer, name: string) {
+export async function createLibraryUploadCover(buffer: Buffer, name: string) {
   const cover = await sharp(buffer).rotate().resize(512, 512, { fit: "inside", withoutEnlargement: true })
     .webp({ quality: 85, effort: 2 }).toBuffer();
   return uploadToCloudinary(cover, `${name.replace(/\.[^/.]+$/, "")}_upload_cover.webp`, { preserveOriginal: true });

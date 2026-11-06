@@ -4,9 +4,26 @@ import { appPath } from "@/lib/app-path";
 
 import { useCallback, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { IMAGE_UPLOAD_BATCH_LIMIT } from "@/constants/image-upload";
+import { genUploader } from "uploadthing/client";
+import { IMAGE_MULTIPART_MAX_BYTES, IMAGE_UPLOAD_BATCH_LIMIT } from "@/constants/image-upload";
+import { createUuid } from "@/lib/create-uuid";
 import { runUploadBatch, validateUploadFiles, type UploadFailure } from "@/lib/image-upload-batch";
+import type { libraryUploadRouter } from "@/lib/library-upload-router";
 import type { ImageRecord } from "@/types/image";
+
+const { uploadFiles: uploadDirect } = genUploader<typeof libraryUploadRouter>({
+  url: appPath("/api/images/upload"),
+});
+
+async function uploadLargePhoto(file: File, uploadId: string, onProgress: (fraction: number) => void): Promise<ImageRecord> {
+  const [result] = await uploadDirect("libraryPhoto", {
+    files: [file],
+    input: { uploadId },
+    onUploadProgress: ({ progress }) => onProgress(progress / 100),
+  });
+  if (result?.serverData?.image) return result.serverData.image;
+  throw new Error(result?.serverData?.error ?? "Could not add photo to your library");
+}
 
 function postImageUpload(
   file: File,
@@ -49,6 +66,7 @@ export function useImageUpload(onUploadComplete?: (image: ImageRecord) => void) 
   const [total, setTotal] = useState(0);
   const [failures, setFailures] = useState<UploadFailure[]>([]);
   const uploadInFlight = useRef(false);
+  const largeUploadIds = useRef(new WeakMap<File, string>());
 
   const uploadFiles = useCallback(
     async (files: File[]) => {
@@ -84,7 +102,16 @@ export function useImageUpload(onUploadComplete?: (image: ImageRecord) => void) 
         await runUploadBatch(
           accepted,
           async (file, index) => {
-            const image = await postImageUpload(file, (fraction) => updateProgress(index, fraction));
+            const onProgress = (fraction: number) => updateProgress(index, fraction);
+            let image: ImageRecord;
+            if (file.size > IMAGE_MULTIPART_MAX_BYTES) {
+              const uploadId = largeUploadIds.current.get(file) ?? createUuid();
+              largeUploadIds.current.set(file, uploadId);
+              image = await uploadLargePhoto(file, uploadId, onProgress);
+              largeUploadIds.current.delete(file);
+            } else {
+              image = await postImageUpload(file, onProgress);
+            }
             succeeded++;
             onUploadComplete?.(image);
           },

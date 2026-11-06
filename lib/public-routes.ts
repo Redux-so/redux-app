@@ -7,7 +7,7 @@ export const PUBLIC_PAGE_ROUTES = [
 ];
 
 /** Public API routes — verified via webhook signature in the route handler. */
-export const PUBLIC_API_ROUTES = ["/api/webhooks/clerk", "/api/stripe/webhook"];
+export const PUBLIC_API_ROUTES = ["/api/webhooks/clerk", "/api/stripe/webhook", "/api/images/upload"];
 
 /** Infrastructure routes — no user session (Sentry error tunnel). */
 export const PUBLIC_INFRA_ROUTES = ["/monitoring"];

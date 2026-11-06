@@ -169,3 +169,61 @@ test("authentication, rate limits and invalid files still block storage and embe
     assert.equal((await POST({ formData: async () => new FormData() })).status, status);
   }
 });
+
+test("direct uploads authorize and rate-limit the transfer, then register one verified original per retry ID", async () => {
+  const { large } = await fixture();
+  let authorize, complete, row, blocked;
+  let signedIn = false;
+  const deleted = [];
+  const embedded = [];
+  const builder = {
+    input() { return this; },
+    middleware(fn) { authorize = fn; return this; },
+    onUploadComplete(fn) { complete = fn; },
+  };
+  compile("../lib/library-upload-router.ts", {
+    "uploadthing/next": { createUploadthing: () => () => builder },
+    "@/lib/require-user": { requireAuthUser: async () => signedIn ? { user: { id: "user-a" } } : { error: true } },
+    "@/lib/expensive-route-guard": { enforceFeatureRateLimits: async () => blocked },
+    "@/lib/cloudinary": { deleteFromCloudinary: async (id) => deleted.push(id) },
+    "@/lib/store-library-upload": { createLibraryUploadCover: async () => cover },
+    "@/lib/safe-remote-fetch": { fetchTrustedMediaBuffer: async (url) => {
+      assert.equal(url, original.secureUrl);
+      return { buffer: large };
+    } },
+    "@/lib/schedule-image-embedding": { scheduleImageEmbeddingAfterResponse: (...args) => embedded.push(args) },
+    "@/lib/prisma": { prisma: { image: {
+      findUnique: async () => row,
+      createMany: async ({ data }) => {
+        if (row) return { count: 0 };
+        row = { ...data, createdAt: new Date(), utKey: null };
+        return { count: 1 };
+      },
+      findUniqueOrThrow: async () => row,
+    } } },
+  });
+
+  const request = {
+    files: [{ name: "original.png", size: large.length, type: "image/png" }],
+    input: { uploadId: "5bed1e5b-6286-42f7-a4eb-bdc13e9d824a" },
+  };
+  await assert.rejects(authorize(request), /Sign in/);
+  signedIn = true;
+  await assert.rejects(authorize({ ...request, files: [{ ...request.files[0], type: "image/gif" }] }), /JPEG, PNG, or TIFF/);
+  blocked = Response.json({ error: "Slow down" }, { status: 429 });
+  await assert.rejects(authorize(request), /Slow down/);
+  blocked = null;
+
+  const metadata = await authorize(request);
+  const file = { ...request.files[0], key: "original", ufsUrl: original.secureUrl };
+  const result = await complete({ file, metadata });
+  assert.equal(result.image.userId, "user-a");
+  assert.equal(result.image.originalUrl, original.secureUrl);
+  assert.equal(result.image.size, large.length);
+  assert.equal(result.image.width, 1500);
+  assert.equal(result.image.previewUrl, cover.secureUrl);
+  assert.equal((await complete({ file, metadata })).image.id, result.image.id);
+  assert.equal((await complete({ file: { ...file, key: "retry" }, metadata })).image.id, result.image.id);
+  assert.deepEqual(deleted, ["uploadthing:retry"]);
+  assert.equal(embedded.length, 1);
+});
