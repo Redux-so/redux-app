@@ -413,6 +413,42 @@ test("mobile library navigation makes the background inert and selecting a view 
   assert.ok(find(app.render(), (node) => node.type?.name === "TrashViewToolbar"));
 });
 
+test("selecting a mobile album exposes its options beside the album name", async () => {
+  const album = { id: "album-a", name: "Vacation", imageIds: [] };
+  const Library = compile("../app/(dashboard)/library/LibraryPageClient.tsx", {
+    "@/hooks/useMobileLayout": { useMobileLayout: () => true },
+    "@/hooks/useImageUpload": { useImageUpload: () => ({ isBusy: false, uploadFiles: noop }) },
+    "@/hooks/useInfiniteScrollSentinel": { useInfiniteScrollSentinel: () => ({ current: null }) },
+    "react-hot-toast": { default: { success: noop, error: noop } },
+    __globals: { fetch: async () => ({ ok: true, json: async () => ({ album }) }) },
+  }).default;
+  const app = host(Library, { ownerId: "account-a", initialLibrary: { images: [], total: 0 }, initialTrash: { images: [], total: 0 } });
+  const drawer = () => find(app.render(), (node) => node.type?.name === "MobileLibraryNavigation");
+  const sidebar = () => find(drawer().props.children, (node) => node.type?.name === "LibrarySidebar");
+  await sidebar().props.onCreateAlbum(album.name);
+  sidebar().props.onSidebarViewChange({ kind: "trash" });
+  drawer().props.onOpenChange(true);
+  sidebar().props.onSidebarViewChange({ kind: "album", albumId: album.id });
+  assert.equal(drawer().props.open, false);
+  const options = find(app.render(), (node) => node.type?.name === "AlbumOptionsMenu");
+  assert.equal(options.props.alwaysVisible, true);
+  assert.ok(find(app.render(), (node) => node.type === "h2" && node.props.children === album.name));
+  const Menu = compile("../components/library/AlbumOptionsMenu.tsx", {
+    "@/lib/popup-motion": { usePopupMotion: () => ({}) },
+  }).default;
+  const menu = host(Menu, options.props);
+  const trigger = () => find(menu.render(), (node) => node.props?.["aria-label"] === "Options for Vacation");
+  assert.match(trigger().props.className, /\bopacity-100\b/);
+  for (const [label, dialog] of [["Rename album", "AlbumNameModal"], ["Delete album", "ConfirmDialog"]]) {
+    trigger().props.onClick({ stopPropagation: noop });
+    find(menu.render(), (node) => node.type === "button" && Array.isArray(node.props.children) &&
+      node.props.children.includes(label)).props.onClick();
+    const openedDialog = find(app.render(), (node) => node.type?.name === dialog && node.props.open);
+    assert.ok(openedDialog);
+    (openedDialog.props.onClose ?? openedDialog.props.onCancel)();
+  }
+});
+
 test("mobile filters use a centered dialog with explicit close, focus return, and unchanged apply behavior", () => {
   const { DEFAULT_LIBRARY_FILTERS } = load("../lib/library-filters.ts");
   let closes = 0, applies = 0, focused = 0, draft;

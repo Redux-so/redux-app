@@ -8,7 +8,6 @@ import { Icon } from "@/components/shared/Icon";
 import DiscordIcon from "@/components/shared/DiscordIcon";
 import GitHubIcon from "@/components/shared/GitHubIcon";
 import ProfileMenu from "@/components/shared/ProfileMenu";
-import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import AlbumSidebarRow from "@/components/library/AlbumSidebarRow";
 import AlbumNameModal from "@/components/library/AlbumNameModal";
 import {
@@ -41,8 +40,8 @@ interface LibrarySidebarProps {
   onSidebarViewChange: (view: LibrarySidebarView) => void;
   albums: AlbumRecord[];
   onCreateAlbum: (name: string) => Promise<boolean>;
-  onRenameAlbum: (albumId: string, name: string) => Promise<boolean>;
-  onDeleteAlbum: (albumId: string) => Promise<boolean>;
+  onRequestRename: (album: AlbumRecord) => void;
+  onRequestDelete: (album: AlbumRecord) => void;
 }
 
 /**
@@ -54,13 +53,10 @@ export default function LibrarySidebar({
   onSidebarViewChange,
   albums,
   onCreateAlbum,
-  onRenameAlbum,
-  onDeleteAlbum,
+  onRequestRename,
+  onRequestDelete,
 }: LibrarySidebarProps) {
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [albumToRename, setAlbumToRename] = useState<AlbumRecord | null>(null);
-  const [albumToDelete, setAlbumToDelete] = useState<AlbumRecord | null>(null);
-  const [deletingAlbum, setDeletingAlbum] = useState(false);
 
   function handleAlbumClick(albumId: string) {
     if (sidebarView.kind === "album" && sidebarView.albumId === albumId) {
@@ -68,18 +64,6 @@ export default function LibrarySidebar({
       return;
     }
     onSidebarViewChange({ kind: "album", albumId });
-  }
-
-  async function handleConfirmDeleteAlbum() {
-    if (!albumToDelete || deletingAlbum) return;
-
-    setDeletingAlbum(true);
-    try {
-      const ok = await onDeleteAlbum(albumToDelete.id);
-      if (ok) setAlbumToDelete(null);
-    } finally {
-      setDeletingAlbum(false);
-    }
   }
 
   return (
@@ -184,8 +168,8 @@ export default function LibrarySidebar({
                       sidebarView.albumId === album.id
                     }
                     onSelect={() => handleAlbumClick(album.id)}
-                    onRequestRename={setAlbumToRename}
-                    onRequestDelete={setAlbumToDelete}
+                    onRequestRename={onRequestRename}
+                    onRequestDelete={onRequestDelete}
                   />
                 ))}
               </nav>
@@ -236,30 +220,6 @@ export default function LibrarySidebar({
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSave={onCreateAlbum}
-      />
-
-      <AlbumNameModal
-        key={albumToRename?.id ?? "rename-album"}
-        open={albumToRename !== null}
-        mode="rename"
-        initialName={albumToRename?.name ?? ""}
-        onClose={() => setAlbumToRename(null)}
-        onSave={(name) => albumToRename ? onRenameAlbum(albumToRename.id, name) : Promise.resolve(false)}
-      />
-
-      <ConfirmDialog
-        open={albumToDelete !== null}
-        title={
-          albumToDelete ? `Delete "${albumToDelete.name}"?` : "Delete album?"
-        }
-        body="This removes the album only. Photos in this album will stay in your library."
-        confirmLabel="Delete Album"
-        destructive
-        loading={deletingAlbum}
-        onConfirm={() => void handleConfirmDeleteAlbum()}
-        onCancel={() => {
-          if (!deletingAlbum) setAlbumToDelete(null);
-        }}
       />
     </>
   );
