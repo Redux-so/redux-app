@@ -219,16 +219,15 @@ test("real brush paths map into source pixels through rotation, flips, zoom-inde
 });
 
 for (const [tool, path] of [["blur", "../app/api/images/blur/route.ts"], ["erase", "../app/api/images/erase/route.ts"], ["heal", "../app/api/ai/heal/route.ts"]]) {
-  test(`${tool} route stores only the masked result and refunds failures`, async () => {
+  test(`${tool} route stores only the masked result and bills only successful edits`, async () => {
     const { source, maskBase64, image } = await fixture();
-    let stored, versions = 0, refunds = 0;
+    let stored, versions = 0, charges = 0;
     const { POST } = compile(path, {
       "@/lib/require-user": { requireAuthUser: async () => ({ user: { id: "user-a", creditBalance: 100 } }) },
       "@/lib/prisma": { prisma: { image: { findFirst: async () => ({ filename: "photo.png" }) }, imageVersion: { create: async () => { versions++; } } } },
       "@/lib/expensive-route-guard": { enforceFeatureRateLimits: async () => null, rateLimitDeniedResponse: () => null },
       "@/lib/kv": { checkRateLimit: async () => ({}), checkRateLimitPerMinute: async () => ({}), RATE_LIMIT_MINUTE: { heal: 10 } },
-      "@/lib/credit-ledger": { deductCredits: async () => {}, refundCredits: async () => { refunds++; } },
-      "@/lib/atomic-credits": { chargeCreditFeature: async () => ({ ok: true }), refundCreditFeature: async () => { refunds++; } },
+      "@/lib/atomic-credits": { commitPaidImageVersion: async () => { versions++; charges++; return { ok: true }; } },
       "@/lib/safe-remote-fetch": { withTrustedEditorImage: async (_url, processImage) => processImage(source) },
       "@/lib/retouch-inpaint": { inpaintSelection: async (selected) => {
         const crop = await retouch.prepareInpaintCrop(selected);
@@ -244,6 +243,6 @@ for (const [tool, path] of [["blur", "../app/api/images/blur/route.ts"], ["erase
     const invalid = (await sharp({ create: { width: 8, height: 8, channels: 3, background: "white" } }).png().toBuffer()).toString("base64");
     assert.equal((await POST(request(invalid))).status, 400);
     assert.equal(versions, 1);
-    assert.equal(refunds, tool === "blur" ? 0 : 1);
+    assert.equal(charges, tool === "blur" ? 0 : 1);
   });
 }

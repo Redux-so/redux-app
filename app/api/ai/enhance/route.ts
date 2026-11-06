@@ -10,18 +10,15 @@ import {
   RATE_LIMIT_MINUTE,
 } from "@/lib/kv";
 import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
-import type { AdjustmentKey } from "@/constants/adjustments";
-import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { imageUrlOnlyBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import {
   chargeCreditFeature,
   insufficientCreditsResponse,
-  refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { fetchPreparedChatImage } from "@/lib/chat-image-context";
-import { logSnippetForDiagnostics } from "@/lib/log-redaction";
+import { parseUsefulAdjustmentPatch } from "@/lib/ai-adjustment-result";
 
 const SYSTEM_PROMPT =
   "You are an expert photo editor. Analyze this image and return optimal adjustment values " +
@@ -61,19 +58,11 @@ export async function POST(request: Request) {
   if (!parsed.ok) {
     return parsed.response;
   }
-  const { imageUrl } = parsed.data;
+  const { imageUrl, currentAdjustments } = parsed.data;
 
   const ownedImage = await assertUserOwnsImageUrl(user.id, imageUrl);
   if (!ownedImage) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
-  }
-
-  const charge = await chargeCreditFeature({
-    userId: user.id,
-    feature: "auto_enhance",
-  });
-  if (!charge.ok) {
-    return insufficientCreditsResponse();
   }
 
   try {
@@ -104,35 +93,13 @@ export async function POST(request: Request) {
         : response.content.flatMap(block => block.type === "text" ? [block.text] : []).join("");
 
     // Strip markdown code fences if the model wraps its JSON
-    const cleaned = rawText.replace(/```(?:json)?\n?/g, "").replace(/```/g, "").trim();
+    const adjustments = parseUsefulAdjustmentPatch(rawText, currentAdjustments);
+    if (!adjustments) return NextResponse.json({ error: "The AI did not return usable changes." }, { status: 422 });
 
-    let adjustments: Partial<Record<AdjustmentKey, number>> = {};
-    try {
-      adjustments = JSON.parse(cleaned) as Partial<Record<AdjustmentKey, number>>;
-    } catch {
-      console.error(
-        "[/api/ai/enhance] Failed to parse JSON response:",
-        logSnippetForDiagnostics(rawText),
-      );
-      await refundCreditFeature({
-        userId: user.id,
-        feature: "auto_enhance",
-        description: "Refund: auto enhance parse failure",
-      });
-      return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      adjustments: normalizeAdjustmentPatch(
-        adjustments as Partial<Record<string, number>>,
-      ),
-    });
+    const charge = await chargeCreditFeature({ userId: user.id, feature: "auto_enhance" });
+    if (!charge.ok) return insufficientCreditsResponse();
+    return NextResponse.json({ adjustments });
   } catch (err) {
-    await refundCreditFeature({
-      userId: user.id,
-      feature: "auto_enhance",
-      description: "Refund: auto enhance failed",
-    });
     return apiInternalErrorResponse("/api/ai/enhance", err, "Could not analyze the image. Please try again.");
   }
 }

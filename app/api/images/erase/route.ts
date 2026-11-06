@@ -5,7 +5,7 @@ import { inpaintSelection } from "@/lib/retouch-inpaint";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { apiInternalErrorResponse } from "@/lib/api-error";
-import { deductCredits, refundCredits } from "@/lib/credit-ledger";
+import { commitPaidImageVersion } from "@/lib/atomic-credits";
 import {
   enforceFeatureRateLimits,
   insufficientCreditsResponse,
@@ -46,8 +46,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    await deductCredits(user.id, "erase");
-
     try {
       const selection = await withTrustedEditorImage(imageUrl, (path) => prepareRetouchImage(path, maskBase64));
       const result = await inpaintSelection(selection, imageId, "erase");
@@ -57,19 +55,17 @@ export async function POST(request: Request) {
         { preserveOriginal: true },
       );
 
-      await prisma.imageVersion.create({
-        data: {
-          imageId,
-          url: uploaded.secureUrl,
-          publicId: uploaded.publicId,
-          adjustments: { operationResult: true },
-          label: "Eraser",
-        },
+      const charge = await commitPaidImageVersion({ userId: user.id, feature: "erase" }, {
+        imageId,
+        url: uploaded.secureUrl,
+        publicId: uploaded.publicId,
+        adjustments: { operationResult: true },
+        label: "Eraser",
       });
+      if (!charge.ok) return insufficientCreditsResponse();
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      await refundCredits(user.id, "erase", ERASE_COST, "Erase failed");
       if (innerErr instanceof RetouchMaskError) return NextResponse.json({ error: innerErr.message }, { status: 400 });
       return apiInternalErrorResponse("/api/images/erase", innerErr, "Erase failed");
     }

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import Replicate from "replicate";
 import sharp from "sharp";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { prisma } from "@/lib/prisma";
 import { apiInternalErrorResponse } from "@/lib/api-error";
 import { requireAuthUser } from "@/lib/require-user";
 import {
@@ -14,9 +13,8 @@ import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import { assertUserOwnsImageUrl } from "@/lib/verify-user-image";
 import { generativeFillBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import {
-  chargeCreditFeature,
+  commitPaidImageVersion,
   insufficientCreditsResponse,
-  refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
 import {
@@ -101,14 +99,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    const charge = await chargeCreditFeature({
-      userId: user.id,
-      feature: "generative_fill",
-    });
-    if (!charge.ok) {
-      return insufficientCreditsResponse();
-    }
-
     try {
       const { resizedImage, resizedMask, modelW, modelH } = await withTrustedEditorImage(imageUrl, async (path) => {
         const source = sharp(path, { sequentialRead: true }).autoOrient();
@@ -165,28 +155,27 @@ export async function POST(request: Request) {
 
       const { buffer: resultBuffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
+      const result = await sharp(resultBuffer).metadata();
+      if (result.width !== modelW || result.height !== modelH) {
+        throw new Error("Generative Fill returned an incorrectly sized result");
+      }
+
       const uploaded = await uploadToCloudinary(
         resultBuffer,
         `${image.filename.replace(/\.[^/.]+$/, "")}_genfill.png`,
       );
 
-      await prisma.imageVersion.create({
-        data: {
-          imageId: image.id,
-          url: uploaded.secureUrl,
-          publicId: uploaded.publicId,
-          adjustments: { operationResult: true },
-          label: "Generative Fill",
-        },
+      const charge = await commitPaidImageVersion({ userId: user.id, feature: "generative_fill" }, {
+        imageId: image.id,
+        url: uploaded.secureUrl,
+        publicId: uploaded.publicId,
+        adjustments: { operationResult: true },
+        label: "Generative Fill",
       });
+      if (!charge.ok) return insufficientCreditsResponse();
 
       return NextResponse.json({ resultUrl: uploaded.secureUrl });
     } catch (innerErr) {
-      await refundCreditFeature({
-        userId: user.id,
-        feature: "generative_fill",
-        description: "Refund: generative fill failed",
-      });
       return apiInternalErrorResponse("/api/ai/generative-fill", innerErr, "Generative fill failed");
     }
   } catch (outerErr) {

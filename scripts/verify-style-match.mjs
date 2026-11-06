@@ -106,8 +106,8 @@ test("noisy alpha images fall back to bounded JPEG and EXIF orientation is appli
   assert.equal(metadata.orientation, undefined);
 });
 
-function routeHost({ source, reference, providerError, reply, owned = true, limit, uploadError, persistError } = {}) {
-  const calls = { charges: 0, refunds: 0, provider: 0, fetches: [], images: [], uploads: [], versions: [], deleted: [] };
+function routeHost({ source, reference, providerError, reply, owned = true, limit, uploadError, persistError, insufficient } = {}) {
+  const calls = { charges: 0, provider: 0, fetches: [], images: [], uploads: [], versions: [], deleted: [] };
   const context = compile("../lib/chat-image-context.ts", {
     "@/lib/safe-remote-fetch": { withTrustedEditorImage: async (url, processImage) => { calls.fetches.push(url); return processImage(source); } },
   });
@@ -130,10 +130,18 @@ function routeHost({ source, reference, providerError, reply, owned = true, limi
       deleteFromCloudinary: async (id) => { calls.deleted.push(id); },
     },
     "@/lib/prisma": { prisma: { imageVersion: { create: async ({ data }) => { if (persistError) throw persistError; calls.versions.push(data); } } } },
-    "@/lib/atomic-credits": {
-      chargeCreditFeature: async () => { calls.charges++; return { ok: true }; },
-      refundCreditFeature: async () => { calls.refunds++; },
-    },
+    "@/lib/atomic-credits": compile("../lib/atomic-credits.ts", {
+      "@/lib/prisma": { prisma: { $transaction: async (operation) => {
+        const result = await operation({
+          user: { updateMany: async () => ({ count: insufficient ? 0 : 1 }), findUniqueOrThrow: async () => ({ creditBalance: 47 }) },
+          creditTransaction: { create: async () => {} },
+          imageVersion: { create: async ({ data }) => { if (persistError) throw persistError; calls.versions.push(data); } },
+        });
+        if (result.ok) calls.charges++;
+        return result;
+      } } },
+      "@/lib/cloudinary": { deleteFromCloudinary: async (id) => { calls.deleted.push(id); } },
+    }),
     "@/lib/anthropic": { anthropic: { messages: { create: async ({ messages }) => {
       calls.provider++;
       for (const block of messages[0].content.filter((item) => item.type === "image")) {
@@ -162,7 +170,7 @@ test("all storage providers normalize actual target bytes instead of trusting a 
     const response = await app.send(url);
     assert.equal(response.status, 200);
     assert.deepEqual((await response.json()).adjustments, DEFAULT_ADJUSTMENTS);
-    assert.equal(app.calls.charges, 1); assert.equal(app.calls.refunds, 0);
+    assert.equal(app.calls.charges, 1);
     assert.equal(app.calls.provider, 1);
   }
 });
@@ -180,7 +188,7 @@ test("successful matches persist native pixels and return neutral sliders for an
   assert.equal(metadata.format, "png"); assert.ok(metadata.icc);
   assert.equal(app.calls.versions[0].imageId, "image-a");
   assert.equal(app.calls.versions[0].adjustments.operationResult, true);
-  assert.equal(app.calls.charges, 1); assert.equal(app.calls.refunds, 0);
+  assert.equal(app.calls.charges, 1);
 });
 
 test("successive references send distinct reference pixels while keeping the target unchanged", async () => {
@@ -206,26 +214,26 @@ test("invalid target/reference images and missing ownership never charge or call
   }
 });
 
-test("provider limits and outages return actionable errors with exactly one refund", async () => {
+test("provider limits and outages return actionable errors without charging", async () => {
   const source = await fixture();
   for (const status of [429, 529, 401]) {
     const providerError = Object.assign(new Error("sensitive internal error"), { status, headers: new Headers({ "retry-after": "17" }) });
     const app = routeHost({ source, providerError });
     const result = await app.send();
     assert.equal(result.status, status === 429 ? 429 : status === 529 ? 503 : 502);
-    assert.equal(app.calls.charges, 1); assert.equal(app.calls.refunds, 1);
+    assert.equal(app.calls.charges, 0);
     const body = await result.json();
     assert.equal(body.error.includes("sensitive"), false);
     if (status === 429) { assert.equal(result.headers.get("Retry-After"), "17"); assert.match(body.error, /17 seconds/); }
   }
 });
 
-test("malformed model edits refund once rather than applying invalid values", async () => {
+test("malformed model edits never charge", async () => {
   const source = await fixture();
   for (const reply of ["not json", "[]", "{}", '{"matches":[]}', '{"matches":[{"target":0,"reference":11}]}', '{"matches":[{"target":0,"reference":0},{"target":0,"reference":0}]}']) {
     const app = routeHost({ source, reply });
     assert.equal((await app.send()).status, 502);
-    assert.equal(app.calls.refunds, 1);
+    assert.equal(app.calls.charges, 0);
   }
 });
 
@@ -325,13 +333,47 @@ test("changing only the reference changes actual output pixels, not just a succe
   assert.notDeepEqual(results[0], results[1]);
 });
 
-test("storage and persistence failures refund once; failed persistence cleans up the new asset", async () => {
+test("storage and persistence failures do not charge and failed persistence cleans up the asset", async () => {
   for (const options of [{ uploadError: new Error("storage offline") }, { persistError: new Error("database offline") }]) {
     const app = routeHost({ source: await fixture(), ...options });
     assert.equal((await app.send()).status, 502);
-    assert.equal(app.calls.charges, 1); assert.equal(app.calls.refunds, 1);
+    assert.equal(app.calls.charges, 0);
     assert.equal(app.calls.versions.length, 0);
     assert.equal(app.calls.deleted.length, options.persistError ? 1 : 0);
+  }
+});
+
+test("a balance exhausted during generation discards the staged image without charging", async () => {
+  const app = routeHost({ source: await fixture(), insufficient: true });
+  assert.equal((await app.send()).status, 402);
+  assert.equal(app.calls.provider, 1);
+  assert.equal(app.calls.versions.length, 0);
+  assert.equal(app.calls.charges, 0);
+  assert.deepEqual(app.calls.deleted, ["style-result"]);
+});
+
+test("automatic adjustments charge only for a supported change to current settings", async () => {
+  for (const name of ["enhance", "tone", "color-balance"]) {
+    let charges = 0;
+    let reply;
+    const { POST } = compile(`../app/api/ai/${name}/route.ts`, {
+      "@/lib/require-user": { requireAuthUser: async () => ({ user: { id: "user-a", creditBalance: 5 } }) },
+      "@/lib/verify-user-image": { assertUserOwnsImageUrl: async () => ({ id: "photo-a" }) },
+      "@/lib/kv": { checkRateLimit: async () => ({}), checkRateLimitPerMinute: async () => ({}), RATE_LIMIT_MINUTE: {} },
+      "@/lib/expensive-route-guard": { rateLimitDeniedResponse: () => null },
+      "@/lib/chat-image-context": { fetchPreparedChatImage: async () => ({ base64: "", mediaType: "image/jpeg" }) },
+      "@/lib/anthropic": { anthropic: { messages: { create: async () => ({ content: [{ type: "text", text: reply }] }) } } },
+      "@/lib/atomic-credits": { chargeCreditFeature: async () => { charges++; return { ok: true }; } },
+    });
+    const send = () => POST(new Request("https://redux.test/api", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageUrl, currentAdjustments: { saturation: 10 } }) }));
+    for (reply of ["", "null", "{}", '{"constructor":12}', '{"saturation":10}', '{"saturation":101}', '{"saturation":"20"}']) {
+      assert.equal((await send()).status, 422);
+    }
+    assert.equal(charges, 0);
+    reply = '{"saturation":20}';
+    assert.deepEqual(await (await send()).json(), { adjustments: { saturation: 20 } });
+    assert.equal(charges, 1);
   }
 });
 

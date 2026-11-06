@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     return Response.json(result, { status: response.status });
   } catch (error) {
     console.error("[chat/tools] Tool outcome uncertain:", error);
-    // Do not retry or refund blindly: the actual endpoint owns its charge/refund.
+    // Do not retry or refund blindly: the actual endpoint owns result settlement.
     return Response.json({ error: "Could not confirm the tool result. This operation will not be retried automatically." }, { status: 503 });
   }
 }
