@@ -15,6 +15,7 @@ interface ReduxClerkAuthShellProps {
   subtitle?: string;
   /** Show "Don't have an account? Sign up" directly under the heading. */
   signUpLink?: boolean;
+  invitationSignUpHref?: string;
   /** Show "Already have an account? Log in" directly under the heading. */
   signInLink?: boolean;
   /** Show Terms / Privacy footer below the form. */
@@ -28,6 +29,7 @@ export default function ReduxClerkAuthShell({
   title,
   subtitle,
   signUpLink = false,
+  invitationSignUpHref,
   signInLink = false,
   legalFooter = false,
   panelSize = "default",
@@ -70,12 +72,13 @@ export default function ReduxClerkAuthShell({
             </h1>
             {signUpLink && (
               <p className="mt-2 text-[13px] leading-snug text-white">
-                Don&apos;t have an account?{" "}
+                {invitationSignUpHref ? "Invited to the beta?" : "Don’t have an account?"}{" "}
                 <Link
-                  href="/sign-up"
+                  href={invitationSignUpHref ?? "/sign-up"}
+                  prefetch={invitationSignUpHref ? false : undefined}
                   className="underline underline-offset-2 hover:text-white/80 transition-colors"
                 >
-                  Sign up
+                  {invitationSignUpHref ? "Create an account" : "Sign up"}
                 </Link>
               </p>
             )}

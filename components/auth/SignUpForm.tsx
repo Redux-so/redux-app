@@ -118,7 +118,7 @@ function ClerkFooter() {
   );
 }
 
-export default function SignUpForm() {
+export default function SignUpForm({ invitationTicket }: { invitationTicket?: string } = {}) {
   const router = useRouter();
   const clerk = useClerk();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
@@ -186,7 +186,7 @@ export default function SignUpForm() {
     const passwordValue = String(formData.get("password") ?? "");
     const confirmPasswordValue = String(formData.get("confirmPassword") ?? "");
 
-    if (!emailAddress || !passwordValue) {
+    if ((!invitationTicket && !emailAddress) || !passwordValue) {
       setFormError("Enter your email and password.");
       return;
     }
@@ -200,10 +200,9 @@ export default function SignUpForm() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await signUp.password({
-        emailAddress,
-        password: passwordValue,
-      });
+      const { error } = invitationTicket
+        ? await signUp.create({ strategy: "ticket", ticket: invitationTicket, password: passwordValue })
+        : await signUp.password({ emailAddress, password: passwordValue });
       if (error) {
         setFormError(getClerkErrorMessage(error));
         return;
@@ -230,6 +229,8 @@ export default function SignUpForm() {
       signUp.unverifiedFields.includes("email_address")
     ) {
       await handleEmailVerificationNeeded();
+    } else if (invitationTicket) {
+      setFormError("Account setup could not be completed. Please contact Redux support.");
     }
   }
 
@@ -356,20 +357,26 @@ export default function SignUpForm() {
       <FormError message={globalError} />
 
       <form onSubmit={handleEmailPasswordSubmit} className="flex flex-col gap-4">
-        <div>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={AUTH_INPUT}
-            disabled={!isClerkReady}
-          />
-          <FieldError message={errors.fields?.emailAddress?.message} />
-        </div>
+        {invitationTicket ? (
+          <p className="text-center text-[13px] text-[#888888]">
+            Create a password for the email address that received your invitation.
+          </p>
+        ) : (
+          <div>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={AUTH_INPUT}
+              disabled={!isClerkReady}
+            />
+            <FieldError message={errors.fields?.emailAddress?.message} />
+          </div>
+        )}
 
         <div>
           <input
@@ -411,22 +418,26 @@ export default function SignUpForm() {
         </button>
       </form>
 
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-white/[0.08]" />
-        <span className="text-[12px] text-[#555555]">Or</span>
-        <div className="h-px flex-1 bg-white/[0.08]" />
-      </div>
+      {!invitationTicket && (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/[0.08]" />
+            <span className="text-[12px] text-[#555555]">Or</span>
+            <div className="h-px flex-1 bg-white/[0.08]" />
+          </div>
 
-      <button
-        type="button"
-        onClick={() => { void handleGoogleSignUp(); }}
-        disabled={!isClerkReady || isBusy}
-        className={AUTH_GOOGLE_BTN}
-      >
-        {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Redirecting"} /> : (
-          <><GoogleIcon />Continue with Google</>
-        )}
-      </button>
+          <button
+            type="button"
+            onClick={() => { void handleGoogleSignUp(); }}
+            disabled={!isClerkReady || isBusy}
+            className={AUTH_GOOGLE_BTN}
+          >
+            {!isClerkReady || isBusy ? <LoadingSpinner size="sm" label={!isClerkReady ? "Loading" : "Redirecting"} /> : (
+              <><GoogleIcon />Continue with Google</>
+            )}
+          </button>
+        </>
+      )}
 
       <ClerkFooter />
       <div id="clerk-captcha" />
