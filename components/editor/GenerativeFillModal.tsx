@@ -8,7 +8,7 @@ import { Icon } from "@/components/shared/Icon";
 import EmptyState from "@/components/shared/EmptyState";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { BTN_MODAL_PANEL } from "@/lib/button-styles";
-import { createExpandedCanvas, type ExpandDirection } from "@/lib/canvas-expand";
+import type { ExpandDirection } from "@/lib/canvas-expand";
 import toast from "react-hot-toast";
 
 export interface GenerativeFillModalProps {
@@ -19,6 +19,58 @@ export interface GenerativeFillModalProps {
   createEditGuard: () => () => boolean;
   beginOperation: () => () => void;
   onApplied: (resultUrl: string, isCurrent: () => boolean) => boolean | Promise<boolean>;
+}
+
+function GenerativeFillPreview({
+  src,
+  direction,
+  pixels,
+}: {
+  src: string;
+  direction: ExpandDirection;
+  pixels: number;
+}) {
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const horizontal = direction === "left" || direction === "right";
+  const width = (dimensions?.width ?? 0) + (horizontal ? pixels : 0);
+  const height = (dimensions?.height ?? 0) + (horizontal ? 0 : pixels);
+
+  if (failed) {
+    return <EmptyState icon="Image01" message="Preview unavailable" variant="compact" />;
+  }
+
+  return (
+    <>
+      {!dimensions && <LoadingSpinner size="xs" label="Loading preview" />}
+      <div
+        className={dimensions ? "relative max-w-full" : "hidden"}
+        style={dimensions ? {
+          width: Math.min(width, 200 * width / height),
+          aspectRatio: `${width} / ${height}`,
+        } : undefined}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt="Expanded canvas preview"
+          decoding="async"
+          onLoad={({ currentTarget }) => setDimensions({
+            width: currentTarget.naturalWidth,
+            height: currentTarget.naturalHeight,
+          })}
+          onError={() => setFailed(true)}
+          className="absolute"
+          style={dimensions ? {
+            width: `${100 * dimensions.width / width}%`,
+            height: `${100 * dimensions.height / height}%`,
+            left: direction === "left" ? `${100 * pixels / width}%` : 0,
+            top: direction === "top" ? `${100 * pixels / height}%` : 0,
+          } : undefined}
+        />
+      </div>
+    </>
+  );
 }
 
 export default function GenerativeFillModal({
@@ -33,7 +85,6 @@ export default function GenerativeFillModal({
   const [direction, setDirection] = useState<ExpandDirection>("right");
   const [expandPixels, setExpandPixels] = useState("128");
   const [prompt, setPrompt] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -41,55 +92,14 @@ export default function GenerativeFillModal({
     setDirection("right");
     setExpandPixels("128");
     setPrompt("");
-    setPreviewUrl(null);
   }, [open]);
 
-  useEffect(() => {
-    if (!open || !canvasImageUrl) {
-      setPreviewUrl(null);
-      return;
-    }
-    const px = Math.round(parseInt(expandPixels, 10));
-    if (!Number.isFinite(px) || px < 1) {
-      setPreviewUrl(null);
-      return;
-    }
-
-    let cancelled = false;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      if (cancelled) return;
-      try {
-        const c = document.createElement("canvas");
-        c.width = img.naturalWidth;
-        c.height = img.naturalHeight;
-        const ctx = c.getContext("2d");
-        if (!ctx) {
-          setPreviewUrl(null);
-          return;
-        }
-        ctx.drawImage(img, 0, 0);
-        const expanded = createExpandedCanvas(c, direction, px);
-        setPreviewUrl(expanded.toDataURL("image/png"));
-      } catch {
-        setPreviewUrl(null);
-      }
-    };
-    img.onerror = () => {
-      if (!cancelled) setPreviewUrl(null);
-    };
-    img.src = canvasImageUrl;
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, canvasImageUrl, direction, expandPixels]);
+  const pixels = Number(expandPixels);
+  const validPixels = Number.isInteger(pixels) && pixels >= 1 && pixels <= 512;
 
   async function handleApply() {
     if (!canvasImageUrl || !imageId) return;
-    const px = Math.round(parseInt(expandPixels, 10));
-    if (!Number.isFinite(px) || px < 1 || px > 512) {
+    if (!validPixels) {
       toast.error("Enter expand pixels between 1 and 512");
       return;
     }
@@ -111,7 +121,7 @@ export default function GenerativeFillModal({
         body: JSON.stringify({
           imageUrl,
           expandDirection: direction,
-          expandPixels: px,
+          expandPixels: pixels,
           prompt: promptTrim,
         }),
       });
@@ -223,15 +233,13 @@ export default function GenerativeFillModal({
             <div
               className="rounded-lg border border-[#262626] overflow-hidden flex items-center justify-center min-h-[120px] max-h-[200px] bg-[#1d1d1d] [background-image:linear-gradient(45deg,rgba(255,255,255,0.03)_25%,transparent_25%),linear-gradient(-45deg,rgba(255,255,255,0.03)_25%,transparent_25%),linear-gradient(45deg,transparent_75%,rgba(255,255,255,0.03)_75%),linear-gradient(-45deg,transparent_75%,rgba(255,255,255,0.03)_75%)] [background-size:10px_10px] [background-position:0_0,0_5px,5px_-5px,-5px_0]"
             >
-              {previewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewUrl}
-                  alt="Expanded canvas preview"
-                  className="max-w-full max-h-[200px] w-auto h-auto object-contain"
+              {canvasImageUrl ? (
+                <GenerativeFillPreview
+                  key={canvasImageUrl}
+                  src={canvasImageUrl}
+                  direction={direction}
+                  pixels={validPixels ? pixels : 0}
                 />
-              ) : canvasImageUrl ? (
-                <LoadingSpinner size="xs" label="Loading preview" />
               ) : (
                 <EmptyState icon="Image01" message="No image" variant="compact" />
               )}
