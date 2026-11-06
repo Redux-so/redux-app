@@ -159,15 +159,16 @@ export default function SignInForm() {
   }, [authLoaded, isSignedIn, router]);
 
   const finalizeSignIn = useCallback(async () => {
-    await signIn.finalize({
+    const { error } = await signIn.finalize({
       navigate: ({ session, decorateUrl }) => {
         if (session?.currentTask) {
-          console.warn("[SignIn] session task pending:", session.currentTask);
+          setFormError("Your account needs another step before you can sign in. Please contact Redux support.");
           return;
         }
         window.location.assign(decorateUrl(appPath(AFTER_AUTH)));
       },
     });
+    if (error) setFormError(getClerkErrorMessage(error));
   }, [signIn]);
 
   async function handleEmailPasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -200,48 +201,76 @@ export default function SignInForm() {
         );
         return;
       }
+      if (signIn.status === "complete") {
+        await finalizeSignIn();
+        return;
+      }
+
+      const needsVerification =
+        signIn.status === "needs_client_trust" || signIn.status === "needs_second_factor";
+      if (needsVerification) {
+        const supportsEmailCode = signIn.supportedSecondFactors?.some(
+          (factor) => factor.strategy === "email_code",
+        );
+        if (!supportsEmailCode) {
+          setFormError("Your account requires another verification method. Please contact Redux support.");
+          return;
+        }
+
+        const { error: sendError } = await signIn.mfa.sendEmailCode();
+        if (sendError) {
+          setFormError(getClerkErrorMessage(sendError));
+          return;
+        }
+
+        setView("client-trust");
+        return;
+      }
+
+      setFormError("We couldn't complete sign-in. Please try again.");
     } catch (err) {
       setFormError(getClerkErrorMessage(err));
-      return;
     } finally {
       setIsSubmitting(false);
-    }
-
-    if (signIn.status === "complete") {
-      await finalizeSignIn();
-      return;
-    }
-
-    if (signIn.status === "needs_client_trust") {
-      const emailCodeFactor = signIn.supportedSecondFactors?.find(
-        (factor) => factor.strategy === "email_code",
-      );
-      if (emailCodeFactor) {
-        await signIn.mfa.sendEmailCode();
-      }
-      setView("client-trust");
-      return;
-    }
-
-    if (signIn.status === "needs_second_factor") {
-      console.warn("[SignIn] MFA required — not yet implemented in custom UI");
     }
   }
 
   async function handleClientTrustVerify(e: React.FormEvent) {
     e.preventDefault();
-    if (!isClerkReady) return;
+    if (!isClerkReady || isBusy) return;
 
-    await signIn.mfa.verifyEmailCode({ code: verificationCode });
-
-    if (signIn.status === "complete") {
-      await finalizeSignIn();
+    setFormError(null);
+    setIsSubmitting(true);
+    try {
+      const { error } = await signIn.mfa.verifyEmailCode({ code: verificationCode.trim() });
+      if (error) {
+        setFormError(getClerkErrorMessage(error));
+      } else if (signIn.status === "complete") {
+        await finalizeSignIn();
+      } else {
+        setFormError("We couldn't complete verification. Please try again.");
+      }
+    } catch (err) {
+      setFormError(getClerkErrorMessage(err));
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   async function handleResendClientTrustCode() {
-    if (!isClerkReady) return;
-    await signIn.mfa.sendEmailCode();
+    if (!isClerkReady || isBusy) return;
+
+    setFormError(null);
+    setIsSubmitting(true);
+    try {
+      const { error } = await signIn.mfa.sendEmailCode();
+      if (error) setFormError(getClerkErrorMessage(error));
+      else setVerificationCode("");
+    } catch (err) {
+      setFormError(getClerkErrorMessage(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   async function handleForgotSendCode(e: React.FormEvent) {
@@ -315,6 +344,7 @@ export default function SignInForm() {
           We sent a verification code to your email. Enter it below to continue.
         </p>
         <form onSubmit={handleClientTrustVerify} className="flex flex-col gap-4">
+          <FormError message={formError ?? errors.fields?.code?.message} />
           <div>
             <label htmlFor="verification-code" className={AUTH_LABEL}>
               Verification code
@@ -329,7 +359,6 @@ export default function SignInForm() {
               className={`${AUTH_INPUT} mt-1`}
               disabled={isBusy}
             />
-            <FieldError message={errors.fields?.code?.message} />
           </div>
           <button type="submit" disabled={isBusy || !verificationCode} className={AUTH_PRIMARY_BTN}>
             Verify
@@ -345,8 +374,10 @@ export default function SignInForm() {
         </button>
         <button
           type="button"
+          disabled={isBusy}
           onClick={() => {
             void signIn.reset();
+            setFormError(null);
             setView("sign-in");
             setVerificationCode("");
           }}
