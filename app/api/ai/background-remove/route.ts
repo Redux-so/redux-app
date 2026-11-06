@@ -17,7 +17,7 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import { fetchReplicateDeliveryBuffer, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { fetchReplicateDeliveryBuffer, withTrustedEditorImage } from "@/lib/safe-remote-fetch";
 import { applyBackgroundMatte } from "@/lib/retouch-image";
 
 const replicate = new Replicate({
@@ -104,13 +104,13 @@ export async function POST(request: Request) {
       // ── Download result PNG ───────────────────────────────────────────────
       const { buffer } = await fetchReplicateDeliveryBuffer(resultUrl);
 
-      const { buffer: source } = await fetchTrustedMediaBuffer(imageUrl);
-      const masked = await applyBackgroundMatte(source, buffer);
+      const masked = await withTrustedEditorImage(imageUrl, (path) => applyBackgroundMatte(path, buffer));
 
       // ── Upload to Cloudinary ──────────────────────────────────────────────
       const uploaded = await uploadToCloudinary(
         masked,
         `${image.filename.replace(/\.[^/.]+$/, "")}_no_bg.png`,
+        { preserveOriginal: true },
       );
 
       // ── Save ImageVersion ─────────────────────────────────────────────────

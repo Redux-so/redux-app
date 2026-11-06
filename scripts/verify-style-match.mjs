@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
+import { access, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { randomFillSync } from "node:crypto";
 import vm from "node:vm";
@@ -26,6 +27,49 @@ function compile(path, adapters = {}, globals = {}) {
 }
 const imageUrl = "https://app.ufs.sh/f/original-image";
 const fixture = () => sharp({ create: { width: 180, height: 120, channels: 4, background: { r: 70, g: 110, b: 160, alpha: 0.6 } } }).png().toBuffer();
+test("a working PNG above the buffered limit can be analyzed from disk and is cleaned up", async () => {
+  const source = await sharp({
+    create: { width: 4400, height: 4400, channels: 3, background: "#839578" },
+  }).png({ compressionLevel: 0 }).toBuffer();
+  const { fetchTrustedMediaBuffer, withTrustedEditorImage, REMOTE_FETCH_LIMITS } = compile(
+    "../lib/safe-remote-fetch.ts",
+    { "@/lib/trusted-media-url": {
+      ...load("../lib/trusted-media-url.ts"),
+      assertHostnameResolvesToPublicAddresses: async () => {},
+    } },
+    {
+      AbortController, setTimeout, clearTimeout,
+      fetch: async () => {
+        let offset = 0;
+        return new Response(new ReadableStream({
+          pull(controller) {
+            if (offset >= source.length) return controller.close();
+            const end = Math.min(offset + 64 * 1024, source.length);
+            controller.enqueue(source.subarray(offset, end));
+            offset = end;
+          },
+        }));
+      },
+    },
+  );
+  assert.ok(source.length > REMOTE_FETCH_LIMITS.MAX_BYTES);
+  await assert.rejects(fetchTrustedMediaBuffer(imageUrl), { code: "TOO_LARGE" });
+
+  const { fetchPreparedChatImage } = compile("../lib/chat-image-context.ts", {
+    "@/lib/safe-remote-fetch": { withTrustedEditorImage },
+  });
+  await checkImage(await fetchPreparedChatImage(imageUrl));
+  let stagedPath;
+  await withTrustedEditorImage(imageUrl, async (path) => {
+    stagedPath = path;
+    assert.equal((await stat(path)).size, source.length);
+    const native = await sharp(path).metadata();
+    assert.equal(native.width, 4400);
+    assert.equal(native.height, 4400);
+  });
+  await assert.rejects(access(stagedPath), { code: "ENOENT" });
+});
+
 async function checkImage(image) {
   assert.ok(image.base64.length <= VISION_BASE64_MAX_BYTES);
   const metadata = await sharp(Buffer.from(image.base64, "base64")).metadata();
@@ -65,7 +109,7 @@ test("noisy alpha images fall back to bounded JPEG and EXIF orientation is appli
 function routeHost({ source, reference, providerError, reply, owned = true, limit, uploadError, persistError } = {}) {
   const calls = { charges: 0, refunds: 0, provider: 0, fetches: [], images: [], uploads: [], versions: [], deleted: [] };
   const context = compile("../lib/chat-image-context.ts", {
-    "@/lib/safe-remote-fetch": { fetchTrustedMediaBuffer: async (url) => { calls.fetches.push(url); return { buffer: source, contentType: "image/jpeg" }; } },
+    "@/lib/safe-remote-fetch": { withTrustedEditorImage: async (url, processImage) => { calls.fetches.push(url); return processImage(source); } },
   });
   const route = compile("../app/api/ai/style-match/route.ts", {
     "@/lib/require-user": { requireAuthUser: async () => ({ user: { id: "user-a", creditBalance: 50 } }) },
@@ -75,7 +119,7 @@ function routeHost({ source, reference, providerError, reply, owned = true, limi
       checkRateLimit: async () => ({ allowed: limit !== "hour" }), RATE_LIMIT_MINUTE: { style_match: 5 },
     },
     "@/lib/chat-image-context": context,
-    "@/lib/safe-remote-fetch": { fetchTrustedMediaBuffer: async (url) => { calls.fetches.push(url); return { buffer: source }; } },
+    "@/lib/safe-remote-fetch": { stageTrustedEditorImage: async (url) => { calls.fetches.push(url); return { path: source, cleanup: async () => {} }; } },
     "@/lib/cloudinary": {
       uploadToCloudinary: async (buffer, _filename, options) => {
         if (uploadError) throw uploadError;

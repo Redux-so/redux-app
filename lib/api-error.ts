@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SafeFetchError } from "@/lib/safe-remote-fetch";
 import { imageStorageErrorBody } from "@/lib/image-storage";
 
 /** Client-visible API error body — never include stack traces, DB errors, or internal details. */
@@ -40,6 +41,10 @@ export function apiInternalErrorResponse(
   publicMessage: string = API_ERROR_MESSAGE.internal,
 ): NextResponse<ApiErrorBody> {
   logApiError(routeLabel, err);
+  if (err instanceof SafeFetchError) {
+    if (err.code === "TOO_LARGE") return apiErrorResponse("The image exceeds the server processing limit.", 413);
+    if (err.code === "TIMEOUT") return apiErrorResponse("Loading the image timed out. Please try again.", 504);
+  }
   const storageError = imageStorageErrorBody(err);
   if (storageError) return NextResponse.json(storageError, { status: storageError.retryable ? 503 : 413 });
   return apiErrorResponse(publicMessage, 500);

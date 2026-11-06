@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { anthropic } from "@/lib/anthropic";
@@ -116,12 +117,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ adjustments });
   } catch (err) {
-    console.error("[/api/ai/tone] Error:", err);
     await refundCreditFeature({
       userId: user.id,
       feature: "auto_tone_balance",
       description: "Refund: auto tone balance failed",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiInternalErrorResponse("/api/ai/tone", err, "Could not analyze the image. Please try again.");
   }
 }

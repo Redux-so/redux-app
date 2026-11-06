@@ -18,7 +18,7 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { withTrustedEditorImage } from "@/lib/safe-remote-fetch";
 
 export async function POST(request: Request) {
   try {
@@ -63,12 +63,12 @@ export async function POST(request: Request) {
     }
 
     try {
-      const { buffer: sourceImageBuffer } = await fetchTrustedMediaBuffer(imageUrl);
-      const selection = await prepareRetouchImage(sourceImageBuffer, maskBase64);
+      const selection = await withTrustedEditorImage(imageUrl, (path) => prepareRetouchImage(path, maskBase64));
       const result = await inpaintSelection(selection, imageId, "heal");
       const uploaded = await uploadToCloudinary(
         result,
         `${image.filename.replace(/\.[^/.]+$/, "")}_heal.png`,
+        { preserveOriginal: true },
       );
 
       await prisma.imageVersion.create({

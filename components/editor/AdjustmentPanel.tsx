@@ -505,7 +505,10 @@ export default function AdjustmentPanel({
         body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(error.error ?? `The adjustment could not complete (HTTP ${res.status}).`);
+      }
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
       if (data.adjustments) {
@@ -514,7 +517,7 @@ export default function AdjustmentPanel({
       toast.success("Auto Enhance applied");
     } catch (err) {
       console.error("[AdjustmentPanel] auto_enhance failed:", err);
-      toast.error("Auto Enhance failed");
+      toast.error(err instanceof Error ? err.message : "Auto Enhance failed");
     } finally {
       finishOperation();
       setLoadingEnhance(false);
@@ -536,7 +539,10 @@ export default function AdjustmentPanel({
         body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(error.error ?? `The adjustment could not complete (HTTP ${res.status}).`);
+      }
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
       if (data.adjustments) {
@@ -545,7 +551,7 @@ export default function AdjustmentPanel({
       toast.success("Auto Tone Balance applied");
     } catch (err) {
       console.error("[AdjustmentPanel] auto_tone_balance failed:", err);
-      toast.error("Auto Tone Balance failed");
+      toast.error(err instanceof Error ? err.message : "Auto Tone Balance failed");
     } finally {
       finishOperation();
       setLoadingToneBalance(false);
@@ -567,7 +573,10 @@ export default function AdjustmentPanel({
         body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(error.error ?? `The adjustment could not complete (HTTP ${res.status}).`);
+      }
       const data = (await res.json()) as { adjustments?: Partial<Record<AdjustmentKey, number>> };
       if (!isCurrent()) return;
       if (data.adjustments) {
@@ -576,7 +585,7 @@ export default function AdjustmentPanel({
       toast.success("Color Balance applied");
     } catch (err) {
       console.error("[AdjustmentPanel] color_balance failed:", err);
-      toast.error("Color Balance failed");
+      toast.error(err instanceof Error ? err.message : "Color Balance failed");
     } finally {
       finishOperation();
       setLoadingColorBalance(false);
@@ -647,7 +656,10 @@ export default function AdjustmentPanel({
         body: JSON.stringify({ imageUrl, imageId }),
       });
       if (handleAiError(res.status)) return;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(error.error ?? `Background removal could not complete (HTTP ${res.status}).`);
+      }
       const data = (await res.json()) as { resultUrl?: string };
       if (!isCurrent()) return;
       if (data.resultUrl) {
@@ -656,7 +668,7 @@ export default function AdjustmentPanel({
       toast.success("Background removed successfully");
     } catch (err) {
       console.error("[AdjustmentPanel] remove_background failed:", err);
-      toast.error("Background removal failed");
+      toast.error(err instanceof Error ? err.message : "Background removal failed");
     } finally {
       finishOperation();
       setLoadingRemoveBg(false);

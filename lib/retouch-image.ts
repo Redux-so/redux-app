@@ -11,8 +11,8 @@ export interface RetouchImage {
 }
 
 /** Decode the same oriented source shown in the browser; never stretch a mismatched mask. */
-export async function prepareRetouchImage(source: Buffer, maskBase64: string): Promise<RetouchImage> {
-  const { data: pixels, info } = await sharp(source).rotate().toColourspace("srgb").ensureAlpha()
+export async function prepareRetouchImage(source: Buffer | string, maskBase64: string): Promise<RetouchImage> {
+  const { data: pixels, info } = await sharp(source, { sequentialRead: true }).rotate().toColourspace("srgb").ensureAlpha()
     .raw().toBuffer({ resolveWithObject: true });
   let mask: Buffer;
   try {
@@ -91,8 +91,8 @@ export async function prepareInpaintCrop(image: RetouchImage) {
 }
 
 /** Background removal may alter transparency, never regenerate the subject's colors or details. */
-export async function applyBackgroundMatte(source: Buffer, output: Buffer): Promise<Buffer> {
-  const { data: pixels, info } = await sharp(source).rotate().toColourspace("srgb").ensureAlpha().raw()
+export async function applyBackgroundMatte(source: Buffer | string, output: Buffer): Promise<Buffer> {
+  const { data: pixels, info } = await sharp(source, { sequentialRead: true }).rotate().toColourspace("srgb").ensureAlpha().raw()
     .toBuffer({ resolveWithObject: true });
   const metadata = await sharp(output).metadata();
   if (!metadata.hasAlpha || !metadata.width || !metadata.height
@@ -100,9 +100,8 @@ export async function applyBackgroundMatte(source: Buffer, output: Buffer): Prom
     throw new Error("Background removal did not return an aligned transparency mask");
   }
   const alpha = await sharp(output).extractChannel("alpha").resize(info.width, info.height).raw().toBuffer();
-  const result = Buffer.from(pixels);
-  for (let i = 0; i < alpha.length; i++) result[i * 4 + 3] = Math.round(pixels[i * 4 + 3] * alpha[i] / 255);
-  return sharp(result, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
+  for (let i = 0; i < alpha.length; i++) pixels[i * 4 + 3] = Math.round(pixels[i * 4 + 3] * alpha[i] / 255);
+  return sharp(pixels, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
 }
 
 export async function restoreInpaintCrop(image: RetouchImage, crop: Awaited<ReturnType<typeof prepareInpaintCrop>>, output: Buffer) {

@@ -229,7 +229,7 @@ for (const [tool, path] of [["blur", "../app/api/images/blur/route.ts"], ["erase
       "@/lib/kv": { checkRateLimit: async () => ({}), checkRateLimitPerMinute: async () => ({}), RATE_LIMIT_MINUTE: { heal: 10 } },
       "@/lib/credit-ledger": { deductCredits: async () => {}, refundCredits: async () => { refunds++; } },
       "@/lib/atomic-credits": { chargeCreditFeature: async () => ({ ok: true }), refundCreditFeature: async () => { refunds++; } },
-      "@/lib/safe-remote-fetch": { fetchTrustedMediaBuffer: async () => ({ buffer: source }) },
+      "@/lib/safe-remote-fetch": { withTrustedEditorImage: async (_url, processImage) => processImage(source) },
       "@/lib/retouch-inpaint": { inpaintSelection: async (selected) => {
         const crop = await retouch.prepareInpaintCrop(selected);
         const output = await sharp({ create: { width: crop.paddedWidth, height: crop.paddedHeight, channels: 3, background: "magenta" } }).png().toBuffer();

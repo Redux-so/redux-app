@@ -18,12 +18,12 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { stageTrustedEditorImage } from "@/lib/safe-remote-fetch";
 import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { extractStylePalette, describeStylePalette, transferStylePalette } from "@/lib/style-match-palette";
-import { prepareChatVisionBase64, prepareChatVisionBuffer, VisionImageError } from "@/lib/chat-image-vision-server";
+import { prepareChatVisionBase64, prepareChatVisionImage, VisionImageError } from "@/lib/chat-image-vision-server";
 import { styleMatchErrorResponse, StyleMatchResponseError } from "@/lib/style-match-error";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
@@ -93,21 +93,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  // Validate and normalize both images before charging or asking the model.
+  const staged = await stageTrustedEditorImage(imageUrl).catch((error: unknown) => {
+    console.error("[/api/ai/style-match] Image download failed:", error);
+    return styleMatchErrorResponse(error);
+  });
+  if (staged instanceof Response) return staged;
+  try {
+    return await matchStagedImage(staged.path, referenceImageBase64, user.id, ownedImage.id);
+  } finally {
+    await staged.cleanup();
+  }
+}
+
+async function matchStagedImage(source: string, referenceImageBase64: string, userId: string, imageId: string) {
   let target: Awaited<ReturnType<typeof prepareChatVisionBase64>>;
   let reference: Awaited<ReturnType<typeof prepareChatVisionBase64>>;
-  let source: Buffer;
   let targetPalette: Awaited<ReturnType<typeof extractStylePalette>>;
   let referencePalette: Awaited<ReturnType<typeof extractStylePalette>>;
   try {
-    const [fetched, preparedReference] = await Promise.all([
-      fetchTrustedMediaBuffer(imageUrl),
+    [target, reference] = await Promise.all([
+      prepareChatVisionImage(source),
       prepareChatVisionBase64(referenceImageBase64),
     ]);
-    source = fetched.buffer;
-    reference = preparedReference;
-    // Analyze copies; always grade the native source, never a CDN thumbnail.
-    target = await prepareChatVisionBuffer(source);
     try {
       [targetPalette, referencePalette] = await Promise.all([
         extractStylePalette(Buffer.from(target.base64, "base64")),
@@ -120,7 +127,7 @@ export async function POST(request: Request) {
   }
 
   const charge = await chargeCreditFeature({
-    userId: user.id,
+    userId,
     feature: "style_match",
   });
   if (!charge.ok) {
@@ -180,10 +187,10 @@ export async function POST(request: Request) {
     const result = await transferStylePalette(source, targetPalette, referencePalette, validated.data.matches);
     // The renderer already produced a lossless PNG. Route large outputs
     // straight to alternate storage instead of decoding them again for WebP.
-    const uploaded = await uploadToCloudinary(result, `${ownedImage.id}_style-match.png`, { preserveOriginal: true });
+    const uploaded = await uploadToCloudinary(result, `${imageId}_style-match.png`, { preserveOriginal: true });
     try {
       // Register the immutable source for subsequent edits, undo, and cleanup.
-      await prisma.imageVersion.create({ data: { imageId: ownedImage.id, url: uploaded.secureUrl,
+      await prisma.imageVersion.create({ data: { imageId, url: uploaded.secureUrl,
         publicId: uploaded.publicId, adjustments: { operationResult: true }, label: "Style Match" } });
     } catch (error) {
       await deleteFromCloudinary(uploaded.publicId).catch(() => {});
@@ -195,7 +202,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[/api/ai/style-match]", err);
     await refundCreditFeature({
-      userId: user.id,
+      userId,
       feature: "style_match",
       description: "Refund: style match failed",
     });

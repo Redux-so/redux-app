@@ -74,7 +74,7 @@ export function describeStylePalette(palette: StyleSwatch[]) {
 }
 
 /** Build a smooth color-only LUT, then apply it to native pixels. No synthesis or geometry edits. */
-export async function transferStylePalette(source: Buffer, target: StyleSwatch[], reference: StyleSwatch[], matches: StylePaletteMatch[]): Promise<Buffer> {
+export async function transferStylePalette(source: Buffer | string, target: StyleSwatch[], reference: StyleSwatch[], matches: StylePaletteMatch[]): Promise<Buffer> {
   if (matches.length !== target.length || new Set(matches.map(m => m.target)).size !== target.length ||
       matches.some(m => !target[m.target] || !reference[m.reference])) throw new Error("Incomplete style palette match");
   // Several shades often map to one reference swatch. Pool their source center

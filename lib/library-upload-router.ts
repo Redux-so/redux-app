@@ -1,3 +1,5 @@
+import { stat } from "node:fs/promises";
+import { EDITOR_SOURCE_MAX_BYTES, EDITOR_SOURCE_MAX_SIZE } from "@/constants/image-upload";
 import { createHash } from "node:crypto";
 import type { Image } from "@prisma/client";
 import sharp from "sharp";
@@ -11,7 +13,7 @@ import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { ALTERNATE_ASSET_PREFIX } from "@/lib/image-storage";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { fetchTrustedMediaBuffer, withTrustedEditorImage } from "@/lib/safe-remote-fetch";
 import { scheduleImageEmbeddingAfterResponse } from "@/lib/schedule-image-embedding";
 import { createLibraryUploadCover } from "@/lib/store-library-upload";
 
@@ -45,14 +47,14 @@ async function cleanUpAsset(publicId: string) {
 }
 
 export const libraryUploadRouter = {
-  editorSource: upload({ image: { maxFileSize: "64MB", maxFileCount: 1 } })
+  editorSource: upload({ image: { maxFileSize: EDITOR_SOURCE_MAX_SIZE, maxFileCount: 1 } })
     .input(z.object({ imageId: z.string().min(1).max(API_LIMITS.RESOURCE_ID_MAX_LEN) }))
     .middleware(async ({ files, input: { imageId } }) => {
       const auth = await requireAuthUser({ refreshProfile: false });
       if ("error" in auth) throw new UploadThingError({ code: "FORBIDDEN", message: "Sign in to save edits" });
       if (files.length !== 1 || files[0].type !== "image/png"
-        || files[0].size <= 0 || files[0].size > API_LIMITS.UPLOAD_SIZE_MAX) {
-        throw new UploadThingError({ code: "BAD_REQUEST", message: "Edited image must be a PNG up to 50 MiB" });
+        || files[0].size <= 0 || files[0].size > EDITOR_SOURCE_MAX_BYTES) {
+        throw new UploadThingError({ code: "BAD_REQUEST", message: "Edited image must be a PNG up to 128 MiB" });
       }
       const blocked = await enforceFeatureRateLimits(auth.user.id, "save_version");
       if (blocked) {
@@ -67,9 +69,12 @@ export const libraryUploadRouter = {
     })
     .onUploadComplete(async ({ file, metadata: { imageId } }) => {
       const publicId = `${ALTERNATE_ASSET_PREFIX}${file.key}`;
-      const { buffer } = await fetchTrustedMediaBuffer(file.ufsUrl);
-      const photo = await sharp(buffer).metadata().catch(() => null);
-      if (buffer.length !== file.size || buffer.length > API_LIMITS.UPLOAD_SIZE_MAX || photo?.format !== "png") {
+      const valid = await withTrustedEditorImage(file.ufsUrl, async (path) => {
+        const { size } = await stat(path);
+        const photo = await sharp(path).metadata().catch(() => null);
+        return size === file.size && photo?.format === "png";
+      });
+      if (!valid) {
         await cleanUpAsset(publicId);
         return { sourceUrl: null, error: "Could not read the edited image" };
       }

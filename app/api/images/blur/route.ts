@@ -7,7 +7,7 @@ import { apiInternalErrorResponse } from "@/lib/api-error";
 import { enforceFeatureRateLimits } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { blurImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { withTrustedEditorImage } from "@/lib/safe-remote-fetch";
 
 // blurIntensity 1–100 maps sigma to ~1–30 for Sharp's Gaussian blur
 function intensityToSigma(intensity: number): number {
@@ -42,16 +42,26 @@ export async function POST(request: Request) {
     }
 
     try {
-      const { buffer: sourceBuffer } = await fetchTrustedMediaBuffer(imageUrl);
-      const selection = await prepareRetouchImage(sourceBuffer, maskBase64);
+      const selection = await withTrustedEditorImage(imageUrl, (path) => prepareRetouchImage(path, maskBase64));
+      const sigma = intensityToSigma(blurIntensity);
+      const padding = Math.ceil(sigma * 4);
+      const { left, top, width, height } = selection.selection;
+      const regionLeft = Math.max(0, left - padding);
+      const regionTop = Math.max(0, top - padding);
+      const region = {
+        left: regionLeft, top: regionTop,
+        width: Math.min(selection.width, left + width + padding) - regionLeft,
+        height: Math.min(selection.height, top + height + padding) - regionTop,
+      };
       const blurred = await sharp(selection.pixels, {
         raw: { width: selection.width, height: selection.height, channels: 4 },
-      }).blur(intensityToSigma(blurIntensity)).png().toBuffer();
-      const outputBuffer = await compositeRetouch(selection, blurred);
+      }).extract(region).blur(sigma).png().toBuffer();
+      const outputBuffer = await compositeRetouch(selection, blurred, region);
 
       const uploaded = await uploadToCloudinary(
         outputBuffer,
         `${image.filename.replace(/\.[^/.]+$/, "")}_blur.png`,
+        { preserveOriginal: true },
       );
 
       await prisma.imageVersion.create({

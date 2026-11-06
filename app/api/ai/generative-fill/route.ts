@@ -21,7 +21,7 @@ import {
 import { CREDIT_COSTS } from "@/constants/credits";
 import {
   fetchReplicateDeliveryBuffer,
-  fetchTrustedMediaBuffer,
+  withTrustedEditorImage,
 } from "@/lib/safe-remote-fetch";
 
 const replicate = new Replicate({
@@ -110,99 +110,31 @@ export async function POST(request: Request) {
     }
 
     try {
-      const { buffer: sourceBuffer } = await fetchTrustedMediaBuffer(imageUrl);
-      const meta = await sharp(sourceBuffer).metadata();
-      const ow = meta.width ?? 1;
-      const oh = meta.height ?? 1;
+      const { resizedImage, resizedMask, modelW, modelH } = await withTrustedEditorImage(imageUrl, async (path) => {
+        const source = sharp(path, { sequentialRead: true }).autoOrient();
+        const { autoOrient: { width, height } } = await source.metadata();
+        const horizontal = expandDirection === "left" || expandDirection === "right";
+        const expandedWidth = width + (horizontal ? px : 0);
+        const expandedHeight = height + (horizontal ? 0 : px);
+        const scale = Math.min(1, 1024 / Math.max(expandedWidth, expandedHeight));
+        const modelW = roundToNearestAllowedDimension(expandedWidth * scale);
+        const modelH = roundToNearestAllowedDimension(expandedHeight * scale);
+        const sourceWidth = Math.min(modelW - Number(horizontal), Math.max(1, Math.round(width * modelW / expandedWidth)));
+        const sourceHeight = Math.min(modelH - Number(!horizontal), Math.max(1, Math.round(height * modelH / expandedHeight)));
+        const left = expandDirection === "left" ? modelW - sourceWidth : 0;
+        const top = expandDirection === "top" ? modelH - sourceHeight : 0;
+        const resizedSource = await source.resize(sourceWidth, sourceHeight, { fit: "fill" }).ensureAlpha().png().toBuffer();
+        const resizedImage = await sharp({
+          create: { width: modelW, height: modelH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+        }).composite([{ input: resizedSource, left, top }]).png().toBuffer();
 
-      let expW: number;
-      let expH: number;
-      let imgLeft: number;
-      let imgTop: number;
-
-      switch (expandDirection) {
-        case "right":
-          expW = ow + px;
-          expH = oh;
-          imgLeft = 0;
-          imgTop = 0;
-          break;
-        case "left":
-          expW = ow + px;
-          expH = oh;
-          imgLeft = px;
-          imgTop = 0;
-          break;
-        case "bottom":
-          expW = ow;
-          expH = oh + px;
-          imgLeft = 0;
-          imgTop = 0;
-          break;
-        case "top":
-          expW = ow;
-          expH = oh + px;
-          imgLeft = 0;
-          imgTop = px;
-          break;
-      }
-
-      const sourceRgba = await sharp(sourceBuffer).ensureAlpha().png().toBuffer();
-
-      const expandedPng = await sharp({
-        create: {
-          width: expW,
-          height: expH,
-          channels: 4,
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-        },
-      })
-        .composite([{ input: sourceRgba, left: imgLeft, top: imgTop }])
-        .png()
-        .toBuffer();
-
-      const whiteFull = await sharp({
-        create: {
-          width: expW,
-          height: expH,
-          channels: 3,
-          background: { r: 255, g: 255, b: 255 },
-        },
-      })
-        .png()
-        .toBuffer();
-
-      const blackOriginal = await sharp({
-        create: {
-          width: ow,
-          height: oh,
-          channels: 3,
-          background: { r: 0, g: 0, b: 0 },
-        },
-      })
-        .png()
-        .toBuffer();
-
-      const maskPng = await sharp(whiteFull)
-        .composite([{ input: blackOriginal, left: imgLeft, top: imgTop }])
-        .png()
-        .toBuffer();
-
-      const maxSide = Math.max(expW, expH);
-      const scale = maxSide > 1024 ? 1024 / maxSide : 1;
-      const scaledW = expW * scale;
-      const scaledH = expH * scale;
-      const modelW = roundToNearestAllowedDimension(scaledW);
-      const modelH = roundToNearestAllowedDimension(scaledH);
-
-      const resizedImage = await sharp(expandedPng)
-        .resize(modelW, modelH, { fit: "fill" })
-        .png()
-        .toBuffer();
-      const resizedMask = await sharp(maskPng)
-        .resize(modelW, modelH, { fit: "fill" })
-        .png()
-        .toBuffer();
+        const mask = Buffer.alloc(modelW * modelH, 255);
+        for (let row = top; row < top + sourceHeight; row++) {
+          mask.fill(0, row * modelW + left, row * modelW + left + sourceWidth);
+        }
+        const resizedMask = await sharp(mask, { raw: { width: modelW, height: modelH, channels: 1 } }).png().toBuffer();
+        return { resizedImage, resizedMask, modelW, modelH };
+      });
 
       const ts = Date.now();
       const imageUploaded = await uploadToCloudinary(

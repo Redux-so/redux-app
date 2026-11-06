@@ -27,7 +27,7 @@ import {
 } from "@/lib/chat-edit-intent";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 import {
-  fetchChatImageBase64,
+  fetchPreparedChatImage,
   isChatImageMediaType,
   type ChatImageMediaType,
 } from "@/lib/chat-image-context";
@@ -104,12 +104,12 @@ async function resolveWorkspaceImage(
       where: { id: imageId, userId, deletedAt: null },
     });
     if (!owned) return null;
-    return fetchChatImageBase64(workspaceImageUrl);
+    return fetchPreparedChatImage(workspaceImageUrl);
   }
 
   const owned = await assertUserOwnsImageUrl(userId, workspaceImageUrl);
   if (!owned) return null;
-  return fetchChatImageBase64(workspaceImageUrl);
+  return fetchPreparedChatImage(workspaceImageUrl);
 }
 
 function pushImageBlock(
@@ -208,10 +208,7 @@ export async function POST(request: Request) {
         workspaceImageUrl.trim(),
         imageId,
       );
-      if (workspaceImage) {
-        const prepared = await prepareChatVisionBase64(workspaceImage.base64);
-        pushImageBlock(userContent, prepared.base64, prepared.mediaType);
-      }
+      if (workspaceImage) pushImageBlock(userContent, workspaceImage.base64, workspaceImage.mediaType);
     } catch (err) {
       console.error("[/api/ai/chat] Failed to load workspace image:", err);
     }

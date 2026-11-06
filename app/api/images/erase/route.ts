@@ -12,7 +12,7 @@ import {
 } from "@/lib/expensive-route-guard";
 import { requireAuthUser } from "@/lib/require-user";
 import { maskImageOperationBodySchema, parseJsonRequest } from "@/lib/api-validation";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { withTrustedEditorImage } from "@/lib/safe-remote-fetch";
 
 const ERASE_COST = CREDIT_COSTS.erase;
 
@@ -49,12 +49,12 @@ export async function POST(request: Request) {
     await deductCredits(user.id, "erase");
 
     try {
-      const { buffer: sourceImageBuffer } = await fetchTrustedMediaBuffer(imageUrl);
-      const selection = await prepareRetouchImage(sourceImageBuffer, maskBase64);
+      const selection = await withTrustedEditorImage(imageUrl, (path) => prepareRetouchImage(path, maskBase64));
       const result = await inpaintSelection(selection, imageId, "erase");
       const uploaded = await uploadToCloudinary(
         result,
         `${image.filename.replace(/\.[^/.]+$/, "")}_erase.png`,
+        { preserveOriginal: true },
       );
 
       await prisma.imageVersion.create({

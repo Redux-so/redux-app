@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { apiInternalErrorResponse } from "@/lib/api-error";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources";
 import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { anthropic } from "@/lib/anthropic";
@@ -127,12 +128,11 @@ export async function POST(request: Request) {
       ),
     });
   } catch (err) {
-    console.error("[/api/ai/enhance] Error:", err);
     await refundCreditFeature({
       userId: user.id,
       feature: "auto_enhance",
       description: "Refund: auto enhance failed",
     });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiInternalErrorResponse("/api/ai/enhance", err, "Could not analyze the image. Please try again.");
   }
 }

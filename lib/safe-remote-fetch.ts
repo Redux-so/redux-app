@@ -1,3 +1,9 @@
+import { createWriteStream } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { EDITOR_SOURCE_MAX_BYTES } from "@/constants/image-upload";
+import { pipeline } from "node:stream/promises";
 import {
   UntrustedUrlError,
   assertHostnameResolvesToPublicAddresses,
@@ -9,6 +15,7 @@ export const REMOTE_FETCH_LIMITS = {
   TIMEOUT_MS: 30_000,
   /** Align with upload ceiling in API_LIMITS. */
   MAX_BYTES: 50 * 1024 * 1024,
+  MAX_EDITOR_BYTES: EDITOR_SOURCE_MAX_BYTES,
   MAX_REDIRECTS: 3,
 } as const;
 
@@ -39,42 +46,34 @@ export type SafeFetchBufferResult = {
   finalUrl: string;
 };
 
-async function readBodyWithLimit(
-  response: Response,
-  maxBytes: number,
-): Promise<Buffer> {
-  const contentLengthHeader = response.headers.get("content-length");
-  if (contentLengthHeader) {
-    const contentLength = Number.parseInt(contentLengthHeader, 10);
-    if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-      throw new SafeFetchError("Response body too large", "TOO_LARGE");
-    }
+async function* limitedBody(response: Response, maxBytes: number) {
+  if (Number(response.headers.get("content-length")) > maxBytes) {
+    await response.body?.cancel();
+    throw new SafeFetchError("Response body too large", "TOO_LARGE");
   }
-
-  if (!response.body) {
-    return Buffer.alloc(0);
-  }
+  if (!response.body) return;
 
   const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
   let total = 0;
-
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       total += value.byteLength;
-      if (total > maxBytes) {
-        await reader.cancel();
-        throw new SafeFetchError("Response body too large", "TOO_LARGE");
-      }
-      chunks.push(value);
+      if (total > maxBytes) throw new SafeFetchError("Response body too large", "TOO_LARGE");
+      yield value;
     }
   } finally {
+    await reader.cancel().catch(() => {});
     reader.releaseLock();
   }
+}
 
-  return Buffer.concat(chunks);
+async function readBuffer(response: Response, finalUrl: string): Promise<SafeFetchBufferResult> {
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of limitedBody(response, REMOTE_FETCH_LIMITS.MAX_BYTES)) chunks.push(chunk);
+  return { buffer: Buffer.concat(chunks), contentType: response.headers.get("content-type"),
+    status: response.status, finalUrl };
 }
 
 function mapUntrustedUrlError(err: UntrustedUrlError): SafeFetchError {
@@ -97,10 +96,11 @@ async function validateUrlForFetch(
   }
 }
 
-async function fetchWithAllowlist(
+async function fetchWithAllowlist<T>(
   initialUrl: string,
   validate: (url: string) => URL,
-): Promise<SafeFetchBufferResult> {
+  read: (response: Response, finalUrl: string) => Promise<T>,
+): Promise<T> {
   let currentUrl = initialUrl;
 
   for (let redirectCount = 0; redirectCount <= REMOTE_FETCH_LIMITS.MAX_REDIRECTS; redirectCount++) {
@@ -111,56 +111,45 @@ async function fetchWithAllowlist(
       controller.abort();
     }, REMOTE_FETCH_LIMITS.TIMEOUT_MS);
 
-    let response: Response;
     try {
-      response = await fetch(parsed.href, {
+      const response = await fetch(parsed.href, {
         method: "GET",
         redirect: "manual",
         signal: controller.signal,
       });
+
+      if (response.status >= 300 && response.status < 400) {
+        await response.body?.cancel();
+        const location = response.headers.get("location");
+        if (!location) throw new SafeFetchError("Redirect missing Location header", "REDIRECT");
+        if (redirectCount >= REMOTE_FETCH_LIMITS.MAX_REDIRECTS) {
+          throw new SafeFetchError("Too many redirects", "REDIRECT");
+        }
+        try {
+          currentUrl = new URL(location, parsed.href).href;
+        } catch {
+          throw new SafeFetchError("Invalid redirect URL", "REDIRECT");
+        }
+        continue;
+      }
+
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new SafeFetchError(
+          `Remote fetch failed with status ${response.status}`,
+          "FETCH_FAILED",
+        );
+      }
+      return await read(response, parsed.href);
     } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
+      if (controller.signal.aborted) {
         throw new SafeFetchError("Remote fetch timed out", "TIMEOUT", { cause: err });
       }
+      if (err instanceof SafeFetchError) throw err;
       throw new SafeFetchError("Remote fetch failed", "FETCH_FAILED", { cause: err });
     } finally {
       clearTimeout(timeout);
     }
-
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      if (!location) {
-        throw new SafeFetchError("Redirect missing Location header", "REDIRECT");
-      }
-
-      if (redirectCount >= REMOTE_FETCH_LIMITS.MAX_REDIRECTS) {
-        throw new SafeFetchError("Too many redirects", "REDIRECT");
-      }
-
-      try {
-        currentUrl = new URL(location, parsed.href).href;
-      } catch {
-        throw new SafeFetchError("Invalid redirect URL", "REDIRECT");
-      }
-      continue;
-    }
-
-    if (!response.ok) {
-      throw new SafeFetchError(
-        `Remote fetch failed with status ${response.status}`,
-        "FETCH_FAILED",
-      );
-    }
-
-    const buffer = await readBodyWithLimit(response, REMOTE_FETCH_LIMITS.MAX_BYTES);
-    const contentType = response.headers.get("content-type");
-
-    return {
-      buffer,
-      contentType,
-      status: response.status,
-      finalUrl: parsed.href,
-    };
   }
 
   throw new SafeFetchError("Too many redirects", "REDIRECT");
@@ -170,12 +159,37 @@ async function fetchWithAllowlist(
 export async function fetchTrustedMediaBuffer(
   url: string,
 ): Promise<SafeFetchBufferResult> {
-  return fetchWithAllowlist(url, validateTrustedMediaUrl);
+  return fetchWithAllowlist(url, validateTrustedMediaUrl, readBuffer);
 }
 
 /** Fetch Replicate model output after `replicate.run()` — not for client URLs. */
 export async function fetchReplicateDeliveryBuffer(
   url: string,
 ): Promise<SafeFetchBufferResult> {
-  return fetchWithAllowlist(url, validateReplicateDeliveryUrl);
+  return fetchWithAllowlist(url, validateReplicateDeliveryUrl, readBuffer);
+}
+
+/** Stage a checked working-image URL on disk so Sharp can open it without a full encoded copy in memory. */
+export async function stageTrustedEditorImage(url: string) {
+  const directory = await mkdtemp(join(tmpdir(), "redux-editor-"));
+  const path = join(directory, "source");
+  const cleanup = () => rm(directory, { recursive: true, force: true }).catch(() => {});
+  try {
+    await fetchWithAllowlist(url, validateTrustedMediaUrl, async (response) => {
+      await pipeline(limitedBody(response, REMOTE_FETCH_LIMITS.MAX_EDITOR_BYTES), createWriteStream(path));
+    });
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+  return { path, cleanup };
+}
+
+export async function withTrustedEditorImage<T>(url: string, processImage: (path: string) => Promise<T>): Promise<T> {
+  const image = await stageTrustedEditorImage(url);
+  try {
+    return await processImage(image.path);
+  } finally {
+    await image.cleanup();
+  }
 }

@@ -1,5 +1,5 @@
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
-import { prepareChatVisionBase64 } from "@/lib/chat-image-vision-server";
+import { withTrustedEditorImage } from "@/lib/safe-remote-fetch";
+import { prepareChatVisionBase64, prepareChatVisionImage, VisionImageError } from "@/lib/chat-image-vision-server";
 
 import {
   type ChatImageMediaType,
@@ -30,30 +30,12 @@ function parseDataUrl(
   return { base64, mediaType };
 }
 
-/** Resolve a workspace/reference image to base64 for Anthropic vision blocks. */
-export async function fetchChatImageBase64(
-  imageUrl: string,
-): Promise<{ base64: string; mediaType: ChatImageMediaType }> {
-  if (imageUrl.startsWith("data:")) {
-    const parsed = parseDataUrl(imageUrl);
-    if (!parsed) {
-      throw new Error("Invalid data URL");
-    }
-    return parsed;
-  }
-
-  const fetchUrl = toVisionThumbnailUrl(imageUrl);
-  const { buffer, contentType: headerTypeRaw } = await fetchTrustedMediaBuffer(fetchUrl);
-  const base64 = buffer.toString("base64");
-  const headerType = headerTypeRaw?.split(";")[0]?.trim();
-  const mediaType =
-    headerType && isChatImageMediaType(headerType) ? headerType : "image/jpeg";
-
-  return { base64, mediaType };
-}
-
-/** Normalize fetched target/reference bytes before constructing vision requests. */
+/** Normalize the current source to a bounded vision preview. */
 export async function fetchPreparedChatImage(imageUrl: string) {
-  const image = await fetchChatImageBase64(imageUrl);
-  return prepareChatVisionBase64(image.base64);
+  if (imageUrl.startsWith("data:")) {
+    const image = parseDataUrl(imageUrl);
+    if (!image) throw new VisionImageError();
+    return prepareChatVisionBase64(image.base64);
+  }
+  return withTrustedEditorImage(toVisionThumbnailUrl(imageUrl), prepareChatVisionImage);
 }

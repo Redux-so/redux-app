@@ -419,7 +419,7 @@ test("the dispatcher uses the actual paid panel endpoint and preserves its charg
       },
       "@/lib/safe-remote-fetch": {
         fetchReplicateDeliveryBuffer: async () => ({ buffer: Buffer.from("image") }),
-        fetchTrustedMediaBuffer: async () => ({ buffer: Buffer.from("source") }),
+        withTrustedEditorImage: async (_url, processImage) => processImage(Buffer.from("source")),
       },
       "@/lib/retouch-image": { applyBackgroundMatte: async (_source, output) => output },
       "@/lib/cloudinary": { uploadToCloudinary: async () => ({ secureUrl: imageUrl, publicId: "result" }) },

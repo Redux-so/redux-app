@@ -16,14 +16,14 @@ export class VisionImageError extends Error {
 export async function prepareChatVisionBase64(
   base64: string,
 ): Promise<{ base64: string; mediaType: ChatImageMediaType }> {
-  return prepareChatVisionBuffer(Buffer.from(base64, "base64"));
+  return prepareChatVisionImage(Buffer.from(base64, "base64"));
 }
 
-export async function prepareChatVisionBuffer(
-  imageBuffer: Buffer,
+export async function prepareChatVisionImage(
+  source: Buffer | string,
 ): Promise<{ base64: string; mediaType: ChatImageMediaType }> {
   try {
-    const resized = sharp(imageBuffer).rotate().toColourspace("srgb")
+    const resized = sharp(source, { sequentialRead: true }).rotate().toColourspace("srgb")
       .resize(CHAT_VISION_MAX_PX, CHAT_VISION_MAX_PX, { fit: "inside", withoutEnlargement: true });
     const png = (await resized.clone().png().toBuffer()).toString("base64");
     if (png.length <= VISION_BASE64_MAX_BYTES) return { base64: png, mediaType: "image/png" };
