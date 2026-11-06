@@ -342,6 +342,41 @@ test("switching mobile editor panels retains the same canvas and mounted chat", 
   assert.ok(chat());
 });
 
+test("editor keeps its spinner through metadata and history until the requested canvas source is drawn", async () => {
+  const state = defaultPersistedEditorState();
+  const editor = { editorState: state, adjustments: state.sliders, historyEntries: [], savedVersions: [], versionLoaded: false };
+  const canvas = { activeImageUrl: null, imageLoadFailed: false };
+  const sourceUrl = "https://example.test/photo.jpg";
+  const effects = [];
+  const { EditorWorkspace } = compile("../components/editor/EditorApp.tsx", {
+    react: { ...React, useEffect: (effect) => effects.push(effect) },
+    "next/navigation": { useSearchParams: () => new URLSearchParams() },
+    "@/hooks/useMobileLayout": { useMobileLayout: () => false },
+    "@/hooks/useEditor": { useEditor: () => editor },
+    "@/hooks/useCanvas": { useCanvas: () => canvas },
+    "@/hooks/useEditorChatTools": { useEditorChatTools: () => ({}) },
+    "@/lib/last-visited-page": { rememberVisitedPage: noop },
+    __globals: { queueMicrotask, window: { location: { search: "", hash: "" } },
+      fetch: async () => ({ ok: true, json: async () => ({ image: { originalUrl: sourceUrl } }) }) },
+  }, "exports.EditorWorkspace = EditorWorkspace;");
+  const app = host(EditorWorkspace, { imageId: "photo-a" });
+  const spinner = () => find(app.render(), (node) => node.props?.message === "Loading image");
+  assert.ok(spinner());
+  const cleanup = effects[0]();
+  await new Promise(setImmediate);
+  assert.ok(spinner(), "metadata alone does not finish loading");
+  editor.versionLoaded = true;
+  canvas.activeImageUrl = "https://example.test/previous.jpg";
+  assert.ok(spinner(), "a previously painted source does not finish loading");
+  canvas.activeImageUrl = sourceUrl;
+  assert.equal(spinner(), undefined);
+  canvas.activeImageUrl = null;
+  canvas.imageLoadFailed = true;
+  assert.equal(spinner(), undefined);
+  assert.ok(find(app.render(), (node) => node.props?.children === "Could not load the image"));
+  cleanup();
+});
+
 test("mobile library navigation makes the background inert and selecting a view closes the drawer", () => {
   const Library = compile("../app/(dashboard)/library/LibraryPageClient.tsx", {
     "@/hooks/useMobileLayout": { useMobileLayout: () => true },

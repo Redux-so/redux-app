@@ -145,10 +145,9 @@ export function useCanvas(
   // Tracks the rendered bounds of the background image inside the Fabric canvas.
   // Used by Canvas.tsx to clip the vignette/grain overlays to the image area.
   const [imageBounds, setImageBounds] = useState<ImageBounds | null>(null);
-  // The URL of the image currently rendered on the canvas. Starts as imageUrl
-  // prop but can diverge after AI operations (e.g. background removal) that
-  // replace the canvas image with a new URL via loadImageUrl().
-  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(imageUrl);
+  // The URL whose decoded pixels have been drawn onto the canvas.
+  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   // ---------------------------------------------------------------------------
   // Compute the image's rendered bounds from the current FabricImage state.
   // Must be called after any operation that moves/scales/rotates the image.
@@ -552,14 +551,6 @@ export function useCanvas(
   }, [syncViewport, updateBrushCursor]);
 
   // ---------------------------------------------------------------------------
-  // Keep activeImageUrl in sync with the imageUrl prop.
-  // When the user navigates to a different image, reset to the new original URL.
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    setActiveImageUrl(imageUrl);
-  }, [imageUrl]);
-
-  // ---------------------------------------------------------------------------
   // Load background image
   // ---------------------------------------------------------------------------
   useEffect(() => {
@@ -601,7 +592,13 @@ export function useCanvas(
       canvas.renderAll();
 
       updateImageBounds();
-    })();
+      setActiveImageUrl(imageUrl);
+      setFailedImageUrl(null);
+    })().catch((error) => {
+      if (cancelled || generation !== loadGenerationRef.current) return;
+      console.error("[useCanvas] Could not load image:", error);
+      setFailedImageUrl(imageUrl);
+    });
 
     return () => { cancelled = true; };
   }, [imageUrl, canvasReady, updateImageBounds]);
@@ -1266,6 +1263,7 @@ export function useCanvas(
     resizeCanvas,
     loadImageUrl,
     activeImageUrl,
+    imageLoadFailed: !!imageUrl && failedImageUrl === imageUrl,
     viewportTransform,
     brushSizes,
     setBrushSize,

@@ -175,6 +175,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     resizeCanvas,
     loadImageUrl,
     activeImageUrl,
+    imageLoadFailed,
     brushSizes,
     setBrushSize,
     enableHealBrush,
@@ -200,6 +201,9 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
     (masks, checkpoint) => { commitState({ masks }, checkpoint); },
     (transform, checkpoint) => { commitState({ transform }, checkpoint); },
   );
+  const canvasImageReady = !!canvasSourceUrl && activeImageUrl === canvasSourceUrl;
+  const canvasLoadFailed = imageLoadFailed || (!!imageId && !loadingImage && !image?.originalUrl);
+  const canvasLoading = !canvasLoadFailed && (loadingImage || (!!image && !canvasImageReady));
 
   const croppingRef = useRef(isCropping);
   croppingRef.current = isCropping;
@@ -209,8 +213,8 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
   }, [editorState.masks, restoreMasks]);
 
   useEffect(() => {
-    canvasHydratedRef.current = versionLoaded && !loadingImage && !!activeImageUrl;
-  }, [versionLoaded, loadingImage, activeImageUrl]);
+    canvasHydratedRef.current = canvasImageReady;
+  }, [canvasImageReady]);
 
   useEffect(() => {
     saveEditorStateRef.current = async () => {
@@ -312,7 +316,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
 
   const chatTools = useEditorChatTools({
     imageId, originalUrl: image?.originalUrl ?? null, width: image?.width ?? 1, height: image?.height ?? 1,
-    ready: versionLoaded && !loadingImage && !!activeImageUrl, isCropping,
+    ready: canvasImageReady, isCropping,
     getState: getEditorState, getRevision: getEditorRevision, getSelections: getSelectionTools, brushSizes,
     clearSelections: () => restoreMasks(undefined),
     versions: editorHistoryRows(historyEntries, savedVersions).map((row) => ({ id: row.id, label: row.title })),
@@ -341,7 +345,7 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
       void saveVersion();
     }, 2000);
     return () => clearTimeout(timer);
-  }, [editorState, saveVersion, versionLoaded, loadingImage]);
+  }, [editorState, saveVersion, canvasImageReady]);
 
   if (imageMissing) return <ReturnToPreviousPage />;
 
@@ -431,15 +435,15 @@ function EditorWorkspace({ imageId }: { imageId?: string }) {
                 onConfirmCrop={handleConfirmCrop}
                 onCancelCrop={cancelCrop}
               />
-              {navigatorImage && !loadingImage && (
+              {navigatorImage && canvasImageReady && (
                 <ImageNavigator image={navigatorImage} viewport={viewportTransform} onCenter={centerNavigator} />
               )}
-              {previewError && (
+              {(canvasLoadFailed || previewError) && (
                 <p role="status" className="absolute top-3 left-1/2 -translate-x-1/2 text-xs text-white bg-black/70 px-3 py-2 rounded-md pointer-events-none">
-                  {previewError}
+                  {canvasLoadFailed ? "Could not load the image" : previewError}
                 </p>
               )}
-              {loadingImage && (
+              {canvasLoading && (
                 <LoadingOverlay
                   className="absolute inset-0 z-10 bg-[#161616]/80 pointer-events-none"
                   message="Loading image"
