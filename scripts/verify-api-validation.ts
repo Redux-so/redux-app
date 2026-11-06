@@ -68,8 +68,8 @@ expectFail(exportBodySchema, {
   format: "bmp",
 });
 
-// Oversized base64 (character limit)
-const oversizedBase64 = "A".repeat(API_LIMITS.BASE64_MAX_CHARS + 1);
+// Export uses the working-image limit rather than the smaller vision limit.
+const oversizedBase64 = "A".repeat((Math.floor(API_LIMITS.UPLOAD_SIZE_MAX / 3) + 1) * 4);
 expectFail(exportBodySchema, {
   imageId: validImageId,
   imageBase64: oversizedBase64,

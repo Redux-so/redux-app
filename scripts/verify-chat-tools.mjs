@@ -12,18 +12,43 @@ const { editorPlanSchema, actionCost, planCost } = load("../lib/editor-actions.t
 const { runEditorPlan } = load("../lib/editor-action-runner.ts");
 const { useEditorChatTools: createEditorChatTools } = load("../hooks/useEditorChatTools.ts");
 const { defaultPersistedEditorState } = load("../lib/editor-state.ts");
-function compile(path, adapters) {
+function compile(path, adapters, globals = {}) {
   const code = ts.transpileModule(readFileSync(new URL(path, import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const mod = { exports: {} };
   vm.runInNewContext(code, { module: mod, exports: mod.exports, Request, Response, URL, Buffer, TextEncoder, process: { env: {} },
-    console: { error() {} }, require: (id) => adapters[id] ?? (id.startsWith("@/") ? load(`../${id.slice(2)}`) : nativeRequire(id)) });
+    console: { error() {} }, require: (id) => adapters[id] ?? (id.startsWith("@/") ? load(`../${id.slice(2)}`) : nativeRequire(id)), ...globals });
   return mod.exports;
 }
 const turnId = "b501765b-7815-4a8a-986d-43ab939294b9";
 const imageUrl = "https://res.cloudinary.com/demo/image/upload/v1/photo.png";
 const execution = () => ({ signal: new AbortController().signal, isCurrent: () => true, progress() {} });
+
+test("chat sends a bounded JPEG workspace preview with current edits and geometry", async () => {
+  const state = defaultPersistedEditorState();
+  state.sliders.exposure = 15;
+  state.transform.rotation = 90;
+  const { useEditorChatTools } = compile("../hooks/useEditorChatTools.ts", {
+    "@/lib/interactive-image-preview": {
+      renderEditorPayload: async (payload, fullSize, maxDimension) => {
+        assert.equal(payload.adjustments.exposure, 15);
+        assert.equal(fullSize, false);
+        assert.equal(maxDimension, 1000);
+        return { imageBase64: "cGl4ZWxz" };
+      },
+    },
+    "@/lib/canvas-image-geometry": {
+      transformedSource: (image, transform) => {
+        assert.equal(image.src, "data:image/png;base64,cGl4ZWxz");
+        assert.equal(transform.rotation, 90);
+        return { toDataURL: (format) => `data:${format};base64,cGl4ZWxz` };
+      },
+    },
+  }, { Image: class { async decode() {} } });
+  const tools = useEditorChatTools({ ready: true, originalUrl: imageUrl, getState: () => state });
+  assert.equal(await tools.workspaceImage(), "data:image/jpeg;base64,cGl4ZWxz");
+});
 
 test("plans validate all panel action families, crop bounds, slider ranges and history isolation", () => {
   for (const action of [

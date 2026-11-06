@@ -492,15 +492,17 @@ export default function AdjustmentPanel({
 
   // ── Auto Enhance ──────────────────────────────────────────────────────────
   async function runAutoEnhance() {
-    if (!aiImageUrl) return;
+    if (!aiImageUrl || !imageId) return;
     setLoadingEnhance(true);
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
+      const imageUrl = await prepareWorkingImage(imageId, aiImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(appPath(EDITOR_TOOL_ROUTES.auto_enhance), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
+        body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -521,15 +523,17 @@ export default function AdjustmentPanel({
 
   // ── Auto Tone Balance ─────────────────────────────────────────────────────
   async function runAutoToneBalance() {
-    if (!aiImageUrl) return;
+    if (!aiImageUrl || !imageId) return;
     setLoadingToneBalance(true);
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
+      const imageUrl = await prepareWorkingImage(imageId, aiImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(appPath(EDITOR_TOOL_ROUTES.auto_tone_balance), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
+        body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -550,15 +554,17 @@ export default function AdjustmentPanel({
 
   // ── Color Balance ───────────────────────────────────────────────────
   async function runColorBalance() {
-    if (!aiImageUrl) return;
+    if (!aiImageUrl || !imageId) return;
     setLoadingColorBalance(true);
     const isCurrent = createEditGuard();
     const finishOperation = beginOperation();
     try {
+      const imageUrl = await prepareWorkingImage(imageId, aiImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(appPath(EDITOR_TOOL_ROUTES.smart_color_balance), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: aiImageUrl, currentAdjustments: adjustments }),
+        body: JSON.stringify({ imageUrl, currentAdjustments: adjustments }),
       });
       if (handleAiError(res.status)) return;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1175,6 +1181,7 @@ export default function AdjustmentPanel({
       {genFillModalOpen && (
         <GenerativeFillModal
           open={genFillModalOpen}
+          imageId={imageId}
           onClose={() => setGenFillModalOpen(false)}
           canvasImageUrl={canvasImageUrl ?? null}
           createEditGuard={createEditGuard}

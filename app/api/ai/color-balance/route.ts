@@ -18,7 +18,7 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { fetchPreparedChatImage } from "@/lib/chat-image-context";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const SYSTEM_PROMPT =
@@ -27,10 +27,6 @@ const SYSTEM_PROMPT =
   "adjustment values to correct the colors and achieve natural, accurate color balance. Focus on " +
   "temperature, tint, vibrance, saturation, and hue. Return only adjustments that need to change " +
   "from 0. All values range from -100 to 100. No explanation, just the JSON object.";
-
-function toThumbnailUrl(url: string): string {
-  return url.replace("/upload/", "/upload/w_400,q_70,f_jpg/");
-}
 
 export async function POST(request: Request) {
   const authResult = await requireAuthUser();
@@ -75,14 +71,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const thumbnailUrl = toThumbnailUrl(imageUrl);
-    const { buffer } = await fetchTrustedMediaBuffer(thumbnailUrl);
-    const base64 = buffer.toString("base64");
+    const { base64, mediaType } = await fetchPreparedChatImage(imageUrl);
 
     const userContent: (ImageBlockParam | TextBlockParam)[] = [
       {
         type: "image",
-        source: { type: "base64", media_type: "image/jpeg", data: base64 },
+        source: { type: "base64", media_type: mediaType, data: base64 },
       },
       {
         type: "text",

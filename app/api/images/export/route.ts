@@ -9,6 +9,8 @@ import { SafeFetchError, fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch
 
 type ExportFormat = "jpeg" | "png" | "tiff";
 
+export const maxDuration = 60;
+
 const FORMAT_MIME: Record<ExportFormat, string> = {
   jpeg: "image/jpeg",
   png: "image/png",
@@ -64,6 +66,12 @@ export async function POST(request: NextRequest) {
     if (source.kind === "base64") {
       inputBuffer = Buffer.from(source.base64, "base64");
     } else {
+      if (source.url !== image.originalUrl) {
+        const version = await prisma.imageVersion.findFirst({
+          where: { imageId, url: source.url }, select: { id: true },
+        });
+        if (!version) return NextResponse.json({ error: "Image source not found" }, { status: 404 });
+      }
       try {
         const fetched = await fetchTrustedMediaBuffer(source.url);
         inputBuffer = fetched.buffer;
@@ -91,12 +99,23 @@ export async function POST(request: NextRequest) {
       transform,
     });
 
-    return new NextResponse(outputBuffer as unknown as BodyInit, {
+    let offset = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (offset === outputBuffer.length) {
+          controller.close();
+          return;
+        }
+        const chunk = outputBuffer.subarray(offset, offset + 256 * 1024);
+        offset += chunk.length;
+        controller.enqueue(chunk);
+      },
+    });
+    return new NextResponse(stream, {
       status: 200,
       headers: {
         "Content-Type": FORMAT_MIME[format],
         "Content-Disposition": `attachment; filename="export.${format}"`,
-        "Content-Length": String(outputBuffer.length),
       },
     });
   } catch (err) {

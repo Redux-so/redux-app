@@ -1,6 +1,7 @@
 "use client";
 
 import { appPath } from "@/lib/app-path";
+import { prepareWorkingImage } from "@/lib/prepare-working-image";
 
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/shared/Icon";
@@ -12,6 +13,7 @@ import toast from "react-hot-toast";
 
 export interface GenerativeFillModalProps {
   open: boolean;
+  imageId?: string;
   onClose: () => void;
   canvasImageUrl: string | null;
   createEditGuard: () => () => boolean;
@@ -21,6 +23,7 @@ export interface GenerativeFillModalProps {
 
 export default function GenerativeFillModal({
   open,
+  imageId,
   onClose,
   canvasImageUrl,
   onApplied,
@@ -84,7 +87,7 @@ export default function GenerativeFillModal({
   }, [open, canvasImageUrl, direction, expandPixels]);
 
   async function handleApply() {
-    if (!canvasImageUrl) return;
+    if (!canvasImageUrl || !imageId) return;
     const px = Math.round(parseInt(expandPixels, 10));
     if (!Number.isFinite(px) || px < 1 || px > 512) {
       toast.error("Enter expand pixels between 1 and 512");
@@ -100,11 +103,13 @@ export default function GenerativeFillModal({
     const finishOperation = beginOperation();
     setLoading(true);
     try {
+      const imageUrl = await prepareWorkingImage(imageId, canvasImageUrl);
+      if (!isCurrent()) return;
       const res = await fetch(appPath("/api/ai/generative-fill"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageUrl: canvasImageUrl,
+          imageUrl,
           expandDirection: direction,
           expandPixels: px,
           prompt: promptTrim,
@@ -245,7 +250,7 @@ export default function GenerativeFillModal({
           </button>
           <button
             type="button"
-            disabled={loading || !canvasImageUrl}
+            disabled={loading || !canvasImageUrl || !imageId}
             onClick={() => void handleApply()}
             className={BTN_MODAL_PANEL}
           >

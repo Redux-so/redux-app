@@ -3,6 +3,7 @@
 import { appPath } from "@/lib/app-path";
 
 import { prepareWorkingImage } from "@/lib/prepare-working-image";
+import { CHAT_VISION_MAX_PX } from "@/lib/chat-image-shared";
 import type { RefObject } from "react";
 import { actionCost, actionLabel, actionResultMessage, isRemoteAction, type ChatToolPlan, type EditorAction, type EditorToolContext } from "@/lib/editor-actions";
 import { runEditorPlan, type ActionExecution } from "@/lib/editor-action-runner";
@@ -54,11 +55,12 @@ export function useEditorChatTools(options: {
     if (!options.ready) throw new Error("Wait for the image to finish loading.");
     const state = options.getState();
     const rendered = await renderEditorPayload({ adjustments: state.sliders, transform: state.transform,
-      originalUrl: options.originalUrl, storedPreviewUrl: null, baseImageUrl: state.workingImageUrl ?? options.originalUrl, imageBase64: null });
+      originalUrl: options.originalUrl, storedPreviewUrl: null, baseImageUrl: state.workingImageUrl ?? options.originalUrl, imageBase64: null },
+    false, CHAT_VISION_MAX_PX);
     const image = new Image();
     image.src = `data:image/png;base64,${rendered.imageBase64}`;
     await image.decode();
-    return transformedSource(image, state.transform).toDataURL("image/png");
+    return transformedSource(image, state.transform).toDataURL("image/jpeg", 0.82);
   }
 
   async function execute(plan: ChatToolPlan, execution: ActionExecution): Promise<string> {

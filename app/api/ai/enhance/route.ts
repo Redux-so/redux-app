@@ -19,7 +19,7 @@ import {
   refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
-import { fetchTrustedMediaBuffer } from "@/lib/safe-remote-fetch";
+import { fetchPreparedChatImage } from "@/lib/chat-image-context";
 import { logSnippetForDiagnostics } from "@/lib/log-redaction";
 
 const SYSTEM_PROMPT =
@@ -33,10 +33,6 @@ const SYSTEM_PROMPT =
  * Insert a w_400,q_70,f_jpg transformation into a Cloudinary upload URL so we
  * fetch a small JPEG thumbnail instead of the full-res image.
  */
-function toThumbnailUrl(url: string): string {
-  return url.replace("/upload/", "/upload/w_400,q_70,f_jpg/");
-}
-
 export async function POST(request: Request) {
   const authResult = await requireAuthUser();
   if ("error" in authResult) {
@@ -80,15 +76,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Fetch the thumbnail from Cloudinary
-    const thumbnailUrl = toThumbnailUrl(imageUrl);
-    const { buffer } = await fetchTrustedMediaBuffer(thumbnailUrl);
-    const base64 = buffer.toString("base64");
+    const { base64, mediaType } = await fetchPreparedChatImage(imageUrl);
 
     const userContent: (ImageBlockParam | TextBlockParam)[] = [
       {
         type: "image",
-        source: { type: "base64", media_type: "image/jpeg", data: base64 },
+        source: { type: "base64", media_type: mediaType, data: base64 },
       },
       {
         type: "text",

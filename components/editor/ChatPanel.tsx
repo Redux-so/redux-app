@@ -974,7 +974,9 @@ export default function ChatPanel({
       }
 
       if (!res.ok) {
-        let detail = `HTTP ${res.status}`;
+        let detail = res.status === 413
+          ? "The photo context was too large to send. Try sending the message without a reference photo."
+          : `HTTP ${res.status}`;
         try {
           const errBody = (await res.json()) as { error?: string };
           if (errBody.error) detail = errBody.error;

@@ -14,6 +14,8 @@ import {
 } from "@/lib/button-styles";
 import toast from "react-hot-toast";
 import { type PreviewPayload, buildPreviewRequestBody } from "@/lib/preview-request";
+import { IMAGE_MULTIPART_MAX_BYTES } from "@/constants/image-upload";
+import { prepareWorkingImage } from "@/lib/prepare-working-image";
 
 type ExportFormat = "jpeg" | "png" | "tiff";
 
@@ -71,6 +73,10 @@ export default function ExportModal({
     try {
       const latest = await prepareExport();
       const previewBody = buildPreviewRequestBody(latest);
+      if (previewBody.imageBase64 && previewBody.imageBase64.length > IMAGE_MULTIPART_MAX_BYTES - 4096) {
+        previewBody.imageUrl = await prepareWorkingImage(imageId, `data:image/png;base64,${previewBody.imageBase64}`);
+        delete previewBody.imageBase64;
+      }
       const res = await fetch(appPath("/api/images/export"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -87,8 +93,8 @@ export default function ExportModal({
       });
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? "Export failed");
+        const data = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(data?.error ?? `Export failed (HTTP ${res.status})`);
       }
 
       const blob = await res.blob();

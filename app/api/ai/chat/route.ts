@@ -47,6 +47,8 @@ import { ANTHROPIC_DEFAULT_MODEL } from "@/constants/ai-models";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { EDIT_PHOTO_TOOL, editorPlanSchema, planCost, type ChatToolPlan } from "@/lib/editor-actions";
 
+export const maxDuration = 60;
+
 // ---------------------------------------------------------------------------
 // SSE helpers
 // ---------------------------------------------------------------------------
