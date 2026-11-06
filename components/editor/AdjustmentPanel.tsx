@@ -1,5 +1,8 @@
 "use client";
 
+import { useCreditPurchasesEnabled } from "@/lib/credit-purchases-context";
+import { CREDIT_PURCHASES_UNAVAILABLE } from "@/constants/credits";
+
 import { appPath } from "@/lib/app-path";
 
 import { prepareVisionFile } from "@/lib/prepare-vision-file";
@@ -243,13 +246,13 @@ function RailLink({
 // Credit-backed AI action — matches idle ToolBtn (Eraser, Heal, etc.)
 function AIButton({
   label,
-  loading,
+  loading = false,
   active,
   disabled,
   onClick,
 }: {
   label: string;
-  loading: boolean;
+  loading?: boolean;
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -414,6 +417,7 @@ export default function AdjustmentPanel({
   }
 
   // Loading flags per AI button
+  const purchasesEnabled = useCreditPurchasesEnabled();
   const [loadingEnhance, setLoadingEnhance] = useState(false);
   const [loadingToneBalance, setLoadingToneBalance] = useState(false);
   const [loadingColorBalance, setLoadingColorBalance] = useState(false);
@@ -480,7 +484,7 @@ export default function AdjustmentPanel({
   /** Returns true if the error was handled (caller should return early). */
   function handleAiError(status: number): boolean {
     if (status === 402) {
-      toast("Insufficient credits — purchase more to continue.", { icon: "💳" });
+      toast(purchasesEnabled ? "Insufficient credits — purchase more to continue." : CREDIT_PURCHASES_UNAVAILABLE, { icon: "💳" });
       return true;
     }
     if (status === 429) {
@@ -618,7 +622,7 @@ export default function AdjustmentPanel({
       });
 
       if (res.status === 402) {
-        toast("Insufficient credits", { icon: "💳" });
+        toast(purchasesEnabled ? "Insufficient credits" : CREDIT_PURCHASES_UNAVAILABLE, { icon: "💳" });
         return;
       }
       if (!res.ok) {
@@ -702,7 +706,7 @@ export default function AdjustmentPanel({
         }),
       });
       if (res.status === 402) {
-        toast("Insufficient credits", { icon: "💳" });
+        toast(purchasesEnabled ? "Insufficient credits" : CREDIT_PURCHASES_UNAVAILABLE, { icon: "💳" });
         return;
       }
       if (res.status === 429) {
@@ -758,7 +762,7 @@ export default function AdjustmentPanel({
         body: JSON.stringify({ imageUrl, maskBase64, imageId }),
       });
       if (res.status === 402) {
-        toast("Insufficient credits — purchase more to continue.", { icon: "💳" });
+        toast(purchasesEnabled ? "Insufficient credits — purchase more to continue." : CREDIT_PURCHASES_UNAVAILABLE, { icon: "💳" });
         return;
       }
       if (res.status === 429 || res.status === 503) {
@@ -1021,13 +1025,7 @@ export default function AdjustmentPanel({
                   {activeSection === "retouch" && (
                     <div className="px-8 pt-4 pb-5 flex flex-col gap-3">
                       <ToolBtn
-                        label={
-                          loadingBlur ? (
-                            <LoadingSpinner size="sm" label="Blur loading" />
-                          ) : (
-                            "Blur"
-                          )
-                        }
+                        label="Blur"
                         active={activeTool === "blur"}
                         disabled={loadingBlur}
                         onClick={() => {
@@ -1061,7 +1059,6 @@ export default function AdjustmentPanel({
                       <AIButton
                         label="Heal"
                         active={activeTool === "heal"}
-                        loading={loadingHeal}
                         disabled={!canvasImageUrl || loadingHeal}
                         onClick={() => {
                           if (isCropping) onToggleCrop?.();

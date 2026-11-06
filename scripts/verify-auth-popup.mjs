@@ -25,6 +25,12 @@ function popupHost(blocked = false) {
   return { authenticateWithGooglePopup, calls, popup };
 }
 
+function findElement(node, predicate) {
+  if (Array.isArray(node)) return node.map((child) => findElement(child, predicate)).find(Boolean);
+  if (!node || typeof node !== "object") return undefined;
+  return predicate(node) ? node : findElement(node.props?.children, predicate);
+}
+
 test("Google opens a dark popup synchronously and passes it to Clerk without navigating the main tab", async () => {
   const app = popupHost();
   let resolve, received;
@@ -56,34 +62,63 @@ for (const { origin, basePath } of mounts) {
 for (const resource of ["signIn", "signUp"]) {
   test(`${resource} uses absolute Clerk popup URLs at ${origin}${basePath} and releases the busy state after failure`, async () => {
     const app = popupHost(), slots = [];
-    let cursor = 0, handler, params, fail = false;
+    let cursor = 0, handler, params, finishGoogle, finishPassword, fail = false;
+    const LoadingSpinner = () => null;
     const auth = { loaded: true, client: { [resource]: { authenticateWithPopup: async (value) => {
       // Clerk parses these as full URLs in the popup flow.
       assert.equal(new URL(value.redirectUrl).origin, origin);
       assert.equal(new URL(value.redirectUrlComplete).origin, origin);
       params = value; if (fail) throw new Error("Try again");
+      await new Promise((resolve) => { finishGoogle = resolve; });
     } } } };
     const Form = compile(`../components/auth/${resource === "signIn" ? "SignInForm" : "SignUpForm"}.tsx`, {
       react: { useState(initial) { const index = cursor++; if (!(index in slots)) slots[index] = index === 0 ? true : initial;
         return [slots[index], (value) => { slots[index] = value; }]; }, useEffect() {}, useCallback: (fn) => fn },
       "next/navigation": { useRouter: () => ({ replace() {}, push() {} }) },
       "@clerk/nextjs": { useClerk: () => auth, useAuth: () => ({ isLoaded: true, isSignedIn: false }),
-        [resource === "signIn" ? "useSignIn" : "useSignUp"]: () => ({ [resource]: {}, errors: { fields: {}, global: [] }, fetchStatus: "idle" }) },
+        [resource === "signIn" ? "useSignIn" : "useSignUp"]: () => ({
+          [resource]: { password: () => new Promise((resolve) => { finishPassword = resolve; }) },
+          errors: { fields: {}, global: [] }, fetchStatus: "idle",
+        }) },
       "@/lib/google-auth-popup": app,
       "@/lib/app-path": compile("../lib/app-path.ts", {}, { process: { env: { NEXT_PUBLIC_APP_BASE_PATH: basePath } } }),
       "@/lib/brand-colors": { AUTH_PRIMARY_BTN_CLASS: "" },
-      "@/components/shared/LoadingSpinner": { LoadingSpinner: () => null },
-    }, { capture: (fn) => { handler = fn; }, process: { env: {} }, URL, window: { location: { origin } } }).default;
-    function render() { cursor = 0; Form(); }
-    render(); await handler();
+      "@/components/shared/LoadingSpinner": { LoadingSpinner },
+    }, { capture: (fn) => { handler = fn; }, process: { env: {} }, URL,
+      FormData: class { get(key) { return key === "email" ? "tester@example.com" : "password"; } },
+      window: { location: { origin } } }).default;
+    function render() { cursor = 0; return Form(); }
+    function assertSpinnerOn(buttonType) {
+      const tree = render();
+      for (const type of ["submit", "button"]) {
+        const button = findElement(tree, (node) => node.type === "button" && node.props.type === type &&
+          (type === "submit" || node.props.className?.includes("w-full")));
+        assert.ok(button);
+        assert.equal(Boolean(findElement(button, (node) => node.type === LoadingSpinner)), type === buttonType);
+        assert.equal(button.props.disabled, Boolean(buttonType));
+      }
+    }
+    assertSpinnerOn(null);
+    const form = findElement(render(), (node) => node.type === "form");
+    const passwordPending = form.props.onSubmit({ preventDefault() {} });
+    assertSpinnerOn("submit");
+    finishPassword({ error: new Error("Try again") });
+    await passwordPending;
+    assertSpinnerOn(null);
+
+    render();
+    const googlePending = handler();
+    assertSpinnerOn("button");
+    finishGoogle();
+    await googlePending;
     assert.equal(params.popup, app.popup);
     assert.equal(params.strategy, "oauth_google");
     assert.equal(params.redirectUrl, `${origin}${basePath}/sso-callback`);
     assert.equal(params.redirectUrlComplete, `${origin}${basePath}/library`);
     if (resource === "signIn") assert.equal(params.continueSignIn, false);
-    assert.equal(slots.at(-1), false);
+    assertSpinnerOn(null);
     fail = true; render(); await handler();
-    assert.equal(slots.at(-1), false, "failed or cancelled authentication permits another click");
+    assertSpinnerOn(null);
     assert.equal(slots.at(-2), "Try again");
   });
 }

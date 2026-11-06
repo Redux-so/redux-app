@@ -17,6 +17,9 @@ import { useImageUpload } from "@/hooks/useImageUpload";
 import LibraryHeader from "@/components/library/LibraryHeader";
 import Introduction from "@/components/shared/Introduction";
 import LibrarySidebar from "@/components/library/LibrarySidebar";
+import AlbumOptionsMenu from "@/components/library/AlbumOptionsMenu";
+import AlbumNameModal from "@/components/library/AlbumNameModal";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import MobileLibraryNavigation from "@/components/library/MobileLibraryNavigation";
 import { useMobileLayout } from "@/hooks/useMobileLayout";
 import PhotoGrid from "@/components/library/PhotoGrid";
@@ -159,6 +162,9 @@ export default function LibraryPageClient({
     DEFAULT_LIBRARY_SIDEBAR_VIEW,
   );
   const [albums, setAlbums] = useState<AlbumRecord[]>([]);
+  const [albumToRename, setAlbumToRename] = useState<AlbumRecord | null>(null);
+  const [albumToDelete, setAlbumToDelete] = useState<AlbumRecord | null>(null);
+  const [deletingAlbum, setDeletingAlbum] = useState(false);
 
   useLayoutEffect(() => {
     const previous = recallLibraryView(ownerId);
@@ -598,14 +604,26 @@ export default function LibraryPageClient({
       : "No photos found matching your search";
   }
 
+  async function handleConfirmDeleteAlbum() {
+    if (!albumToDelete || deletingAlbum) return;
+
+    setDeletingAlbum(true);
+    try {
+      const ok = await handleDeleteAlbum(albumToDelete.id);
+      if (ok) setAlbumToDelete(null);
+    } finally {
+      setDeletingAlbum(false);
+    }
+  }
+
   const sidebar = (
     <LibrarySidebar
       sidebarView={sidebarView}
       onSidebarViewChange={(view) => { setSidebarView(view); setMobileNavigationOpen(false); }}
       albums={albums}
       onCreateAlbum={handleCreateAlbum}
-      onRenameAlbum={handleRenameAlbum}
-      onDeleteAlbum={handleDeleteAlbum}
+      onRequestRename={setAlbumToRename}
+      onRequestDelete={setAlbumToDelete}
     />
   );
 
@@ -633,6 +651,19 @@ export default function LibraryPageClient({
           <MobileLibraryNavigation open={mobileLayout && mobileNavigationOpen} onOpenChange={setMobileNavigationOpen}>
             {mobileLayout && sidebar}
           </MobileLibraryNavigation>
+          {mobileLayout && selectedAlbum && (
+            <div className="flex shrink-0 items-center justify-between gap-3 px-6 lg:hidden">
+              <h2 className="min-w-0 truncate text-lg font-medium text-white">{selectedAlbum.name}</h2>
+              <AlbumOptionsMenu
+                key={selectedAlbum.id}
+                album={selectedAlbum}
+                onRequestRename={setAlbumToRename}
+                onRequestDelete={setAlbumToDelete}
+                alwaysVisible
+                className="relative shrink-0"
+              />
+            </div>
+          )}
           {!isTrashView && (
             <LibraryHeader
               upload={upload}
@@ -671,6 +702,30 @@ export default function LibraryPageClient({
           />
         </main>
       </div>
+
+      <AlbumNameModal
+        key={albumToRename?.id ?? "rename-album"}
+        open={albumToRename !== null}
+        mode="rename"
+        initialName={albumToRename?.name ?? ""}
+        onClose={() => setAlbumToRename(null)}
+        onSave={(name) => albumToRename ? handleRenameAlbum(albumToRename.id, name) : Promise.resolve(false)}
+      />
+
+      <ConfirmDialog
+        open={albumToDelete !== null}
+        title={
+          albumToDelete ? `Delete "${albumToDelete.name}"?` : "Delete album?"
+        }
+        body="This removes the album only. Photos in this album will stay in your library."
+        confirmLabel="Delete Album"
+        destructive
+        loading={deletingAlbum}
+        onConfirm={() => void handleConfirmDeleteAlbum()}
+        onCancel={() => {
+          if (!deletingAlbum) setAlbumToDelete(null);
+        }}
+      />
     </div>
   );
 }

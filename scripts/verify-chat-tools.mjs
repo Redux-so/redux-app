@@ -112,7 +112,7 @@ function serverHost(options = {}) {
   const plan = options.plan ?? { actions: [{ type: "remove_background" }] };
   const run = { turnId, plan, status: options.status ?? "pending", turn: { imageId: "photo-a", attachmentUrl: null } };
   const steps = new Map();
-  const state = { calls: 0, charges: 0, refunds: 0, assistantText: "", lastAction: null };
+  const state = { calls: 0, charges: 0, assistantText: "", lastAction: null };
   const prisma = {
     chatToolRun: {
       findFirst: async ({ where }) => where.turn.image.userId === "user-a" && !options.deleted ? structuredClone(run) : null,
@@ -132,9 +132,10 @@ function serverHost(options = {}) {
     "@/lib/require-user": { requireAuthUser: async () => options.anonymous ? { error: new Response(null, { status: 401 }) } : { user: { id: options.otherUser ? "user-b" : "user-a", creditBalance: options.balance ?? 20 } } },
     "@/lib/verify-user-image": { assertUserOwnsImageUrl: async (_, url) => url === imageUrl ? { id: options.otherImage ? "photo-b" : "photo-a" } : null },
     "@/lib/chat-tool-dispatch": { dispatchChatTool: async (_, action) => {
-      state.calls++; state.charges += actionCost(action); state.lastAction = action;
+      state.calls++; state.lastAction = action;
       if (options.wait) await options.wait;
-      if (options.providerFails) { state.refunds += actionCost(action); return Response.json({ error: "Provider failed" }, { status: 502 }); }
+      if (options.providerFails) return Response.json({ error: "Provider failed" }, { status: 502 });
+      state.charges += actionCost(action);
       return Response.json({ resultUrl: `${imageUrl}?result=1` });
     } },
   }).POST;
@@ -178,13 +179,13 @@ test("duplicates and concurrent requests execute and charge a paid tool exactly 
   assert.equal(app.state.calls, 1); assert.equal(app.state.charges, 1);
 });
 
-test("provider failures retain the endpoint's refund and cannot be retried or followed by another paid step", async () => {
+test("provider failures leave the balance untouched and cannot be retried or followed by another paid step", async () => {
   const app = serverHost({ status: "running", providerFails: true, plan: { actions: [{ type: "remove_background" }, { type: "auto_enhance" }] } });
   assert.equal((await app.send({ phase: "execute", index: 1, imageUrl })).status, 409);
   assert.equal((await app.send({ phase: "execute", index: 0, imageUrl })).status, 502);
   assert.equal((await app.send({ phase: "execute", index: 0, imageUrl })).status, 409);
   assert.equal((await app.send({ phase: "execute", index: 1, imageUrl })).status, 409);
-  assert.equal(app.state.calls, 1); assert.equal(app.state.charges, 1); assert.equal(app.state.refunds, 1);
+  assert.equal(app.state.calls, 1); assert.equal(app.state.charges, 0);
 });
 
 test("cancelled plans cannot execute; final reports persist without replaying tools", async () => {
@@ -404,9 +405,9 @@ test("painted masks use source pixels and failed or stale requests never overwri
   }
 });
 
-test("the dispatcher uses the actual paid panel endpoint and preserves its charge/refund behavior", async () => {
+test("the dispatcher uses the actual paid panel endpoint and charges only for a successful result", async () => {
   for (const fails of [false, true]) {
-    let charges = 0, refunds = 0, providerCalls = 0;
+    let charges = 0, providerCalls = 0;
     const background = compile("../app/api/ai/background-remove/route.ts", {
       replicate: { default: class { async run() { providerCalls++; if (fails) throw new Error("provider unavailable"); return "https://replicate.delivery/result.png"; } } },
       "@/lib/prisma": { prisma: { image: { findFirst: async () => ({ id: "photo-a", filename: "photo.jpg" }) }, imageVersion: { create: async () => ({}) } } },
@@ -414,8 +415,7 @@ test("the dispatcher uses the actual paid panel endpoint and preserves its charg
       "@/lib/kv": { checkRateLimit: async () => null, checkRateLimitPerMinute: async () => null, RATE_LIMIT_MINUTE: {} },
       "@/lib/expensive-route-guard": { rateLimitDeniedResponse: () => null },
       "@/lib/atomic-credits": {
-        chargeCreditFeature: async ({ feature }) => { assert.equal(feature, "remove_background"); charges++; return { ok: true }; },
-        refundCreditFeature: async ({ feature }) => { assert.equal(feature, "remove_background"); refunds++; },
+        commitPaidImageVersion: async ({ feature }) => { assert.equal(feature, "remove_background"); charges++; return { ok: true }; },
       },
       "@/lib/safe-remote-fetch": {
         fetchReplicateDeliveryBuffer: async () => ({ buffer: Buffer.from("image") }),
@@ -432,7 +432,7 @@ test("the dispatcher uses the actual paid panel endpoint and preserves its charg
     const { dispatchChatTool } = compile("../lib/chat-tool-dispatch.ts", adapters);
     const response = await dispatchChatTool(new Request("http://localhost/api/ai/chat/tools"), { type: "remove_background" }, { imageId: "photo-a", imageUrl }, null);
     assert.equal(response.status, fails ? 500 : 200);
-    assert.equal(providerCalls, 1); assert.equal(charges, 1); assert.equal(refunds, fails ? 1 : 0);
+    assert.equal(providerCalls, 1); assert.equal(charges, fails ? 0 : 1);
   }
 });
 

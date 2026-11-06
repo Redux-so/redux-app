@@ -138,6 +138,7 @@ export default function UsageRing({
   const reduceMotion = reduceMotionProp ?? !!prefersReducedMotion;
 
   const view = deriveUsageRingState(quota);
+  const opensPurchaseOnClick = !!onPurchaseClick && view?.opensPurchaseOnClick;
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [isCoarsePointer, setIsCoarsePointer] = useState(
     () =>
@@ -237,7 +238,7 @@ export default function UsageRing({
   }
 
   function handleTriggerClick() {
-    if (view?.opensPurchaseOnClick) {
+    if (opensPurchaseOnClick) {
       onPurchaseClick?.();
       return;
     }
@@ -299,7 +300,7 @@ export default function UsageRing({
           "relative inline-flex h-8 w-8 shrink-0 items-center justify-center",
           "border-0 bg-transparent p-0 shadow-none outline-none",
           "text-[#888888] transition-colors",
-          view?.opensPurchaseOnClick
+          opensPurchaseOnClick
             ? "cursor-pointer hover:text-[#f59e0b] focus-visible:ring-1 focus-visible:ring-[#f59e0b]/50"
             : "cursor-default focus-visible:ring-1 focus-visible:ring-white/20",
         ].join(" ")}

@@ -15,7 +15,6 @@ import { parseSearchQueryParam } from "@/lib/api-validation";
 import {
   chargeCreditFeature,
   insufficientCreditsResponse,
-  refundCreditFeature,
 } from "@/lib/atomic-credits";
 import { CREDIT_COSTS } from "@/constants/credits";
 
@@ -81,14 +80,6 @@ export async function GET(request: Request) {
     const rateLimit = await checkRateLimit(user.id, "semantic_search", 20);
     const hourlyDenied = rateLimitDeniedResponse(rateLimit);
     if (hourlyDenied) return hourlyDenied;
-
-    const charge = await chargeCreditFeature({
-      userId: user.id,
-      feature: "semantic_search",
-    });
-    if (!charge.ok) {
-      return insufficientCreditsResponse();
-    }
 
     const userId = user.id;
 
@@ -171,6 +162,10 @@ export async function GET(request: Request) {
         userId: String(r.userId),
       }));
 
+      if (images.length > 0) {
+        const charge = await chargeCreditFeature({ userId, feature: "semantic_search" });
+        if (!charge.ok) return insufficientCreditsResponse();
+      }
       return NextResponse.json(
         { images, query: rawQuery },
         {
@@ -180,11 +175,6 @@ export async function GET(request: Request) {
         },
       );
     } catch (innerErr) {
-      await refundCreditFeature({
-        userId: user.id,
-        feature: "semantic_search",
-        description: "Refund: semantic search failed",
-      });
       return apiInternalErrorResponse("GET /api/ai/search", innerErr, "Search failed");
     }
   } catch (outerErr) {

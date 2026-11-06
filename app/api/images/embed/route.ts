@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { CREDIT_COSTS } from "@/constants/credits";
 import { embedImageBodySchema, parseJsonRequest } from "@/lib/api-validation";
 import { apiInternalErrorResponse } from "@/lib/api-error";
-import { deductCredits, refundCredits } from "@/lib/credit-ledger";
+import { chargeCreditFeature } from "@/lib/atomic-credits";
+import { embedClipImageUrl } from "@/lib/search-clip";
 import {
   enforceFeatureRateLimits,
   insufficientCreditsResponse,
 } from "@/lib/expensive-route-guard";
-import { generateAndPersistImageEmbedding } from "@/lib/image-vector-pipeline";
+import { persistImageEmbedding } from "@/lib/image-vector-pipeline";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
 
@@ -43,16 +44,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    await deductCredits(user.id, "image_embed");
-
-    try {
-      // CLIP image encoder (Replicate clip-features, inputs = imageUrl) → pgvector(768)
-      await generateAndPersistImageEmbedding(imageId, imageUrl, user.id);
-      return NextResponse.json({ ok: true });
-    } catch (err) {
-      await refundCredits(user.id, "image_embed", EMBED_COST, "Embedding failed");
-      return apiInternalErrorResponse("POST /api/images/embed", err, "Embedding failed");
-    }
+    const vector = await embedClipImageUrl(imageUrl);
+    const charge = await chargeCreditFeature({ userId: user.id, feature: "image_embed" },
+      (tx) => persistImageEmbedding(imageId, user.id, vector, tx));
+    if (!charge.ok) return insufficientCreditsResponse();
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return apiInternalErrorResponse("POST /api/images/embed", err, "Embedding failed");
   }

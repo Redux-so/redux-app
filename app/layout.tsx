@@ -9,9 +9,26 @@ import { SURFACE_MAIN_HEX } from "@/lib/surface-colors";
 import LastVisitedPage from "@/components/shared/LastVisitedPage";
 import "./globals.css";
 
+const socialPreviewImage = {
+  url: "https://redux.so/app/social-preview-v4.png",
+  width: 1200,
+  height: 630,
+  type: "image/png",
+  alt: "Redux agentic photo editing platform",
+};
+
 export const metadata: Metadata = {
   title: "Redux",
   description: "AI-powered photo editing",
+  openGraph: {
+    type: "website",
+    siteName: "Redux",
+    images: [socialPreviewImage],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: [socialPreviewImage],
+  },
   icons: {
     icon: [{ url: appPath(FAVICON_PATH), type: "image/png" }],
     apple: [{ url: appPath(APPLE_TOUCH_ICON_PATH) }],

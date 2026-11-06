@@ -41,6 +41,7 @@ function host(component, initialProps) {
     },
     useRef(initial) { const index = cursor++; return slots[index] ??= { current: initial }; },
     useCallback(callback) { cursor++; return callback; },
+    useContext() { cursor++; return false; },
     useMemo(factory) { cursor++; return factory(); },
     useEffect() { cursor++; }, useLayoutEffect() { cursor++; },
     useImperativeHandle(ref, factory) { cursor++; if (ref) ref.current = factory(); },
@@ -142,6 +143,24 @@ test("blur, eraser and heal brush size controls remain interactive on touch", ()
     slider.props.onChange(75);
     assert.equal(size, 75);
   }
+});
+
+test("retrying uploads shows a spinner on the retry button after failures are cleared", async () => {
+  const Dropzone = compile("../components/library/UploadDropzone.tsx").default;
+  let finishRetry;
+  const upload = { isBusy: false, failures: [{ file: { name: "photo.jpg" }, reason: "Offline", retryable: true }],
+    retryFailed: () => new Promise((resolve) => { finishRetry = resolve; }) };
+  const dropzone = host(Dropzone, { upload });
+  find(dropzone.render(), (node) => node.type === "button").props.onClick();
+  upload.failures = [];
+  upload.isBusy = true;
+  const tree = dropzone.render();
+  assert.ok(find(find(tree, (node) => node.type === "button"), (node) => node.props?.label === "Retrying uploads"));
+  assert.equal(findAll(tree, (node) => node.type?.name === "LoadingSpinner").length, 1);
+  upload.isBusy = false;
+  finishRetry();
+  await new Promise(setImmediate);
+  assert.equal(find(dropzone.render(), (node) => node.type === "button"), undefined);
 });
 
 test("mobile transform buttons, angle slider and resize fields accept interaction", () => {
@@ -342,6 +361,41 @@ test("switching mobile editor panels retains the same canvas and mounted chat", 
   assert.ok(chat());
 });
 
+test("editor keeps its spinner through metadata and history until the requested canvas source is drawn", async () => {
+  const state = defaultPersistedEditorState();
+  const editor = { editorState: state, adjustments: state.sliders, historyEntries: [], savedVersions: [], versionLoaded: false };
+  const canvas = { activeImageUrl: null, imageLoadFailed: false };
+  const sourceUrl = "https://example.test/photo.jpg";
+  const effects = [];
+  const { EditorWorkspace } = compile("../components/editor/EditorApp.tsx", {
+    react: { ...React, useEffect: (effect) => effects.push(effect) },
+    "next/navigation": { useSearchParams: () => new URLSearchParams() },
+    "@/hooks/useMobileLayout": { useMobileLayout: () => false },
+    "@/hooks/useEditor": { useEditor: () => editor },
+    "@/hooks/useCanvas": { useCanvas: () => canvas },
+    "@/hooks/useEditorChatTools": { useEditorChatTools: () => ({}) },
+    "@/lib/last-visited-page": { rememberVisitedPage: noop },
+    __globals: { queueMicrotask, window: { location: { search: "", hash: "" } },
+      fetch: async () => ({ ok: true, json: async () => ({ image: { originalUrl: sourceUrl } }) }) },
+  }, "exports.EditorWorkspace = EditorWorkspace;");
+  const app = host(EditorWorkspace, { imageId: "photo-a" });
+  const spinner = () => find(app.render(), (node) => node.props?.message === "Loading image");
+  assert.ok(spinner());
+  const cleanup = effects[0]();
+  await new Promise(setImmediate);
+  assert.ok(spinner(), "metadata alone does not finish loading");
+  editor.versionLoaded = true;
+  canvas.activeImageUrl = "https://example.test/previous.jpg";
+  assert.ok(spinner(), "a previously painted source does not finish loading");
+  canvas.activeImageUrl = sourceUrl;
+  assert.equal(spinner(), undefined);
+  canvas.activeImageUrl = null;
+  canvas.imageLoadFailed = true;
+  assert.equal(spinner(), undefined);
+  assert.ok(find(app.render(), (node) => node.props?.children === "Could not load the image"));
+  cleanup();
+});
+
 test("mobile library navigation makes the background inert and selecting a view closes the drawer", () => {
   const Library = compile("../app/(dashboard)/library/LibraryPageClient.tsx", {
     "@/hooks/useMobileLayout": { useMobileLayout: () => true },
@@ -357,6 +411,42 @@ test("mobile library navigation makes the background inert and selecting a view 
   assert.equal(drawer().props.open, false);
   assert.equal(find(app.render(), (node) => node.props?.inert === true), undefined);
   assert.ok(find(app.render(), (node) => node.type?.name === "TrashViewToolbar"));
+});
+
+test("selecting a mobile album exposes its options beside the album name", async () => {
+  const album = { id: "album-a", name: "Vacation", imageIds: [] };
+  const Library = compile("../app/(dashboard)/library/LibraryPageClient.tsx", {
+    "@/hooks/useMobileLayout": { useMobileLayout: () => true },
+    "@/hooks/useImageUpload": { useImageUpload: () => ({ isBusy: false, uploadFiles: noop }) },
+    "@/hooks/useInfiniteScrollSentinel": { useInfiniteScrollSentinel: () => ({ current: null }) },
+    "react-hot-toast": { default: { success: noop, error: noop } },
+    __globals: { fetch: async () => ({ ok: true, json: async () => ({ album }) }) },
+  }).default;
+  const app = host(Library, { ownerId: "account-a", initialLibrary: { images: [], total: 0 }, initialTrash: { images: [], total: 0 } });
+  const drawer = () => find(app.render(), (node) => node.type?.name === "MobileLibraryNavigation");
+  const sidebar = () => find(drawer().props.children, (node) => node.type?.name === "LibrarySidebar");
+  await sidebar().props.onCreateAlbum(album.name);
+  sidebar().props.onSidebarViewChange({ kind: "trash" });
+  drawer().props.onOpenChange(true);
+  sidebar().props.onSidebarViewChange({ kind: "album", albumId: album.id });
+  assert.equal(drawer().props.open, false);
+  const options = find(app.render(), (node) => node.type?.name === "AlbumOptionsMenu");
+  assert.equal(options.props.alwaysVisible, true);
+  assert.ok(find(app.render(), (node) => node.type === "h2" && node.props.children === album.name));
+  const Menu = compile("../components/library/AlbumOptionsMenu.tsx", {
+    "@/lib/popup-motion": { usePopupMotion: () => ({}) },
+  }).default;
+  const menu = host(Menu, options.props);
+  const trigger = () => find(menu.render(), (node) => node.props?.["aria-label"] === "Options for Vacation");
+  assert.match(trigger().props.className, /\bopacity-100\b/);
+  for (const [label, dialog] of [["Rename album", "AlbumNameModal"], ["Delete album", "ConfirmDialog"]]) {
+    trigger().props.onClick({ stopPropagation: noop });
+    find(menu.render(), (node) => node.type === "button" && Array.isArray(node.props.children) &&
+      node.props.children.includes(label)).props.onClick();
+    const openedDialog = find(app.render(), (node) => node.type?.name === dialog && node.props.open);
+    assert.ok(openedDialog);
+    (openedDialog.props.onClose ?? openedDialog.props.onCancel)();
+  }
 });
 
 test("mobile filters use a centered dialog with explicit close, focus return, and unchanged apply behavior", () => {

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { embedClipImageUrl } from "@/lib/search-clip";
 import { CLIP_VECTOR_DIM, vectorToPgLiteral } from "@/lib/pgvector";
@@ -14,8 +15,9 @@ export async function executeImageEmbeddingUpdate(
   imageId: string,
   userId: string,
   vectorLiteral: string,
+  db: Pick<Prisma.TransactionClient, "$executeRawUnsafe"> = prisma,
 ): Promise<{ rows: number; method: string }> {
-  let raw = await prisma.$executeRawUnsafe(
+  let raw = await db.$executeRawUnsafe(
     `UPDATE "Image" SET embedding = $1::vector(${CLIP_VECTOR_DIM}) WHERE id = $2 AND "userId" = $3`,
     vectorLiteral,
     imageId,
@@ -26,7 +28,7 @@ export async function executeImageEmbeddingUpdate(
     return { rows: 1, method: "$1::vector(768)" };
   }
 
-  raw = await prisma.$executeRawUnsafe(
+  raw = await db.$executeRawUnsafe(
     `UPDATE "Image" SET embedding = $1::text::vector(${CLIP_VECTOR_DIM}) WHERE id = $2 AND "userId" = $3`,
     vectorLiteral,
     imageId,
@@ -37,7 +39,7 @@ export async function executeImageEmbeddingUpdate(
     return { rows: 1, method: "$1::text::vector(768)" };
   }
 
-  raw = await prisma.$executeRawUnsafe(
+  raw = await db.$executeRawUnsafe(
     `UPDATE "Image" SET embedding = '${vectorLiteral}'::vector(${CLIP_VECTOR_DIM}) WHERE id = $1 AND "userId" = $2`,
     imageId,
     userId,
@@ -59,11 +61,21 @@ export async function generateAndPersistImageEmbedding(
   userId: string,
 ): Promise<void> {
   const vec = await embedClipImageUrl(imageUrl);
-  const lit = vectorToPgLiteral(vec);
+  await persistImageEmbedding(imageId, userId, vec);
+}
+
+export async function persistImageEmbedding(
+  imageId: string,
+  userId: string,
+  vector: number[],
+  db?: Prisma.TransactionClient,
+): Promise<void> {
+  const lit = vectorToPgLiteral(vector);
   const { rows: updated, method } = await executeImageEmbeddingUpdate(
     imageId,
     userId,
     lit,
+    db,
   );
   if (updated !== 1) {
     throw new Error(
