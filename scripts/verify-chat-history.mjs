@@ -698,6 +698,70 @@ test("Agent recovery is bounded and Ask permission replies never trigger tools",
   assert.equal(ask.state.toolPlans.length, 0);
 });
 
+test("current mode is explicit while historical modes remain attached to earlier turns", async () => {
+  for (const mode of ["agent", "ask"]) {
+    const previousMode = mode === "agent" ? "ask" : "agent";
+    const rows = [{ id: "earlier-turn", sequence: 1, imageId: "photo-a", mode: previousMode,
+      userText: "Suggest a warmer look", assistantText: "To apply changes, switch to Agent.",
+      status: "complete", attachmentUrl: null, createdAt: new Date() }];
+    const app = host({ rows, chunks: ["The lighting looks balanced."] });
+    await (await app.send({ userMessage: "Hello", chatInteractionMode: mode, toolsEnabled: true })).text();
+    const label = mode === "agent" ? "Agent" : "Ask";
+    const previousLabel = previousMode === "agent" ? "Agent" : "Ask";
+    assert.ok(app.state.modelConfigs[0].system.startsWith(`CURRENT INTERACTION MODE: ${label}.`));
+    assert.ok(app.state.modelMessages[0].content.startsWith(`[Historical ${previousLabel} mode turn]`));
+    assert.ok(app.state.modelMessages[1].content.startsWith(`[Historical ${previousLabel} mode turn]`));
+    assert.ok(app.state.modelMessages.at(-1).content.at(-1).text.startsWith(`Current interaction mode: ${label}.`));
+    const transcript = await (await app.get()).json();
+    assert.equal(transcript.turns[0].assistantText, "To apply changes, switch to Agent.");
+    if (mode === "ask") assert.equal(app.state.modelTools.length, 0);
+  }
+});
+
+test("Agent recovers omitted tools and mistaken Ask replies for direct edits", async () => {
+  const plan = { actions: [{ type: "adjust", values: { temperature: 15 } }] };
+  for (const reply of ["Switch to Agent mode to apply these changes.", "I recommend warmer colors.", "I made the photo warmer."]) {
+    const app = host({ modelAttempts: [
+      { chunks: [reply] },
+      { chunks: [], modelEvents: [
+        { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
+        { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan) } },
+      ] },
+    ] });
+    const result = events(await (await app.send({ userMessage: "Make the photo warmer", toolsEnabled: true })).text());
+    assert.equal(app.state.modelCalls, 2);
+    assert.deepEqual(result.find((event) => event.type === "tools")?.plan.actions, plan.actions);
+    assert.equal(app.state.charges, 1);
+    assert.ok(!app.rows[0].assistantText.includes(reply), "unverified draft must not become a saved completion claim");
+  }
+});
+
+test("Agent recovery leaves missing inputs, genuine questions and non-edit requests alone", async () => {
+  for (const [userMessage, reply] of [
+    ["Crop the photo", "Which subject should I keep?"],
+    ["Match this style", "Please attach the reference image."],
+    ["Match this style", "I need a reference image first."],
+    ["Remove the object", "A painted selection is required."],
+    ["What is exposure?", "Exposure controls brightness."],
+    ["Don't apply changes, explain exposure", "Exposure controls brightness."],
+  ]) {
+    const app = host({ chunks: [reply] });
+    await (await app.send({ userMessage, toolsEnabled: true })).text();
+    assert.equal(app.state.modelCalls, 1, userMessage);
+    assert.equal(app.state.toolPlans.length, 0);
+  }
+});
+
+test("switching from Agent history to Ask cannot emit or execute adjustments", async () => {
+  const rows = [{ id: "agent-turn", sequence: 1, imageId: "photo-a", mode: "agent",
+    userText: "Make it warmer", assistantText: "Warmed the photo.", status: "complete", createdAt: new Date() }];
+  const app = host({ rows, chunks: ['I applied the changes. [adjustments]{"temperature":20}[/adjustments]'] });
+  const result = events(await (await app.send({ userMessage: "Apply these changes", chatInteractionMode: "ask", toolsEnabled: true })).text());
+  assert.equal(app.state.modelCalls, 1);
+  assert.equal(app.state.modelTools.length, 0);
+  assert.equal(result.some((event) => event.type === "adjustments" || event.type === "tools"), false);
+});
+
 test("Agent permission recovery preserves real clarification questions", () => {
   const { agentReplyRequestsEditPermission } = load("../lib/chat-edit-intent.ts");
   assert.equal(agentReplyRequestsEditPermission("Should I brighten your image?"), true);

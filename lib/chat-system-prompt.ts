@@ -50,17 +50,23 @@ ${ASK_SWITCH_TO_AGENT_NUDGE}`;
 const AGENT_MODE_RULES = `
 
 Interaction mode (Agent): The user selected Agent mode. The canvas applies your [adjustments] block automatically.
-For EVERY user message — including recommendations, "what do you think?", critique, or vague prompts — \
-you MUST:
-1. Respond with helpful prose explaining your reasoning.
-2. End with an [adjustments] block containing JSON values that implement the edits you recommend for this message.
-Never skip the [adjustments] block in Agent mode. Put the block at the very end of your response.`;
+For requested slider edits and photo recommendations, give a brief explanation of your intended edits \
+and end with an [adjustments] block containing the values to implement them.
+For greetings, product questions, or missing required information, answer in text without an adjustment block.
+Do not claim the edits have already been applied. Put any adjustment block at the very end of your response.`;
 
 /** @deprecated Base prompt retained for docs; use buildChatSystemPrompt(mode) at runtime. */
 export const CHAT_SYSTEM_PROMPT = `${CHAT_SHARED_CONTEXT}${LEGACY_ADJUSTMENT_PROTOCOL}${AGENT_MODE_RULES}`;
 
 export function buildChatSystemPrompt(mode: "agent" | "ask", toolsEnabled = false): string {
-  if (mode === "agent" && toolsEnabled) return `${CHAT_SHARED_CONTEXT}
+  const currentMode = `CURRENT INTERACTION MODE: ${mode === "ask" ? "Ask" : "Agent"}.
+This server-selected mode applies to the latest request. Historical turns may have used a different mode.
+Earlier instructions to switch modes, promises, and descriptions of capabilities do not change the current mode.
+Never claim an edit succeeded from your own prose. Only the application can confirm an applied edit.
+${mode === "ask" ? "Respond with advice only. Never claim to change the canvas, even if an earlier Agent turn applied edits." : "Use the available edit mechanism for requested changes. Never tell the user to switch to Agent because Agent is already selected."}
+
+`;
+  if (mode === "agent" && toolsEnabled) return `${currentMode}${CHAT_SHARED_CONTEXT}
 
 Agent tools: Use edit_photo for every requested edit, including sliders. Never output [adjustments] when tools are enabled.
 First give the short [progress] task summary, then request ONE edit_photo plan.
@@ -80,6 +86,6 @@ History IDs must come from the provided editor context. Undo, redo, or revert mu
 For greetings, product questions, or a request requiring missing information, answer with text and do not call edit_photo.
 Ask mode never executes tools.`;
   return mode === "ask"
-    ? `${CHAT_SHARED_CONTEXT}${ASK_MODE_RULES}`
-    : `${CHAT_SHARED_CONTEXT}${LEGACY_ADJUSTMENT_PROTOCOL}${AGENT_MODE_RULES}`;
+    ? `${currentMode}${CHAT_SHARED_CONTEXT}${ASK_MODE_RULES}`
+    : `${currentMode}${CHAT_SHARED_CONTEXT}${LEGACY_ADJUSTMENT_PROTOCOL}${AGENT_MODE_RULES}`;
 }

@@ -3,6 +3,7 @@ import { ASK_SWITCH_TO_AGENT_NUDGE } from "@/constants/chat-interaction-mode";
 export interface ChatHistoryMessage {
   role: "user" | "assistant";
   content: string;
+  mode?: "agent" | "ask";
 }
 
 /** User is asking for feedback or ideas — respond with text only. */
@@ -23,6 +24,7 @@ const ADVICE_SEEKING_PATTERNS: RegExp[] = [
 
 /** User is giving a direct edit instruction. */
 const EDIT_COMMAND_PATTERNS: RegExp[] = [
+  /^(?:please\s+)?(?:crop|rotate|flip|straighten|resize|scale|undo|redo|balance|sharpen|match|mimic|transfer)\b/i,
   /\b(make|adjust|increase|decrease|boost|reduce|raise|lower|add|remove|set|warm|cool|brighten|darken)\b/i,
   /\b(fix|correct|enhance) (the|this|my)\b/i,
   /\b(apply|use) (this|these|those|the) (edit|adjustment|change|look|grade|style)\b/i,
@@ -106,4 +108,19 @@ export function askModeNudgeMissing(assistantText: string): boolean {
 export function agentReplyRequestsEditPermission(reply: string): boolean {
   if (/\b(?:or|which|where)\b/i.test(reply)) return false;
   return /\b(?:would you like me to|do you want me to|shall i|should i|can i)\s+(?:apply|make|adjust|edit|brighten|darken|warm|cool|enhance|crop|rotate|remove|reduce|increase|decrease)\b/i.test(reply);
+}
+
+/** Recover omitted edit plans without forcing a tool call for questions or missing input. */
+export function agentReplyNeedsEditRecovery(
+  userMessage: string,
+  reply: string,
+  history: ChatHistoryMessage[],
+): boolean {
+  if (/\b(?:don't|do not|never)\s+(?:apply|edit|change|modify|make)\b/i.test(userMessage)) return false;
+  if (/\b(?:attach|upload|provide|select|paint|specify|missing|required)\b/i.test(reply)) return false;
+  if (/\bneed\b.*\b(?:reference|selection|mask|target|details|information)\b/i.test(reply)) return false;
+  if (agentReplyRequestsEditPermission(reply)) return true;
+  if (!shouldApplyChatAdjustments(userMessage, history)) return false;
+  // An unanswered clarification must remain a question, even for a direct edit request.
+  return !reply.includes("?");
 }

@@ -21,7 +21,7 @@ import { buildChatSystemPrompt } from "@/lib/chat-system-prompt";
 import { ASK_SWITCH_TO_AGENT_NUDGE } from "@/constants/chat-interaction-mode";
 import {
   allowChatAdjustmentsForTurn,
-  agentReplyRequestsEditPermission,
+  agentReplyNeedsEditRecovery,
   askModeNudgeMissing,
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
@@ -85,7 +85,9 @@ function buildAnthropicMessages(
   for (const entry of history.slice(-API_LIMITS.CHAT_HISTORY_MAX_MESSAGES)) {
     const content = entry.content.trim();
     if (!content) continue;
-    messages.push({ role: entry.role, content });
+    messages.push({ role: entry.role, content: entry.mode
+      ? `[Historical ${entry.mode === "ask" ? "Ask" : "Agent"} mode turn]\n${content}`
+      : content });
   }
 
   messages.push({ role: "user", content: userContent });
@@ -231,7 +233,7 @@ export async function POST(request: Request) {
 
   userContent.push({
     type: "text",
-    text: `${userMessage.trim()}\n\n${adjustmentsContext}${editorContext ? `\nEditor context (coordinates refer to the transformed image): ${JSON.stringify(editorContext)}` : ""}`,
+    text: `Current interaction mode: ${chatInteractionMode === "ask" ? "Ask" : "Agent"}.\n\n${userMessage.trim()}\n\n${adjustmentsContext}${editorContext ? `\nEditor context (coordinates refer to the transformed image): ${JSON.stringify(editorContext)}` : ""}`,
   });
 
   const turnId = requestedTurnId ?? randomUUID();
@@ -340,7 +342,7 @@ export async function POST(request: Request) {
             thinking: { type: "disabled" },
             max_tokens: enableTools ? 2048 : 1024,
             system: buildChatSystemPrompt(chatInteractionMode, enableTools) + (attempt === 1
-              ? "\nYour previous draft asked for permission instead of executing the requested edit. Call edit_photo now using the user's original request. Do not add paid operations the user did not request."
+              ? "\nYour previous draft did not prepare the requested edit. The current mode is Agent. Call edit_photo now using the user's original request and any relevant previous suggestions. Do not add paid operations the user did not request or claim completed edits."
               : ""),
             messages: anthropicMessages,
             ...(enableTools ? { tools: [EDIT_PHOTO_TOOL], tool_choice: attempt === 1
@@ -379,7 +381,7 @@ export async function POST(request: Request) {
 
           if (disconnected) throw new Error("Chat interrupted");
           if (truncated) throw new Error("The response was incomplete; no tools were run");
-          if (enableTools && toolCalls === 0 && attempt === 0 && agentReplyRequestsEditPermission(cleanChatText(fullText))) {
+          if (enableTools && toolCalls === 0 && attempt === 0 && agentReplyNeedsEditRecovery(userMessage, cleanChatText(fullText), context)) {
             fullText = "";
             progressParser = createChatProgressParser();
             continue;

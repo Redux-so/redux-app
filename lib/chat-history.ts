@@ -26,10 +26,12 @@ export async function readChatContext(imageId: string, userId: string): Promise<
   const rows = await prisma.chatTurn.findMany({
     where: { imageId, image: { userId, deletedAt: null }, status: "complete" },
     orderBy: { sequence: "desc" }, take: Math.ceil(API_LIMITS.CHAT_HISTORY_MAX_MESSAGES / 2),
-    select: { userText: true, assistantText: true },
+    select: { userText: true, assistantText: true, mode: true },
   });
   return rows.reverse().flatMap((turn): ChatHistoryMessage[] => [
-    { role: "user", content: turn.userText.slice(0, API_LIMITS.CHAT_HISTORY_MESSAGE_MAX) },
-    { role: "assistant", content: cleanChatText(turn.assistantText).slice(0, API_LIMITS.CHAT_HISTORY_MESSAGE_MAX) },
+    { role: "user", content: turn.userText.slice(0, API_LIMITS.CHAT_HISTORY_MESSAGE_MAX),
+      mode: turn.mode === "agent" || turn.mode === "ask" ? turn.mode : undefined },
+    { role: "assistant", content: cleanChatText(turn.assistantText).slice(0, API_LIMITS.CHAT_HISTORY_MESSAGE_MAX),
+      mode: turn.mode === "agent" || turn.mode === "ask" ? turn.mode : undefined },
   ]).filter((message) => message.content.trim());
 }
