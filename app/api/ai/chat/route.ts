@@ -8,12 +8,6 @@ import { ownsChatImage, readChatContext } from "@/lib/chat-history";
 import { uploadToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUser } from "@/lib/require-user";
-import {
-  checkRateLimit,
-  checkRateLimitPerMinute,
-  RATE_LIMIT_MINUTE,
-} from "@/lib/kv";
-import { rateLimitDeniedResponse } from "@/lib/expensive-route-guard";
 import type { AdjustmentKey } from "@/constants/adjustments";
 import { normalizeAdjustmentPatch } from "@/constants/adjustments";
 import { USAGE_RING_CONFIG } from "@/constants/usage-ring";
@@ -70,9 +64,6 @@ type SseEvent =
 function encodeEvent(data: SseEvent): Uint8Array {
   return new TextEncoder().encode(`data: ${JSON.stringify(data)}\n\n`);
 }
-
-const FREE_HOURLY_LIMIT = 10;
-const CREDIT_HOURLY_LIMIT = 60;
 
 // ---------------------------------------------------------------------------
 // POST /api/ai/chat
@@ -168,33 +159,6 @@ export async function POST(request: Request) {
 
   /** True while the user still has lifetime free messages (before the 21st send). */
   const onFreeTier = user.lifetimeFreeAI < USAGE_RING_CONFIG.freeChatAllowance;
-
-  // ── Rate limiting (per-minute burst, then hourly) ───────────────────────
-  if (onFreeTier) {
-    const minuteLimit = await checkRateLimitPerMinute(
-      user.id,
-      "chat_free",
-      RATE_LIMIT_MINUTE.chat_free,
-    );
-    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
-    if (minuteDenied) return minuteDenied;
-
-    const hourly = await checkRateLimit(user.id, "chat_free", FREE_HOURLY_LIMIT);
-    const hourlyDenied = rateLimitDeniedResponse(hourly);
-    if (hourlyDenied) return hourlyDenied;
-  } else {
-    const minuteLimit = await checkRateLimitPerMinute(
-      user.id,
-      "chat_credit",
-      RATE_LIMIT_MINUTE.chat_credit,
-    );
-    const minuteDenied = rateLimitDeniedResponse(minuteLimit);
-    if (minuteDenied) return minuteDenied;
-
-    const hourly = await checkRateLimit(user.id, "chat_credit", CREDIT_HOURLY_LIMIT);
-    const hourlyDenied = rateLimitDeniedResponse(hourly);
-    if (hourlyDenied) return hourlyDenied;
-  }
 
   // ── Build Anthropic message content (before billing — invalid attachments → 400) ──
   const adjustmentsContext = formatAdjustmentsForPrompt(

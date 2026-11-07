@@ -27,7 +27,7 @@ function compile(path, adapters) {
 const turnId = "b501765b-7815-4a8a-986d-43ab939294b9";
 function host(options = {}) {
   const rows = options.rows ?? [];
-  const state = { modelCalls: 0, charges: 0, updates: 0, uploads: 0, modelMessages: [], toolPlans: [], modelTools: [], modelConfigs: [] };
+  const state = { modelCalls: 0, charges: 0, updates: 0, uploads: 0, rateChecks: 0, modelMessages: [], toolPlans: [], modelTools: [], modelConfigs: [] };
   const matches = (row, where) => row.imageId === where.imageId && where.image.userId === "user-a" &&
     row.imageId === "photo-a" && (!where.status || row.status === where.status) &&
     (!where.sequence || row.sequence < where.sequence.lt);
@@ -53,7 +53,7 @@ function host(options = {}) {
     },
   };
   const auth = { requireAuthUser: async () => options.anonymous ? { error: new Response(null, { status: 401 }) }
-    : { user: { id: "user-a", lifetimeFreeAI: options.paid ? 20 : 0, creditBalance: 10 } } };
+    : { user: { id: "user-a", lifetimeFreeAI: options.lifetimeFreeAI ?? (options.paid ? 20 : 0), creditBalance: options.creditBalance ?? 10 } } };
   const history = compile("../lib/chat-history.ts", { "@/lib/prisma": { prisma } });
   const adapters = {
     __clock: options.clock,
@@ -78,8 +78,12 @@ function host(options = {}) {
         };
       } } },
     },
-    "@/lib/kv": { checkRateLimit: async () => null, checkRateLimitPerMinute: async () => null, RATE_LIMIT_MINUTE: {} },
-    "@/lib/expensive-route-guard": { rateLimitDeniedResponse: () => null },
+    "@/lib/kv": {
+      checkRateLimit: async () => { state.rateChecks++; return { allowed: !options.blockChatRequests, remaining: 0 }; },
+      checkRateLimitPerMinute: async () => { state.rateChecks++; return { allowed: !options.blockChatRequests, remaining: 0 }; },
+      RATE_LIMIT_MINUTE: {},
+    },
+    "@/lib/expensive-route-guard": { rateLimitDeniedResponse: (result) => result.allowed ? null : new Response(null, { status: 429 }) },
     "@/lib/atomic-credits": { chargeCreditFeature: async (_params, persist) => { await persist?.(prisma); state.charges++; return { ok: true, balanceAfter: 9 }; },
       insufficientCreditsResponse: () => new Response(null, { status: 402 }) },
     "@/lib/cloudinary": { uploadToCloudinary: async () => { state.uploads++; return { secureUrl: "https://example.com/reference.png", publicId: "reference-id" }; }, deleteFromCloudinary: async () => {} },
@@ -94,6 +98,20 @@ function host(options = {}) {
   };
 }
 function events(text) { return text.trim().split("\n\n").filter(Boolean).map((line) => JSON.parse(line.slice(6))); }
+
+test("chat access depends on free allowance and credits even when old rate counters are exhausted", async () => {
+  for (const [lifetimeFreeAI, creditBalance, expectedStatus] of [
+    [0, 0, 200], [19, 0, 200], [0, 150, 200], [20, 1, 200], [20, 0, 402], [25, 0, 402],
+  ]) {
+    const app = host({ lifetimeFreeAI, creditBalance, blockChatRequests: true, chunks: ["The exposure looks balanced."] });
+    const response = await app.send({ chatInteractionMode: "ask" });
+    assert.equal(response.status, expectedStatus);
+    await response.text();
+    assert.equal(app.state.rateChecks, 0);
+    assert.equal(app.state.modelCalls, expectedStatus === 200 ? 1 : 0);
+    if (expectedStatus === 402) assert.equal(app.state.charges, 0);
+  }
+});
 
 test("completed exchanges restore exact text and references without replaying edits or billing", async () => {
   const app = host();
