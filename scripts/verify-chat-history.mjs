@@ -330,6 +330,19 @@ test("incomplete or oversized progress cannot hang, expose protocol text or appl
   }
 });
 
+test("oversized progress preserves the answer across closing tag boundaries", async () => {
+  for (let split = 0; split <= "[/progress]".length; split++) {
+    const app = host({ chunks: ["[progress]" + "a".repeat(600),
+      "[/progress]".slice(0, split), "[/progress]".slice(split) + "The exposure looks balanced."] });
+    const result = events(await (await app.send({ chatInteractionMode: "ask" })).text());
+    assert.equal(app.rows[0].status, "complete");
+    assert.match(app.rows[0].assistantText, /The exposure looks balanced/);
+    assert.equal(result.some((event) => event.type === "interrupted"), false);
+    assert.equal(result.filter((event) => event.type === "text").map((event) => event.text).join("").includes("[progress]"), false);
+    assert.equal(app.state.charges, 1);
+  }
+});
+
 test("restoring saved transcripts strips progress from completed and interrupted messages", () => {
   assert.equal(cleanChatText("[progress]I'll brighten the subject.[/progress]Done. [adjustments]{}[/adjustments]"), "Done.");
   assert.equal(cleanChatText("[progress]An interrupted summary"), "");
@@ -484,7 +497,7 @@ test("Agent requests native validated tools without charging or executing paid o
 test("an unfinished progress summary cannot interrupt a valid Agent edit plan", async () => {
   const plan = { actions: [{ type: "adjust", values: { exposure: 12 } }] };
   const app = host({ chunks: [], modelEvents: [
-    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "[progress]Preparing the lighting changes..." } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "[progress]" + "Preparing the lighting changes...".repeat(30) } },
     { type: "content_block_start", index: 1, content_block: { type: "tool_use", name: "edit_photo" } },
     { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan) } },
   ] });

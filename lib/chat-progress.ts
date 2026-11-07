@@ -21,6 +21,7 @@ const CLOSE = "[/progress]";
 export function createChatProgressParser() {
   let buffer = "";
   let mode: "prefix" | "progress" | "answer" = "prefix";
+  let oversized = false;
 
   return {
     push(chunk: string): ChatProgressEvent[] {
@@ -40,7 +41,12 @@ export function createChatProgressParser() {
       }
       const end = buffer.indexOf(CLOSE);
       if (end === -1) {
-        if (buffer.length > 512) throw new Error("Invalid chat progress summary");
+        if (buffer.length > 512) {
+          // Optional model-generated status text must not abort a valid answer or tool call.
+          // Retain enough of the tail to recognize a closing tag split across chunks.
+          oversized = true;
+          buffer = buffer.slice(-(CLOSE.length - 1));
+        }
         return [];
       }
       const text = buffer.slice(0, end).replace(/\s+/g, " ").trim().slice(0, 180);
@@ -48,7 +54,7 @@ export function createChatProgressParser() {
       buffer = "";
       mode = "answer";
       const events: ChatProgressEvent[] = [];
-      if (text) events.push({ type: "progress", text });
+      if (text && !oversized) events.push({ type: "progress", text });
       if (answer) events.push({ type: "text", text: answer });
       return events;
     },
