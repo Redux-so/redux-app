@@ -752,6 +752,53 @@ test("Agent recovery leaves missing inputs, genuine questions and non-edit reque
   }
 });
 
+test("Agent requires an edit plan for photo style and advice questions; Ask stays text-only", async () => {
+  const plan = { actions: [{ type: "adjust", values: { contrast: 12, highlights: -15, temperature: -8 } }] };
+  for (const userMessage of [
+    "What mood or style would suit this photo?",
+    "what do you recommend for this image?",
+    "Does the exposure or color balance look off?",
+    "How does this photo look?",
+  ]) {
+    const modelEvents = [
+      { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
+      { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan) } },
+    ];
+    const agent = host({ chunks: [], modelEvents });
+    const response = await agent.send({ userMessage, toolsEnabled: true });
+    let applications = 0;
+    const panel = chatPanelHost("agent", { response, onExecuteTools: async (prepared) => {
+      applications++;
+      assert.deepEqual(prepared.actions, plan.actions);
+      return "Applied a cool cinematic look.";
+    } });
+    await panel.submit();
+    assert.equal(agent.state.modelConfigs[0].tool_choice.type, "tool", userMessage);
+    assert.equal(applications, 1, userMessage);
+    assert.equal(panel.messages().at(-1).content, "Applied a cool cinematic look.");
+
+    const ask = host({ chunks: ["A cool cinematic look would suit this photo."] });
+    const result = events(await (await ask.send({ userMessage, toolsEnabled: true, chatInteractionMode: "ask" })).text());
+    assert.equal(ask.state.modelTools.length, 0);
+    assert.equal(result.some((event) => event.type === "tools" || event.type === "adjustments"), false);
+  }
+});
+
+test("Agent retries aesthetic preference questions instead of waiting for permission to choose a look", async () => {
+  const plan = { actions: [{ type: "adjust", values: { contrast: 12 } }] };
+  const app = host({ modelAttempts: [
+    { chunks: ["Which direction appeals to you? Select a cinematic or airy look and I can apply it."] },
+    { chunks: [], modelEvents: [
+      { type: "content_block_start", index: 0, content_block: { type: "tool_use", name: "edit_photo" } },
+      { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: JSON.stringify(plan) } },
+    ] },
+  ] });
+  const result = events(await (await app.send({ userMessage: "What mood or style would suit this photo?", toolsEnabled: true })).text());
+  assert.equal(app.state.modelCalls, 2);
+  assert.equal(result.some((event) => event.type === "tools"), true);
+  assert.equal(app.state.charges, 1);
+});
+
 test("switching from Agent history to Ask cannot emit or execute adjustments", async () => {
   const rows = [{ id: "agent-turn", sequence: 1, imageId: "photo-a", mode: "agent",
     userText: "Make it warmer", assistantText: "Warmed the photo.", status: "complete", createdAt: new Date() }];

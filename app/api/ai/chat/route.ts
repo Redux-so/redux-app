@@ -22,6 +22,7 @@ import { ASK_SWITCH_TO_AGENT_NUDGE } from "@/constants/chat-interaction-mode";
 import {
   allowChatAdjustmentsForTurn,
   agentReplyNeedsEditRecovery,
+  agentRequestSeeksPhotoAdvice,
   askModeNudgeMissing,
   type ChatHistoryMessage,
 } from "@/lib/chat-edit-intent";
@@ -262,6 +263,7 @@ export async function POST(request: Request) {
   const anthropicMessages = buildAnthropicMessages(context, userContent);
   const allowAdjustments = allowChatAdjustmentsForTurn(chatInteractionMode);
   const enableTools = toolsEnabled && allowAdjustments && durableTurn;
+  const requirePhotoAdviceEdit = enableTools && agentRequestSeeksPhotoAdvice(userMessage);
 
   // ── Check chat allowance ───────────────────────────────────────
   let lifetimeFreeRemaining: number;
@@ -333,7 +335,7 @@ export async function POST(request: Request) {
 
       try {
         if (disconnected) throw new Error("Chat interrupted");
-        // One bounded recovery for an Agent reply that asks unnecessary permission.
+        // One bounded recovery for an Agent reply that omits a requested edit.
         // Reuse the original request; paid plans still require approval.
         for (let attempt = 0; attempt < 2; attempt++) {
           if (disconnected) throw new Error("Chat interrupted");
@@ -345,7 +347,7 @@ export async function POST(request: Request) {
               ? "\nYour previous draft did not prepare the requested edit. The current mode is Agent. Call edit_photo now using the user's original request and any relevant previous suggestions. Do not add paid operations the user did not request or claim completed edits."
               : ""),
             messages: anthropicMessages,
-            ...(enableTools ? { tools: [EDIT_PHOTO_TOOL], tool_choice: attempt === 1
+            ...(enableTools ? { tools: [EDIT_PHOTO_TOOL], tool_choice: attempt === 1 || requirePhotoAdviceEdit
               ? { type: "tool" as const, name: "edit_photo", disable_parallel_tool_use: true }
               : { type: "auto" as const, disable_parallel_tool_use: true } } : {}),
           });

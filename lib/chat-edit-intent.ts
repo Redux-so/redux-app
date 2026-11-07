@@ -12,10 +12,11 @@ const ADVICE_SEEKING_PATTERNS: RegExp[] = [
   /\b(any|some|your) suggestions?\b/i,
   /\bhow (can|could|should|would) i improve\b/i,
   /\bhow (can|could|would) (you|we) improve\b/i,
-  /\bhow does (this|it|the photo) look\b/i,
+  /\bhow does (?:this|it|(?:this|that|the|my) (?:photo|image|picture)) look\b/i,
   /\b(feedback|critique|advice|opinion)\b/i,
   /\bwhat('s| is) wrong with\b/i,
   /\bwhat would you (change|recommend|suggest|do)\b/i,
+  /\bwhat do you (recommend|suggest)\b/i,
   /\b(any|some) (ideas|recommendations)\b/i,
   /\bwhat (can|could|should) (be|i) (improved|fixed|better)\b/i,
   /\btell me (what|how|about)\b/i,
@@ -46,6 +47,15 @@ function hasPriorAssistantTurn(history: ChatHistoryMessage[]): boolean {
 
 function isAdviceSeekingMessage(message: string): boolean {
   return ADVICE_SEEKING_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+/** In Agent, choosing a look or recommending improvements also requests an edit. */
+export function agentRequestSeeksPhotoAdvice(message: string): boolean {
+  if (/\b(?:don't|do not|never)\s+(?:apply|edit|change|modify|make)\b/i.test(message)) return false;
+  return isAdviceSeekingMessage(message) ||
+    /\b(?:mood|style|look|grade|palette)\b.*\b(?:suit|fit|work|best|recommend)\b/i.test(message) ||
+    /\b(?:recommend|suggest|choose|pick)\b.*\b(?:mood|style|look|grade|palette)\b/i.test(message) ||
+    /\b(?:exposure|colou?r|lighting|tones?)\b.*\b(?:off|balanced|look|improve|correct|right)\b/i.test(message);
 }
 
 function isExplicitEditCommand(message: string): boolean {
@@ -117,6 +127,8 @@ export function agentReplyNeedsEditRecovery(
   history: ChatHistoryMessage[],
 ): boolean {
   if (/\b(?:don't|do not|never)\s+(?:apply|edit|change|modify|make)\b/i.test(userMessage)) return false;
+  // Choosing between aesthetic directions is the Agent's job, not missing user input.
+  if (agentRequestSeeksPhotoAdvice(userMessage)) return true;
   if (/\b(?:attach|upload|provide|select|paint|specify|missing|required)\b/i.test(reply)) return false;
   if (/\bneed\b.*\b(?:reference|selection|mask|target|details|information)\b/i.test(reply)) return false;
   if (agentReplyRequestsEditPermission(reply)) return true;

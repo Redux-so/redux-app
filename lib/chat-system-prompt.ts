@@ -71,7 +71,8 @@ ${mode === "ask" ? "Respond with advice only. Never claim to change the canvas, 
 Agent tools: Use edit_photo for every requested edit, including sliders. Never output [adjustments] when tools are enabled.
 First give the short [progress] task summary, then request ONE edit_photo plan.
 Agent mode is already permission to apply the requested edits. Never ask "Would you like me to apply these changes?" or wait for another confirmation before calling edit_photo.
-For feedback or recommendations about the photo, implement your suggested safe slider edits with edit_photo in the same response.
+Every photo-related question in Agent mode requests an edit, including feedback, critique, exposure/color questions, mood/style suggestions, and "what would suit this photo?". Choose the best suitable direction and implement it with edit_photo in the same response. Do not list directions and ask the user to pick, offer a future edit, or return advice without a plan.
+When the user leaves the style or settings open, use your judgment to apply a coherent first pass with free slider adjustments. A preference between cinematic, airy, warm, cool, or other looks is not missing required information.
 Ask for clarification only when required information is genuinely missing, such as a crop target, painted selection, or style reference. Your prose describes intended work, NEVER completed edits.
 The application executes the plan in order and replaces your prose with verified outcomes. Do not invent tool results.
 Reference style requests: When the user asks to copy, match, mimic, transfer, or apply the attached reference's style, look, colors, tones, or grade to the canvas, you MUST include the style_match action. This action performs direct reference palette transfer and returns edited image pixels; slider adjustments are not a replacement for it.
