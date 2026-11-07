@@ -19,7 +19,7 @@ const socialPreviewImage = {
 
 export const metadata: Metadata = {
   title: "Redux",
-  description: "AI-powered photo editing",
+  description: "The agentic photo editing platform",
   openGraph: {
     type: "website",
     siteName: "Redux",
